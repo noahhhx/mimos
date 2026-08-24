@@ -1,32 +1,125 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-  <parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>4.1.1</version>
-    <relativePath/>
-  </parent>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.1.1</version>
+        <relativePath/>
+    </parent>
 
-  <groupId>io.github.noahhhx.mimos</groupId>
-  <artifactId>mimos-parent</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
-  <packaging>pom</packaging>
+    <groupId>io.github.noahhhx.mimos</groupId>
+    <artifactId>mimos-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
 
-  <name>Mimos</name>
-  <description>Mimos — recipe companion: library, personal recipes, meal planning, shopping lists, and logging.</description>
+    <name>Mimos</name>
+    <description>Mimos — recipe companion: library, personal recipes, meal planning, shopping lists, and logging.</description>
 
-  <modules>
-    <module>core/core-recipes</module>
-    <module>core/core-planning</module>
-    <module>apps/api</module>
-  </modules>
+    <modules>
+        <module>core/core-recipes</module>
+        <module>core/core-planning</module>
+        <module>apps/api</module>
+    </modules>
 
-  <properties>
-    <java.version>21</java.version>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
+    <properties>
+        <java.version>21</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <spotless-maven-plugin.version>3.9.0</spotless-maven-plugin.version>
+        <palantir-java-format.version>2.97.0</palantir-java-format.version>
+        <jspecify.version>1.0.1</jspecify.version>
+        <nullaway.version>0.13.8</nullaway.version>
+        <error-prone.version>2.50.0</error-prone.version>
+    </properties>
+
+    <dependencies>
+        <!-- JSpecify nullness annotations (@Nullable, @NullMarked). RUNTIME retention:
+             must ship with the jars, so not optional — Boot's fat jar would drop it
+             otherwise and reflective access to @Nullable-bearing records would fail. -->
+        <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+            <version>${jspecify.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <compilerArgs>
+                        <arg>-XDcompilePolicy=simple</arg>
+                        <!-- JDK 21: Error Prone needs type annotations kept on
+                             symbols; not needed on JDK 22+ but harmless there. -->
+                        <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
+                        <arg>--should-stop=ifError=FLOW</arg>
+                        <!--
+                          NullAway via Error Prone: nullness violations are build
+                          errors, restricted to @NullMarked code with full JSpecify
+                          semantics. Other Error Prone checks stay disabled so only
+                          null safety gates the build. JDK internals access comes
+                          from .mvn/jvm.config (no forked compiler needed).
+                        -->
+                        <arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:ERROR
+                            -Xep:RequireExplicitNullMarking:ERROR
+                            -XepOpt:NullAway:JSpecifyMode=true
+                            -XepOpt:NullAway:OnlyNullMarked=true</arg>
+                    </compilerArgs>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>com.google.errorprone</groupId>
+                            <artifactId>error_prone_core</artifactId>
+                            <version>${error-prone.version}</version>
+                        </path>
+                        <path>
+                            <groupId>com.uber.nullaway</groupId>
+                            <artifactId>nullaway</artifactId>
+                            <version>${nullaway.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>${spotless-maven-plugin.version}</version>
+                <configuration>
+                    <java>
+                        <trimTrailingWhitespace/>
+                        <endWithNewline/>
+                        <!-- java/javax, then jakarta, then everything else, static last -->
+                        <importOrder>
+                            <order>java,javax,jakarta,,\#</order>
+                        </importOrder>
+                        <removeUnusedImports/>
+                        <!-- 4-space indent, 120 columns -->
+                        <palantirJavaFormat>
+                            <version>${palantir-java-format.version}</version>
+                        </palantirJavaFormat>
+                    </java>
+                    <pom>
+                        <!-- 4-space indent to match the Java style -->
+                        <sortPom>
+                            <nrOfIndentSpace>4</nrOfIndentSpace>
+                            <keepBlankLines>true</keepBlankLines>
+                            <expandEmptyElements>false</expandEmptyElements>
+                            <spaceBeforeCloseEmptyElement>false</spaceBeforeCloseEmptyElement>
+                        </sortPom>
+                    </pom>
+                </configuration>
+                <executions>
+                    <!-- Format sources automatically on every build -->
+                    <execution>
+                        <goals>
+                            <goal>apply</goal>
+                        </goals>
+                        <phase>process-sources</phase>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

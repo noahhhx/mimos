@@ -144,6 +144,20 @@ mimos/
 - **Testing:** JUnit 5. Integration tests use Testcontainers (Postgres,
   Keycloak) — never mocked repositories or a hand-rolled test DB. New code
   ships with tests; a change isn't done until they pass.
+- **Formatting:** Spotless formats Java (palantir-java-format: 4-space
+  indent, 120 columns) and every `pom.xml` (sortPom, 4-space) — it applies
+  automatically on every build; CI gates with `spotless:check`. Run
+  `./mvnw spotless:apply` to fix violations.
+- **Null safety:** NullAway (JSpecify mode) via Error Prone; nullness
+  violations in `@NullMarked` code fail the build. Every package needs a
+  `@NullMarked` `package-info.java` (the build fails otherwise); annotate
+  anything that may be `null` with `org.jspecify.annotations.Nullable`
+  (type-use placement). `@NullUnmarked` is the escape hatch for code that
+  cannot be checked yet; never `@SuppressWarnings("NullAway")` without a
+  comment explaining the false positive. `.mvn/jvm.config` holds the javac
+  `--add-exports`/`--add-opens` Error Prone needs — keep it in sync with the
+  Error Prone install docs when bumping `error-prone.version`. Only
+  nullness gates the build; other Error Prone checks stay disabled.
 - **Containers:** Docker is the only supported runtime — tests (via
   Testcontainers), local dev (via compose), and CI all require it. A new
   deployable ships its Dockerfile and its compose service in the same
@@ -180,15 +194,19 @@ mimos/
 
 - `./mvnw -B verify` — full backend build + tests. Requires Docker:
   integration tests use Testcontainers (Postgres). JDK 21+ (compiled with
-  `--release 21`).
+  `--release 21`). Formatting applies automatically during the build;
+  `.mvn/jvm.config` (javac `--add-exports`/`--add-opens` for Error Prone)
+  is picked up automatically by `mvnw`.
+- `./mvnw -B spotless:check` — formatting gate (Java + POMs) without
+  writing.
 - `mkdocs build --strict` — docs build. Requires `pip install -r
   docs/requirements.txt`.
 - `docker compose -f deploy/docker/compose.yml up -d --wait` — boots the
   full self-hosted stack (Postgres, Keycloak, API); healthy when `--wait`
   returns 0. Smoke: API at `http://localhost:8080/actuator/health`, Keycloak
   realm at `http://localhost:8081/realms/mimos`.
-- CI (`.github/workflows/ci.yml`) runs all three on every PR; the compose
-  job is the self-host parity check.
+- CI (`.github/workflows/ci.yml`) runs all of the above on every PR; the
+  compose job is the self-host parity check.
 
 ## Decision log
 

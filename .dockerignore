@@ -1,6 +1,6 @@
 .git
 .github
-.mvn
+.mvn/wrapper
 mvnw
 mvnw.cmd
 docs

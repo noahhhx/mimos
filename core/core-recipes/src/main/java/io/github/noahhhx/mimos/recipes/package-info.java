@@ -5,4 +5,7 @@
  * clients. Other modules (including core-planning) may depend on this module's
  * public API; this module depends on no other Mimos module.
  */
+@NullMarked
 package io.github.noahhhx.mimos.recipes;
+
+import org.jspecify.annotations.NullMarked;

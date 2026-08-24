@@ -7,6 +7,7 @@ right at the time.
 | ADR                                                                 | Decision                  |
 | ------------------------------------------------------------------- | ------------------------- |
 | [ADR-0001](adr-0001-backend-module-layout.md)                       | Backend module layout     |
+| [ADR-0002](adr-0002-formatting-null-safety-toolchain.md)            | Formatting and null-safety toolchain |
 
 New ADRs are sequential: `adr-NNNN-title.md`, with the numbering in this
 index. Once accepted, an ADR is never rewritten — superseding decisions get

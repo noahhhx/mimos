@@ -16,3 +16,4 @@ nav:
   - Decisions:
       - Index: decisions/index.md
       - 'ADR-0001: Backend module layout': decisions/adr-0001-backend-module-layout.md
+      - 'ADR-0002: Formatting and null-safety toolchain': decisions/adr-0002-formatting-null-safety-toolchain.md

@@ -4,4 +4,7 @@
  * <p>Depends on core-recipes and nothing else. Consumers reach this module
  * through its public API only.
  */
+@NullMarked
 package io.github.noahhhx.mimos.planning;
+
+import org.jspecify.annotations.NullMarked;

@@ -1,5 +1,7 @@
 package io.github.noahhhx.mimos.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,16 +14,13 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 class MimosApiApplicationTests {
 
     @Container
     @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
-            DockerImageName.parse("postgres:18-alpine"));
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(DockerImageName.parse("postgres:18-alpine"));
 
     @LocalServerPort
     int port;
@@ -30,8 +29,7 @@ class MimosApiApplicationTests {
     JdbcTemplate jdbc;
 
     @Test
-    void contextLoads() {
-    }
+    void contextLoads() {}
 
     @Test
     void healthIsUpIncludingDatabase() {
@@ -49,9 +47,8 @@ class MimosApiApplicationTests {
 
     @Test
     void baselineMigrationApplied() {
-        Integer applied = jdbc.queryForObject(
-                "select count(*) from flyway_schema_history where version = '1'",
-                Integer.class);
+        Integer applied =
+                jdbc.queryForObject("select count(*) from flyway_schema_history where version = '1'", Integer.class);
 
         assertThat(applied).isEqualTo(1);
     }
