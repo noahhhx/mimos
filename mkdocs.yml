@@ -1,0 +1,18 @@
+site_name: Mimos
+site_description: >-
+  Recipe companion — a free recipe library, personal recipes, meal planning,
+  shopping lists, and calorie/macro logging. Self-hostable by design.
+repo_url: https://github.com/noahhhx/mimos
+repo_name: noahhhx/mimos
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Decisions:
+      - Index: decisions/index.md
+      - 'ADR-0001: Backend module layout': decisions/adr-0001-backend-module-layout.md

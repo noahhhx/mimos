@@ -1,0 +1,22 @@
+# Build outputs
+target/
+
+# Docs build
+site/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+
+# Local env overrides
+.env
+
+# Node (apps/web, later)
+node_modules/
+
+# Python venv for docs tooling
+.venv/

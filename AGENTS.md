@@ -37,6 +37,7 @@ change** — an out-of-date AGENTS.md is worse than none.
 | Database   | PostgreSQL (latest stable). Schema changes via forward-only migrations (Flyway). |
 | Repo       | Monorepo — all apps, plugins, libraries, and deployment in one repo. |
 | Build      | Maven multi-module for the Java side.                           |
+| Backend layout | Root parent POM + domain modules under `core/` + `apps/api` deployable. Base package `io.github.noahhhx.mimos`. See ADR-0001. |
 | API style  | HTTP JSON APIs, contract-first (OpenAPI spec is the source of truth, generated/verified in CI). |
 | Config     | 12-factor: environment variables + Spring profiles. `local` profile is the default and must always work. |
 | Runtime    | Docker. Every deployable (API, web, plugins) ships a Dockerfile that is built in CI; no bare-metal assumptions in app code. |
@@ -120,16 +121,20 @@ mimos/
 ├── NORTHSTAR.md          # product vision
 ├── ROADMAP.md            # ordered build plan; steps get fleshed out as picked up
 ├── AGENTS.md             # this file
+├── pom.xml               # Maven parent/aggregator for the backend
 ├── mkdocs.yml            # documentation config
 ├── docs/                 # MkDocs source: guides, plugin authoring, decisions/ADRs
 ├── apps/
-│   ├── api/              # Spring Boot modular monolith
-│   └── web/              # Next.js frontend
+│   ├── api/              # Spring Boot modular monolith (the only deployable backend)
+│   └── web/              # Next.js frontend (future)
+├── core/
+│   ├── core-recipes/     # recipe domain module
+│   └── core-planning/    # planning domain module
 ├── libraries/            # shared contracts: OpenAPI-generated clients, plugin SDK
 ├── plugins/
 │   └── country-week/     # reference plugin (build early to prove the API)
 └── deploy/
-    ├── docker/           # compose: postgres, keycloak, api, web, (minio)
+    ├── docker/           # compose: postgres, keycloak, api, (web, minio)
     ├── keycloak/         # realm export / config
     └── aws/              # IaC (tool TBD)
 ```
@@ -173,10 +178,11 @@ mimos/
 
 ## Verification commands
 
-None exist yet — the repo is pre-scaffold. **Rule:** when you add the first
-buildable package, register its build/test/lint commands here immediately
-and keep this section accurate. Until then, there is nothing to run and
-nothing to verify changes against.
+- `./mvnw -B verify` — full backend build + tests. Requires Docker:
+  integration tests use Testcontainers (Postgres). JDK 21+ (compiled with
+  `--release 21`).
+- `mkdocs build --strict` — docs build. Requires `pip install -r
+  docs/requirements.txt`.
 
 ## Decision log
 

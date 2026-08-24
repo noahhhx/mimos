@@ -1,0 +1,7 @@
+# Defaults for local development; matches deploy/docker compose port-forward.
+# Overridable through the environment (SPRING_DATASOURCE_*).
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mimos
+    username: mimos
+    password: mimos
