@@ -187,6 +187,8 @@ mimos/
   full self-hosted stack (Postgres, Keycloak, API); healthy when `--wait`
   returns 0. Smoke: API at `http://localhost:8080/actuator/health`, Keycloak
   realm at `http://localhost:8081/realms/mimos`.
+- CI (`.github/workflows/ci.yml`) runs all three on every PR; the compose
+  job is the self-host parity check.
 
 ## Decision log
 
