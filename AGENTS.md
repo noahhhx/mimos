@@ -113,6 +113,17 @@ week's meal plan leans into that cuisine.** Design constraints:
 - Spring Security with OIDC resource-server on the API. Authorization roles
   are realm/client roles from Keycloak; no parallel user tables in the app
   beyond a lightweight profile keyed by subject ID.
+- The API validates the browser-facing issuer (`http://localhost:8081/realms/mimos`)
+  but fetches JWKS through the internal compose host
+  (`SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI`) — tokens carry the
+  external issuer, so both must be configured when the network position
+  differs.
+- Security failures (401/403) are RFC 9457 problem-details, as are API errors
+  generally.
+- API integration tests use Testcontainers Postgres **and** Keycloak (the
+  realm export from `deploy/keycloak` is on the test classpath); the Keycloak
+  container module is `com.github.dasniko:testcontainers-keycloak` (the
+  upstream module left the core Testcontainers BOM).
 
 ## Repo layout (target)
 

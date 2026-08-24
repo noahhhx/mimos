@@ -8,6 +8,7 @@ COPY pom.xml ./
 COPY .mvn/ .mvn/
 COPY core/ core/
 COPY apps/ apps/
+COPY deploy/keycloak/ deploy/keycloak/
 
 RUN --mount=type=cache,target=/root/.m2 \
     mvn -B -DskipTests package

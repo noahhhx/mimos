@@ -4,7 +4,8 @@
 mvnw
 mvnw.cmd
 docs
-deploy
+deploy/aws
+deploy/docker
 site
 **/target
 AGENTS.md
