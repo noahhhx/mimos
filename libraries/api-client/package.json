@@ -1,0 +1,21 @@
+{
+  "name": "@mimos/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TypeScript client for the Mimos API, generated from contracts/api/openapi.yaml (ADR-0004). Do not hand-edit src/client — run npm run generate.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "openapi-ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hey-api/client-fetch": "0.13.1"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "0.99.0",
+    "typescript": "~5.9.0"
+  }
+}

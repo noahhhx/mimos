@@ -38,7 +38,7 @@ change** — an out-of-date AGENTS.md is worse than none.
 | Repo       | Monorepo — all apps, plugins, libraries, and deployment in one repo. |
 | Build      | Maven multi-module for the Java side.                           |
 | Backend layout | Root parent POM + domain modules under `core/` + `apps/api` deployable. Base package `io.github.noahhhx.mimos`. See ADR-0001. |
-| API style  | HTTP JSON APIs, contract-first (OpenAPI spec is the source of truth, generated/verified in CI). |
+| API style  | HTTP JSON APIs, contract-first: the OpenAPI spec in `contracts/api/openapi.yaml` is the source of truth; server stubs generate at build time and the TypeScript client in `libraries/api-client` is committed. See ADR-0003. |
 | Config     | 12-factor: environment variables + Spring profiles. `local` profile is the default and must always work. |
 | Runtime    | Docker. Every deployable (API, web, plugins) ships a Dockerfile that is built in CI; no bare-metal assumptions in app code. |
 | Docs       | MkDocs; `mkdocs.yml` at repo root, source in `docs/`. ADRs live in `docs/decisions/`. |
@@ -137,11 +137,14 @@ mimos/
 ├── docs/                 # MkDocs source: guides, plugin authoring, decisions/ADRs
 ├── apps/
 │   ├── api/              # Spring Boot modular monolith (the only deployable backend)
-│   └── web/              # Next.js frontend (future)
+│   └── web/              # Next.js frontend
+├── contracts/
+│   └── api/              # OpenAPI spec — the source of truth for the HTTP API (ADR-0003)
 ├── core/
 │   ├── core-recipes/     # recipe domain module
 │   └── core-planning/    # planning domain module
 ├── libraries/            # shared contracts: OpenAPI-generated clients, plugin SDK
+│   └── api-client/       # @mimos/api-client — generated TypeScript client (committed)
 ├── plugins/
 │   └── country-week/     # reference plugin (build early to prove the API)
 └── deploy/
@@ -212,6 +215,9 @@ mimos/
   writing.
 - `mkdocs build --strict` — docs build. Requires `pip install -r
   docs/requirements.txt`.
+- `npm ci && npm run generate -w @mimos/api-client` — regenerate the
+  TypeScript API client from `contracts/api/openapi.yaml`; commit the result.
+  Regenerating must produce no diff when the spec is unchanged.
 - `docker compose -f deploy/docker/compose.yml up -d --wait` — boots the
   full self-hosted stack (Postgres, Keycloak, API); healthy when `--wait`
   returns 0. Smoke: API at `http://localhost:8080/actuator/health`, Keycloak

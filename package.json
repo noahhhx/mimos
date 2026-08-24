@@ -1,0 +1,11 @@
+{
+  "name": "mimos",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "libraries/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  }
+}

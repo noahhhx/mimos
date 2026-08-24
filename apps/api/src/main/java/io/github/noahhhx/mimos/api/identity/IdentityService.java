@@ -21,7 +21,7 @@ public class IdentityService {
             where subject_id = ?
             """;
 
-    private static final RowMapper<UserProfile> PROFILE_MAPPER = new ProfileRowMapper();
+    private static final RowMapper<UserProfileRecord> PROFILE_MAPPER = new ProfileRowMapper();
 
     private final JdbcTemplate jdbc;
 
@@ -30,7 +30,7 @@ public class IdentityService {
     }
 
     /** Returns the profile for the subject, creating it on first sight. */
-    public UserProfile ensureProfile(String subjectId, String displayName) {
+    public UserProfileRecord ensureProfile(String subjectId, String displayName) {
         jdbc.update("""
                 insert into user_profile (subject_id, display_name)
                 values (?, ?)
@@ -39,11 +39,11 @@ public class IdentityService {
         return jdbc.queryForObject(SELECT_PROFILE, PROFILE_MAPPER, subjectId);
     }
 
-    private static final class ProfileRowMapper implements RowMapper<UserProfile> {
+    private static final class ProfileRowMapper implements RowMapper<UserProfileRecord> {
 
         @Override
-        public UserProfile mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return new UserProfile(
+        public UserProfileRecord mapRow(ResultSet rs, int rowNum) throws SQLException {
+            return new UserProfileRecord(
                     rs.getObject("id", UUID.class),
                     rs.getString("subject_id"),
                     rs.getString("display_name"),

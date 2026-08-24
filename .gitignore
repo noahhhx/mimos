@@ -20,3 +20,10 @@ node_modules/
 
 # Python venv for docs tooling
 .venv/
+
+# Node / Next.js
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+openapi-ts-error-*.log

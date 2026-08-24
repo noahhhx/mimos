@@ -1,0 +1,78 @@
+# Mimos API contract — the source of truth for the HTTP surface.
+#
+# Server stubs (apps/api, generated at build time) and the TypeScript client
+# (libraries/api-client, generated on demand + verified in CI) are both
+# derived from this file. Hand-edit generated code and the build or the CI
+# drift check will fail; change the spec instead. See docs/decisions/ADR-0004.
+openapi: 3.1.0
+info:
+  title: Mimos API
+  version: 0.1.0
+  description: |
+    The Mimos recipe companion API. All endpoints require a bearer token
+    issued by the instance's Keycloak realm unless marked otherwise;
+    failures are reported as RFC 9457 problem-details.
+paths:
+  /api/v1/me:
+    get:
+      tags: [me]
+      operationId: getMe
+      summary: The authenticated user's own profile
+      description: >
+        Returns the profile of the authenticated user, creating it on first
+        request (keyed by the OIDC subject).
+      responses:
+        '200':
+          description: The caller's profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+components:
+  responses:
+    Problem:
+      description: An RFC 9457 problem-details error.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    UserProfile:
+      type: object
+      description: A Mimos user profile, keyed by the OIDC subject.
+      required: [id, subjectId, displayName, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Internal profile identifier.
+        subjectId:
+          type: string
+          description: The OIDC subject (`sub`) the profile belongs to.
+        displayName:
+          type: string
+          description: Name shown in the UI; initially the identity provider's username.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the profile was created.
+    Problem:
+      type: object
+      description: RFC 9457 problem details.
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri

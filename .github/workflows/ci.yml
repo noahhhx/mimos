@@ -46,6 +46,30 @@ jobs:
       - name: Build docs
         run: mkdocs build --strict
 
+  client:
+    name: API client (TypeScript)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Regenerate API client from the spec
+        run: npm run generate -w @mimos/api-client
+
+      - name: Fail on drift between spec and committed client
+        run: git diff --exit-code -- libraries
+
+      - name: Typecheck
+        run: npm run typecheck -w @mimos/api-client
+
   compose:
     name: Self-hosted stack (compose)
     runs-on: ubuntu-latest
