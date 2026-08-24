@@ -19,18 +19,18 @@ Rules for using this file:
    AGENTS.md. MkDocs scaffold (`mkdocs.yml`, `docs/`) so doc changes have
    somewhere to live from day one.
    *Done when: `mvn verify` passes, `mkdocs build --strict` passes, and
-   both run in minimal CI.*
+   both run in minimal CI.* **Done.**
 
 2. **Walking skeleton in compose.** `deploy/docker` brings up Postgres,
    Keycloak (realm export checked into `deploy/keycloak`), and the API
    container; Flyway runs on startup; the API connects to both. This is
    prime directive #1 proven early, not retrofitted.
    *Done when: `docker compose up` from a clean machine reaches a healthy
-   stack with migrations applied.*
+   stack with migrations applied.* **Done.**
 
 3. **CI hardening.** Extend CI to build all images and boot the compose
    stack on every PR — the self-host parity check becomes automated.
-   *Done when: a PR that breaks the compose path cannot merge.*
+   *Done when: a PR that breaks the compose path cannot merge.* **Done.**
 
 ## Phase 1 — The vertical slice (all the boring infrastructure, once)
 
@@ -39,18 +39,24 @@ Rules for using this file:
    by subject ID, created on first authenticated request.
    *Done when: a token from compose Keycloak reaches a protected endpoint,
    and unauthenticated requests are rejected with problem-details.*
+   **Done.**
 
 5. **API contract pipeline.** OpenAPI spec as the source of truth: spec
    first, server stubs verified against it, generated TypeScript client
    published to `libraries/`. Contract drift fails CI.
    *Done when: changing the spec regenerates client and server sides, and
    editing code without the spec fails the build.*
+   **Done.** See ADR-0003 — `contracts/api/openapi.yaml`, generated server
+   interfaces in `apps/api`, `@mimos/api-client` in `libraries/`, drift
+   gates in CI.
 
 6. **Frontend skeleton.** `apps/web` in Next.js: a public page (SSG) and an
    authenticated app shell, login/logout through Keycloak, talking to the
    API only via the generated client. Runs as a Node container in compose.
    *Done when: a user can log in on the compose stack and see an authed
    page backed by a real API call.*
+   **Done.** See ADR-0004 — verified end to end (browser login → token →
+   `/api/v1/me` → profile rendered).
 
 ## Phase 2 — Core product (each step: schema, API, UI, tests)
 

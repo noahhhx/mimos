@@ -13,3 +13,7 @@ NORTHSTAR.md
 ROADMAP.md
 README.md
 LICENSE
+
+# Node / Next.js
+node_modules/
+.next/

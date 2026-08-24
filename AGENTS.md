@@ -95,13 +95,22 @@ week's meal plan leans into that cuisine.** Design constraints:
 
 ### Frontend specifics
 
-- `apps/web` is Next.js (App Router) with TypeScript. Public recipe pages
-  render via SSG/SSR for SEO; the logged-in product is client-heavy.
+- `apps/web` is Next.js (App Router) with TypeScript, sources under `src/`.
+  Public recipe pages render via SSG/SSR for SEO; the logged-in product is
+  client-heavy.
 - The frontend talks to `mimos-api` through the OpenAPI contract; the
-  generated client lives in `libraries/`, never hand-written per feature.
-- Runs as a standalone Node container in compose. No Vercel-specific
-  features that break self-hosting; anything platform-tied is rejected on
-  the same grounds as prime directive #2.
+  generated client lives in `libraries/` (`@mimos/api-client`), never
+  hand-written per feature (ADR-0003).
+- Authentication happens in the browser via `oidc-client-ts` as the public
+  `mimos-web` client (Authorization Code + PKCE); the app calls the API
+  directly with bearer tokens and the API allows CORS for the web origin
+  (ADR-0004). No server-side sessions, no Next-auth.
+- Public URLs (API, Keycloak, app) are `NEXT_PUBLIC_*` build args — see
+  `apps/web/Dockerfile` and the compose `web` service. Changing them means
+  rebuilding the web image.
+- Runs as a standalone Node container in compose (non-root). No
+  Vercel-specific features that break self-hosting; anything platform-tied
+  is rejected on the same grounds as prime directive #2.
 - Logic a future mobile app would share (API clients, types, validation
   schemas) lives in `libraries/`, not in app code.
 
@@ -218,10 +227,14 @@ mimos/
 - `npm ci && npm run generate -w @mimos/api-client` — regenerate the
   TypeScript API client from `contracts/api/openapi.yaml`; commit the result.
   Regenerating must produce no diff when the spec is unchanged.
+- `npm run typecheck -w @mimos/web` and `npm run build -w @mimos/web` —
+  frontend types and production build.
 - `docker compose -f deploy/docker/compose.yml up -d --wait` — boots the
-  full self-hosted stack (Postgres, Keycloak, API); healthy when `--wait`
-  returns 0. Smoke: API at `http://localhost:8080/actuator/health`, Keycloak
-  realm at `http://localhost:8081/realms/mimos`.
+  full self-hosted stack (Postgres, Keycloak, API, web); healthy when
+  `--wait` returns 0. Smoke: API at
+  `http://localhost:8080/actuator/health`, Keycloak realm at
+  `http://localhost:8081/realms/mimos`, web at `http://localhost:3000`
+  (log in with `test` / `mimos-test`).
 - CI (`.github/workflows/ci.yml`) runs all of the above on every PR; the
   compose job is the self-host parity check.
 

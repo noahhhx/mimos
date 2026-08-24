@@ -29,9 +29,30 @@ The API then serves on `http://localhost:8080` (health at
 
 ## Developing
 
+The full stack (Postgres, Keycloak, API, web) runs in Docker:
+
 ```bash
-./mvnw verify                # build + tests (Testcontainers; needs Docker)
-mkdocs build --strict        # docs build (pip install -r docs/requirements.txt)
+docker compose -f deploy/docker/compose.yml up -d --wait
+```
+
+- Web: <http://localhost:3000> (log in with `test` / `mimos-test`)
+- API: <http://localhost:8080> (health at `/actuator/health`)
+- Keycloak admin: <http://localhost:8081> (`admin` / `admin`)
+
+Frontend development server (against the compose backend):
+
+```bash
+npm install
+npm run dev -w @mimos/web
+```
+
+Checks:
+
+```bash
+./mvnw verify                                  # build + tests (Testcontainers; needs Docker)
+npm run typecheck -w @mimos/web               # frontend types
+npm run generate -w @mimos/api-client          # regen TS client from contracts/api/openapi.yaml
+mkdocs build --strict                          # docs build (pip install -r docs/requirements.txt)
 ```
 
 Architecture and conventions live in `AGENTS.md`; significant decisions are

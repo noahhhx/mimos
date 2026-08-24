@@ -70,6 +70,11 @@ jobs:
       - name: Typecheck
         run: npm run typecheck -w @mimos/api-client
 
+      - name: Build web app
+        run: |
+          npm run typecheck -w @mimos/web
+          npm run build -w @mimos/web
+
   compose:
     name: Self-hosted stack (compose)
     runs-on: ubuntu-latest
@@ -92,6 +97,9 @@ jobs:
 
       - name: Smoke test - Keycloak realm imported
         run: curl -fsS http://localhost:8081/realms/mimos | grep -q '"realm":"mimos"'
+
+      - name: Smoke test - web frontend serves the public page
+        run: curl -fsS http://localhost:3000/ | grep -q '<h1>Mimos</h1>'
 
       - name: Smoke test - authenticated request reaches protected endpoint
         run: |
