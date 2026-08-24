@@ -183,6 +183,10 @@ mimos/
   `--release 21`).
 - `mkdocs build --strict` — docs build. Requires `pip install -r
   docs/requirements.txt`.
+- `docker compose -f deploy/docker/compose.yml up -d --wait` — boots the
+  full self-hosted stack (Postgres, Keycloak, API); healthy when `--wait`
+  returns 0. Smoke: API at `http://localhost:8080/actuator/health`, Keycloak
+  realm at `http://localhost:8081/realms/mimos`.
 
 ## Decision log
 

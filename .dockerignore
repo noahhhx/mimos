@@ -1,0 +1,14 @@
+.git
+.github
+.mvn
+mvnw
+mvnw.cmd
+docs
+deploy
+site
+**/target
+AGENTS.md
+NORTHSTAR.md
+ROADMAP.md
+README.md
+LICENSE

@@ -13,6 +13,20 @@ hardware. Both are first-class.
 - Build plan: [`ROADMAP.md`](https://github.com/noahhhx/mimos/blob/main/ROADMAP.md)
 - How we build: [`AGENTS.md`](https://github.com/noahhhx/mimos/blob/main/AGENTS.md)
 
+## Quickstart (self-hosted)
+
+Requires Docker.
+
+```bash
+git clone https://github.com/noahhhx/mimos.git
+cd mimos/deploy/docker
+docker compose up -d --wait
+```
+
+The API then serves on `http://localhost:8080` (health at
+`/actuator/health`), Keycloak on `http://localhost:8081`, and Postgres on
+`localhost:5432`.
+
 ## Developing
 
 ```bash

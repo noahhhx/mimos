@@ -1,0 +1,37 @@
+{
+  "realm": "mimos",
+  "enabled": true,
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "clients": [
+    {
+      "clientId": "mimos-web",
+      "name": "Mimos Web",
+      "description": "Public browser client for the Mimos frontend.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:3000"]
+    }
+  ],
+  "users": [
+    {
+      "username": "test",
+      "enabled": true,
+      "email": "test@example.com",
+      "emailVerified": true,
+      "firstName": "Test",
+      "lastName": "Cook",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "mimos-test",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}
