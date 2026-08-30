@@ -64,25 +64,40 @@ Rules for using this file:
    recipes and personal recipes with the same richness; browse/search;
    public recipe pages for the library (SEO).
    *Done when: a personal recipe can be created, edited, cooked from, and
-   a library recipe renders publicly.*
+   a library recipe renders publicly.* **Done.** See ADR-0005 — recipe
+   schema (V3), personal CRUD `/api/v1/recipes`, unauthenticated library
+   read `/api/v1/public/recipes`, cook view with tickable steps in the app,
+   public `/recipes/[slug]` pages server-rendered for SEO.
 
 8. **Meal planning.** Plan meals for the week from library and personal
    recipes.
    *Done when: a week can be planned and persists across devices/logins.*
+   **Done.** Plans keyed by owner + Monday (V4); week grid UI with a
+   recipe picker over library + personal recipes; per-user isolation
+   verified end to end (compose login → plan → same plan from another
+   device, cross-user 404s tested).
 
 9. **Shopping lists.** Plans generate shopping lists: quantities aggregated
    across recipes, sensible grouping, check-off in the store (mobile-usable
    web).
    *Done when: planning a week produces a complete, usable shopping list.*
+   **Done.** Generation aggregates by (normalized name, unit) scaled by
+   planned servings, groups by aisle keyword map, preserves check-off
+   across regeneration (V5); mobile-friendly list UI.
 
 10. **Calorie and macro logging.** Planned meals become logged meals;
     ad-hoc logging; daily and weekly calorie/macro totals.
     *Done when: a planned week shows accurate per-day totals, and an ad-hoc
-    meal can be logged.*
+    meal can be logged.* **Done.** “Log” button on planned meals (nutrition
+    derived from recipe × servings), ad-hoc logging with manual macros,
+    per-day/week summaries (V6); week table + day view in the UI.
 
 11. **Seed the library.** The free recipe content itself: sourcing/writing
     the launch set, plus the pipeline for adding more over time.
     *Done when: a new user's first session shows a real, cookable library.*
+    **Done.** 13 cookable recipes in `library-seed.json` loaded by an
+    idempotent startup seeder (flag-gated); CI compose smoke asserts the
+    library is seeded and the public page renders.
 
 ## Phase 3 — Extensibility (prove the plugin surface)
 

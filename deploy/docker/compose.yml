@@ -76,6 +76,10 @@ services:
         NEXT_PUBLIC_KEYCLOAK_AUTHORITY: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}/realms/mimos
         NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-mimos-web}
         NEXT_PUBLIC_APP_URL: ${WEB_ORIGIN:-http://localhost:3000}
+    environment:
+      # Server-side fetches (public recipe pages) use the internal compose
+      # network; runtime env, not a build arg, so no rebuild to retarget.
+      API_SERVER_URL: ${API_INTERNAL_URL:-http://api:8080}
     ports:
       - "${WEB_PORT:-3000}:3000"
     depends_on:

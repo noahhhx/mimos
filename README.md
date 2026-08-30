@@ -8,9 +8,10 @@ actually eating.
 Self-hostable by design — every feature works the same whether Mimos runs in
 our cloud or on your own hardware.
 
-**Status: pre-alpha.** The repository currently contains the backend
-skeleton and a self-hostable compose stack (Postgres, Keycloak, API). See
-[ROADMAP.md](ROADMAP.md) for where this is going and [NORTHSTAR.md](NORTHSTAR.md)
+**Status: alpha.** The core product works end to end and self-hosts from
+compose: a seeded recipe library (public SEO pages), personal recipes,
+weekly meal planning, generated shopping lists, and calorie/macro logging.
+See [ROADMAP.md](ROADMAP.md) (phases 0–2 done) and [NORTHSTAR.md](NORTHSTAR.md)
 for the product vision.
 
 ## Quickstart (self-hosted)
@@ -23,6 +24,8 @@ cd mimos/deploy/docker
 docker compose up -d --wait
 ```
 
+- Web app: <http://localhost:3000> (log in with `test` / `mimos-test`)
+- Public recipe library: <http://localhost:3000/recipes>
 - API: <http://localhost:8080> (health at `/actuator/health`)
 - Keycloak: <http://localhost:8081> (admin console; `admin`/`admin`)
 - Postgres: `localhost:5432` (`mimos`/`mimos`)
@@ -39,6 +42,13 @@ mkdocs build --strict     # docs build (pip install -r docs/requirements.txt)
 
 Architecture and conventions live in [AGENTS.md](AGENTS.md); significant
 decisions are recorded as [ADRs](docs/decisions/index.md).
+
+Frontend development server (against the compose backend):
+
+```bash
+npm install
+npm run dev -w @mimos/web
+```
 
 ## License
 

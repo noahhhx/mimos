@@ -44,6 +44,8 @@ change** — an out-of-date AGENTS.md is worse than none.
 | Docs       | MkDocs; `mkdocs.yml` at repo root, source in `docs/`. ADRs live in `docs/decisions/`. |
 | Deploy     | Local/self-host via `deploy/docker` (compose); AWS via IaC in `deploy/aws`. No click-ops. |
 | Sync       | intervals.icu is the activity data source (future). Design for it, don't build it yet. |
+| Library content | Seed file `core/core-recipes/src/main/resources/library/library-seed.json`, loaded by an idempotent startup seeder (`mimos.library.seed-enabled`, default on). Content fixes ship with a restart; never via Flyway migrations. See ADR-0005. |
+| Public API | Unauthenticated read-only access to the curated library under `/api/v1/public/**` (SEO pages). Personal recipes never appear there; everything else requires a bearer token. |
 
 ## Open decisions — resolve with the owner before building against them
 
@@ -62,16 +64,22 @@ Inside the backend, treat modules as if they were services with a
 wire-format contract:
 
 - `core-recipes` — recipes, ingredients, nutrition. Pure domain; no
-  knowledge of integrations, plugins, or HTTP clients.
+  knowledge of integrations, plugins, or HTTP clients. Owns its tables'
+  JDBC persistence; the curated library is seeded read-only content
+  (ADR-0005).
 - `core-planning` — meal plans, shopping lists, logging. Depends on
-  recipes, nothing else.
+  recipes (through `RecipeService`'s public interface only — never its
+  tables), nothing else. Owns its tables' JDBC persistence.
 - `integrations/intervals-icu` — future. External API types never cross
   this boundary; translate to domain types at the edge. Feature-gated and
   optional at runtime (self-hosters must not need it).
 - `plugins` — see below.
 - Modules communicate through their public interfaces only; no reaching into
-  another module's internals or tables. Enforce via Maven's explicit
-  inter-module dependencies plus ArchUnit tests once scaffolded.
+  another module's internals or tables. Cross-module FKs (e.g.
+  `meal_plan_entry.recipe_id`) are integrity constraints, not access paths.
+  Flyway migrations live in `apps/api` (the deployable owns the schema).
+  Enforce via Maven's explicit inter-module dependencies plus ArchUnit
+  tests once scaffolded.
 
 ### Plugin system
 
@@ -96,8 +104,8 @@ week's meal plan leans into that cuisine.** Design constraints:
 ### Frontend specifics
 
 - `apps/web` is Next.js (App Router) with TypeScript, sources under `src/`.
-  Public recipe pages render via SSG/SSR for SEO; the logged-in product is
-  client-heavy.
+  Public recipe pages render server-side (SSR + ISR revalidation) for SEO;
+  the logged-in product is client-heavy.
 - The frontend talks to `mimos-api` through the OpenAPI contract; the
   generated client lives in `libraries/` (`@mimos/api-client`), never
   hand-written per feature (ADR-0003).
@@ -111,6 +119,10 @@ week's meal plan leans into that cuisine.** Design constraints:
 - Runs as a standalone Node container in compose (non-root). No
   Vercel-specific features that break self-hosting; anything platform-tied
   is rejected on the same grounds as prime directive #2.
+- Server-side fetches (public pages) reach the API through `API_SERVER_URL`
+  (runtime env, default `http://api:8080` in compose) — distinct from
+  `NEXT_PUBLIC_API_URL` so the browser-facing and container-facing URLs
+  can differ without rebuilds.
 - Logic a future mobile app would share (API clients, types, validation
   schemas) lives in `libraries/`, not in app code.
 
@@ -128,7 +140,11 @@ week's meal plan leans into that cuisine.** Design constraints:
   external issuer, so both must be configured when the network position
   differs.
 - Security failures (401/403) are RFC 9457 problem-details, as are API errors
-  generally.
+  generally. Domain errors map once in `ApiExceptionHandler`:
+  `IllegalArgumentException` → 400, `NoSuchElementException` → 404,
+  `ReadOnlyRecipeException` → 403.
+- `/actuator/health` and `/api/v1/public/**` are the only unauthenticated
+  endpoints (compose probes and SEO pages).
 - API integration tests use Testcontainers Postgres **and** Keycloak (the
   realm export from `deploy/keycloak` is on the test classpath); the Keycloak
   container module is `com.github.dasniko:testcontainers-keycloak` (the
@@ -231,10 +247,14 @@ mimos/
   frontend types and production build.
 - `docker compose -f deploy/docker/compose.yml up -d --wait` — boots the
   full self-hosted stack (Postgres, Keycloak, API, web); healthy when
-  `--wait` returns 0. Smoke: API at
+  `--wait` returns 0. Note: `up` does not rebuild images — run
+  `docker compose build` first when code changed. Smoke: API at
   `http://localhost:8080/actuator/health`, Keycloak realm at
   `http://localhost:8081/realms/mimos`, web at `http://localhost:3000`
-  (log in with `test` / `mimos-test`).
+  (log in with `test` / `mimos-test`; the realm also ships `test2`, same
+  password, for cross-user isolation), seeded library at
+  `http://localhost:8080/api/v1/public/recipes` and
+  `http://localhost:3000/recipes`.
 - CI (`.github/workflows/ci.yml`) runs all of the above on every PR; the
   compose job is the self-host parity check.
 

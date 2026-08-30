@@ -19,3 +19,4 @@ nav:
       - 'ADR-0002: Formatting and null-safety toolchain': decisions/adr-0002-formatting-null-safety-toolchain.md
       - 'ADR-0003: OpenAPI contract pipeline': decisions/adr-0003-openapi-contract-pipeline.md
       - 'ADR-0004: Frontend auth in the browser': decisions/adr-0004-frontend-auth-in-the-browser.md
+      - 'ADR-0005: Core product domain': decisions/adr-0005-core-product-domain.md

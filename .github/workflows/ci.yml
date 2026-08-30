@@ -101,6 +101,16 @@ jobs:
       - name: Smoke test - web frontend serves the public page
         run: curl -fsS http://localhost:3000/ | grep -q '<h1>Mimos</h1>'
 
+      - name: Smoke test - library is seeded and publicly readable
+        run: |
+          curl -fsS http://localhost:8080/api/v1/public/recipes | grep -q 'fluffy-buttermilk-pancakes'
+          curl -fsS http://localhost:8080/api/v1/public/recipes/fluffy-buttermilk-pancakes \
+            | grep -q '"title":"Fluffy Buttermilk Pancakes"'
+
+      - name: Smoke test - public recipe page renders server-side
+        run: curl -fsS http://localhost:3000/recipes/fluffy-buttermilk-pancakes \
+            | grep -q 'Fluffy Buttermilk Pancakes'
+
       - name: Smoke test - authenticated request reaches protected endpoint
         run: |
           token=$(curl -fsS -X POST http://localhost:8081/realms/mimos/protocol/openid-connect/token \
