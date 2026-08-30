@@ -19,6 +19,9 @@ export default function HomePage() {
         <p>
           <Link href="/app" className="button">
             Open the app
+          </Link>{" "}
+          <Link href="/recipes" className="button secondary">
+            Browse the library
           </Link>
         </p>
       </div>

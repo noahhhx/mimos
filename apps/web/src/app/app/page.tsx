@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { getMe, type UserProfile } from "@mimos/api-client";
 import { useEffect, useState } from "react";
 
@@ -62,6 +64,24 @@ export default function AppPage() {
           <p>{error}</p>
         </div>
       )}
+
+      <div className="card">
+        <h2>Quick start</h2>
+        <ul className="quick-links">
+          <li>
+            <Link href="/app/plan">Plan this week's meals →</Link>
+          </li>
+          <li>
+            <Link href="/app/recipes">Write a recipe or browse the library →</Link>
+          </li>
+          <li>
+            <Link href="/app/shopping-list">Shopping list →</Link>
+          </li>
+          <li>
+            <Link href="/app/log">What you're actually eating →</Link>
+          </li>
+        </ul>
+      </div>
 
       {profile ? (
         <div className="card">
