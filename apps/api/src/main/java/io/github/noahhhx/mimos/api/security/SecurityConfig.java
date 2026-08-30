@@ -14,9 +14,9 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
- * Stateless OIDC resource server. Health stays public so compose and
- * orchestration probes work without a token; everything else — including
- * the actuator's other endpoints — requires a bearer token.
+ * Stateless OIDC resource server. Health and the public read-only library
+ * stay unauthenticated (compose probes, SEO pages); everything else —
+ * including the actuator's other endpoints — requires a bearer token.
  */
 @Configuration
 @EnableWebSecurity
@@ -42,6 +42,11 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.requestMatchers("/actuator/health")
+                        .permitAll()
+                        // Public, read-only library access backing the SEO
+                        // recipe pages (ADR-0005). Personal recipes are never
+                        // exposed under /api/v1/public.
+                        .requestMatchers("/api/v1/public/**")
                         .permitAll()
                         .anyRequest()
                         .authenticated())

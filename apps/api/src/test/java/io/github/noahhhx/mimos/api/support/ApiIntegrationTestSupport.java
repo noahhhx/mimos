@@ -47,10 +47,15 @@ public abstract class ApiIntegrationTestSupport {
 
     /** Password grant against the real token endpoint (direct access grants are enabled on mimos-web). */
     protected static String accessToken() {
+        return accessToken("test");
+    }
+
+    /** Token for a specific realm user (the realm ships `test` and `test2`). */
+    protected static String accessToken(String username) {
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("grant_type", "password");
         form.add("client_id", "mimos-web");
-        form.add("username", "test");
+        form.add("username", username);
         form.add("password", "mimos-test");
         JsonNode response = RestClient.create()
                 .post()

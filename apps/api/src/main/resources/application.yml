@@ -5,6 +5,12 @@ spring:
     default: local
   flyway:
     enabled: true
+
+mimos:
+  library:
+    # Curated library seed (roadmap step 11): idempotent on restart, so
+    # content fixes ship with a restart. Set false for an empty library.
+    seed-enabled: true
   security:
     oauth2:
       resourceserver:

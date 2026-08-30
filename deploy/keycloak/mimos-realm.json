@@ -32,6 +32,21 @@
           "temporary": false
         }
       ]
+    },
+    {
+      "username": "test2",
+      "enabled": true,
+      "email": "test2@example.com",
+      "emailVerified": true,
+      "firstName": "Second",
+      "lastName": "Cook",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "mimos-test",
+          "temporary": false
+        }
+      ]
     }
   ]
 }

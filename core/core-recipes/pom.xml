@@ -12,4 +12,18 @@
     <artifactId>core-recipes</artifactId>
     <name>Mimos :: Core :: Recipes</name>
     <description>Recipe, ingredient, and nutrition domain. Pure domain module.</description>
+
+    <dependencies>
+        <!-- Owns its tables' data access (ADR-0001): JDBC persistence lives
+             with the domain; HTTP and identity stay in apps/api. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+        <!-- Parses the library seed file (roadmap step 11). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-json</artifactId>
+        </dependency>
+    </dependencies>
 </project>

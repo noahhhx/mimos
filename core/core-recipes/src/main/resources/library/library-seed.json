@@ -1,0 +1,354 @@
+[
+  {
+    "slug": "fluffy-buttermilk-pancakes",
+    "title": "Fluffy Buttermilk Pancakes",
+    "description": "Tall, tender weekend pancakes with a slight tang from buttermilk. The batter comes together in minutes and the pancakes freeze well for weekday breakfasts.",
+    "servings": 4,
+    "prepMinutes": 10,
+    "cookMinutes": 15,
+    "tags": ["breakfast", "vegetarian", "weekend"],
+    "nutrition": { "calories": 340, "proteinG": 10, "carbsG": 52, "fatG": 9 },
+    "ingredients": [
+      { "quantity": 2, "unit": "cups", "name": "flour" },
+      { "quantity": 2, "unit": "tbsp", "name": "sugar" },
+      { "quantity": 2, "unit": "tsp", "name": "baking powder" },
+      { "quantity": 0.5, "unit": "tsp", "name": "salt" },
+      { "quantity": 0.5, "unit": "tsp", "name": "baking soda" },
+      { "quantity": 2, "unit": "cups", "name": "buttermilk" },
+      { "quantity": 2, "name": "eggs" },
+      { "quantity": 3, "unit": "tbsp", "name": "butter, melted" },
+      { "quantity": 1, "unit": "tsp", "name": "vanilla extract" }
+    ],
+    "steps": [
+      "Whisk the flour, sugar, baking powder, salt, and baking soda in a large bowl.",
+      "In a separate bowl, whisk the buttermilk, eggs, melted butter, and vanilla.",
+      "Pour the wet ingredients into the dry and stir until just combined — lumps are good, overmixing is not.",
+      "Heat a lightly buttered pan over medium heat. Pour 1/3-cup rounds of batter.",
+      "Cook until bubbles pop on the surface, 2-3 minutes, then flip and cook until golden, another 1-2 minutes.",
+      "Keep warm in a low oven while you cook the rest. Serve with maple syrup."
+    ]
+  },
+  {
+    "slug": "shakshuka",
+    "title": "Shakshuka",
+    "description": "Eggs poached in a smoky spiced tomato sauce — a one-pan breakfast or easy dinner. Good bread for scooping is non-negotiable.",
+    "servings": 2,
+    "prepMinutes": 10,
+    "cookMinutes": 25,
+    "tags": ["breakfast", "vegetarian", "one-pan"],
+    "nutrition": { "calories": 310, "proteinG": 15, "carbsG": 22, "fatG": 18 },
+    "ingredients": [
+      { "quantity": 2, "unit": "tbsp", "name": "olive oil" },
+      { "quantity": 1, "name": "onion, thinly sliced" },
+      { "quantity": 1, "name": "bell pepper, sliced" },
+      { "quantity": 3, "name": "garlic cloves, minced" },
+      { "quantity": 1, "unit": "tsp", "name": "cumin" },
+      { "quantity": 1, "unit": "tsp", "name": "paprika" },
+      { "quantity": 0.25, "unit": "tsp", "name": "cayenne" },
+      { "quantity": 400, "unit": "g", "name": "canned tomatoes" },
+      { "quantity": 4, "name": "eggs" },
+      { "quantity": 1, "unit": "tbsp", "name": "parsley, chopped" }
+    ],
+    "steps": [
+      "Warm the oil in a skillet over medium heat and soften the onion and pepper, 8-10 minutes.",
+      "Add the garlic and spices and cook until fragrant, about a minute.",
+      "Pour in the tomatoes, season with salt and pepper, and simmer until thickened, 10 minutes.",
+      "Make four wells in the sauce and crack an egg into each.",
+      "Cover and cook until the whites are set but the yolks are still soft, 5-7 minutes.",
+      "Scatter over the parsley and serve straight from the pan with bread."
+    ]
+  },
+  {
+    "slug": "overnight-oats",
+    "title": "Overnight Oats",
+    "description": "Five minutes of work tonight, breakfast waiting tomorrow. The ratio is the whole recipe — everything else is riffing.",
+    "servings": 1,
+    "prepMinutes": 5,
+    "cookMinutes": 0,
+    "tags": ["breakfast", "vegetarian", "make-ahead"],
+    "nutrition": { "calories": 420, "proteinG": 17, "carbsG": 56, "fatG": 13 },
+    "ingredients": [
+      { "quantity": 0.5, "unit": "cup", "name": "oats" },
+      { "quantity": 0.5, "unit": "cup", "name": "milk" },
+      { "quantity": 0.5, "unit": "cup", "name": "yogurt" },
+      { "quantity": 1, "unit": "tbsp", "name": "honey" },
+      { "quantity": 1, "unit": "tbsp", "name": "almonds, flaked" },
+      { "quantity": 0.5, "unit": "cup", "name": "berries" }
+    ],
+    "steps": [
+      "Stir the oats, milk, yogurt, and honey together in a jar.",
+      "Cover and refrigerate overnight (or at least 4 hours).",
+      "Top with the almonds and berries and eat cold."
+    ]
+  },
+  {
+    "slug": "spaghetti-aglio-e-olio",
+    "title": "Spaghetti Aglio e Olio",
+    "description": "The original pantry pasta: garlic, oil, chili, and parsley. It succeeds or fails on patience — take the garlic slowly.",
+    "servings": 2,
+    "prepMinutes": 5,
+    "cookMinutes": 15,
+    "tags": ["dinner", "vegetarian", "italian", "quick"],
+    "nutrition": { "calories": 520, "proteinG": 12, "carbsG": 78, "fatG": 17 },
+    "ingredients": [
+      { "quantity": 200, "unit": "g", "name": "spaghetti" },
+      { "quantity": 4, "unit": "tbsp", "name": "olive oil" },
+      { "quantity": 4, "name": "garlic cloves, thinly sliced" },
+      { "quantity": 0.5, "unit": "tsp", "name": "pepper flakes" },
+      { "quantity": 1, "unit": "tsp", "name": "salt" },
+      { "quantity": 2, "unit": "tbsp", "name": "parsley, chopped" }
+    ],
+    "steps": [
+      "Boil the spaghetti in well-salted water until al dente. Reserve a cup of pasta water.",
+      "Meanwhile, warm the oil with the garlic over low heat until the slices turn pale gold — never brown fast.",
+      "Add the pepper flakes off the heat and let them bloom in the warm oil.",
+      "Toss the drained pasta with the oil, a splash of pasta water, and the parsley until glossy.",
+      "Serve immediately; there is no second act for this one."
+    ]
+  },
+  {
+    "slug": "coconut-chicken-curry",
+    "title": "Coconut Chicken Curry",
+    "description": "A mild, creamy weeknight curry that mostly looks after itself. Serve over rice with a squeeze of lime.",
+    "servings": 4,
+    "prepMinutes": 15,
+    "cookMinutes": 30,
+    "tags": ["dinner", "curry"],
+    "nutrition": { "calories": 560, "proteinG": 38, "carbsG": 45, "fatG": 26 },
+    "ingredients": [
+      { "quantity": 600, "unit": "g", "name": "chicken thighs, cut in chunks" },
+      { "quantity": 2, "unit": "tbsp", "name": "oil" },
+      { "quantity": 1, "name": "onion, diced" },
+      { "quantity": 3, "name": "garlic cloves, minced" },
+      { "quantity": 1, "unit": "tbsp", "name": "ginger, grated" },
+      { "quantity": 2, "unit": "tbsp", "name": "curry powder" },
+      { "quantity": 400, "unit": "ml", "name": "canned coconut milk" },
+      { "quantity": 400, "unit": "g", "name": "canned tomatoes" },
+      { "quantity": 2, "unit": "cups", "name": "rice" },
+      { "quantity": 1, "name": "lime" }
+    ],
+    "steps": [
+      "Brown the chicken in the oil over high heat, then set aside.",
+      "Soften the onion, then add the garlic, ginger, and curry powder and cook for a minute.",
+      "Return the chicken, add the coconut milk and tomatoes, and simmer uncovered for 20 minutes.",
+      "Meanwhile cook the rice.",
+      "Season the curry with salt and finish with lime juice to taste."
+    ]
+  },
+  {
+    "slug": "red-lentil-dahl",
+    "title": "Red Lentil Dahl",
+    "description": "Cheap, fast, and better on day two. Red lentils collapse into a soft, spoonable stew without any help.",
+    "servings": 4,
+    "prepMinutes": 10,
+    "cookMinutes": 30,
+    "tags": ["dinner", "vegetarian", "vegan", "budget"],
+    "nutrition": { "calories": 430, "proteinG": 21, "carbsG": 62, "fatG": 9 },
+    "ingredients": [
+      { "quantity": 2, "unit": "cups", "name": "red lentils" },
+      { "quantity": 2, "unit": "tbsp", "name": "oil" },
+      { "quantity": 1, "name": "onion, diced" },
+      { "quantity": 3, "name": "garlic cloves, minced" },
+      { "quantity": 1, "unit": "tbsp", "name": "ginger, grated" },
+      { "quantity": 2, "unit": "tsp", "name": "cumin" },
+      { "quantity": 1, "unit": "tsp", "name": "coriander" },
+      { "quantity": 0.5, "unit": "tsp", "name": "cayenne" },
+      { "quantity": 400, "unit": "g", "name": "canned tomatoes" },
+      { "quantity": 1, "unit": "tbsp", "name": "butter" }
+    ],
+    "steps": [
+      "Rinse the lentils until the water runs clear.",
+      "Fry the onion in the oil until golden, then add the garlic, ginger, and spices for a minute.",
+      "Add the lentils, tomatoes, and 4 cups of water. Simmer until the lentils have collapsed, 20-25 minutes.",
+      "Swirl in the butter and season generously with salt.",
+      "Serve with rice or bread and a dollop of yogurt."
+    ]
+  },
+  {
+    "slug": "beef-chili",
+    "title": "Beef Chili",
+    "description": "A slow-flavored, fast-cooking chili — one pot, done in under an hour, and the leftovers are the point.",
+    "servings": 6,
+    "prepMinutes": 15,
+    "cookMinutes": 45,
+    "tags": ["dinner", "one-pot", "batch"],
+    "nutrition": { "calories": 480, "proteinG": 34, "carbsG": 32, "fatG": 24 },
+    "ingredients": [
+      { "quantity": 700, "unit": "g", "name": "beef mince" },
+      { "quantity": 2, "unit": "tbsp", "name": "oil" },
+      { "quantity": 1, "name": "onion, diced" },
+      { "quantity": 1, "name": "bell pepper, diced" },
+      { "quantity": 3, "name": "garlic cloves, minced" },
+      { "quantity": 2, "unit": "tbsp", "name": "paprika" },
+      { "quantity": 1, "unit": "tbsp", "name": "cumin" },
+      { "quantity": 1, "unit": "tsp", "name": "cayenne" },
+      { "quantity": 800, "unit": "g", "name": "canned tomatoes" },
+      { "quantity": 400, "unit": "g", "name": "canned beans" }
+    ],
+    "steps": [
+      "Brown the beef in the oil in a heavy pot, breaking it up; pour off excess fat.",
+      "Add the onion and pepper and cook until soft, about 5 minutes.",
+      "Stir in the garlic and spices for a minute, then the tomatoes.",
+      "Simmer uncovered for 30 minutes, stirring now and then.",
+      "Add the beans and cook 5 more minutes. Season and serve — better the next day."
+    ]
+  },
+  {
+    "slug": "mujadara",
+    "title": "Mujadara",
+    "description": "Lentils and rice under a mountain of crispy fried onions. Humble, vegan, and quietly one of the best dishes in the library.",
+    "servings": 4,
+    "prepMinutes": 15,
+    "cookMinutes": 40,
+    "tags": ["dinner", "vegetarian", "vegan", "budget"],
+    "nutrition": { "calories": 470, "proteinG": 17, "carbsG": 72, "fatG": 12 },
+    "ingredients": [
+      { "quantity": 1, "unit": "cup", "name": "brown lentils" },
+      { "quantity": 1, "unit": "cup", "name": "rice" },
+      { "quantity": 3, "name": "onions, thinly sliced" },
+      { "quantity": 4, "unit": "tbsp", "name": "olive oil" },
+      { "quantity": 1, "unit": "tsp", "name": "cumin" },
+      { "quantity": 2, "unit": "tsp", "name": "salt" }
+    ],
+    "steps": [
+      "Simmer the lentils in plenty of water until just tender, 15-20 minutes, then drain.",
+      "Fry the onions in the oil over medium heat, stirring rarely, until deeply browned and crisp — 20 minutes at least. Set half aside.",
+      "Add the rice, cumin, and salt to the pan with the remaining onions and stir to coat.",
+      "Add the lentils and 2 cups of water; cover and cook on low for 15 minutes.",
+      "Rest 5 minutes off the heat, then top with the reserved crispy onions."
+    ]
+  },
+  {
+    "slug": "minestrone",
+    "title": "Minestrone",
+    "description": "A vegetable soup that eats like a meal. Flexible about the vegetables; stubborn about the parmesan rind.",
+    "servings": 6,
+    "prepMinutes": 20,
+    "cookMinutes": 40,
+    "tags": ["dinner", "vegetarian", "soup", "batch"],
+    "nutrition": { "calories": 320, "proteinG": 13, "carbsG": 46, "fatG": 9 },
+    "ingredients": [
+      { "quantity": 2, "unit": "tbsp", "name": "olive oil" },
+      { "quantity": 1, "name": "onion, diced" },
+      { "quantity": 2, "name": "carrots, diced" },
+      { "quantity": 2, "name": "celery stalks, diced" },
+      { "quantity": 3, "name": "garlic cloves, minced" },
+      { "quantity": 400, "unit": "g", "name": "canned tomatoes" },
+      { "quantity": 1, "unit": "cup", "name": "beans" },
+      { "quantity": 100, "unit": "g", "name": "pasta, small shapes" },
+      { "quantity": 2, "unit": "cups", "name": "cabbage, shredded" },
+      { "quantity": 50, "unit": "g", "name": "parmesan" }
+    ],
+    "steps": [
+      "Sweat the onion, carrots, and celery in the oil until soft, 10 minutes.",
+      "Add the garlic, then the tomatoes and 1.5 litres of water. Drop in the parmesan rind.",
+      "Simmer 15 minutes, then add the beans, pasta, and cabbage.",
+      "Cook until the pasta is done, 8-10 minutes. Fish out the rind.",
+      "Serve with grated parmesan and olive oil on top."
+    ]
+  },
+  {
+    "slug": "sheet-pan-chicken-potatoes",
+    "title": "Sheet-Pan Chicken and Potatoes",
+    "description": "Lemon, garlic, and a hot oven do all the work. Everything cooks on one tray — the potatoes soak up the chicken juices.",
+    "servings": 4,
+    "prepMinutes": 15,
+    "cookMinutes": 50,
+    "tags": ["dinner", "one-pan", "roast"],
+    "nutrition": { "calories": 610, "proteinG": 42, "carbsG": 48, "fatG": 25 },
+    "ingredients": [
+      { "quantity": 8, "name": "chicken thighs, bone-in" },
+      { "quantity": 800, "unit": "g", "name": "potatoes, quartered" },
+      { "quantity": 1, "name": "lemon, cut in wedges" },
+      { "quantity": 6, "name": "garlic cloves, smashed" },
+      { "quantity": 3, "unit": "tbsp", "name": "olive oil" },
+      { "quantity": 1, "unit": "tbsp", "name": "paprika" },
+      { "quantity": 2, "unit": "tsp", "name": "salt" }
+    ],
+    "steps": [
+      "Heat the oven to 220°C / 425°F.",
+      "Toss the chicken, potatoes, lemon, and garlic with the oil, paprika, and salt on a large tray.",
+      "Roast for 45-50 minutes, turning the potatoes once, until the chicken skin is crisp.",
+      "Rest 5 minutes before serving straight from the tray."
+    ]
+  },
+  {
+    "slug": "greek-salad",
+    "title": "Greek Salad",
+    "description": "No lettuce, no apology. Big tomato wedges, cucumber, olives, and a slab of feta under a bright oregano dressing.",
+    "servings": 4,
+    "prepMinutes": 15,
+    "cookMinutes": 0,
+    "tags": ["lunch", "vegetarian", "salad", "quick"],
+    "nutrition": { "calories": 260, "proteinG": 9, "carbsG": 12, "fatG": 20 },
+    "ingredients": [
+      { "quantity": 4, "name": "tomatoes, cut in wedges" },
+      { "quantity": 1, "name": "cucumber, thickly sliced" },
+      { "quantity": 0.5, "name": "onion, thinly sliced" },
+      { "quantity": 100, "unit": "g", "name": "feta" },
+      { "quantity": 80, "unit": "g", "name": "olives" },
+      { "quantity": 4, "unit": "tbsp", "name": "olive oil" },
+      { "quantity": 1, "unit": "tsp", "name": "oregano" }
+    ],
+    "steps": [
+      "Combine the tomatoes, cucumber, and onion in a broad bowl.",
+      "Lay the feta on top in one piece and scatter over the olives.",
+      "Dress with the oil, a splash of vinegar, the oregano, and plenty of pepper.",
+      "Let it sit 10 minutes before serving so the tomato juices join the dressing."
+    ]
+  },
+  {
+    "slug": "banana-bread",
+    "title": "Banana Bread",
+    "description": "The use-up-the-black-bananas classic. Browning the butter takes it from good to the thing people ask about.",
+    "servings": 8,
+    "prepMinutes": 15,
+    "cookMinutes": 55,
+    "tags": ["baking", "vegetarian", "snack"],
+    "nutrition": { "calories": 290, "proteinG": 5, "carbsG": 45, "fatG": 11 },
+    "ingredients": [
+      { "quantity": 3, "name": "bananas, very ripe" },
+      { "quantity": 8, "unit": "tbsp", "name": "butter" },
+      { "quantity": 0.75, "unit": "cup", "name": "sugar" },
+      { "quantity": 2, "name": "eggs" },
+      { "quantity": 1.5, "unit": "cups", "name": "flour" },
+      { "quantity": 1, "unit": "tsp", "name": "baking powder" },
+      { "quantity": 0.5, "unit": "tsp", "name": "salt" },
+      { "quantity": 1, "unit": "tsp", "name": "cinnamon" }
+    ],
+    "steps": [
+      "Heat the oven to 175°C / 350°F and line a loaf tin.",
+      "Brown the butter in a pan until it smells nutty, then cool slightly.",
+      "Mash the bananas and whisk in the butter, sugar, and eggs.",
+      "Fold in the flour, baking powder, salt, and cinnamon until just mixed.",
+      "Bake 50-60 minutes until a skewer comes out clean. Cool before slicing — if you can."
+    ]
+  },
+  {
+    "slug": "salmon-rice-bowl",
+    "title": "Miso Salmon Rice Bowl",
+    "description": "Weeknight-speed dinner that doesn't taste like a compromise: glazed salmon over rice with quick-pickled cucumber.",
+    "servings": 2,
+    "prepMinutes": 15,
+    "cookMinutes": 15,
+    "tags": ["dinner", "fish", "quick"],
+    "nutrition": { "calories": 650, "proteinG": 40, "carbsG": 72, "fatG": 19 },
+    "ingredients": [
+      { "quantity": 2, "name": "salmon fillets" },
+      { "quantity": 2, "unit": "tbsp", "name": "soy sauce" },
+      { "quantity": 1, "unit": "tbsp", "name": "honey" },
+      { "quantity": 1, "unit": "tbsp", "name": "sesame seeds" },
+      { "quantity": 1, "unit": "cup", "name": "rice" },
+      { "quantity": 1, "name": "cucumber, thinly sliced" },
+      { "quantity": 2, "unit": "tbsp", "name": "rice vinegar" },
+      { "quantity": 1, "name": "scallion, sliced" }
+    ],
+    "steps": [
+      "Cook the rice. Meanwhile, toss the cucumber with the vinegar and a pinch of salt.",
+      "Whisk the soy sauce and honey.",
+      "Sear the salmon skin-side down in a hot pan for 4 minutes, flip, and brush with the glaze.",
+      "Cook 2-3 minutes more until just done, basting again.",
+      "Serve over rice with the cucumber, scallion, and sesame seeds."
+    ]
+  }
+]
