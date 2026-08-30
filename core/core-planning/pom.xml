@@ -11,13 +11,20 @@
 
     <artifactId>core-planning</artifactId>
     <name>Mimos :: Core :: Planning</name>
-    <description>Meal plan, shopping list, and logging domain. Depends on core-recipes, nothing else.</description>
+    <description>Meal plans, shopping lists, and logging domain. Depends on core-recipes, nothing else.</description>
 
     <dependencies>
+        <!-- Planning reads recipe data through core-recipes' public interface
+             only (ADR-0001) — the one allowed dependency. -->
         <dependency>
             <groupId>io.github.noahhhx.mimos</groupId>
             <artifactId>core-recipes</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <!-- Owns its tables' data access (ADR-0001). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
         </dependency>
     </dependencies>
 </project>
