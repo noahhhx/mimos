@@ -3,15 +3,16 @@
 # Server stubs (apps/api, generated at build time) and the TypeScript client
 # (libraries/api-client, generated on demand + verified in CI) are both
 # derived from this file. Hand-edit generated code and the build or the CI
-# drift check will fail; change the spec instead. See docs/decisions/ADR-0004.
+# drift check will fail; change the spec instead. See docs/decisions/ADR-0003.
 openapi: 3.1.0
 info:
   title: Mimos API
-  version: 0.1.0
+  version: 0.2.0
   description: |
-    The Mimos recipe companion API. All endpoints require a bearer token
-    issued by the instance's Keycloak realm unless marked otherwise;
-    failures are reported as RFC 9457 problem-details.
+    The Mimos recipe companion API. Endpoints require a bearer token issued
+    by the instance's Keycloak realm unless they live under `/api/v1/public`
+    (read-only library access for SEO pages); failures are reported as
+    RFC 9457 problem-details.
 paths:
   /api/v1/me:
     get:
@@ -32,7 +33,477 @@ paths:
           $ref: '#/components/responses/Problem'
         '403':
           $ref: '#/components/responses/Problem'
+
+  /api/v1/recipes:
+    get:
+      tags: [recipes]
+      operationId: listMyRecipes
+      summary: The caller's personal recipes
+      parameters:
+        - name: q
+          in: query
+          description: Case-insensitive filter on title, description, and tags.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The caller's personal recipes, newest first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipeSummary'
+        '401':
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [recipes]
+      operationId: createRecipe
+      summary: Create a personal recipe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeInput'
+      responses:
+        '201':
+          description: The created recipe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeDetail'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/recipes/{recipeId}:
+    parameters:
+      - $ref: '#/components/parameters/RecipeId'
+    get:
+      tags: [recipes]
+      operationId: getRecipe
+      summary: A recipe the caller may see (own or library)
+      responses:
+        '200':
+          description: The recipe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeDetail'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+    put:
+      tags: [recipes]
+      operationId: replaceRecipe
+      summary: Replace a personal recipe
+      description: >
+        Only the recipe's owner may replace it; curated library recipes are
+        read-only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeInput'
+      responses:
+        '200':
+          description: The replaced recipe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeDetail'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+    delete:
+      tags: [recipes]
+      operationId: deleteRecipe
+      summary: Delete a personal recipe
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/recipes/library:
+    get:
+      tags: [recipes]
+      operationId: listLibraryRecipes
+      summary: The curated recipe library
+      parameters:
+        - name: q
+          in: query
+          description: Case-insensitive filter on title, description, and tags.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Library recipes, sorted by title.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipeSummary'
+        '401':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/public/recipes:
+    get:
+      tags: [public]
+      operationId: listPublicRecipes
+      summary: The curated recipe library (unauthenticated)
+      description: >
+        Public read access to the library for the SEO recipe pages. Only
+        curated recipes are exposed — personal recipes never appear here.
+      parameters:
+        - name: q
+          in: query
+          description: Case-insensitive filter on title, description, and tags.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Library recipes, sorted by title.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipeSummary'
+  /api/v1/public/recipes/{slug}:
+    parameters:
+      - $ref: '#/components/parameters/RecipeSlug'
+    get:
+      tags: [public]
+      operationId: getPublicRecipe
+      summary: A library recipe by slug (unauthenticated)
+      responses:
+        '200':
+          description: The recipe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeDetail'
+        '404':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/plans/{startDate}:
+    parameters:
+      - $ref: '#/components/parameters/PlanWeek'
+    get:
+      tags: [planning]
+      operationId: getMealPlan
+      summary: The caller's meal plan for a week
+      description: >
+        Returns the plan for the week starting at `startDate` (the Monday of
+        the week). The plan is created empty on first access.
+      responses:
+        '200':
+          description: The week's plan.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealPlan'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+  /api/v1/plans/{startDate}/entries:
+    parameters:
+      - $ref: '#/components/parameters/PlanWeek'
+    post:
+      tags: [planning]
+      operationId: addMealPlanEntry
+      summary: Plan a meal in the week
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MealPlanEntryInput'
+      responses:
+        '201':
+          description: The created entry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealPlanEntry'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+  /api/v1/plans/{startDate}/entries/{entryId}:
+    parameters:
+      - $ref: '#/components/parameters/PlanWeek'
+      - $ref: '#/components/parameters/EntryId'
+    patch:
+      tags: [planning]
+      operationId: updateMealPlanEntry
+      summary: Change a planned meal's servings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MealPlanEntryPatch'
+      responses:
+        '200':
+          description: The updated entry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealPlanEntry'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+    delete:
+      tags: [planning]
+      operationId: deleteMealPlanEntry
+      summary: Remove a planned meal
+      responses:
+        '204':
+          description: Removed.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/plans/{startDate}/shopping-list:
+    parameters:
+      - $ref: '#/components/parameters/PlanWeek'
+    get:
+      tags: [shopping-lists]
+      operationId: getShoppingList
+      summary: The shopping list generated for a week
+      responses:
+        '200':
+          description: The week's shopping list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [shopping-lists]
+      operationId: generateShoppingList
+      summary: Generate (or regenerate) the shopping list for a week
+      description: >
+        Aggregates ingredient quantities across the week's planned recipes
+        (scaled by planned servings). Checked-off items keep their checked
+        state when the list is regenerated.
+      responses:
+        '200':
+          description: The generated shopping list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+  /api/v1/plans/{startDate}/shopping-list/items/{itemId}:
+    parameters:
+      - $ref: '#/components/parameters/PlanWeek'
+      - $ref: '#/components/parameters/ShoppingListItemId'
+    patch:
+      tags: [shopping-lists]
+      operationId: updateShoppingListItem
+      summary: Check an item off (or back on)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShoppingListItemPatch'
+      responses:
+        '200':
+          description: The updated item.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingListItem'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/logs:
+    get:
+      tags: [logging]
+      operationId: listMealLogs
+      summary: The caller's meal logs in a date range
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Logs in the range (inclusive), ordered by date and meal.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MealLog'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [logging]
+      operationId: createMealLog
+      summary: Log a meal
+      description: >
+        Either reference a recipe (nutrition is derived from the recipe's
+        per-serving values scaled by servings) or log ad-hoc with a
+        description and manual nutrition totals.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MealLogInput'
+      responses:
+        '201':
+          description: The created log entry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealLog'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+  /api/v1/logs/{logId}:
+    parameters:
+      - $ref: '#/components/parameters/LogId'
+    delete:
+      tags: [logging]
+      operationId: deleteMealLog
+      summary: Delete a meal log entry
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+  /api/v1/logs/summary:
+    get:
+      tags: [logging]
+      operationId: summarizeMealLogs
+      summary: Per-day calorie and macro totals for a date range
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Totals per day in the range (inclusive). Days without logs are omitted.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DailyLogSummary'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+
 components:
+  parameters:
+    RecipeId:
+      name: recipeId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RecipeSlug:
+      name: slug
+      in: path
+      required: true
+      schema:
+        type: string
+    PlanWeek:
+      name: startDate
+      in: path
+      required: true
+      description: The Monday of the planned week (ISO date).
+      schema:
+        type: string
+        format: date
+    EntryId:
+      name: entryId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ShoppingListItemId:
+      name: itemId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    LogId:
+      name: logId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   responses:
     Problem:
       description: An RFC 9457 problem-details error.
@@ -76,3 +547,303 @@ components:
         instance:
           type: string
           format: uri
+    Nutrition:
+      type: object
+      description: Per-serving nutrition for a recipe, or totals for a logged meal. Absent values are unknown, not zero.
+      properties:
+        calories:
+          type: number
+          description: Kilocalories.
+        proteinG:
+          type: number
+          description: Protein in grams.
+        carbsG:
+          type: number
+          description: Carbohydrates in grams.
+        fatG:
+          type: number
+          description: Fat in grams.
+    IngredientQuantity:
+      type: object
+      description: 'One ingredient line: an amount, an optional unit, and a name.'
+      required: [quantity, name]
+      properties:
+        quantity:
+          type: number
+          description: Amount of the ingredient.
+        unit:
+          type: string
+          description: Unit of measure; omitted for countable ingredients ("2 eggs").
+        name:
+          type: string
+          description: Ingredient name as written in the recipe.
+    RecipeStep:
+      type: object
+      description: One instruction step; order is significant.
+      required: [instruction]
+      properties:
+        instruction:
+          type: string
+    RecipeSummary:
+      type: object
+      description: A recipe as shown in lists and search results.
+      required: [id, title, description, servings, isLibrary, tags, nutrition]
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+          description: Public URL slug; present only for curated library recipes.
+        title:
+          type: string
+        description:
+          type: string
+        servings:
+          type: integer
+          description: Number of servings the recipe makes.
+        isLibrary:
+          type: boolean
+          description: True for curated library recipes, false for personal ones.
+        tags:
+          type: array
+          items:
+            type: string
+        nutrition:
+          allOf:
+            - $ref: '#/components/schemas/Nutrition'
+    RecipeDetail:
+      type: object
+      description: Everything needed to cook a recipe.
+      required:
+        [id, title, description, servings, isLibrary, tags, nutrition, ingredients, steps]
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+          description: Public URL slug; present only for curated library recipes.
+        title:
+          type: string
+        description:
+          type: string
+        servings:
+          type: integer
+        prepMinutes:
+          type: integer
+          description: Active preparation time, when known.
+        cookMinutes:
+          type: integer
+          description: Cooking time, when known.
+        isLibrary:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+        nutrition:
+          allOf:
+            - $ref: '#/components/schemas/Nutrition'
+        ingredients:
+          type: array
+          items:
+            $ref: '#/components/schemas/IngredientQuantity'
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeStep'
+    RecipeInput:
+      type: object
+      description: A personal recipe as submitted by its author.
+      required: [title, description, servings, ingredients, steps, tags, nutrition]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        servings:
+          type: integer
+        prepMinutes:
+          type: integer
+        cookMinutes:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: string
+        nutrition:
+          allOf:
+            - $ref: '#/components/schemas/Nutrition'
+        ingredients:
+          type: array
+          items:
+            $ref: '#/components/schemas/IngredientQuantity'
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeStep'
+    MealType:
+      type: string
+      description: The meal slots a day is planned in.
+      enum: [BREAKFAST, LUNCH, DINNER, SNACK]
+    MealPlanEntry:
+      type: object
+      description: One planned meal in a week.
+      required: [id, date, mealType, recipeId, recipeTitle, servings]
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        mealType:
+          $ref: '#/components/schemas/MealType'
+        recipeId:
+          type: string
+          format: uuid
+        recipeTitle:
+          type: string
+          description: Title of the planned recipe at planning time.
+        servings:
+          type: number
+          description: How many servings of the recipe are planned.
+    MealPlan:
+      type: object
+      description: A week of planned meals, keyed by its Monday.
+      required: [startDate, entries]
+      properties:
+        startDate:
+          type: string
+          format: date
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/MealPlanEntry'
+    MealPlanEntryInput:
+      type: object
+      required: [date, mealType, recipeId, servings]
+      properties:
+        date:
+          type: string
+          format: date
+        mealType:
+          $ref: '#/components/schemas/MealType'
+        recipeId:
+          type: string
+          format: uuid
+        servings:
+          type: number
+    MealPlanEntryPatch:
+      type: object
+      required: [servings]
+      properties:
+        servings:
+          type: number
+    ShoppingListItem:
+      type: object
+      description: One aggregated shopping-list line.
+      required: [id, name, quantity, category, checked]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        unit:
+          type: string
+        quantity:
+          type: number
+          description: Total amount across the week's recipes.
+        category:
+          type: string
+          description: Aisle grouping (Produce, Meat & Seafood, Dairy & Eggs, ...).
+        checked:
+          type: boolean
+    ShoppingList:
+      type: object
+      description: A week's shopping list.
+      required: [startDate, generatedAt, items]
+      properties:
+        startDate:
+          type: string
+          format: date
+        generatedAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShoppingListItem'
+    ShoppingListItemPatch:
+      type: object
+      required: [checked]
+      properties:
+        checked:
+          type: boolean
+    MealLog:
+      type: object
+      description: One logged meal with its calorie/macro totals.
+      required: [id, date, mealType, description, servings, nutrition]
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        mealType:
+          $ref: '#/components/schemas/MealType'
+        recipeId:
+          type: string
+          format: uuid
+          description: Referenced recipe, when the log came from a recipe.
+        description:
+          type: string
+        servings:
+          type: number
+        nutrition:
+          allOf:
+            - $ref: '#/components/schemas/Nutrition'
+    MealLogInput:
+      type: object
+      description: >
+        A meal to log. With `recipeId` the nutrition is derived from the
+        recipe; otherwise `description` and `nutrition` are required.
+      required: [date, mealType]
+      properties:
+        date:
+          type: string
+          format: date
+        mealType:
+          $ref: '#/components/schemas/MealType'
+        recipeId:
+          type: string
+          format: uuid
+        servings:
+          type: number
+          description: Defaults to 1 when a recipeId is given.
+        description:
+          type: string
+          description: Required for ad-hoc logs; defaults to the recipe title otherwise.
+        nutrition:
+          allOf:
+            - $ref: '#/components/schemas/Nutrition'
+          description: Required for ad-hoc logs; ignored when a recipeId is given.
+    DailyLogSummary:
+      type: object
+      description: Calorie and macro totals for one day.
+      required: [date, calories, proteinG, carbsG, fatG]
+      properties:
+        date:
+          type: string
+          format: date
+        calories:
+          type: number
+        proteinG:
+          type: number
+        carbsG:
+          type: number
+        fatG:
+          type: number

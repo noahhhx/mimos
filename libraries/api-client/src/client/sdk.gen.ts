@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetMeData, GetMeErrors, GetMeResponses } from './types.gen';
+import type { AddMealPlanEntryData, AddMealPlanEntryErrors, AddMealPlanEntryResponses, CreateMealLogData, CreateMealLogErrors, CreateMealLogResponses, CreateRecipeData, CreateRecipeErrors, CreateRecipeResponses, DeleteMealLogData, DeleteMealLogErrors, DeleteMealLogResponses, DeleteMealPlanEntryData, DeleteMealPlanEntryErrors, DeleteMealPlanEntryResponses, DeleteRecipeData, DeleteRecipeErrors, DeleteRecipeResponses, GenerateShoppingListData, GenerateShoppingListErrors, GenerateShoppingListResponses, GetMealPlanData, GetMealPlanErrors, GetMealPlanResponses, GetMeData, GetMeErrors, GetMeResponses, GetPublicRecipeData, GetPublicRecipeErrors, GetPublicRecipeResponses, GetRecipeData, GetRecipeErrors, GetRecipeResponses, GetShoppingListData, GetShoppingListErrors, GetShoppingListResponses, ListLibraryRecipesData, ListLibraryRecipesErrors, ListLibraryRecipesResponses, ListMealLogsData, ListMealLogsErrors, ListMealLogsResponses, ListMyRecipesData, ListMyRecipesErrors, ListMyRecipesResponses, ListPublicRecipesData, ListPublicRecipesResponses, ReplaceRecipeData, ReplaceRecipeErrors, ReplaceRecipeResponses, SummarizeMealLogsData, SummarizeMealLogsErrors, SummarizeMealLogsResponses, UpdateMealPlanEntryData, UpdateMealPlanEntryErrors, UpdateMealPlanEntryResponses, UpdateShoppingListItemData, UpdateShoppingListItemErrors, UpdateShoppingListItemResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -25,3 +25,155 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  *
  */
 export const getMe = <ThrowOnError extends boolean = false>(options?: Options<GetMeData, ThrowOnError>): RequestResult<GetMeResponses, GetMeErrors, ThrowOnError> => (options?.client ?? client).get<GetMeResponses, GetMeErrors, ThrowOnError>({ url: '/api/v1/me', ...options });
+
+/**
+ * The caller's personal recipes
+ */
+export const listMyRecipes = <ThrowOnError extends boolean = false>(options?: Options<ListMyRecipesData, ThrowOnError>): RequestResult<ListMyRecipesResponses, ListMyRecipesErrors, ThrowOnError> => (options?.client ?? client).get<ListMyRecipesResponses, ListMyRecipesErrors, ThrowOnError>({ url: '/api/v1/recipes', ...options });
+
+/**
+ * Create a personal recipe
+ */
+export const createRecipe = <ThrowOnError extends boolean = false>(options: Options<CreateRecipeData, ThrowOnError>): RequestResult<CreateRecipeResponses, CreateRecipeErrors, ThrowOnError> => (options.client ?? client).post<CreateRecipeResponses, CreateRecipeErrors, ThrowOnError>({
+    url: '/api/v1/recipes',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete a personal recipe
+ */
+export const deleteRecipe = <ThrowOnError extends boolean = false>(options: Options<DeleteRecipeData, ThrowOnError>): RequestResult<DeleteRecipeResponses, DeleteRecipeErrors, ThrowOnError> => (options.client ?? client).delete<DeleteRecipeResponses, DeleteRecipeErrors, ThrowOnError>({ url: '/api/v1/recipes/{recipeId}', ...options });
+
+/**
+ * A recipe the caller may see (own or library)
+ */
+export const getRecipe = <ThrowOnError extends boolean = false>(options: Options<GetRecipeData, ThrowOnError>): RequestResult<GetRecipeResponses, GetRecipeErrors, ThrowOnError> => (options.client ?? client).get<GetRecipeResponses, GetRecipeErrors, ThrowOnError>({ url: '/api/v1/recipes/{recipeId}', ...options });
+
+/**
+ * Replace a personal recipe
+ *
+ * Only the recipe's owner may replace it; curated library recipes are read-only.
+ *
+ */
+export const replaceRecipe = <ThrowOnError extends boolean = false>(options: Options<ReplaceRecipeData, ThrowOnError>): RequestResult<ReplaceRecipeResponses, ReplaceRecipeErrors, ThrowOnError> => (options.client ?? client).put<ReplaceRecipeResponses, ReplaceRecipeErrors, ThrowOnError>({
+    url: '/api/v1/recipes/{recipeId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * The curated recipe library
+ */
+export const listLibraryRecipes = <ThrowOnError extends boolean = false>(options?: Options<ListLibraryRecipesData, ThrowOnError>): RequestResult<ListLibraryRecipesResponses, ListLibraryRecipesErrors, ThrowOnError> => (options?.client ?? client).get<ListLibraryRecipesResponses, ListLibraryRecipesErrors, ThrowOnError>({ url: '/api/v1/recipes/library', ...options });
+
+/**
+ * The curated recipe library (unauthenticated)
+ *
+ * Public read access to the library for the SEO recipe pages. Only curated recipes are exposed — personal recipes never appear here.
+ *
+ */
+export const listPublicRecipes = <ThrowOnError extends boolean = false>(options?: Options<ListPublicRecipesData, ThrowOnError>): RequestResult<ListPublicRecipesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListPublicRecipesResponses, unknown, ThrowOnError>({ url: '/api/v1/public/recipes', ...options });
+
+/**
+ * A library recipe by slug (unauthenticated)
+ */
+export const getPublicRecipe = <ThrowOnError extends boolean = false>(options: Options<GetPublicRecipeData, ThrowOnError>): RequestResult<GetPublicRecipeResponses, GetPublicRecipeErrors, ThrowOnError> => (options.client ?? client).get<GetPublicRecipeResponses, GetPublicRecipeErrors, ThrowOnError>({ url: '/api/v1/public/recipes/{slug}', ...options });
+
+/**
+ * The caller's meal plan for a week
+ *
+ * Returns the plan for the week starting at `startDate` (the Monday of the week). The plan is created empty on first access.
+ *
+ */
+export const getMealPlan = <ThrowOnError extends boolean = false>(options: Options<GetMealPlanData, ThrowOnError>): RequestResult<GetMealPlanResponses, GetMealPlanErrors, ThrowOnError> => (options.client ?? client).get<GetMealPlanResponses, GetMealPlanErrors, ThrowOnError>({ url: '/api/v1/plans/{startDate}', ...options });
+
+/**
+ * Plan a meal in the week
+ */
+export const addMealPlanEntry = <ThrowOnError extends boolean = false>(options: Options<AddMealPlanEntryData, ThrowOnError>): RequestResult<AddMealPlanEntryResponses, AddMealPlanEntryErrors, ThrowOnError> => (options.client ?? client).post<AddMealPlanEntryResponses, AddMealPlanEntryErrors, ThrowOnError>({
+    url: '/api/v1/plans/{startDate}/entries',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Remove a planned meal
+ */
+export const deleteMealPlanEntry = <ThrowOnError extends boolean = false>(options: Options<DeleteMealPlanEntryData, ThrowOnError>): RequestResult<DeleteMealPlanEntryResponses, DeleteMealPlanEntryErrors, ThrowOnError> => (options.client ?? client).delete<DeleteMealPlanEntryResponses, DeleteMealPlanEntryErrors, ThrowOnError>({ url: '/api/v1/plans/{startDate}/entries/{entryId}', ...options });
+
+/**
+ * Change a planned meal's servings
+ */
+export const updateMealPlanEntry = <ThrowOnError extends boolean = false>(options: Options<UpdateMealPlanEntryData, ThrowOnError>): RequestResult<UpdateMealPlanEntryResponses, UpdateMealPlanEntryErrors, ThrowOnError> => (options.client ?? client).patch<UpdateMealPlanEntryResponses, UpdateMealPlanEntryErrors, ThrowOnError>({
+    url: '/api/v1/plans/{startDate}/entries/{entryId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * The shopping list generated for a week
+ */
+export const getShoppingList = <ThrowOnError extends boolean = false>(options: Options<GetShoppingListData, ThrowOnError>): RequestResult<GetShoppingListResponses, GetShoppingListErrors, ThrowOnError> => (options.client ?? client).get<GetShoppingListResponses, GetShoppingListErrors, ThrowOnError>({ url: '/api/v1/plans/{startDate}/shopping-list', ...options });
+
+/**
+ * Generate (or regenerate) the shopping list for a week
+ *
+ * Aggregates ingredient quantities across the week's planned recipes (scaled by planned servings). Checked-off items keep their checked state when the list is regenerated.
+ *
+ */
+export const generateShoppingList = <ThrowOnError extends boolean = false>(options: Options<GenerateShoppingListData, ThrowOnError>): RequestResult<GenerateShoppingListResponses, GenerateShoppingListErrors, ThrowOnError> => (options.client ?? client).post<GenerateShoppingListResponses, GenerateShoppingListErrors, ThrowOnError>({ url: '/api/v1/plans/{startDate}/shopping-list', ...options });
+
+/**
+ * Check an item off (or back on)
+ */
+export const updateShoppingListItem = <ThrowOnError extends boolean = false>(options: Options<UpdateShoppingListItemData, ThrowOnError>): RequestResult<UpdateShoppingListItemResponses, UpdateShoppingListItemErrors, ThrowOnError> => (options.client ?? client).patch<UpdateShoppingListItemResponses, UpdateShoppingListItemErrors, ThrowOnError>({
+    url: '/api/v1/plans/{startDate}/shopping-list/items/{itemId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * The caller's meal logs in a date range
+ */
+export const listMealLogs = <ThrowOnError extends boolean = false>(options: Options<ListMealLogsData, ThrowOnError>): RequestResult<ListMealLogsResponses, ListMealLogsErrors, ThrowOnError> => (options.client ?? client).get<ListMealLogsResponses, ListMealLogsErrors, ThrowOnError>({ url: '/api/v1/logs', ...options });
+
+/**
+ * Log a meal
+ *
+ * Either reference a recipe (nutrition is derived from the recipe's per-serving values scaled by servings) or log ad-hoc with a description and manual nutrition totals.
+ *
+ */
+export const createMealLog = <ThrowOnError extends boolean = false>(options: Options<CreateMealLogData, ThrowOnError>): RequestResult<CreateMealLogResponses, CreateMealLogErrors, ThrowOnError> => (options.client ?? client).post<CreateMealLogResponses, CreateMealLogErrors, ThrowOnError>({
+    url: '/api/v1/logs',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete a meal log entry
+ */
+export const deleteMealLog = <ThrowOnError extends boolean = false>(options: Options<DeleteMealLogData, ThrowOnError>): RequestResult<DeleteMealLogResponses, DeleteMealLogErrors, ThrowOnError> => (options.client ?? client).delete<DeleteMealLogResponses, DeleteMealLogErrors, ThrowOnError>({ url: '/api/v1/logs/{logId}', ...options });
+
+/**
+ * Per-day calorie and macro totals for a date range
+ */
+export const summarizeMealLogs = <ThrowOnError extends boolean = false>(options: Options<SummarizeMealLogsData, ThrowOnError>): RequestResult<SummarizeMealLogsResponses, SummarizeMealLogsErrors, ThrowOnError> => (options.client ?? client).get<SummarizeMealLogsResponses, SummarizeMealLogsErrors, ThrowOnError>({ url: '/api/v1/logs/summary', ...options });

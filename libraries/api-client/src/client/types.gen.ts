@@ -37,6 +37,255 @@ export type Problem = {
     instance?: string;
 };
 
+/**
+ * Per-serving nutrition for a recipe, or totals for a logged meal. Absent values are unknown, not zero.
+ */
+export type Nutrition = {
+    /**
+     * Kilocalories.
+     */
+    calories?: number;
+    /**
+     * Protein in grams.
+     */
+    proteinG?: number;
+    /**
+     * Carbohydrates in grams.
+     */
+    carbsG?: number;
+    /**
+     * Fat in grams.
+     */
+    fatG?: number;
+};
+
+/**
+ * One ingredient line: an amount, an optional unit, and a name.
+ */
+export type IngredientQuantity = {
+    /**
+     * Amount of the ingredient.
+     */
+    quantity: number;
+    /**
+     * Unit of measure; omitted for countable ingredients ("2 eggs").
+     */
+    unit?: string;
+    /**
+     * Ingredient name as written in the recipe.
+     */
+    name: string;
+};
+
+/**
+ * One instruction step; order is significant.
+ */
+export type RecipeStep = {
+    instruction: string;
+};
+
+/**
+ * A recipe as shown in lists and search results.
+ */
+export type RecipeSummary = {
+    id: string;
+    /**
+     * Public URL slug; present only for curated library recipes.
+     */
+    slug?: string;
+    title: string;
+    description: string;
+    /**
+     * Number of servings the recipe makes.
+     */
+    servings: number;
+    /**
+     * True for curated library recipes, false for personal ones.
+     */
+    isLibrary: boolean;
+    tags: Array<string>;
+    nutrition: Nutrition;
+};
+
+/**
+ * Everything needed to cook a recipe.
+ */
+export type RecipeDetail = {
+    id: string;
+    /**
+     * Public URL slug; present only for curated library recipes.
+     */
+    slug?: string;
+    title: string;
+    description: string;
+    servings: number;
+    /**
+     * Active preparation time, when known.
+     */
+    prepMinutes?: number;
+    /**
+     * Cooking time, when known.
+     */
+    cookMinutes?: number;
+    isLibrary: boolean;
+    tags: Array<string>;
+    nutrition: Nutrition;
+    ingredients: Array<IngredientQuantity>;
+    steps: Array<RecipeStep>;
+};
+
+/**
+ * A personal recipe as submitted by its author.
+ */
+export type RecipeInput = {
+    title: string;
+    description: string;
+    servings: number;
+    prepMinutes?: number;
+    cookMinutes?: number;
+    tags: Array<string>;
+    nutrition: Nutrition;
+    ingredients: Array<IngredientQuantity>;
+    steps: Array<RecipeStep>;
+};
+
+/**
+ * The meal slots a day is planned in.
+ */
+export type MealType = 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK';
+
+/**
+ * One planned meal in a week.
+ */
+export type MealPlanEntry = {
+    id: string;
+    date: string;
+    mealType: MealType;
+    recipeId: string;
+    /**
+     * Title of the planned recipe at planning time.
+     */
+    recipeTitle: string;
+    /**
+     * How many servings of the recipe are planned.
+     */
+    servings: number;
+};
+
+/**
+ * A week of planned meals, keyed by its Monday.
+ */
+export type MealPlan = {
+    startDate: string;
+    entries: Array<MealPlanEntry>;
+};
+
+export type MealPlanEntryInput = {
+    date: string;
+    mealType: MealType;
+    recipeId: string;
+    servings: number;
+};
+
+export type MealPlanEntryPatch = {
+    servings: number;
+};
+
+/**
+ * One aggregated shopping-list line.
+ */
+export type ShoppingListItem = {
+    id: string;
+    name: string;
+    unit?: string;
+    /**
+     * Total amount across the week's recipes.
+     */
+    quantity: number;
+    /**
+     * Aisle grouping (Produce, Meat & Seafood, Dairy & Eggs, ...).
+     */
+    category: string;
+    checked: boolean;
+};
+
+/**
+ * A week's shopping list.
+ */
+export type ShoppingList = {
+    startDate: string;
+    generatedAt: string;
+    items: Array<ShoppingListItem>;
+};
+
+export type ShoppingListItemPatch = {
+    checked: boolean;
+};
+
+/**
+ * One logged meal with its calorie/macro totals.
+ */
+export type MealLog = {
+    id: string;
+    date: string;
+    mealType: MealType;
+    /**
+     * Referenced recipe, when the log came from a recipe.
+     */
+    recipeId?: string;
+    description: string;
+    servings: number;
+    nutrition: Nutrition;
+};
+
+/**
+ * A meal to log. With `recipeId` the nutrition is derived from the recipe; otherwise `description` and `nutrition` are required.
+ *
+ */
+export type MealLogInput = {
+    date: string;
+    mealType: MealType;
+    recipeId?: string;
+    /**
+     * Defaults to 1 when a recipeId is given.
+     */
+    servings?: number;
+    /**
+     * Required for ad-hoc logs; defaults to the recipe title otherwise.
+     */
+    description?: string;
+    /**
+     * Required for ad-hoc logs; ignored when a recipeId is given.
+     */
+    nutrition?: Nutrition;
+};
+
+/**
+ * Calorie and macro totals for one day.
+ */
+export type DailyLogSummary = {
+    date: string;
+    calories: number;
+    proteinG: number;
+    carbsG: number;
+    fatG: number;
+};
+
+export type RecipeId = string;
+
+export type RecipeSlug = string;
+
+/**
+ * The Monday of the planned week (ISO date).
+ */
+export type PlanWeek = string;
+
+export type EntryId = string;
+
+export type ShoppingListItemId = string;
+
+export type LogId = string;
+
 export type GetMeData = {
     body?: never;
     path?: never;
@@ -65,3 +314,634 @@ export type GetMeResponses = {
 };
 
 export type GetMeResponse = GetMeResponses[keyof GetMeResponses];
+
+export type ListMyRecipesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Case-insensitive filter on title, description, and tags.
+         */
+        q?: string;
+    };
+    url: '/api/v1/recipes';
+};
+
+export type ListMyRecipesErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type ListMyRecipesError = ListMyRecipesErrors[keyof ListMyRecipesErrors];
+
+export type ListMyRecipesResponses = {
+    /**
+     * The caller's personal recipes, newest first.
+     */
+    200: Array<RecipeSummary>;
+};
+
+export type ListMyRecipesResponse = ListMyRecipesResponses[keyof ListMyRecipesResponses];
+
+export type CreateRecipeData = {
+    body: RecipeInput;
+    path?: never;
+    query?: never;
+    url: '/api/v1/recipes';
+};
+
+export type CreateRecipeErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type CreateRecipeError = CreateRecipeErrors[keyof CreateRecipeErrors];
+
+export type CreateRecipeResponses = {
+    /**
+     * The created recipe.
+     */
+    201: RecipeDetail;
+};
+
+export type CreateRecipeResponse = CreateRecipeResponses[keyof CreateRecipeResponses];
+
+export type DeleteRecipeData = {
+    body?: never;
+    path: {
+        recipeId: string;
+    };
+    query?: never;
+    url: '/api/v1/recipes/{recipeId}';
+};
+
+export type DeleteRecipeErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type DeleteRecipeError = DeleteRecipeErrors[keyof DeleteRecipeErrors];
+
+export type DeleteRecipeResponses = {
+    /**
+     * Deleted.
+     */
+    204: void;
+};
+
+export type DeleteRecipeResponse = DeleteRecipeResponses[keyof DeleteRecipeResponses];
+
+export type GetRecipeData = {
+    body?: never;
+    path: {
+        recipeId: string;
+    };
+    query?: never;
+    url: '/api/v1/recipes/{recipeId}';
+};
+
+export type GetRecipeErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type GetRecipeError = GetRecipeErrors[keyof GetRecipeErrors];
+
+export type GetRecipeResponses = {
+    /**
+     * The recipe.
+     */
+    200: RecipeDetail;
+};
+
+export type GetRecipeResponse = GetRecipeResponses[keyof GetRecipeResponses];
+
+export type ReplaceRecipeData = {
+    body: RecipeInput;
+    path: {
+        recipeId: string;
+    };
+    query?: never;
+    url: '/api/v1/recipes/{recipeId}';
+};
+
+export type ReplaceRecipeErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type ReplaceRecipeError = ReplaceRecipeErrors[keyof ReplaceRecipeErrors];
+
+export type ReplaceRecipeResponses = {
+    /**
+     * The replaced recipe.
+     */
+    200: RecipeDetail;
+};
+
+export type ReplaceRecipeResponse = ReplaceRecipeResponses[keyof ReplaceRecipeResponses];
+
+export type ListLibraryRecipesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Case-insensitive filter on title, description, and tags.
+         */
+        q?: string;
+    };
+    url: '/api/v1/recipes/library';
+};
+
+export type ListLibraryRecipesErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type ListLibraryRecipesError = ListLibraryRecipesErrors[keyof ListLibraryRecipesErrors];
+
+export type ListLibraryRecipesResponses = {
+    /**
+     * Library recipes, sorted by title.
+     */
+    200: Array<RecipeSummary>;
+};
+
+export type ListLibraryRecipesResponse = ListLibraryRecipesResponses[keyof ListLibraryRecipesResponses];
+
+export type ListPublicRecipesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Case-insensitive filter on title, description, and tags.
+         */
+        q?: string;
+    };
+    url: '/api/v1/public/recipes';
+};
+
+export type ListPublicRecipesResponses = {
+    /**
+     * Library recipes, sorted by title.
+     */
+    200: Array<RecipeSummary>;
+};
+
+export type ListPublicRecipesResponse = ListPublicRecipesResponses[keyof ListPublicRecipesResponses];
+
+export type GetPublicRecipeData = {
+    body?: never;
+    path: {
+        slug: string;
+    };
+    query?: never;
+    url: '/api/v1/public/recipes/{slug}';
+};
+
+export type GetPublicRecipeErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type GetPublicRecipeError = GetPublicRecipeErrors[keyof GetPublicRecipeErrors];
+
+export type GetPublicRecipeResponses = {
+    /**
+     * The recipe.
+     */
+    200: RecipeDetail;
+};
+
+export type GetPublicRecipeResponse = GetPublicRecipeResponses[keyof GetPublicRecipeResponses];
+
+export type GetMealPlanData = {
+    body?: never;
+    path: {
+        /**
+         * The Monday of the planned week (ISO date).
+         */
+        startDate: string;
+    };
+    query?: never;
+    url: '/api/v1/plans/{startDate}';
+};
+
+export type GetMealPlanErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type GetMealPlanError = GetMealPlanErrors[keyof GetMealPlanErrors];
+
+export type GetMealPlanResponses = {
+    /**
+     * The week's plan.
+     */
+    200: MealPlan;
+};
+
+export type GetMealPlanResponse = GetMealPlanResponses[keyof GetMealPlanResponses];
+
+export type AddMealPlanEntryData = {
+    body: MealPlanEntryInput;
+    path: {
+        /**
+         * The Monday of the planned week (ISO date).
+         */
+        startDate: string;
+    };
+    query?: never;
+    url: '/api/v1/plans/{startDate}/entries';
+};
+
+export type AddMealPlanEntryErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type AddMealPlanEntryError = AddMealPlanEntryErrors[keyof AddMealPlanEntryErrors];
+
+export type AddMealPlanEntryResponses = {
+    /**
+     * The created entry.
+     */
+    201: MealPlanEntry;
+};
+
+export type AddMealPlanEntryResponse = AddMealPlanEntryResponses[keyof AddMealPlanEntryResponses];
+
+export type DeleteMealPlanEntryData = {
+    body?: never;
+    path: {
+        /**
+         * The Monday of the planned week (ISO date).
+         */
+        startDate: string;
+        entryId: string;
+    };
+    query?: never;
+    url: '/api/v1/plans/{startDate}/entries/{entryId}';
+};
+
+export type DeleteMealPlanEntryErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type DeleteMealPlanEntryError = DeleteMealPlanEntryErrors[keyof DeleteMealPlanEntryErrors];
+
+export type DeleteMealPlanEntryResponses = {
+    /**
+     * Removed.
+     */
+    204: void;
+};
+
+export type DeleteMealPlanEntryResponse = DeleteMealPlanEntryResponses[keyof DeleteMealPlanEntryResponses];
+
+export type UpdateMealPlanEntryData = {
+    body: MealPlanEntryPatch;
+    path: {
+        /**
+         * The Monday of the planned week (ISO date).
+         */
+        startDate: string;
+        entryId: string;
+    };
+    query?: never;
+    url: '/api/v1/plans/{startDate}/entries/{entryId}';
+};
+
+export type UpdateMealPlanEntryErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type UpdateMealPlanEntryError = UpdateMealPlanEntryErrors[keyof UpdateMealPlanEntryErrors];
+
+export type UpdateMealPlanEntryResponses = {
+    /**
+     * The updated entry.
+     */
+    200: MealPlanEntry;
+};
+
+export type UpdateMealPlanEntryResponse = UpdateMealPlanEntryResponses[keyof UpdateMealPlanEntryResponses];
+
+export type GetShoppingListData = {
+    body?: never;
+    path: {
+        /**
+         * The Monday of the planned week (ISO date).
+         */
+        startDate: string;
+    };
+    query?: never;
+    url: '/api/v1/plans/{startDate}/shopping-list';
+};
+
+export type GetShoppingListErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type GetShoppingListError = GetShoppingListErrors[keyof GetShoppingListErrors];
+
+export type GetShoppingListResponses = {
+    /**
+     * The week's shopping list.
+     */
+    200: ShoppingList;
+};
+
+export type GetShoppingListResponse = GetShoppingListResponses[keyof GetShoppingListResponses];
+
+export type GenerateShoppingListData = {
+    body?: never;
+    path: {
+        /**
+         * The Monday of the planned week (ISO date).
+         */
+        startDate: string;
+    };
+    query?: never;
+    url: '/api/v1/plans/{startDate}/shopping-list';
+};
+
+export type GenerateShoppingListErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type GenerateShoppingListError = GenerateShoppingListErrors[keyof GenerateShoppingListErrors];
+
+export type GenerateShoppingListResponses = {
+    /**
+     * The generated shopping list.
+     */
+    200: ShoppingList;
+};
+
+export type GenerateShoppingListResponse = GenerateShoppingListResponses[keyof GenerateShoppingListResponses];
+
+export type UpdateShoppingListItemData = {
+    body: ShoppingListItemPatch;
+    path: {
+        /**
+         * The Monday of the planned week (ISO date).
+         */
+        startDate: string;
+        itemId: string;
+    };
+    query?: never;
+    url: '/api/v1/plans/{startDate}/shopping-list/items/{itemId}';
+};
+
+export type UpdateShoppingListItemErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type UpdateShoppingListItemError = UpdateShoppingListItemErrors[keyof UpdateShoppingListItemErrors];
+
+export type UpdateShoppingListItemResponses = {
+    /**
+     * The updated item.
+     */
+    200: ShoppingListItem;
+};
+
+export type UpdateShoppingListItemResponse = UpdateShoppingListItemResponses[keyof UpdateShoppingListItemResponses];
+
+export type ListMealLogsData = {
+    body?: never;
+    path?: never;
+    query: {
+        from: string;
+        to: string;
+    };
+    url: '/api/v1/logs';
+};
+
+export type ListMealLogsErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type ListMealLogsError = ListMealLogsErrors[keyof ListMealLogsErrors];
+
+export type ListMealLogsResponses = {
+    /**
+     * Logs in the range (inclusive), ordered by date and meal.
+     */
+    200: Array<MealLog>;
+};
+
+export type ListMealLogsResponse = ListMealLogsResponses[keyof ListMealLogsResponses];
+
+export type CreateMealLogData = {
+    body: MealLogInput;
+    path?: never;
+    query?: never;
+    url: '/api/v1/logs';
+};
+
+export type CreateMealLogErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type CreateMealLogError = CreateMealLogErrors[keyof CreateMealLogErrors];
+
+export type CreateMealLogResponses = {
+    /**
+     * The created log entry.
+     */
+    201: MealLog;
+};
+
+export type CreateMealLogResponse = CreateMealLogResponses[keyof CreateMealLogResponses];
+
+export type DeleteMealLogData = {
+    body?: never;
+    path: {
+        logId: string;
+    };
+    query?: never;
+    url: '/api/v1/logs/{logId}';
+};
+
+export type DeleteMealLogErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type DeleteMealLogError = DeleteMealLogErrors[keyof DeleteMealLogErrors];
+
+export type DeleteMealLogResponses = {
+    /**
+     * Deleted.
+     */
+    204: void;
+};
+
+export type DeleteMealLogResponse = DeleteMealLogResponses[keyof DeleteMealLogResponses];
+
+export type SummarizeMealLogsData = {
+    body?: never;
+    path?: never;
+    query: {
+        from: string;
+        to: string;
+    };
+    url: '/api/v1/logs/summary';
+};
+
+export type SummarizeMealLogsErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type SummarizeMealLogsError = SummarizeMealLogsErrors[keyof SummarizeMealLogsErrors];
+
+export type SummarizeMealLogsResponses = {
+    /**
+     * Totals per day in the range (inclusive). Days without logs are omitted.
+     */
+    200: Array<DailyLogSummary>;
+};
+
+export type SummarizeMealLogsResponse = SummarizeMealLogsResponses[keyof SummarizeMealLogsResponses];
