@@ -11,6 +11,13 @@ mimos:
     # Curated library seed (roadmap step 11): idempotent on restart, so
     # content fixes ship with a restart. Set false for an empty library.
     seed-enabled: true
+  # Sidecar plugins registered per instance (ADR-0006). Enabled means
+  # registered; changes take effect on restart. Unreachable plugins log a
+  # warning and contribute nothing — they never block startup. The compose
+  # stack registers the reference plugin:
+  # plugins:
+  #   - id: country-week
+  #     url: http://country-week:8080
   security:
     oauth2:
       resourceserver:

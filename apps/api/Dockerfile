@@ -8,6 +8,7 @@ COPY pom.xml ./
 COPY .mvn/ .mvn/
 COPY contracts/ contracts/
 COPY core/ core/
+COPY integrations/ integrations/
 COPY apps/ apps/
 COPY deploy/keycloak/ deploy/keycloak/
 

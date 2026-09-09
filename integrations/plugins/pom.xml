@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.noahhhx.mimos</groupId>
+        <artifactId>mimos-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>integrations-plugins</artifactId>
+    <name>Mimos :: Integrations :: Plugins</name>
+    <description>Plugin runtime: registry, outbound extension-API client, suggestion-card validation (ADR-0006). Depends on core public interfaces only; optional at runtime.</description>
+
+    <dependencies>
+        <!-- Core access goes through public interfaces only (ADR-0006):
+             the suggestion context is assembled from MealPlanService and
+             RecipeService, never from another module's tables. -->
+        <dependency>
+            <groupId>io.github.noahhhx.mimos</groupId>
+            <artifactId>core-recipes</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.noahhhx.mimos</groupId>
+            <artifactId>core-planning</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- Outbound HTTP to sidecar plugins (RestClient) and the module's
+             own component model. Kept explicit: this is a library module,
+             not a deployable. -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot</artifactId>
+        </dependency>
+        <!-- Plugin-facing payloads are built and read through the tree
+             model; untrusted plugin responses are never data-bound. -->
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

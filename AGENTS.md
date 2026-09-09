@@ -46,6 +46,7 @@ change** — an out-of-date AGENTS.md is worse than none.
 | Sync       | intervals.icu is the activity data source (future). Design for it, don't build it yet. |
 | Library content | Seed file `core/core-recipes/src/main/resources/library/library-seed.json`, loaded by an idempotent startup seeder (`mimos.library.seed-enabled`, default on). Content fixes ship with a restart; never via Flyway migrations. See ADR-0005. |
 | Public API | Unauthenticated read-only access to the curated library under `/api/v1/public/**` (SEO pages). Personal recipes never appear there; everything else requires a bearer token. |
+| Plugins    | HTTP sidecar plugins, pull-only in v1: config registry (`mimos.plugins.*`), manifest at `GET /manifest`, one capability (`plan-suggestions`), declarative cards, library-only context. See ADR-0006. |
 
 ## Open decisions — resolve with the owner before building against them
 
@@ -70,6 +71,10 @@ wire-format contract:
 - `core-planning` — meal plans, shopping lists, logging. Depends on
   recipes (through `RecipeService`'s public interface only — never its
   tables), nothing else. Owns its tables' JDBC persistence.
+- `integrations/plugins` — the plugin runtime: registry, outbound
+  extension-API client, suggestion-card validation (ADR-0006). Depends on
+  the core modules' public interfaces only; external API types never cross
+  this boundary. Optional at runtime — no plugins registered, no behavior.
 - `integrations/intervals-icu` — future. External API types never cross
   this boundary; translate to domain types at the edge. Feature-gated and
   optional at runtime (self-hosters must not need it).
@@ -84,22 +89,35 @@ wire-format contract:
 ### Plugin system
 
 The reference use case: **"Country of the Week" — suggests a country, and the
-week's meal plan leans into that cuisine.** Design constraints:
+week's meal plan leans into that cuisine.** The design is decided; ADR-0006
+is the contract:
 
-- Plugins extend Mimos without modifying or rebuilding core.
-- A plugin must be installable/enablable per-instance by the instance owner —
-  this is a self-host parity feature.
-- Start with an HTTP extension API (Mimos calls out to plugin services, and
-  plugins can call a versioned Mimos API). Plugin services are just
-  containers — trivially self-hostable and naturally microservice-shaped if
-  we ever split.
-- The plugin API is versioned from day one and treated as a public contract:
-  additive changes only, deprecation with notice.
-- Plugins never get raw database access; they get what the extension API
-  exposes. Design the API surface so the country-picker needs: read recipe
-  metadata/tags, propose a plan suggestion, surface a small UI affordance.
-- The exact mechanism (extension points, registration, manifest format) is an
-  open design task — propose a design before implementing.
+- Plugins are HTTP sidecar services (containers) registered via instance
+  config (`mimos.plugins.*`): enabled means registered, changes take effect
+  on restart. Static misconfiguration fails startup; an unreachable plugin
+  never does.
+- v1 is pull-only: Mimos calls `POST {base}/v1/plan-suggestions` with a
+  context snapshot (week, planned slots, library catalog); plugins never
+  call Mimos and cannot write anything. Applying a suggestion reuses the
+  existing plan-entry endpoint — no new mutation path.
+- Plugins see curated library recipes only. Personal recipes, profiles,
+  identities, and logs never cross the plugin boundary.
+- UI is declarative suggestion cards (title/blurb/icon/entries), rendered
+  by web as plain text and attributed to the plugin. No plugin code in the
+  browser, no iframes in v1.
+- The extension API is versioned from day one (`mimos.plugin.manifest/v1`,
+  `/v1/plan-suggestions`), specified as OpenAPI under `contracts/plugins/`,
+  and treated as a public contract: additive changes only, deprecation with
+  notice.
+- Plugins never get raw database access; the runtime lives in
+  `integrations/plugins` and talks to core through public interfaces only.
+- The reference plugin `plugins/country-week` is a zero-dependency
+  TypeScript service on `node:http`, run straight from source via Node's
+  native type stripping (engines node >= 22.18); plugin packages live in
+  the `plugins/*` npm workspace, and its tests run on `node --test`.
+- Deferred (designed in ADR-0006, built only when a plugin needs them): the
+  plugin→Mimos callback direction with service accounts, iframe UI slots,
+  per-user consent/opt-out, card persistence, a plugin directory.
 
 ### Frontend specifics
 
@@ -164,12 +182,16 @@ mimos/
 │   ├── api/              # Spring Boot modular monolith (the only deployable backend)
 │   └── web/              # Next.js frontend
 ├── contracts/
-│   └── api/              # OpenAPI spec — the source of truth for the HTTP API (ADR-0003)
+│   ├── api/              # OpenAPI spec — the source of truth for the HTTP API (ADR-0003)
+│   └── plugins/          # versioned plugin extension-API specs (ADR-0006)
 ├── core/
 │   ├── core-recipes/     # recipe domain module
 │   └── core-planning/    # planning domain module
+├── integrations/
+│   └── plugins/          # plugin runtime: registry, extension-API client, card validation (ADR-0006)
 ├── libraries/            # shared contracts: OpenAPI-generated clients, plugin SDK
-│   └── api-client/       # @mimos/api-client — generated TypeScript client (committed)
+│   ├── api-client/       # @mimos/api-client — generated TypeScript client (committed)
+│   └── plugin-sdk/       # @mimos/plugin-sdk — generated TypeScript types for the plugin API (committed)
 ├── plugins/
 │   └── country-week/     # reference plugin (build early to prove the API)
 └── deploy/
@@ -240,21 +262,26 @@ mimos/
   writing.
 - `mkdocs build --strict` — docs build. Requires `pip install -r
   docs/requirements.txt`.
-- `npm ci && npm run generate -w @mimos/api-client` — regenerate the
-  TypeScript API client from `contracts/api/openapi.yaml`; commit the result.
-  Regenerating must produce no diff when the spec is unchanged.
+- `npm ci && npm run generate -w @mimos/api-client` and
+  `npm run generate -w @mimos/plugin-sdk` — regenerate the TypeScript API
+  client and plugin SDK from `contracts/`; commit the results.
+  Regenerating must produce no diff when the specs are unchanged.
 - `npm run typecheck -w @mimos/web` and `npm run build -w @mimos/web` —
   frontend types and production build.
+- `npm test -w @mimos/country-week` — the reference plugin's tests
+  (`node --test`; Node 22.18+ for native type stripping).
 - `docker compose -f deploy/docker/compose.yml up -d --wait` — boots the
-  full self-hosted stack (Postgres, Keycloak, API, web); healthy when
-  `--wait` returns 0. Note: `up` does not rebuild images — run
-  `docker compose build` first when code changed. Smoke: API at
-  `http://localhost:8080/actuator/health`, Keycloak realm at
+  full self-hosted stack (Postgres, Keycloak, API, web, and the reference
+  plugin `country-week`); healthy when `--wait` returns 0. Note: `up` does
+  not rebuild images — run `docker compose build` first when code changed.
+  Smoke: API at `http://localhost:8080/actuator/health`, Keycloak realm at
   `http://localhost:8081/realms/mimos`, web at `http://localhost:3000`
   (log in with `test` / `mimos-test`; the realm also ships `test2`, same
   password, for cross-user isolation), seeded library at
   `http://localhost:8080/api/v1/public/recipes` and
-  `http://localhost:3000/recipes`.
+  `http://localhost:3000/recipes`, and a plugin suggestion card (after
+  login) from `http://localhost:8080/api/v1/plans/{monday}/suggestions`
+  or the plan page's Suggestions panel.
 - CI (`.github/workflows/ci.yml`) runs all of the above on every PR; the
   compose job is the self-host parity check.
 

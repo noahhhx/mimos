@@ -7,7 +7,7 @@
 openapi: 3.1.0
 info:
   title: Mimos API
-  version: 0.2.0
+  version: 0.3.0
   description: |
     The Mimos recipe companion API. Endpoints require a bearer token issued
     by the instance's Keycloak realm unless they live under `/api/v1/public`
@@ -287,6 +287,30 @@ paths:
         '401':
           $ref: '#/components/responses/Problem'
         '404':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/plans/{startDate}/suggestions:
+    parameters:
+      - $ref: '#/components/parameters/PlanWeek'
+    get:
+      tags: [plugins]
+      operationId: getPlanSuggestions
+      summary: Suggestion cards for a planned week
+      description: >
+        Declarative suggestion cards from the instance's registered plugins
+        (ADR-0006): validated, attributed, advisory only — applying a card is
+        done through the existing plan-entry endpoint. Returns an empty list
+        when no plugins are registered or all are unavailable.
+      responses:
+        '200':
+          description: Cards from all healthy plugins, in registration order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanSuggestions'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
           $ref: '#/components/responses/Problem'
 
   /api/v1/plans/{startDate}/shopping-list:
@@ -739,6 +763,59 @@ components:
       type: object
       required: [servings]
       properties:
+        servings:
+          type: number
+    PlanSuggestions:
+      type: object
+      description: Suggestion cards for a week, from the instance's registered plugins (ADR-0006).
+      required: [suggestions]
+      properties:
+        suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanSuggestion'
+    PlanSuggestion:
+      type: object
+      description: One plugin suggestion card — advisory, validated by the server, attributed to its plugin.
+      required: [pluginId, pluginName, title, entries]
+      properties:
+        pluginId:
+          type: string
+          description: The plugin's manifest id.
+        pluginName:
+          type: string
+          description: The plugin's manifest name, shown as attribution.
+        title:
+          type: string
+          description: Card headline (at most 80 characters).
+        blurb:
+          type: string
+          description: One-sentence explanation (at most 200 characters).
+        icon:
+          type: string
+          description: Short glyph shown next to the title (at most 8 characters).
+        entries:
+          type: array
+          description: Proposed meals; apply them via the plan-entry endpoint.
+          items:
+            $ref: '#/components/schemas/PlanSuggestionEntry'
+    PlanSuggestionEntry:
+      type: object
+      description: One proposed meal in a suggestion card.
+      required: [date, mealType, recipeId, recipeTitle, servings]
+      properties:
+        date:
+          type: string
+          format: date
+        mealType:
+          $ref: '#/components/schemas/MealType'
+        recipeId:
+          type: string
+          format: uuid
+          description: A curated library recipe (plugins see the library only).
+        recipeTitle:
+          type: string
+          description: Hydrated by the server from its own recipe data.
         servings:
           type: number
     ShoppingListItem:

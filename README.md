@@ -10,9 +10,10 @@ our cloud or on your own hardware.
 
 **Status: alpha.** The core product works end to end and self-hosts from
 compose: a seeded recipe library (public SEO pages), personal recipes,
-weekly meal planning, generated shopping lists, and calorie/macro logging.
-See [ROADMAP.md](ROADMAP.md) (phases 0–2 done) and [NORTHSTAR.md](NORTHSTAR.md)
-for the product vision.
+weekly meal planning, generated shopping lists, calorie/macro logging, and
+a plugin system proven by the Country of the Week reference plugin (plan
+suggestions). See [ROADMAP.md](ROADMAP.md) (phases 0–3 done) and
+[NORTHSTAR.md](NORTHSTAR.md) for the product vision.
 
 ## Quickstart (self-hosted)
 
@@ -37,6 +38,7 @@ Credentials are dev defaults; override via environment variables in
 
 ```bash
 ./mvnw -B verify          # backend build + tests (Testcontainers; needs Docker)
+npm test -w @mimos/country-week   # reference plugin tests (Node 22.18+)
 mkdocs build --strict     # docs build (pip install -r docs/requirements.txt)
 ```
 

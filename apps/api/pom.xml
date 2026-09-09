@@ -24,6 +24,11 @@
             <artifactId>core-planning</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.github.noahhhx.mimos</groupId>
+            <artifactId>integrations-plugins</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

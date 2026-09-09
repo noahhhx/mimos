@@ -8,10 +8,12 @@ import {
   createMealLog,
   deleteMealPlanEntry,
   getMealPlan,
+  getPlanSuggestions,
   listLibraryRecipes,
   listMyRecipes,
   updateMealPlanEntry,
   type MealPlan,
+  type PlanSuggestion,
   type RecipeSummary,
 } from "@mimos/api-client";
 
@@ -28,6 +30,9 @@ export default function PlanPage() {
   const { user, signIn } = useAuth();
   const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()));
   const [plan, setPlan] = useState<MealPlan | null>(null);
+  const [suggestions, setSuggestions] = useState<PlanSuggestion[] | null>(null);
+  const [applying, setApplying] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [picker, setPicker] = useState<{ date: string; mealType: string } | null>(null);
   const [pickerQuery, setPickerQuery] = useState("");
@@ -44,13 +49,19 @@ export default function PlanPage() {
   }, []);
 
   const reload = useCallback(async () => {
-    const result = await getMealPlan({ client: apiClient, path: { startDate: weekStart } });
-    if (result.error) {
+    const [planResult, suggestionsResult] = await Promise.all([
+      getMealPlan({ client: apiClient, path: { startDate: weekStart } }),
+      getPlanSuggestions({ client: apiClient, path: { startDate: weekStart } }),
+    ]);
+    if (planResult.error) {
       setError("Could not load the plan.");
       return;
     }
     setError(null);
-    setPlan(result.data ?? null);
+    setPlan(planResult.data ?? null);
+    // Suggestions are an enhancement (ADR-0006): a failure here never
+    // hurts the plan itself.
+    setSuggestions(suggestionsResult.error ? [] : (suggestionsResult.data?.suggestions ?? []));
   }, [weekStart]);
 
   useEffect(() => {
@@ -152,6 +163,33 @@ export default function PlanPage() {
     setLogged(`${entry.recipeTitle} logged.`);
   };
 
+  // Applying a card reuses the plan-entry endpoint — the same one the
+  // picker uses; plugins have no write path of their own (ADR-0006).
+  const applySuggestion = async (suggestion: PlanSuggestion) => {
+    setApplying(true);
+    let added = 0;
+    for (const entry of suggestion.entries) {
+      const result = await addMealPlanEntry({
+        client: apiClient,
+        path: { startDate: weekStart },
+        body: {
+          date: entry.date,
+          mealType: entry.mealType,
+          recipeId: entry.recipeId,
+          servings: entry.servings,
+        },
+      });
+      if (!result.error) {
+        added++;
+      }
+    }
+    setApplying(false);
+    setNotice(
+      added > 0 ? `Added ${added} meal${added === 1 ? "" : "s"} from "${suggestion.title}".` : "Could not add that suggestion.",
+    );
+    await reload();
+  };
+
   return (
     <>
       <div className="toolbar">
@@ -184,6 +222,51 @@ export default function PlanPage() {
         <div className="card ok" role="status">
           <p>{logged}</p>
         </div>
+      )}
+      {notice && (
+        <div className="card ok" role="status">
+          <p>{notice}</p>
+        </div>
+      )}
+
+      {suggestions !== null && suggestions.length > 0 && (
+        <section className="card suggestions" aria-label="Suggestions from plugins">
+          <h2>Suggestions</h2>
+          <p className="muted">From plugins enabled on this Mimos instance.</p>
+          <div className="suggestion-cards">
+            {suggestions.map((suggestion) => (
+              <article key={`${suggestion.pluginId}:${suggestion.title}`} className="suggestion-card">
+                <div className="suggestion-head">
+                  {suggestion.icon && (
+                    <span className="suggestion-icon" aria-hidden="true">
+                      {suggestion.icon}
+                    </span>
+                  )}
+                  <h3>{suggestion.title}</h3>
+                </div>
+                {suggestion.blurb && <p>{suggestion.blurb}</p>}
+                <ul>
+                  {suggestion.entries.map((entry) => (
+                    <li key={`${entry.date}:${entry.mealType}:${entry.recipeId}`}>
+                      {entry.recipeTitle} · {dayLabel(entry.date)} {mealLabel(entry.mealType)} ·{" "}
+                      {entry.servings} servings
+                    </li>
+                  ))}
+                </ul>
+                <div className="suggestion-actions">
+                  <button
+                    className="button"
+                    disabled={applying}
+                    onClick={() => void applySuggestion(suggestion)}
+                  >
+                    {applying ? "Adding…" : "Add to plan"}
+                  </button>
+                  <span className="muted">via {suggestion.pluginName}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
       )}
 
       {plan === null ? (

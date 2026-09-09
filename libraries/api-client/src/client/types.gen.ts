@@ -192,6 +192,60 @@ export type MealPlanEntryPatch = {
 };
 
 /**
+ * Suggestion cards for a week, from the instance's registered plugins (ADR-0006).
+ */
+export type PlanSuggestions = {
+    suggestions: Array<PlanSuggestion>;
+};
+
+/**
+ * One plugin suggestion card — advisory, validated by the server, attributed to its plugin.
+ */
+export type PlanSuggestion = {
+    /**
+     * The plugin's manifest id.
+     */
+    pluginId: string;
+    /**
+     * The plugin's manifest name, shown as attribution.
+     */
+    pluginName: string;
+    /**
+     * Card headline (at most 80 characters).
+     */
+    title: string;
+    /**
+     * One-sentence explanation (at most 200 characters).
+     */
+    blurb?: string;
+    /**
+     * Short glyph shown next to the title (at most 8 characters).
+     */
+    icon?: string;
+    /**
+     * Proposed meals; apply them via the plan-entry endpoint.
+     */
+    entries: Array<PlanSuggestionEntry>;
+};
+
+/**
+ * One proposed meal in a suggestion card.
+ */
+export type PlanSuggestionEntry = {
+    date: string;
+    mealType: MealType;
+    /**
+     * A curated library recipe (plugins see the library only).
+     */
+    recipeId: string;
+    /**
+     * Hydrated by the server from its own recipe data.
+     */
+    recipeTitle: string;
+    servings: number;
+};
+
+/**
  * One aggregated shopping-list line.
  */
 export type ShoppingListItem = {
@@ -706,6 +760,40 @@ export type UpdateMealPlanEntryResponses = {
 };
 
 export type UpdateMealPlanEntryResponse = UpdateMealPlanEntryResponses[keyof UpdateMealPlanEntryResponses];
+
+export type GetPlanSuggestionsData = {
+    body?: never;
+    path: {
+        /**
+         * The Monday of the planned week (ISO date).
+         */
+        startDate: string;
+    };
+    query?: never;
+    url: '/api/v1/plans/{startDate}/suggestions';
+};
+
+export type GetPlanSuggestionsErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type GetPlanSuggestionsError = GetPlanSuggestionsErrors[keyof GetPlanSuggestionsErrors];
+
+export type GetPlanSuggestionsResponses = {
+    /**
+     * Cards from all healthy plugins, in registration order.
+     */
+    200: PlanSuggestions;
+};
+
+export type GetPlanSuggestionsResponse = GetPlanSuggestionsResponses[keyof GetPlanSuggestionsResponses];
 
 export type GetShoppingListData = {
     body?: never;

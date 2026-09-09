@@ -20,7 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class MealPlanService {
 
-    static final double MAX_SERVINGS = 100;
+    /** The servings bound of the plan domain; suggestion validation mirrors it (ADR-0006). */
+    public static final double MAX_SERVINGS = 100;
 
     private final MealPlanRepository plans;
     private final RecipeService recipes;

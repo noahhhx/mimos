@@ -20,6 +20,7 @@
     <modules>
         <module>core/core-recipes</module>
         <module>core/core-planning</module>
+        <module>integrations/plugins</module>
         <module>apps/api</module>
     </modules>
 

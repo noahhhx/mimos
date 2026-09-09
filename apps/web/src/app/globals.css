@@ -458,3 +458,46 @@ input[type="search"] {
 .card.ok {
   border-color: #2f6f4f;
 }
+
+/* Plugin suggestion cards (ADR-0006): rendered as plain text, attributed. */
+.suggestions {
+  margin-bottom: 1.5rem;
+}
+
+.suggestion-cards {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.suggestion-card {
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.suggestion-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.suggestion-head h3 {
+  margin: 0;
+}
+
+.suggestion-icon {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.suggestion-card ul {
+  margin: 0.75rem 0;
+  padding-left: 1.25rem;
+}
+
+.suggestion-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}

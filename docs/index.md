@@ -52,6 +52,8 @@ Checks:
 ./mvnw verify                                  # build + tests (Testcontainers; needs Docker)
 npm run typecheck -w @mimos/web               # frontend types
 npm run generate -w @mimos/api-client          # regen TS client from contracts/api/openapi.yaml
+npm run generate -w @mimos/plugin-sdk          # regen plugin SDK from contracts/plugins/
+npm test -w @mimos/country-week               # reference plugin tests (Node 22.18+)
 mkdocs build --strict                          # docs build (pip install -r docs/requirements.txt)
 ```
 

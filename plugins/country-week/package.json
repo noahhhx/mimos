@@ -1,0 +1,19 @@
+{
+  "name": "@mimos/country-week",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Country of the Week — the Mimos reference plugin (ADR-0006). Suggests a country and leans the week's dinners into that cuisine. Zero runtime dependencies: plain TypeScript on node:http.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test src/country-week.test.ts src/server.test.ts",
+    "start": "node src/server.ts"
+  },
+  "devDependencies": {
+    "@mimos/plugin-sdk": "*",
+    "typescript": "~5.9.3"
+  }
+}

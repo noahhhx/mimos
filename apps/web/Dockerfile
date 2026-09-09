@@ -8,6 +8,8 @@ WORKDIR /build
 COPY package.json package-lock.json ./
 COPY apps/web/package.json apps/web/
 COPY libraries/api-client/package.json libraries/api-client/
+COPY libraries/plugin-sdk/package.json libraries/plugin-sdk/
+COPY plugins/country-week/package.json plugins/country-week/
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --workspaces --include-workspace-root
 

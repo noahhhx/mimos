@@ -46,8 +46,8 @@ jobs:
       - name: Build docs
         run: mkdocs build --strict
 
-  client:
-    name: API client (TypeScript)
+  clients:
+    name: Generated clients and plugins (TypeScript)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -64,11 +64,20 @@ jobs:
       - name: Regenerate API client from the spec
         run: npm run generate -w @mimos/api-client
 
-      - name: Fail on drift between spec and committed client
+      - name: Regenerate plugin SDK from the spec
+        run: npm run generate -w @mimos/plugin-sdk
+
+      - name: Fail on drift between specs and committed generated code
         run: git diff --exit-code -- libraries
 
       - name: Typecheck
-        run: npm run typecheck -w @mimos/api-client
+        run: |
+          npm run typecheck -w @mimos/api-client
+          npm run typecheck -w @mimos/plugin-sdk
+          npm run typecheck -w @mimos/country-week
+
+      - name: Test reference plugin
+        run: npm test -w @mimos/country-week
 
       - name: Build web app
         run: |
@@ -120,6 +129,16 @@ jobs:
           # Unauthenticated requests must be rejected with problem-details.
           curl -sS http://localhost:8080/api/v1/me -o /dev/null -w '%{http_code} %{content_type}' \
             | grep -q '401 application/problem\\+json'
+
+      - name: Smoke test - plugin suggestion appears end to end
+        run: |
+          token=$(curl -fsS -X POST http://localhost:8081/realms/mimos/protocol/openid-connect/token \
+            -d 'grant_type=password&client_id=mimos-web&username=test&password=mimos-test' \
+            | python3 -c 'import sys,json; print(json.load(sys.stdin)["access_token"])')
+          monday=$(date -d "$(date +%F) - $(( $(date +%u) - 1 )) days" +%F)
+          # API -> country-week plugin -> validated, attributed card (ADR-0006).
+          curl -fsS -H "Authorization: Bearer $token" \
+            "http://localhost:8080/api/v1/plans/$monday/suggestions" | grep -q '"pluginId":"country-week"'
 
       - name: Tear down
         if: always()

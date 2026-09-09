@@ -102,15 +102,33 @@ Rules for using this file:
 ## Phase 3 — Extensibility (prove the plugin surface)
 
 12. **Plugin system design (ADR).** Extension points, manifest format,
-    registration, versioning, and the security model — designed against the
-    country-picker use case and proposed before implementation.
+    registration, versioning, and the security model — designed against
+    the country-picker use case and proposed before implementation.
     *Done when: the ADR is accepted and the recipe/planning APIs are judged
-    against it.*
+    against it.* **Done.** ADR-0006 — plugins are HTTP sidecar services,
+    pull-only in v1 (the `plan-suggestions` capability: context snapshot
+    in, declarative cards out), registered via instance config with a
+    manifest at `GET /manifest`, library-only context, acceptance reusing
+    the existing plan-entry endpoint. The phase-2 APIs were judged against
+    it: one additive endpoint (`GET /api/v1/plans/{startDate}/suggestions`),
+    no breaking changes, no plugin access to existing endpoints.
 
 13. **Country of the Week.** The reference plugin, built exactly as a third
     party would: no core changes, installable per-instance by the owner.
     *Done when: the plugin runs in compose, suggests a country, and leans
     the week's plan into that cuisine.*
+    **Done.** The extension surface from ADR-0006 was implemented first
+    (the `integrations/plugins` runtime, the additive
+    `GET /api/v1/plans/{startDate}/suggestions` endpoint, the web
+    Suggestions panel); the plugin itself (`plugins/country-week`) was then
+    built against it without touching the domain modules — a
+    zero-dependency TypeScript service on `node:http` that picks a country
+    deterministically from the week and fills the week's unplanned dinners
+    with matching library recipes. It runs in the default compose stack
+    (API → plugin → validated, attributed card), is registered purely via
+    `mimos.plugins` env config, and the CI compose smoke asserts a
+    suggestion appears end to end. Plugin authoring docs:
+    `docs/plugins/`.
 
 ## Phase 4 — Scale and sync
 

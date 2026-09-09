@@ -51,6 +51,11 @@ services:
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:8081/realms/mimos
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/mimos/protocol/openid-connect/certs
       MIMOS_SECURITY_CORS_ALLOWED_ORIGINS: ${WEB_ORIGIN:-http://localhost:3000}
+      # The reference plugin (ADR-0006): enabled means registered, and the
+      # API never blocks on it. To run without plugins, remove these lines
+      # and the country-week service.
+      MIMOS_PLUGINS_0_ID: country-week
+      MIMOS_PLUGINS_0_URL: http://country-week:8080
     ports:
       - "${API_PORT:-8080}:8080"
     depends_on:
@@ -64,6 +69,19 @@ services:
       timeout: 5s
       retries: 12
       start_period: 40s
+
+  # Reference plugin (ADR-0006): an HTTP sidecar on the compose network,
+  # deliberately not exposed to the host.
+  country-week:
+    build:
+      context: ../..
+      dockerfile: plugins/country-week/Dockerfile
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/manifest || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
   web:
     build:
