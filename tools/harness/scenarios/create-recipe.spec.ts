@@ -1,8 +1,8 @@
 import { expect, test } from "./fixtures.ts";
 
 /**
- * Write a personal recipe through the form and land on its page. Fails with
- * the recipe 415 until harness step 7 fixes it (docs/harness/step-7-recipe-415.md).
+ * Write a personal recipe through the form and land on its page. The
+ * regression test for the recipe 415 (docs/harness/step-7-recipe-415.md).
  */
 test("creates a personal recipe from the form", async ({ loggedInPage: page }) => {
   // Unique per run, so reruns against the same database never collide.

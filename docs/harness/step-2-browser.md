@@ -13,7 +13,7 @@ exploration before a scenario exists.
 ```sh
 devenv shell -- harness up                    # the stack must be up
 devenv shell -- harness ui login              # smoke: sign in, see the profile
-devenv shell -- harness ui create-recipe      # fails with the recipe 415 until step 7
+devenv shell -- harness ui create-recipe      # write a personal recipe through the form
 devenv shell -- harness ui create-recipe --as test2 --headed
 cat .harness/runs/latest/summary.md
 ```

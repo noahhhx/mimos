@@ -1,8 +1,10 @@
 # Agent harness — plan
 
-**Status:** in progress — steps 1–6 are built: stack control and API
-driving, browser driving, logs and request correlation, diagnostics, the
-debugger, and the agent skill, docs, and CI. **[Using the
+**Status:** done — steps 1–6 built stack control and API driving, browser
+driving, logs and request correlation, diagnostics, the debugger, and the
+agent skill, docs, and CI; step 7 used them to find and fix the recipe 415.
+Follow-ups from that first use are listed in [its
+retrospective](step-7-recipe-415.md#retrospective). **[Using the
 harness](usage.md) is the command reference.** This page is the
 high-level design. Each step has its own page (linked below), which records
 the decisions made while building it. Edit freely — the plan is meant to be
@@ -135,7 +137,7 @@ and docs, per AGENTS.md.
 | 4 | [Diagnostics](step-4-diagnostics.md) | Done |
 | 5 | [Debugger](step-5-debugger.md) | Done |
 | 6 | [Agent skill, docs, and CI](step-6-skill-docs-ci.md) | Done |
-| 7 | [First use: the recipe 415](step-7-recipe-415.md) | Planned |
+| 7 | [First use: the recipe 415](step-7-recipe-415.md) | Done |
 
 ## Decisions
 

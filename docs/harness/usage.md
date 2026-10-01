@@ -65,8 +65,8 @@ narrowing the recipe 415.
 | `harness api <METHOD> <path> [--body <file>\|-] [-H Name:Value]... [--as <user>\|--anon]` | Sends exactly the recorded headers (`-H 'Name:'` removes one). Records the exchange in `api/exchanges.jsonl` and the run's logs. Exit 1 for a status of 400 or above. |
 | `harness ui <scenario> [--headed] [--as <user>]` | Runs `tools/harness/scenarios/<scenario>.spec.ts` in Chromium and writes a trace, HAR, console log, and screenshots (plus a video on failure) under `browser/<scenario>/`. `summary.md` gets the failing step, every API call with its request ID, and each failed request in full with its log lines. Exit 1 when a test failed. |
 
-Scenarios: `login` (sign-in smoke) and `create-recipe` (fails with the
-recipe 415 until step 7). See [writing a scenario](step-2-browser.md#writing-a-scenario).
+Scenarios: `login` (sign-in smoke) and `create-recipe` (writes a recipe
+through the form; the recipe 415's regression test). See [writing a scenario](step-2-browser.md#writing-a-scenario).
 For exploration before a scenario exists, `.mcp.json` registers a
 Playwright MCP browser ([step 2](step-2-browser.md#exploring-with-the-mcp-browser)).
 
@@ -114,8 +114,8 @@ the job summary. When the job fails, `.harness/runs/` is uploaded as the
 A scenario that reproduces an open bug goes in the step's `KNOWN_FAILING`
 list. It still runs, and it must still fail. When it passes, the job fails
 until the scenario is removed from the list, so a fix also turns its
-reproduction into a regression test. `create-recipe` is listed until step
-7 fixes the recipe 415.
+reproduction into a regression test. The list is empty: `create-recipe`
+left it when step 7 fixed the recipe 415.
 
 To reproduce a CI failure locally: `harness up` (CI's stack runs without
 the debug overlay), then `harness ui <name>`. Or download the artifact

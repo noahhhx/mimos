@@ -144,6 +144,11 @@ is the contract:
   can differ without rebuilds.
 - Logic a future mobile app would share (API clients, types, validation
   schemas) lives in `libraries/`, not in app code.
+- Unit tests live in `apps/web/test/` and run on `node --test` (native type
+  stripping, no test framework). A module they import must not touch the
+  browser or Next, and imports its siblings with a `.ts` extension (Node
+  resolves no others); keep such logic in small modules like
+  `src/lib/api-fetch.ts`. Browser flows are tested by harness scenarios.
 
 ### Auth specifics
 
@@ -341,6 +346,8 @@ writes evidence to `.harness/runs/<run>/` (gitignored), and
   frontend types and production build.
 - `npm test -w @mimos/country-week` — the reference plugin's tests
   (`node --test`; Node 22.18+ for native type stripping).
+- `npm test -w @mimos/web` — the web app's unit tests (`node --test`, as
+  above).
 - `npm run typecheck -w @mimos/harness` and `npm test -w @mimos/harness` —
   the agent harness's types and unit tests (no Docker or browsers needed).
 - `devenv shell -- harness diag` — diagnostics snapshot of a running
@@ -351,8 +358,8 @@ writes evidence to `.harness/runs/<run>/` (gitignored), and
   --debug`: exit 0 and a hit with locals in
   `.harness/runs/latest/debug/1/hits.md`.
 - `devenv shell -- harness ui login` — browser smoke against a running
-  stack (Chromium from devenv); `harness ui create-recipe` is expected to
-  fail until the recipe 415 is fixed (`docs/harness/step-7-recipe-415.md`).
+  stack (Chromium from devenv); `harness ui create-recipe` drives a write
+  through the form.
 - `docker compose -f deploy/docker/compose.yml up -d --wait` — boots the
   full self-hosted stack (Postgres, Keycloak, API, web, and the reference
   plugin `country-week`); healthy when `--wait` returns 0. Note: `up` does

@@ -1,6 +1,6 @@
 # Step 7 — First use: the recipe 415
 
-**Status:** planned · [Back to the plan](index.md)
+**Status:** done · [Back to the plan](index.md)
 
 ## The bug
 
@@ -84,6 +84,78 @@ early step is conclusive, fix it then and keep this page as the record.
   "not hit" and agrees with step 4. It adds no new cause, but it proves
   the rejection happens before the handler, without reading framework
   logs.
+- **Cause (2026-10-01).** With the server cleared, the remaining question
+  was how the browser builds the request, and no harness command sees
+  inside the page's JavaScript, so this was read from the code. The
+  generated client (`libraries/api-client/src/client/client/client.gen.ts`)
+  builds a complete `Request`, with `Content-Type: application/json` and
+  the body, and calls the configured fetch as `fetch(request)`, with no
+  `init`. The web app's fetch (`apps/web/src/lib/api.ts`) built its headers
+  from `init?.headers` (undefined), added `Authorization` and
+  `X-Request-Id`, and called `fetch(input, { ...init, headers })`. Headers
+  in `init` **replace** a Request's own, so the body survived (the HAR's
+  `Content-Length: 315`) but the media type did not. This matches every
+  piece of evidence above. GETs carry no body, which is why only writes
+  failed. The bug dates from the frontend skeleton (`9ad4587`), so every web
+  call with a body (recipes, plan entries, logs, shopping list) went out
+  without a media type. `create-recipe` is the only scenario that writes,
+  so nothing else caught it.
+
+## Fix
+
+- **Layer:** web. The API behaves as its contract declares (`consumes:
+  application/json`), and the generated client sends the header. The web
+  wrapper drops it.
+- **Change:** the wrapper moved to `apps/web/src/lib/api-fetch.ts`
+  (`authorizedFetch`). It starts from `init`'s headers when there are any,
+  otherwise from the `Request`'s, which is what `fetch` itself does. Then
+  it adds the token and request ID. `api.ts` only wires it to
+  `userManager`.
+- **Regression test:** `apps/web/test/api-fetch.test.ts` calls it the way
+  the generated client does, with one prepared `Request`, and asserts that
+  the outgoing request keeps its `Content-Type` and body. With the old
+  header line, that test fails (`Content-Type` absent), and so does the one
+  that keeps a caller's `X-Request-Id`. These are the web app's first unit
+  tests. They run on `node --test` (`npm test -w @mimos/web`, in CI's
+  TypeScript job), like the plugin and harness tests, with no new
+  dependency.
+- **Scenario:** `harness ui create-recipe` passes on a rebuilt stack: `POST
+  /api/v1/recipes` → 201 with `Sent: application/json`, and the page lands
+  on the new recipe. It is out of CI's `KNOWN_FAILING`, so it now runs as a
+  regression test.
+
+## Retrospective
+
+- **Decisive evidence:** step 2. The HAR summary's "Sent" column, **no
+  Content-Type**, against `harness api`'s 201 (step 1), placed the bug in
+  the browser before any server-side digging. Steps 3–5 each confirmed the
+  rejection happened before a handler ran. They were useful for confidence
+  and cheap to run, but they added nothing on the cause. On a server-side
+  bug they would have been the decisive steps.
+- **What the harness was missing:** a view inside the page. Once the
+  evidence said "the browser builds the request wrong", the harness had
+  nothing more to offer, and the last hop (client → wrapper → `fetch`)
+  came from reading code. The Node inspector (step 5) covers the Next
+  server, not browser code. A candidate addition: a scenario option that
+  wraps `window.fetch` with an init script and records each call's
+  arguments (input type, `init` keys, headers before and after) into the
+  run folder. Do not build it until a second bug needs it.
+- **What the web app was missing:** a unit-test runner. Its only tests were
+  scenarios, so the fix's regression test also needed the runner (added
+  here, see above).
+- **Scenario coverage:** one write scenario hid a bug that affected every
+  write. Scenarios for the plan, log, and shopping-list flows would have
+  caught it on day one; they are worth adding as those flows change.
+- **Found along the way, not fixed here:**
+  - 415s and other errors that Spring resolves itself return Spring's
+    default error JSON, not RFC 9457 problem-details (step 1's side
+    finding). That is an API conformance fix of its own.
+  - Right after `harness up` rebuilt the images, `harness status` reported
+    `country-week: container on older image`, and correctly so: the
+    container was created at 15:44 from an image that no longer exists, and
+    `compose up --wait` left it running ("Running", not "Recreated").
+    Either `harness up` should recreate containers whose image changed, or
+    the harness should say why compose did not.
 
 ## Done when
 

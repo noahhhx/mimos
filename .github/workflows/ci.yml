@@ -83,6 +83,9 @@ jobs:
       - name: Test agent harness
         run: npm test -w @mimos/harness
 
+      - name: Test web app
+        run: npm test -w @mimos/web
+
       - name: Build web app
         run: |
           npm run typecheck -w @mimos/web
@@ -163,8 +166,8 @@ jobs:
         env:
           # Scenarios that reproduce an open bug: they must still fail, and one
           # that passes fails the job until it is removed from this list.
-          # create-recipe: the recipe 415 (docs/harness/step-7-recipe-415.md).
-          KNOWN_FAILING: create-recipe
+          # Space-separated scenario names; none are open.
+          KNOWN_FAILING: ""
         run: |
           failed=0
           for spec in tools/harness/scenarios/*.spec.ts; do
