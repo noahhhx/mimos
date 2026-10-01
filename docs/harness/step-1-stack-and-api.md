@@ -27,7 +27,7 @@ cat .harness/runs/latest/summary.md
 | `harness up [--no-build] [--debug]` | `compose build`, then `up -d --wait`. Output goes to `compose/build.log` and `compose/up.log`; service states to `compose/ps.json` and a table in `summary.md`. If the stack is not healthy, every service's logs are captured and the last lines of each unhealthy one are put in `summary.md`. `--debug` adds the debug overlay `compose.debug.yml` ([step 3](step-3-logs.md)). |
 | `harness down` | `compose down` — the database volume survives. |
 | `harness reset` | `compose down -v --remove-orphans`, after printing the volumes it removes. |
-| `harness status` | Per-service state and health, when each built image was made, and whether it is `fresh`, `stale` (a build input changed after the build — the file is named), `not built`, or running in a container on an older image. Prints only; no run folder. |
+| `harness status` | Per-service state and health, when each built image was made, and whether it is `fresh`, `stale` (a build input changed after the build — the file is named), `not built`, or running in a container on an older image (compared as compose compares it, so these are exactly the containers `harness up` recreates). Prints only; no run folder. |
 | `harness token [--as <user>] [--decode]` | An access token via the password grant, printed to stdout and never written to disk. `--decode` prints the JWT header and claims (no signature check). |
 | `harness api <METHOD> <path> [--body <file>\|-] [-H Name:Value]... [--as <user>\|--anon]` | Sends the request, prints status and body, and records it. Exit code 0 below 400, 1 otherwise. |
 | `harness logs [--service <s>]... [--since <t>]` | Writes `logs/<service>.log`. |

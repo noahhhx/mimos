@@ -146,16 +146,31 @@ early step is conclusive, fix it then and keep this page as the record.
 - **Scenario coverage:** one write scenario hid a bug that affected every
   write. Scenarios for the plan, log, and shopping-list flows would have
   caught it on day one; they are worth adding as those flows change.
-- **Found along the way, not fixed here:**
-  - 415s and other errors that Spring resolves itself return Spring's
-    default error JSON, not RFC 9457 problem-details (step 1's side
-    finding). That is an API conformance fix of its own.
-  - Right after `harness up` rebuilt the images, `harness status` reported
-    `country-week: container on older image`, and correctly so: the
-    container was created at 15:44 from an image that no longer exists, and
-    `compose up --wait` left it running ("Running", not "Recreated").
-    Either `harness up` should recreate containers whose image changed, or
-    the harness should say why compose did not.
+- **Found along the way, fixed as follow-ups:**
+  - **Problem-details for Spring's own errors.** 415s, 405s, 404s for
+    unknown paths, 406s, and unexpected exceptions returned Spring's
+    default error JSON (`timestamp`/`status`/`error`/`path`) or an empty
+    body, not the RFC 9457 problem-details that the contract promises (step
+    1's side finding; reproduced with `harness api` for 415, 405, 404, and
+    406). `ApiExceptionHandler` now extends Spring's
+    `ResponseEntityExceptionHandler`, which renders all of Spring MVC's
+    errors as problem-details. Anything unmapped is a 500 `Internal error`
+    problem whose message is never sent and whose stack trace is logged
+    with the request ID. `ProblemDetailsEndpointTests` covers each kind;
+    `harness api` shows `application/problem+json` for all five.
+  - **A false "container on older image" in `harness status`.** Right
+    after `harness up`, status flagged `country-week`, and this page first
+    blamed compose for not recreating it. That was wrong. On the containerd
+    image store, `docker image inspect` and `compose images` report the
+    image **index** digest, and a rebuild can re-wrap an unchanged platform
+    manifest in a new index. The container's `com.docker.compose.image`
+    label, which compose compares to decide on recreation, named the
+    current build's manifest (`docker image inspect --platform
+    linux/amd64` → the same digest), so compose was right to leave it
+    running. Status now compares that label with the image inspected for
+    the daemon's platform, the same check compose makes. A container built
+    from an older image is still flagged (checked by building `api` without
+    recreating it), and `harness up` recreated it and cleared the flag.
 
 ## Done when
 

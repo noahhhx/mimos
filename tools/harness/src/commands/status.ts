@@ -1,20 +1,34 @@
 import { parseCommandArgs } from "../args.ts";
 import type { Command } from "../command.ts";
-import { containerImages, ps } from "../compose.ts";
+import { containerImageLabels, ps } from "../compose.ts";
 import { BUILD_INPUTS, composeProject, REPO_ROOT } from "../config.ts";
 import { exec } from "../exec.ts";
 import { freshness, gitProbe, latestSourceChange } from "../stale.ts";
 
 /** Per-service state and health, and whether built images trail their sources. */
 
+/** The daemon's platform (`linux/amd64`), or undefined when docker cannot say. */
+async function daemonPlatform(): Promise<string | undefined> {
+  const result = await exec("docker", ["version", "--format", "{{.Server.Os}}/{{.Server.Arch}}"]);
+  return result.code === 0 ? result.stdout.trim() || undefined : undefined;
+}
+
 /**
  * The image's ID and when a build last produced it: the later of Created and
  * LastTagTime. A build whose output is identical to an existing image (say,
  * only a build stage changed) reuses that image — keeping its old Created —
  * but re-tags it.
+ *
+ * The ID is the one compose labels containers with (compose.ts IMAGE_LABEL),
+ * so comparing the two answers "would harness up recreate this container":
+ * inspected for the daemon's platform, which on the containerd image store
+ * is the platform manifest's digest rather than the index's. Where
+ * `--platform` is unsupported, the plain ID — the classic store's, which
+ * compose uses there.
  */
-async function imageInfo(image: string): Promise<{ id: string; created: Date } | undefined> {
-  const result = await exec("docker", ["image", "inspect", image]);
+async function imageInfo(image: string, platform: string | undefined): Promise<{ id: string; created: Date } | undefined> {
+  let result = await exec("docker", ["image", "inspect", ...(platform ? ["--platform", platform] : []), image]);
+  if (result.code !== 0 && platform) result = await exec("docker", ["image", "inspect", image]);
   if (result.code !== 0) return undefined;
   const [info] = JSON.parse(result.stdout) as { Id: string; Created: string; Metadata?: { LastTagTime?: string } }[];
   if (!info) return undefined;
@@ -46,7 +60,11 @@ export interface ServiceReport {
 
 /** Every service's state and image freshness, plus one note per problem (stale, undated, outdated container). */
 export async function serviceReports(now: Date): Promise<{ reports: ServiceReport[]; notes: string[] }> {
-  const [states, running] = await Promise.all([ps(), containerImages().catch(() => [])]);
+  const [states, labels, platform] = await Promise.all([
+    ps(),
+    containerImageLabels().catch(() => new Map<string, string>()),
+    daemonPlatform(),
+  ]);
   const probe = gitProbe(REPO_ROOT);
   const notes: string[] = [];
   const reports: ServiceReport[] = [];
@@ -58,7 +76,7 @@ export async function serviceReports(now: Date): Promise<{ reports: ServiceRepor
     let built: Date | undefined;
     let verdict = "pulled";
     if (inputs) {
-      const image = await imageInfo(`${composeProject()}-${service}`);
+      const image = await imageInfo(`${composeProject()}-${service}`, platform);
       const result = freshness(image?.created, await latestSourceChange(inputs.paths, probe));
       built = result.kind === "undated" ? undefined : image?.created;
       verdict = result.kind === "no-image" ? "not built" : result.kind;
@@ -68,8 +86,8 @@ export async function serviceReports(now: Date): Promise<{ reports: ServiceRepor
       if (result.kind === "stale") {
         notes.push(`${service}: ${result.change.path} changed ${age(result.change.time, now)}, after the image was built`);
       }
-      const inUse = running.find((candidate) => candidate.service === service);
-      if (image && inUse && inUse.id !== image.id) {
+      const inUse = labels.get(service);
+      if (image && inUse && inUse !== image.id) {
         verdict += ", container on older image";
         notes.push(`${service}: the container runs an older image than the latest build — harness up recreates it`);
       }

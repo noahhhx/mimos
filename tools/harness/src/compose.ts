@@ -94,6 +94,33 @@ export async function containerImages(): Promise<{ service: string; image: strin
   }));
 }
 
+/**
+ * The label compose stamps on each container with the image it was created
+ * from — the identity `up` compares to decide whether to recreate it. On the
+ * containerd image store that is the platform's manifest digest, not the
+ * image index digest `docker image inspect` and `compose images` report: a
+ * rebuild can re-wrap an unchanged manifest in a new index.
+ */
+export const IMAGE_LABEL = "com.docker.compose.image";
+
+/** Per service, the image identity its container was created from (IMAGE_LABEL), from `docker inspect` output. */
+export function parseImageLabels(inspected: readonly unknown[]): Map<string, string> {
+  const labels = new Map<string, string>();
+  for (const container of inspected) {
+    const all = (container as { Config?: { Labels?: Record<string, string> | null } }).Config?.Labels ?? {};
+    const service = all["com.docker.compose.service"];
+    const image = all[IMAGE_LABEL];
+    if (service && image) labels.set(service, image);
+  }
+  return labels;
+}
+
+export async function containerImageLabels(): Promise<Map<string, string>> {
+  const containers = (await ps()).map((state) => state.container);
+  if (!containers.length) return new Map();
+  return parseImageLabels(JSON.parse(await execOk("docker", ["inspect", ...containers])) as unknown[]);
+}
+
 export interface CapturedLog {
   service: string;
   file: string;
