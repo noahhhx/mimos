@@ -58,14 +58,16 @@ public final class ProblemDetailSecurityHandlers implements AuthenticationEntryP
         response.setStatus(status.value());
         response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
-        objectMapper.writeValue(
-                response.getWriter(),
-                new Problem(
+        // Not writeValue(response.getWriter(), …): Jackson closes its target,
+        // which completes the response before the filters above us (the
+        // access log) have finished with it.
+        response.getWriter()
+                .write(objectMapper.writeValueAsString(new Problem(
                         URI.create("about:blank"),
                         status.getReasonPhrase(),
                         status.value(),
                         detail,
                         URI.create(request.getRequestURI()),
-                        Instant.now()));
+                        Instant.now())));
     }
 }
