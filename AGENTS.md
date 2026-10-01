@@ -166,7 +166,12 @@ is the contract:
 - Security failures (401/403) are RFC 9457 problem-details, as are API errors
   generally. Domain errors map once in `ApiExceptionHandler`:
   `IllegalArgumentException` → 400, `NoSuchElementException` → 404,
-  `ReadOnlyRecipeException` → 403.
+  `ReadOnlyRecipeException` → 403. It extends Spring's
+  `ResponseEntityExceptionHandler`, so Spring MVC's own errors (415, 405,
+  unknown-path 404, 406, malformed input) are problem-details too; anything
+  unmapped is a 500 problem, logged with its stack trace, its message never
+  sent. Adding method security means leaving its exceptions to the security
+  chain, not this catch-all.
 - `/actuator/health` and `/api/v1/public/**` are the only unauthenticated
   endpoints (compose probes and SEO pages).
 - API integration tests use Testcontainers Postgres **and** Keycloak (the

@@ -86,9 +86,11 @@ Decisions made while building, beyond the plan:
   calls `RequestLoggingFilter.recordFailure`), an exception escaping the
   chain (logged as a 500, then rethrown), or the exception Spring MVC
   resolved (`DispatcherServlet.EXCEPTION_ATTRIBUTE`, set for both
-  `ApiExceptionHandler` and Spring's own resolvers). Spring's
-  `DefaultHandlerExceptionResolver` still logs its own WARN for the errors
-  it resolves; it carries the request ID too.
+  `ApiExceptionHandler` and Spring's own resolvers). Since step 7,
+  `ApiExceptionHandler` resolves Spring MVC's own errors too, which log no
+  line of their own (405s aside, via Spring's `PageNotFound` WARN), so the
+  access line is their record; unexpected exceptions get an ERROR line with
+  the stack trace. Both carry the request ID.
 - **One filter, `RequestLoggingFilter`,** rather than a separate
   `RequestIdFilter` plus an access logger: the access line needs the ID in
   the MDC and has to wrap the same chain. Registered at
