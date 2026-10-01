@@ -564,6 +564,12 @@ input[type="search"] {
   border-top: 1px solid var(--line);
 }
 
+.form .actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .search {
   display: flex;
   gap: 8px;

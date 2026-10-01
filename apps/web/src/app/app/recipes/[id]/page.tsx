@@ -108,6 +108,7 @@ export default function RecipeDetailPage() {
               setRecipe(saved);
               setEditing(false);
             }}
+            onCancel={() => setEditing(false)}
           />
         </>
       ) : (

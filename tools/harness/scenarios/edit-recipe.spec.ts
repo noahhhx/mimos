@@ -2,7 +2,7 @@ import { expect, test } from "./fixtures.ts";
 
 /**
  * Create a recipe with a repeated tag, partial nutrition, and an unmeasured
- * ingredient, then edit it and land back on its view.
+ * ingredient, then cancel an edit and save one, landing back on its view.
  * Regression test for bugs found driving the form: a repeated tag was a 500
  * (duplicate `recipe_tag` row), the nutrition card hid carbs and fat unless
  * calories or protein were set, saving an edit left the page on the form,
@@ -41,6 +41,14 @@ test("creates a recipe, then edits it back to its view", async ({ loggedInPage: 
     const salt = recipe.locator(".ingredients li").nth(1);
     await expect(salt).toHaveText("salt, to taste");
     await expect(salt.locator(".quantity")).toHaveCount(0);
+  });
+
+  await test.step("cancel an edit and keep the recipe as it was", async () => {
+    await page.getByRole("button", { name: "Edit" }).click();
+    await expect(page.getByLabel("Ingredient 2 amount")).toHaveValue("");
+    await page.getByLabel("Title").fill("Never saved");
+    await page.getByRole("button", { name: "Cancel" }).click();
+    await expect(recipe.getByRole("heading", { name: title, level: 1 })).toBeVisible();
   });
 
   await test.step("save an edit and land back on the view", async () => {
