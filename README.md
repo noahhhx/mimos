@@ -36,6 +36,10 @@ Credentials are dev defaults; override via environment variables in
 
 ## Developing
 
+Nix users can get every toolchain (JDK 21, Node 22, MkDocs, Docker CLI) from
+[devenv](https://devenv.sh): run `devenv shell`, or `direnv allow` once to
+enter it automatically. Docker itself still needs a host daemon.
+
 ```bash
 ./mvnw -B verify          # backend build + tests (Testcontainers; needs Docker)
 npm test -w @mimos/country-week   # reference plugin tests (Node 22.18+)

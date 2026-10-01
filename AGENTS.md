@@ -224,6 +224,11 @@ mimos/
   deployable ships its Dockerfile and its compose service in the same
   change; images build in CI and run as non-root. "Works on my machine,
   outside Docker" does not count.
+- **Dev environment:** `devenv.nix` (+ `devenv.yaml`, `devenv.lock`,
+  `.envrc`) provides the toolchains for Nix users, pinned to match CI (JDK
+  21, Node 22, Python 3.13 + `docs/requirements.txt`). Keep it in sync when
+  CI versions change. It's optional: nothing may depend on it, and the
+  Docker daemon remains a host concern.
 - **Docs:** MkDocs. Doc changes ship with the code change they describe;
   `mkdocs build --strict` is the check once `mkdocs.yml` exists. Keep the
   nav in `mkdocs.yml` accurate; ADRs are pages under `docs/decisions/`.
