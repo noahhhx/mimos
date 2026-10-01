@@ -3,8 +3,7 @@
 #
 #   docker compose -f deploy/docker/compose.yml -f deploy/docker/compose.debug.yml up -d --wait
 #
-# Everything here stays local: later harness steps add actuator exposure
-# (step 4) and debug ports bound to 127.0.0.1 (step 5).
+# Everything here stays local: step 5 adds debug ports bound to 127.0.0.1.
 services:
   api:
     environment:
@@ -12,3 +11,21 @@ services:
       # `requestId` field and the access line's details as fields; the
       # default stack keeps human-readable logs.
       LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs
+      # Diagnostics for `harness diag` and `harness loglevel`. Every actuator
+      # endpoint but health already requires a bearer token (SecurityConfig);
+      # any valid token will do here. heapdump is deliberately left out: it
+      # holds secrets and is large.
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,mappings,env,configprops,loggers,metrics,threaddump,flyway
+      # Boot masks every env/configprops value by default, which leaves
+      # nothing to diagnose; the harness redacts secret-named keys before
+      # writing the snapshot instead.
+      MANAGEMENT_ENDPOINT_ENV_SHOW_VALUES: always
+      MANAGEMENT_ENDPOINT_CONFIGPROPS_SHOW_VALUES: always
+      MANAGEMENT_INFO_JAVA_ENABLED: "true"
+      MANAGEMENT_INFO_OS_ENABLED: "true"
+      MANAGEMENT_INFO_PROCESS_ENABLED: "true"
+
+  postgres:
+    # `harness up --debug --sql-log` sets this to 0: every statement is
+    # logged with its duration. -1 (the default) logs none.
+    command: ["postgres", "-c", "log_min_duration_statement=${POSTGRES_LOG_MIN_DURATION_STATEMENT:--1}"]

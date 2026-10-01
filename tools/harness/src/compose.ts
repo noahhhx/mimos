@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { HarnessError } from "./args.ts";
 import { COMPOSE_FILE, DEBUG_OVERLAY, REPO_ROOT } from "./config.ts";
-import { exec, execOk, type ExecOptions, type ExecResult } from "./exec.ts";
+import { exec, execInteractive, execOk, type ExecOptions, type ExecResult } from "./exec.ts";
 import { redactText } from "./redact.ts";
 import { writeRunFile, type Run } from "./run.ts";
 
@@ -34,6 +34,12 @@ export function composeEnv(env: NodeJS.ProcessEnv = process.env): NodeJS.Process
 export function compose(args: readonly string[], options: ExecOptions & { debug?: boolean } = {}): Promise<ExecResult> {
   const files = composeFiles(options.debug ?? false).flatMap((file) => ["-f", file]);
   return exec("docker", ["compose", ...files, ...args], { cwd: REPO_ROOT, env: composeEnv(), ...options });
+}
+
+/** `docker compose` on our terminal (e.g. an interactive `exec`); resolves to its exit code. */
+export function composeInteractive(args: readonly string[]): Promise<number> {
+  const files = composeFiles(false).flatMap((file) => ["-f", file]);
+  return execInteractive("docker", ["compose", ...files, ...args], { cwd: REPO_ROOT, env: composeEnv() });
 }
 
 async function composeOk(args: readonly string[]): Promise<string> {

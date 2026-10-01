@@ -1,8 +1,8 @@
 # Agent harness — plan
 
 **Status:** in progress — steps 1 (stack control and API driving), 2
-(browser driving), and 3 (logs and request correlation) are built; their
-pages document usage. This page is the high-level design; each step has
+(browser driving), 3 (logs and request correlation), and 4 (diagnostics)
+are built; their pages document usage. This page is the high-level design; each step has
 its own page (linked below) that gets fleshed out and updated as it is
 picked up. Edit freely — the plan is meant to be revisited.
 
@@ -91,7 +91,7 @@ browsers.
 
 | Command | Purpose | Step |
 | --- | --- | --- |
-| `harness up [--debug] [--no-build]` | Build images, `compose up --wait`, optionally with the debug overlay | 1, 3 |
+| `harness up [--debug [--sql-log]] [--no-build]` | Build images, `compose up --wait`, optionally with the debug overlay (and Postgres statement logging) | 1, 3, 4 |
 | `harness down` / `harness reset` | Stop the stack / stop and wipe volumes | 1 |
 | `harness status` | Service state, health, image build time vs. latest source change | 1 |
 | `harness token [--as <user>] [--decode]` | Access token via password grant | 1 |
@@ -99,8 +99,8 @@ browsers.
 | `harness logs [--service <s>] [--since <t>] [--request-id <id>]` | Capture/filter compose logs | 1, 3 |
 | `harness ui <scenario> [--headed] [--as <user>]` | Run a Playwright scenario with trace, HAR, console, screenshots | 2 |
 | `harness diag` | Diagnostics snapshot | 4 |
-| `harness loglevel <logger> <level>` | Change a log level live via actuator | 4 |
-| `harness psql` / `harness sql "<query>"` | Interactive / recorded database access | 4 |
+| `harness loglevel <logger> [<level>]` / `--reset` | Show or change a log level live via actuator; restore the changed ones | 4 |
+| `harness psql` / `harness sql "<query>" [--write] [--csv]` | Interactive / recorded (read-only by default) database access | 4 |
 | `harness debug break <location> --then "<harness cmd>"` | Scripted `jdb` breakpoint capture | 5 |
 
 ## Run folder
@@ -113,7 +113,8 @@ browsers.
 ├── api/exchanges.jsonl   # recorded HTTP request/response pairs (redacted)
 ├── browser/<scenario>/   # output.log, report.json, results/<test>/ (trace.zip, network.har, console.jsonl, screenshots)
 ├── logs/                 # <service>.log for each compose service
-├── diag/                 # diagnostics snapshot
+├── diag/                 # diagnostics snapshot: compose.json, actuator/, routes.txt, migrations.csv, plugins/, keycloak/
+├── sql/                  # <n>.txt / <n>.csv — one per harness sql query
 └── debug/                # breakpoint hits: stack, locals, expressions
 ```
 
@@ -129,7 +130,7 @@ and docs, per AGENTS.md.
 | 1 | [Stack control and API driving](step-1-stack-and-api.md) | Done |
 | 2 | [Browser driving](step-2-browser.md) | Done |
 | 3 | [Logs and request correlation](step-3-logs.md) | Done |
-| 4 | [Diagnostics](step-4-diagnostics.md) | Planned |
+| 4 | [Diagnostics](step-4-diagnostics.md) | Done |
 | 5 | [Debugger](step-5-debugger.md) | Planned |
 | 6 | [Agent skill, docs, and CI](step-6-skill-docs-ci.md) | Planned |
 | 7 | [First use: the recipe 415](step-7-recipe-415.md) | Planned |

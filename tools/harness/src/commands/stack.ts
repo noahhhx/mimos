@@ -1,6 +1,6 @@
-import { displayCommand, HarnessError, parseCommandArgs } from "../args.ts";
+import { displayCommand, HarnessError, parseCommandArgs, UsageError } from "../args.ts";
 import { fenced, finishRun, RUN_OPTION, RUN_USAGE, startRun, type Command } from "../command.ts";
-import { captureLogs, compose, isHealthy, ps, type ServiceState } from "../compose.ts";
+import { captureLogs, compose, composeEnv, isHealthy, ps, type ServiceState } from "../compose.ts";
 import { COMPOSE_FILE, composeProject, DEBUG_OVERLAY } from "../config.ts";
 import { exec } from "../exec.ts";
 import { redactText } from "../redact.ts";
@@ -8,12 +8,21 @@ import { appendSummary, writeRunFile } from "../run.ts";
 
 /** Stack lifecycle: up (always on freshly built images), down, reset. */
 
-export function parseUpArgs(argv: string[]): { build: boolean; debug: boolean; run: string | undefined } {
+export function parseUpArgs(argv: string[]): { build: boolean; debug: boolean; sqlLog: boolean; run: string | undefined } {
   const { values } = parseCommandArgs({
     args: argv,
-    options: { "no-build": { type: "boolean" }, debug: { type: "boolean" }, ...RUN_OPTION },
+    options: { "no-build": { type: "boolean" }, debug: { type: "boolean" }, "sql-log": { type: "boolean" }, ...RUN_OPTION },
   });
-  return { build: !values["no-build"], debug: values.debug ?? false, run: values.run };
+  if (values["sql-log"] && !values.debug) {
+    throw new UsageError("--sql-log needs --debug (the overlay sets Postgres's statement logging)");
+  }
+  return { build: !values["no-build"], debug: values.debug ?? false, sqlLog: values["sql-log"] ?? false, run: values.run };
+}
+
+/** compose.debug.yml reads this; anything but 0 (unset: -1) leaves statement logging off. */
+export function upEnv(sqlLog: boolean): NodeJS.ProcessEnv {
+  const { POSTGRES_LOG_MIN_DURATION_STATEMENT: _ignored, ...env } = composeEnv();
+  return sqlLog ? { ...env, POSTGRES_LOG_MIN_DURATION_STATEMENT: "0" } : env;
 }
 
 function stateTable(states: readonly ServiceState[]): string {
@@ -30,10 +39,12 @@ function tail(text: string, lines: number): string {
 export const upCommand: Command = {
   name: "up",
   summary: "Build images and start the stack, waiting until healthy",
-  usage: `harness up [--no-build] [--debug]
+  usage: `harness up [--no-build] [--debug [--sql-log]]
 
   --no-build   skip \`docker compose build\` (images may be stale — see harness status)
-  --debug      add the debug overlay ${DEBUG_OVERLAY} (JSON API logs; see docs/harness)
+  --debug      add the debug overlay ${DEBUG_OVERLAY} (JSON API logs, actuator
+               diagnostics for harness diag and harness loglevel; see docs/harness)
+  --sql-log    with --debug: Postgres logs every statement and its duration
 ${RUN_USAGE}
 
 Runs \`docker compose build\` then \`up -d --wait\` on ${COMPOSE_FILE}. Output is
@@ -51,7 +62,7 @@ are captured and the unhealthy ones are summarized in summary.md.`,
     };
 
     if (args.build) {
-      const build = await compose(["build"], { debug: args.debug, stream: true });
+      const build = await compose(["build"], { debug: args.debug, stream: true, env: upEnv(args.sqlLog) });
       writeRunFile(run, "compose/build.log", redactText(build.stdout + build.stderr));
       if (build.code !== 0) {
         section.push(
@@ -67,7 +78,7 @@ are captured and the unhealthy ones are summarized in summary.md.`,
       section.push("- Build skipped (`--no-build`).");
     }
 
-    const up = await compose(["up", "-d", "--wait"], { debug: args.debug, stream: true });
+    const up = await compose(["up", "-d", "--wait"], { debug: args.debug, stream: true, env: upEnv(args.sqlLog) });
     writeRunFile(run, "compose/up.log", redactText(up.stdout + up.stderr));
     const states = await ps();
     writeRunFile(run, "compose/ps.json", `${JSON.stringify(states, null, 2)}\n`);

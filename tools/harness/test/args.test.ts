@@ -3,8 +3,11 @@ import { test } from "node:test";
 
 import { displayCommand, parseHeader, UsageError } from "../src/args.ts";
 import { parseApiArgs, requestHeaders } from "../src/commands/api.ts";
+import { parseDiagArgs } from "../src/commands/diag.ts";
+import { parseLoglevelArgs } from "../src/commands/loglevel.ts";
 import { parseLogsArgs } from "../src/commands/logs.ts";
-import { parseUpArgs } from "../src/commands/stack.ts";
+import { parseSqlArgs } from "../src/commands/sql.ts";
+import { parseUpArgs, upEnv } from "../src/commands/stack.ts";
 import { parseTokenArgs } from "../src/commands/token.ts";
 import { parseUiArgs, scenarioNames } from "../src/commands/ui.ts";
 
@@ -97,8 +100,8 @@ test("token, up, and logs options", () => {
   assert.deepEqual(parseTokenArgs([]), { user: "test", decode: false });
   assert.deepEqual(parseTokenArgs(["--as", "test2", "--decode"]), { user: "test2", decode: true });
   assert.throws(() => parseTokenArgs(["--as", "root"]), UsageError);
-  assert.deepEqual(parseUpArgs([]), { build: true, debug: false, run: undefined });
-  assert.deepEqual(parseUpArgs(["--no-build", "--debug"]), { build: false, debug: true, run: undefined });
+  assert.deepEqual(parseUpArgs([]), { build: true, debug: false, sqlLog: false, run: undefined });
+  assert.deepEqual(parseUpArgs(["--no-build", "--debug"]), { build: false, debug: true, sqlLog: false, run: undefined });
   assert.deepEqual(parseLogsArgs(["--service", "api", "--service", "web", "--since", "10m"]), {
     services: ["api", "web"],
     since: "10m",
@@ -135,4 +138,49 @@ test("displayCommand quotes only what needs quoting", () => {
     "harness api POST /api/v1/recipes -H 'Content-Type: text/plain'",
   );
   assert.equal(displayCommand(["x", "it's"]), `harness x 'it'\\''s'`);
+});
+
+test("up: --sql-log needs the debug overlay, and is the only way to turn statement logging on", () => {
+  assert.equal(parseUpArgs(["--debug", "--sql-log"]).sqlLog, true);
+  assert.throws(() => parseUpArgs(["--sql-log"]), UsageError);
+  const saved = process.env.POSTGRES_LOG_MIN_DURATION_STATEMENT;
+  process.env.POSTGRES_LOG_MIN_DURATION_STATEMENT = "0";
+  try {
+    assert.equal(upEnv(false).POSTGRES_LOG_MIN_DURATION_STATEMENT, undefined, "an exported value does not leak into a plain --debug");
+    assert.equal(upEnv(true).POSTGRES_LOG_MIN_DURATION_STATEMENT, "0");
+  } finally {
+    if (saved === undefined) delete process.env.POSTGRES_LOG_MIN_DURATION_STATEMENT;
+    else process.env.POSTGRES_LOG_MIN_DURATION_STATEMENT = saved;
+  }
+});
+
+test("diag: recent logs default to 15 minutes", () => {
+  assert.deepEqual(parseDiagArgs([]), { since: "15m", run: undefined });
+  assert.deepEqual(parseDiagArgs(["--since", "1h", "--run", "latest"]), { since: "1h", run: "latest" });
+  assert.throws(() => parseDiagArgs(["api"]), UsageError);
+});
+
+test("loglevel: show, set (level case-insensitive), or reset", () => {
+  assert.deepEqual(parseLoglevelArgs(["org.springframework.web"]), { kind: "show", logger: "org.springframework.web", run: undefined });
+  assert.deepEqual(parseLoglevelArgs(["org.springframework.web", "debug"]), {
+    kind: "set",
+    logger: "org.springframework.web",
+    level: "DEBUG",
+    run: undefined,
+  });
+  assert.equal(parseLoglevelArgs(["ROOT", "WARN"]).kind, "set");
+  assert.deepEqual(parseLoglevelArgs(["--reset"]), { kind: "reset", run: undefined });
+  assert.throws(() => parseLoglevelArgs([]), UsageError);
+  assert.throws(() => parseLoglevelArgs(["org.springframework.web", "VERBOSE"]), UsageError);
+  assert.throws(() => parseLoglevelArgs(["--reset", "ROOT"]), UsageError);
+  assert.throws(() => parseLoglevelArgs(["../env", "DEBUG"]), UsageError, "a logger name never reaches the URL unchecked");
+  assert.throws(() => parseLoglevelArgs(["a", "DEBUG", "extra"]), UsageError);
+});
+
+test("sql: one quoted query, read-only unless --write", () => {
+  assert.deepEqual(parseSqlArgs(["select 1"]), { query: "select 1", write: false, csv: false, run: undefined });
+  assert.deepEqual(parseSqlArgs(["delete from t", "--write", "--csv"]), { query: "delete from t", write: true, csv: true, run: undefined });
+  assert.throws(() => parseSqlArgs([]), UsageError);
+  assert.throws(() => parseSqlArgs(["  "]), UsageError);
+  assert.throws(() => parseSqlArgs(["select", "1"]), UsageError, "an unquoted query is two arguments");
 });

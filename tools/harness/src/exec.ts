@@ -54,3 +54,14 @@ export async function execOk(command: string, args: readonly string[], options: 
   }
   return result.stdout;
 }
+
+/** Runs a command on our terminal (stdin, stdout, stderr inherited) — for interactive tools; resolves to its exit code. */
+export function execInteractive(command: string, args: readonly string[], options: ExecOptions = {}): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { cwd: options.cwd, env: options.env, stdio: "inherit" });
+    child.on("error", (error: NodeJS.ErrnoException) => {
+      reject(error.code === "ENOENT" ? new HarnessError(`${command} not found on PATH — run the harness as \`devenv shell -- harness …\``) : error);
+    });
+    child.on("close", (code) => resolve(code ?? 1));
+  });
+}

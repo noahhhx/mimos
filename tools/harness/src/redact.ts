@@ -42,6 +42,34 @@ export function redactJson(value: unknown): unknown {
   return value;
 }
 
+/** Configuration keys that name a secret, in any spelling: `SPRING_DATASOURCE_PASSWORD`, `client-secret`, `apiKey`. */
+const SECRET_KEY = /pass(word|wd)|secret|token|credential|api.?key|private.?key/i;
+
+/**
+ * Actuator `env`/`configprops` (the debug overlay shows their values): a
+ * string under a key that names a secret is replaced — a `{value, origin}`
+ * entry keeps its origin; numbers (`maxTokenCount`) and nested groups
+ * (`opaquetoken: {client-secret, …}`, recursed into) are not secrets
+ * themselves — then everything else as for redactJson.
+ */
+export function redactConfig(value: unknown, secret = false): unknown {
+  if (typeof value === "string") {
+    return secret ? REDACTED : redactText(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => redactConfig(item, secret));
+  }
+  if (value === null || typeof value !== "object") {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value).map(([key, field]) => {
+      if (secret && key === "value") return [key, redactConfig(field, true)];
+      return [key, redactConfig(field, SECRET_KEY.test(key))];
+    }),
+  );
+}
+
 const JWT = /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*/g;
 const BEARER = /\b(Bearer)\s+[A-Za-z0-9._~+/-]+=*/gi;
 

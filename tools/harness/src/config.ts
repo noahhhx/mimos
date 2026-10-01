@@ -16,6 +16,9 @@ export const DEBUG_OVERLAY = "deploy/docker/compose.debug.yml";
 /** Evidence lives here (gitignored, dockerignored). */
 export const RUNS_DIR = ".harness/runs";
 
+/** Log levels `harness loglevel` changed, with their originals, so `--reset` can restore them. */
+export const LOGLEVEL_STATE = ".harness/loglevels.json";
+
 export const REALM = "mimos";
 
 export interface Endpoints {
@@ -35,6 +38,14 @@ export function endpoints(env: Env = process.env): Endpoints {
     clientId: env.KEYCLOAK_CLIENT_ID ?? "mimos-web",
   };
 }
+
+/** The stack's database, as compose.yml names it (`psql` runs inside the postgres container). */
+export function database(env: Env = process.env): { user: string; name: string } {
+  return { user: env.POSTGRES_USER ?? "mimos", name: env.POSTGRES_DB ?? "mimos" };
+}
+
+/** Flyway migrations (the API owns the schema); `harness diag` compares them with what is applied. */
+export const MIGRATIONS_DIR = "apps/api/src/main/resources/db/migration";
 
 /** The compose project name (`name:` in compose.yml) — images are `<project>-<service>`. */
 export function composeProject(env: Env = process.env): string {

@@ -249,10 +249,14 @@ mimos/
   exploration. `@playwright/test` is pinned to nixpkgs'
   `playwright-driver` version — bump both together. Prefer `harness up` over a
   bare `docker compose up`: it always rebuilds images. `harness up --debug`
-  adds `deploy/docker/compose.debug.yml` (JSON API logs; later, actuator
-  and debug ports) — debug-only behavior goes there, never in
-  `compose.yml`. `harness logs --request-id <id>` gathers one request's
-  lines across services. Planned in
+  adds `deploy/docker/compose.debug.yml` (JSON API logs, actuator
+  diagnostics; later, debug ports) — debug-only behavior goes there, never
+  in `compose.yml`. `harness logs --request-id <id>` gathers one request's
+  lines across services. `harness diag` snapshots the stack (state,
+  actuator, `routes.txt` with each route's media types, migrations vs. the
+  repo, plugin manifests) with secrets redacted; `harness loglevel` changes
+  API log levels live (`--reset` restores them); `harness sql "<query>"`
+  queries the database read-only by default. Planned in
   `docs/harness/` (high-level plan + one page per step; built steps' pages
   document usage). Read it before building harness pieces; keep step pages
   and their status current as steps land.
@@ -314,6 +318,9 @@ mimos/
   (`node --test`; Node 22.18+ for native type stripping).
 - `npm run typecheck -w @mimos/harness` and `npm test -w @mimos/harness` —
   the agent harness's types and unit tests (no Docker or browsers needed).
+- `devenv shell -- harness diag` — diagnostics snapshot of a running
+  stack (full with `harness up --debug`); exit 1 means it found a problem
+  (listed in `.harness/runs/latest/summary.md`).
 - `devenv shell -- harness ui login` — browser smoke against a running
   stack (Chromium from devenv); `harness ui create-recipe` is expected to
   fail until the recipe 415 is fixed (`docs/harness/step-7-recipe-415.md`).

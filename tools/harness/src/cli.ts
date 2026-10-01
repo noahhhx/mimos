@@ -5,7 +5,10 @@ import { fileURLToPath } from "node:url";
 import { HarnessError, UsageError } from "./args.ts";
 import type { Command } from "./command.ts";
 import { apiCommand } from "./commands/api.ts";
+import { diagCommand } from "./commands/diag.ts";
+import { loglevelCommand } from "./commands/loglevel.ts";
 import { logsCommand } from "./commands/logs.ts";
+import { psqlCommand, sqlCommand } from "./commands/sql.ts";
 import { downCommand, resetCommand, upCommand } from "./commands/stack.ts";
 import { statusCommand } from "./commands/status.ts";
 import { tokenCommand } from "./commands/token.ts";
@@ -26,6 +29,10 @@ export const COMMANDS: readonly Command[] = [
   apiCommand,
   uiCommand,
   logsCommand,
+  diagCommand,
+  loglevelCommand,
+  sqlCommand,
+  psqlCommand,
 ];
 
 function version(): string {

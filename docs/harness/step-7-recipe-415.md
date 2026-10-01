@@ -67,6 +67,15 @@ early step is conclusive, fix it then and keep this page as the record.
   supported`, alongside Spring's `DefaultHandlerExceptionResolver` WARN.
   This confirms step 2 from the server side and adds nothing new about the
   cause, which lies in what the browser sends.
+- **Step 4 (2026-10-01).** `harness diag`'s `routes.txt` has exactly one
+  handler for `POST /api/v1/recipes`, and it declares `consumes=application/json`.
+  With `harness loglevel org.springframework.web DEBUG`, the failing
+  request logs `DispatcherServlet: POST "/api/v1/recipes"`, then the 415,
+  with **no `Mapped to …` line**. Handler mapping found no match, because
+  a request without a `Content-Type` fails the `consumes` condition. No
+  handler or message converter ever ran. So the server is behaving as
+  declared, and the fix belongs where the browser request is built (or,
+  if bodies without a media type should be accepted, in the contract).
 
 ## Done when
 

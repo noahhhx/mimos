@@ -22,7 +22,7 @@ async function imageInfo(image: string): Promise<{ id: string; created: Date } |
   return times.length ? { id: info.Id, created: new Date(Math.max(...times)) } : undefined;
 }
 
-function age(from: Date, to: Date): string {
+export function age(from: Date, to: Date): string {
   const minutes = Math.round((to.getTime() - from.getTime()) / 60_000);
   if (minutes < 60) return `${minutes}m ago`;
   if (minutes < 48 * 60) return `${Math.round(minutes / 60)}h ago`;
@@ -32,6 +32,51 @@ function age(from: Date, to: Date): string {
 function table(rows: string[][]): string {
   const widths = rows[0]!.map((_, column) => Math.max(...rows.map((row) => row[column]!.length)));
   return rows.map((row) => row.map((cell, column) => cell.padEnd(widths[column]!)).join("  ").trimEnd()).join("\n");
+}
+
+export interface ServiceReport {
+  service: string;
+  state: string;
+  health: string;
+  /** When a build last produced the image; undefined for pulled images and unknown build times. */
+  built: Date | undefined;
+  /** `fresh`, `stale`, `not built`, `undated`, `pulled` — plus `, container on older image`. */
+  verdict: string;
+}
+
+/** Every service's state and image freshness, plus one note per problem (stale, undated, outdated container). */
+export async function serviceReports(now: Date): Promise<{ reports: ServiceReport[]; notes: string[] }> {
+  const [states, running] = await Promise.all([ps(), containerImages().catch(() => [])]);
+  const probe = gitProbe(REPO_ROOT);
+  const notes: string[] = [];
+  const reports: ServiceReport[] = [];
+
+  const names = [...new Set([...states.map((state) => state.service), ...Object.keys(BUILD_INPUTS)])];
+  for (const service of names) {
+    const state = states.find((candidate) => candidate.service === service);
+    const inputs = BUILD_INPUTS[service];
+    let built: Date | undefined;
+    let verdict = "pulled";
+    if (inputs) {
+      const image = await imageInfo(`${composeProject()}-${service}`);
+      const result = freshness(image?.created, await latestSourceChange(inputs.paths, probe));
+      built = result.kind === "undated" ? undefined : image?.created;
+      verdict = result.kind === "no-image" ? "not built" : result.kind;
+      if (result.kind === "undated") {
+        notes.push(`${service}: the image was built with SOURCE_DATE_EPOCH set, so its build time is unknown`);
+      }
+      if (result.kind === "stale") {
+        notes.push(`${service}: ${result.change.path} changed ${age(result.change.time, now)}, after the image was built`);
+      }
+      const inUse = running.find((candidate) => candidate.service === service);
+      if (image && inUse && inUse.id !== image.id) {
+        verdict += ", container on older image";
+        notes.push(`${service}: the container runs an older image than the latest build — harness up recreates it`);
+      }
+    }
+    reports.push({ service, state: state?.state ?? "absent", health: state?.health ?? "", built, verdict });
+  }
+  return { reports, notes };
 }
 
 export const statusCommand: Command = {
@@ -44,35 +89,11 @@ image was built; run harness up (it always rebuilds) to refresh.`,
   async run(argv) {
     parseCommandArgs({ args: argv, options: {} });
     const now = new Date();
-    const [states, running] = await Promise.all([ps(), containerImages().catch(() => [])]);
-    const probe = gitProbe(REPO_ROOT);
-    const notes: string[] = [];
+    const { reports, notes } = await serviceReports(now);
     const rows = [["SERVICE", "STATE", "HEALTH", "IMAGE BUILT", "IMAGE"]];
-
-    const names = [...new Set([...states.map((state) => state.service), ...Object.keys(BUILD_INPUTS)])];
-    for (const service of names) {
-      const state = states.find((candidate) => candidate.service === service);
-      const inputs = BUILD_INPUTS[service];
-      let built = "—";
-      let verdict = "pulled";
-      if (inputs) {
-        const image = await imageInfo(`${composeProject()}-${service}`);
-        const result = freshness(image?.created, await latestSourceChange(inputs.paths, probe));
-        built = image ? (result.kind === "undated" ? "unknown" : age(image.created, now)) : "never";
-        verdict = result.kind === "no-image" ? "not built" : result.kind;
-        if (result.kind === "undated") {
-          notes.push(`${service}: the image was built with SOURCE_DATE_EPOCH set, so its build time is unknown`);
-        }
-        if (result.kind === "stale") {
-          notes.push(`${service}: ${result.change.path} changed ${age(result.change.time, now)}, after the image was built`);
-        }
-        const inUse = running.find((candidate) => candidate.service === service);
-        if (image && inUse && inUse.id !== image.id) {
-          verdict += ", container on older image";
-          notes.push(`${service}: the container runs an older image than the latest build — harness up recreates it`);
-        }
-      }
-      rows.push([service, state?.state ?? "absent", state?.health || "—", built, verdict]);
+    for (const report of reports) {
+      const built = report.built ? age(report.built, now) : report.verdict === "pulled" ? "—" : report.verdict.startsWith("undated") ? "unknown" : "never";
+      rows.push([report.service, report.state, report.health || "—", built, report.verdict]);
     }
 
     process.stdout.write(`${table(rows)}\n`);
