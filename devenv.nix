@@ -35,10 +35,21 @@
     pkgs.docker-client
     pkgs.docker-compose
     pkgs.git
+    # Agent harness: ad-hoc inspection of JSON evidence in .harness/runs/.
+    pkgs.jq
   ];
 
+  # Agent harness (docs/harness/): deploy, drive, observe, and debug the local
+  # stack. Agents call it as `devenv shell -- harness <cmd>`.
+  scripts.harness = {
+    exec = ''node "$DEVENV_ROOT/tools/harness/src/cli.ts" "$@"'';
+    description = "Mimos agent harness — harness --help";
+  };
+
   enterShell = ''
-    echo "mimos dev shell: $(java -version 2>&1 | head -n1), node $(node --version)"
+    # stderr, so `devenv shell -- <cmd>` leaves the command's stdout clean
+    # (e.g. TOKEN=$(devenv shell -- harness token)).
+    echo "mimos dev shell: $(java -version 2>&1 | head -n1), node $(node --version)" >&2
     if ! docker info >/dev/null 2>&1; then
       echo "warning: no Docker daemon reachable — ./mvnw verify (Testcontainers) and compose need one" >&2
     fi
@@ -49,5 +60,6 @@
     node -e 'const [a,b]=process.versions.node.split(".").map(Number); process.exit(a>22||(a===22&&b>=18)?0:1)'
     mkdocs --version
     ./mvnw -v
+    harness --version
   '';
 }

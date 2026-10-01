@@ -75,9 +75,13 @@ jobs:
           npm run typecheck -w @mimos/api-client
           npm run typecheck -w @mimos/plugin-sdk
           npm run typecheck -w @mimos/country-week
+          npm run typecheck -w @mimos/harness
 
       - name: Test reference plugin
         run: npm test -w @mimos/country-week
+
+      - name: Test agent harness
+        run: npm test -w @mimos/harness
 
       - name: Build web app
         run: |

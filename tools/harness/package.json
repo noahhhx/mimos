@@ -1,0 +1,19 @@
+{
+  "name": "@mimos/harness",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Mimos agent harness — deploy, drive, observe, and debug the local compose stack, with evidence written to .harness/runs/. Zero runtime dependencies: plain TypeScript on Node's native type stripping. See docs/harness/.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/*.test.ts",
+    "harness": "node src/cli.ts"
+  },
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "typescript": "~5.9.3"
+  }
+}

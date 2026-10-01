@@ -226,7 +226,9 @@ mimos/
   Testcontainers), local dev (via compose), and CI all require it. A new
   deployable ships its Dockerfile and its compose service in the same
   change; images build in CI and run as non-root. "Works on my machine,
-  outside Docker" does not count.
+  outside Docker" does not count. The web and plugin images `npm ci` the
+  whole npm workspace from its manifests, so a new workspace's
+  `package.json` is copied into those Dockerfiles too.
 - **Dev environment:** `devenv.nix` (+ `devenv.yaml`, `devenv.lock`,
   `.envrc`) provides the toolchains for Nix users, pinned to match CI (JDK
   21, Node 22, Python 3.13 + `docs/requirements.txt`). Keep it in sync when
@@ -235,10 +237,16 @@ mimos/
   tooling is the exception:** anything an agent needs to drive the repo
   (the debug harness, browsers, MCP servers, `jdb`, `jq`) comes from
   `devenv.nix` / nixpkgs — never ad-hoc downloads or host installs — and
-  agents invoke it as `devenv shell -- <cmd>`.
-- **Agent harness:** planned in `docs/harness/` (high-level plan + one page
-  per step). Read it before building harness pieces; keep step pages and
-  their status current as steps land.
+  agents invoke it as `devenv shell -- <cmd>`. The shell's banner goes to
+  stderr so that command's stdout stays clean.
+- **Agent harness:** `tools/harness` (`@mimos/harness`), on the PATH in the
+  devenv shell as `harness`; `devenv shell -- harness --help` lists the
+  commands, and evidence lands in `.harness/runs/<run>/` (gitignored) —
+  read `.harness/runs/latest/summary.md` first. Prefer `harness up` over a
+  bare `docker compose up`: it always rebuilds images. Planned in
+  `docs/harness/` (high-level plan + one page per step; built steps' pages
+  document usage). Read it before building harness pieces; keep step pages
+  and their status current as steps land.
 - **Docs:** MkDocs. Doc changes ship with the code change they describe;
   `mkdocs build --strict` is the check once `mkdocs.yml` exists. Keep the
   nav in `mkdocs.yml` accurate; ADRs are pages under `docs/decisions/`.
@@ -285,10 +293,13 @@ mimos/
   frontend types and production build.
 - `npm test -w @mimos/country-week` — the reference plugin's tests
   (`node --test`; Node 22.18+ for native type stripping).
+- `npm run typecheck -w @mimos/harness` and `npm test -w @mimos/harness` —
+  the agent harness's types and unit tests (no Docker needed).
 - `docker compose -f deploy/docker/compose.yml up -d --wait` — boots the
   full self-hosted stack (Postgres, Keycloak, API, web, and the reference
   plugin `country-week`); healthy when `--wait` returns 0. Note: `up` does
-  not rebuild images — run `docker compose build` first when code changed.
+  not rebuild images — run `docker compose build` first when code changed
+  (`devenv shell -- harness up` does both and records the outcome).
   Smoke: API at `http://localhost:8080/actuator/health`, Keycloak realm at
   `http://localhost:8081/realms/mimos`, web at `http://localhost:3000`
   (log in with `test` / `mimos-test`; the realm also ships `test2`, same

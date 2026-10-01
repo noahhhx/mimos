@@ -1,8 +1,9 @@
 # Agent harness — plan
 
-**Status:** planned. Nothing here is built yet. This page is the high-level
-design; each step has its own page (linked below) that gets fleshed out and
-updated as it is picked up. Edit freely — the plan is meant to be revisited.
+**Status:** in progress — step 1 (stack control and API driving) is built;
+its page documents usage. This page is the high-level design; each step has
+its own page (linked below) that gets fleshed out and updated as it is
+picked up. Edit freely — the plan is meant to be revisited.
 
 ## Why
 
@@ -89,11 +90,11 @@ browsers.
 
 | Command | Purpose | Step |
 | --- | --- | --- |
-| `harness up [--debug] [--no-build]` | Build images, `compose up --wait`, optionally with the debug overlay | 1 |
+| `harness up [--debug] [--no-build]` | Build images, `compose up --wait`, optionally with the debug overlay (`--debug` from step 3) | 1 |
 | `harness down` / `harness reset` | Stop the stack / stop and wipe volumes | 1 |
 | `harness status` | Service state, health, image build time vs. latest source change | 1 |
 | `harness token [--as <user>] [--decode]` | Access token via password grant | 1 |
-| `harness api <METHOD> <path> [--body <file>] [--as <user>\|--anon]` | Recorded HTTP call to the API | 1 |
+| `harness api <METHOD> <path> [--body <file>\|-] [-H K:V]... [--as <user>\|--anon]` | Recorded HTTP call to the API | 1 |
 | `harness logs [--service <s>] [--since <t>] [--request-id <id>]` | Capture/filter compose logs | 1, 3 |
 | `harness ui <scenario> [--headed] [--as <user>]` | Run a Playwright scenario with trace, HAR, console, screenshots | 2 |
 | `harness diag` | Diagnostics snapshot | 4 |
@@ -106,7 +107,8 @@ browsers.
 ```
 .harness/runs/2026-10-01T15-04-12Z-create-recipe/
 ├── summary.md            # read first: what ran, outcome, failing requests, pointers
-├── command.json          # exact invocation, git SHA, dirty flag, image IDs
+├── command.json          # one entry per invocation: argv, git SHA, dirty flag, image IDs
+├── compose/              # build/up output and service states (harness up)
 ├── api/exchanges.jsonl   # recorded HTTP request/response pairs (redacted)
 ├── browser/              # trace.zip, network.har, console.jsonl, screenshots/
 ├── logs/                 # <service>.log for each compose service
@@ -123,7 +125,7 @@ and docs, per AGENTS.md.
 
 | # | Step | Status |
 | --- | --- | --- |
-| 1 | [Stack control and API driving](step-1-stack-and-api.md) | Planned |
+| 1 | [Stack control and API driving](step-1-stack-and-api.md) | Done |
 | 2 | [Browser driving](step-2-browser.md) | Planned |
 | 3 | [Logs and request correlation](step-3-logs.md) | Planned |
 | 4 | [Diagnostics](step-4-diagnostics.md) | Planned |

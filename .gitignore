@@ -33,3 +33,6 @@ openapi-ts-error-*.log
 devenv.local.nix
 devenv.local.yaml
 .direnv/
+
+# Agent harness evidence (run folders)
+.harness/

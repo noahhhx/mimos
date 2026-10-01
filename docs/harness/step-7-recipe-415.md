@@ -36,6 +36,21 @@ showed, so the harness's usefulness is judged on a real case.
 The fix may be useful before all steps are built — if the evidence from an
 early step is conclusive, fix it then and keep this page as the record.
 
+## Evidence log
+
+- **Step 1 (2026-10-01).** `harness api POST /api/v1/recipes` with a
+  well-formed JSON body (`Content-Type: application/json`) as `test` →
+  **201 Created**. The server accepts JSON, so the difference lies in what
+  the browser sends — step 2's HAR should show it. For comparison, the same
+  body with `-H 'Content-Type: text/plain'` → 415, with the API logging
+  `DefaultHandlerExceptionResolver : Resolved
+  [HttpMediaTypeNotSupportedException: Content-Type 'text/plain' is not
+  supported]` at WARN. Side finding: that 415's body is Spring's default
+  error JSON (`application/json`, `timestamp`/`status`/`error`/`path`),
+  not RFC 9457 problem-details as AGENTS.md requires. Errors Spring
+  resolves itself bypass `ApiExceptionHandler` (step 3 already notes this
+  for logging).
+
 ## Done when
 
 - The root cause is written down on this page (evidence → cause → fix).
