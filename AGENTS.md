@@ -47,6 +47,7 @@ change** — an out-of-date AGENTS.md is worse than none.
 | Library content | Seed file `core/core-recipes/src/main/resources/library/library-seed.json`, loaded by an idempotent startup seeder (`mimos.library.seed-enabled`, default on). Content fixes ship with a restart; never via Flyway migrations. See ADR-0005. |
 | Public API | Unauthenticated read-only access to the curated library under `/api/v1/public/**` (SEO pages). Personal recipes never appear there; everything else requires a bearer token. |
 | Plugins    | HTTP sidecar plugins, pull-only in v1: config registry (`mimos.plugins.*`), manifest at `GET /manifest`, one capability (`plan-suggestions`), declarative cards, library-only context. See ADR-0006. |
+| Agent harness | `tools/harness` (`@mimos/harness`, TypeScript on Node type stripping) behind a devenv `harness` script; all agent tooling from devenv/nixpkgs; Playwright pinned to nixpkgs' `playwright-driver`; `.mcp.json` committed; debug-only behavior in `deploy/docker/compose.debug.yml`; scenarios run in CI via devenv. Plan and decisions in `docs/harness/`. |
 
 ## Open decisions — resolve with the owner before building against them
 
@@ -177,7 +178,7 @@ mimos/
 ├── AGENTS.md             # this file
 ├── pom.xml               # Maven parent/aggregator for the backend
 ├── mkdocs.yml            # documentation config
-├── docs/                 # MkDocs source: guides, plugin authoring, decisions/ADRs
+├── docs/                 # MkDocs source: guides, plugin authoring, harness plan, decisions/ADRs
 ├── apps/
 │   ├── api/              # Spring Boot modular monolith (the only deployable backend)
 │   └── web/              # Next.js frontend
@@ -194,6 +195,8 @@ mimos/
 │   └── plugin-sdk/       # @mimos/plugin-sdk — generated TypeScript types for the plugin API (committed)
 ├── plugins/
 │   └── country-week/     # reference plugin (build early to prove the API)
+├── tools/
+│   └── harness/          # agent harness: deploy, drive, observe, debug the stack (docs/harness)
 └── deploy/
     ├── docker/           # compose: postgres, keycloak, api, (web, minio)
     ├── keycloak/         # realm export / config
@@ -227,8 +230,15 @@ mimos/
 - **Dev environment:** `devenv.nix` (+ `devenv.yaml`, `devenv.lock`,
   `.envrc`) provides the toolchains for Nix users, pinned to match CI (JDK
   21, Node 22, Python 3.13 + `docs/requirements.txt`). Keep it in sync when
-  CI versions change. It's optional: nothing may depend on it, and the
-  Docker daemon remains a host concern.
+  CI versions change. Product paths (build, tests, compose, CI) must not
+  depend on it, and the Docker daemon remains a host concern. **Agent
+  tooling is the exception:** anything an agent needs to drive the repo
+  (the debug harness, browsers, MCP servers, `jdb`, `jq`) comes from
+  `devenv.nix` / nixpkgs — never ad-hoc downloads or host installs — and
+  agents invoke it as `devenv shell -- <cmd>`.
+- **Agent harness:** planned in `docs/harness/` (high-level plan + one page
+  per step). Read it before building harness pieces; keep step pages and
+  their status current as steps land.
 - **Docs:** MkDocs. Doc changes ship with the code change they describe;
   `mkdocs build --strict` is the check once `mkdocs.yml` exists. Keep the
   nav in `mkdocs.yml` accurate; ADRs are pages under `docs/decisions/`.

@@ -15,6 +15,15 @@ nav:
   - Home: index.md
   - Plugins:
       - Authoring: plugins/index.md
+  - Agent harness:
+      - Plan: harness/index.md
+      - '1. Stack control and API driving': harness/step-1-stack-and-api.md
+      - '2. Browser driving': harness/step-2-browser.md
+      - '3. Logs and request correlation': harness/step-3-logs.md
+      - '4. Diagnostics': harness/step-4-diagnostics.md
+      - '5. Debugger': harness/step-5-debugger.md
+      - '6. Agent skill, docs, and CI': harness/step-6-skill-docs-ci.md
+      - '7. First use: the recipe 415': harness/step-7-recipe-415.md
   - Decisions:
       - Index: decisions/index.md
       - 'ADR-0001: Backend module layout': decisions/adr-0001-backend-module-layout.md
