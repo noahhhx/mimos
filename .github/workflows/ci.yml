@@ -135,7 +135,7 @@ jobs:
           curl -fsS -H "Authorization: Bearer $token" http://localhost:8080/api/v1/me | grep -q '"displayName":"test"'
           # Unauthenticated requests must be rejected with problem-details.
           curl -sS http://localhost:8080/api/v1/me -o /dev/null -w '%{http_code} %{content_type}' \
-            | grep -q '401 application/problem\\+json'
+            | grep -qF '401 application/problem+json'
 
       - name: Smoke test - plugin suggestion appears end to end
         run: |
