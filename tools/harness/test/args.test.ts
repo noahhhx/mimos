@@ -6,6 +6,7 @@ import { parseApiArgs, requestHeaders } from "../src/commands/api.ts";
 import { parseLogsArgs } from "../src/commands/logs.ts";
 import { parseUpArgs } from "../src/commands/stack.ts";
 import { parseTokenArgs } from "../src/commands/token.ts";
+import { parseUiArgs, scenarioNames } from "../src/commands/ui.ts";
 
 test("api: method and path, defaulting to the test user", () => {
   assert.deepEqual(parseApiArgs(["get", "/api/v1/me"]), {
@@ -96,6 +97,25 @@ test("token, up, and logs options", () => {
     run: undefined,
   });
   assert.throws(() => parseUpArgs(["extra"]), UsageError);
+});
+
+test("ui: one known scenario, headless as the test user by default", () => {
+  const known = ["create-recipe", "login"];
+  assert.deepEqual(parseUiArgs(["login"], known), { scenario: "login", headed: false, user: "test", run: undefined });
+  assert.deepEqual(parseUiArgs(["create-recipe", "--headed", "--as", "test2", "--run", "latest"], known), {
+    scenario: "create-recipe",
+    headed: true,
+    user: "test2",
+    run: "latest",
+  });
+  assert.throws(() => parseUiArgs([], known), UsageError);
+  assert.throws(() => parseUiArgs(["login", "create-recipe"], known), UsageError);
+  assert.throws(() => parseUiArgs(["nope"], known), /scenarios: create-recipe, login/);
+  assert.throws(() => parseUiArgs(["login", "--as", "admin"], known), UsageError);
+});
+
+test("ui: scenarios are the spec files in tools/harness/scenarios", () => {
+  assert.deepEqual(scenarioNames(), ["create-recipe", "login"]);
 });
 
 test("displayCommand quotes only what needs quoting", () => {

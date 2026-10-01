@@ -9,6 +9,7 @@ import { logsCommand } from "./commands/logs.ts";
 import { downCommand, resetCommand, upCommand } from "./commands/stack.ts";
 import { statusCommand } from "./commands/status.ts";
 import { tokenCommand } from "./commands/token.ts";
+import { uiCommand } from "./commands/ui.ts";
 
 /**
  * `harness <command>` — deploy, drive, observe, and debug the local stack.
@@ -23,6 +24,7 @@ export const COMMANDS: readonly Command[] = [
   statusCommand,
   tokenCommand,
   apiCommand,
+  uiCommand,
   logsCommand,
 ];
 

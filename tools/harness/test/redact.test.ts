@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { REDACTED, redactBody, redactHeaders, redactJson, redactText } from "../src/redact.ts";
+import { REDACTED, redactBody, redactHar, redactHeaders, redactJson, redactText } from "../src/redact.ts";
 
 const JWT = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxMjMifQ.c2lnbmF0dXJl";
 
@@ -44,4 +44,55 @@ test("bodies: form fields, JSON fields, and untouched JSON keeps its formatting"
   const pretty = '{\n  "title": "Soup"\n}';
   assert.equal(redactBody(pretty, "application/json"), pretty);
   assert.equal(redactBody(`{ broken ${JWT}`, "application/json"), `{ broken ${REDACTED}`);
+});
+
+test("HAR-shaped data: headers and params by name, every cookie, bodies by media type", () => {
+  assert.deepEqual(
+    redactHar({
+      request: {
+        url: `http://localhost/x?t=${JWT}`,
+        headers: [
+          { name: "Authorization", value: `Bearer ${JWT}` },
+          { name: "Cookie", value: "KC=1" },
+          { name: "Accept", value: "*/*" },
+        ],
+        cookies: [{ name: "AUTH_SESSION_ID", value: "abc", path: "/" }],
+        postData: {
+          mimeType: "application/x-www-form-urlencoded",
+          text: "username=test&password=mimos-test",
+          params: [
+            { name: "username", value: "test" },
+            { name: "password", value: "mimos-test" },
+          ],
+        },
+      },
+      response: {
+        content: { mimeType: "application/json", text: '{"access_token":"opaque","expires_in":300}' },
+      },
+      binary: { mimeType: "image/png", encoding: "base64", text: "iVBORw0KGgo=" },
+    }),
+    {
+      request: {
+        url: `http://localhost/x?t=${REDACTED}`,
+        headers: [
+          { name: "Authorization", value: `Bearer ${REDACTED}` },
+          { name: "Cookie", value: REDACTED },
+          { name: "Accept", value: "*/*" },
+        ],
+        cookies: [{ name: "AUTH_SESSION_ID", value: REDACTED, path: "/" }],
+        postData: {
+          mimeType: "application/x-www-form-urlencoded",
+          text: "username=test&password=%5BREDACTED%5D",
+          params: [
+            { name: "username", value: "test" },
+            { name: "password", value: REDACTED },
+          ],
+        },
+      },
+      response: {
+        content: { mimeType: "application/json", text: `{"access_token":"${REDACTED}","expires_in":300}` },
+      },
+      binary: { mimeType: "image/png", encoding: "base64", text: "iVBORw0KGgo=" },
+    },
+  );
 });

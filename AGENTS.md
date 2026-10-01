@@ -178,6 +178,7 @@ mimos/
 ├── AGENTS.md             # this file
 ├── pom.xml               # Maven parent/aggregator for the backend
 ├── mkdocs.yml            # documentation config
+├── .mcp.json             # MCP servers for agent sessions (Playwright browser, via devenv)
 ├── docs/                 # MkDocs source: guides, plugin authoring, harness plan, decisions/ADRs
 ├── apps/
 │   ├── api/              # Spring Boot modular monolith (the only deployable backend)
@@ -242,7 +243,11 @@ mimos/
 - **Agent harness:** `tools/harness` (`@mimos/harness`), on the PATH in the
   devenv shell as `harness`; `devenv shell -- harness --help` lists the
   commands, and evidence lands in `.harness/runs/<run>/` (gitignored) —
-  read `.harness/runs/latest/summary.md` first. Prefer `harness up` over a
+  read `.harness/runs/latest/summary.md` first. Browser flows are
+  Playwright scenarios in `tools/harness/scenarios/` (`harness ui <name>`);
+  `.mcp.json` gives agent sessions a Playwright MCP browser for
+  exploration. `@playwright/test` is pinned to nixpkgs'
+  `playwright-driver` version — bump both together. Prefer `harness up` over a
   bare `docker compose up`: it always rebuilds images. Planned in
   `docs/harness/` (high-level plan + one page per step; built steps' pages
   document usage). Read it before building harness pieces; keep step pages
@@ -294,7 +299,10 @@ mimos/
 - `npm test -w @mimos/country-week` — the reference plugin's tests
   (`node --test`; Node 22.18+ for native type stripping).
 - `npm run typecheck -w @mimos/harness` and `npm test -w @mimos/harness` —
-  the agent harness's types and unit tests (no Docker needed).
+  the agent harness's types and unit tests (no Docker or browsers needed).
+- `devenv shell -- harness ui login` — browser smoke against a running
+  stack (Chromium from devenv); `harness ui create-recipe` is expected to
+  fail until the recipe 415 is fixed (`docs/harness/step-7-recipe-415.md`).
 - `docker compose -f deploy/docker/compose.yml up -d --wait` — boots the
   full self-hosted stack (Postgres, Keycloak, API, web, and the reference
   plugin `country-week`); healthy when `--wait` returns 0. Note: `up` does

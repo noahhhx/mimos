@@ -1,7 +1,7 @@
 # Agent harness — plan
 
-**Status:** in progress — step 1 (stack control and API driving) is built;
-its page documents usage. This page is the high-level design; each step has
+**Status:** in progress — steps 1 (stack control and API driving) and 2
+(browser driving) are built; their pages document usage. This page is the high-level design; each step has
 its own page (linked below) that gets fleshed out and updated as it is
 picked up. Edit freely — the plan is meant to be revisited.
 
@@ -110,7 +110,7 @@ browsers.
 ├── command.json          # one entry per invocation: argv, git SHA, dirty flag, image IDs
 ├── compose/              # build/up output and service states (harness up)
 ├── api/exchanges.jsonl   # recorded HTTP request/response pairs (redacted)
-├── browser/              # trace.zip, network.har, console.jsonl, screenshots/
+├── browser/<scenario>/   # output.log, report.json, results/<test>/ (trace.zip, network.har, console.jsonl, screenshots)
 ├── logs/                 # <service>.log for each compose service
 ├── diag/                 # diagnostics snapshot
 └── debug/                # breakpoint hits: stack, locals, expressions
@@ -126,7 +126,7 @@ and docs, per AGENTS.md.
 | # | Step | Status |
 | --- | --- | --- |
 | 1 | [Stack control and API driving](step-1-stack-and-api.md) | Done |
-| 2 | [Browser driving](step-2-browser.md) | Planned |
+| 2 | [Browser driving](step-2-browser.md) | Done |
 | 3 | [Logs and request correlation](step-3-logs.md) | Planned |
 | 4 | [Diagnostics](step-4-diagnostics.md) | Planned |
 | 5 | [Debugger](step-5-debugger.md) | Planned |

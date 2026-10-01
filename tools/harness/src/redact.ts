@@ -50,6 +50,46 @@ export function redactText(text: string): string {
   return text.replace(BEARER, `$1 ${REDACTED}`).replace(JWT, REDACTED);
 }
 
+function redactHeaderValue(name: string, value: string): string {
+  return redactHeaders({ [name]: value })[name] ?? REDACTED;
+}
+
+/**
+ * HAR-shaped data — a browser HAR, or the network records in a Playwright
+ * trace: `{name, value}` pairs are headers or form params (redacted by name),
+ * every cookie value goes, `{mimeType, text}` bodies are redacted as bodies,
+ * and everything else as for redactJson.
+ */
+export function redactHar(value: unknown, key = ""): unknown {
+  if (typeof value === "string") {
+    return redactText(value);
+  }
+  if (Array.isArray(value)) {
+    return key === "cookies"
+      ? value.map((cookie: unknown) =>
+          cookie !== null && typeof cookie === "object" ? { ...cookie, value: REDACTED } : REDACTED,
+        )
+      : value.map((item) => redactHar(item));
+  }
+  if (value === null || typeof value !== "object") {
+    return value;
+  }
+  const record = value as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+  for (const [field, item] of Object.entries(record)) {
+    result[field] = SECRET_FIELDS.has(field.toLowerCase()) ? REDACTED : redactHar(item, field);
+  }
+  if (typeof record.name === "string" && typeof record.value === "string") {
+    const name = record.name.toLowerCase();
+    if (SECRET_HEADERS.has(name)) result.value = redactHeaderValue(record.name, record.value);
+    else if (SECRET_FIELDS.has(name)) result.value = REDACTED;
+  }
+  if (typeof record.text === "string" && typeof record.mimeType === "string" && record.encoding !== "base64") {
+    result.text = redactBody(record.text, record.mimeType);
+  }
+  return result;
+}
+
 /** A request/response body: JSON and form bodies by field name, anything else as free text. */
 export function redactBody(body: string, contentType = ""): string {
   const mediaType = contentType.split(";")[0]?.trim().toLowerCase() ?? "";

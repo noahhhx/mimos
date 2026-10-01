@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "devenv",
+      "args": ["shell", "--", "playwright-mcp", "--headless", "--isolated", "--output-dir", ".harness/mcp"]
+    }
+  }
+}

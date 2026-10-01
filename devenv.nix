@@ -37,7 +37,21 @@
     pkgs.git
     # Agent harness: ad-hoc inspection of JSON evidence in .harness/runs/.
     pkgs.jq
+    # Exploratory browsing for agents (registered in .mcp.json); its wrapper
+    # points at the same nixpkgs browsers as below.
+    pkgs.playwright-mcp
   ];
+
+  # Browsers for `harness ui` (Playwright scenarios) come from nixpkgs:
+  # Playwright's downloaded builds don't run on NixOS, and agent tooling comes
+  # from devenv anyway. The npm @playwright/test pin in tools/harness must equal
+  # pkgs.playwright-driver.version, or the browser revisions won't match —
+  # enterTest checks it; bump both together when devenv.lock moves.
+  env = {
+    PLAYWRIGHT_BROWSERS_PATH = "${pkgs.playwright-driver.browsers}";
+    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1";
+    PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+  };
 
   # Agent harness (docs/harness/): deploy, drive, observe, and debug the local
   # stack. Agents call it as `devenv shell -- harness <cmd>`.
@@ -61,5 +75,10 @@
     mkdocs --version
     ./mvnw -v
     harness --version
+    pinned=$(jq -r '.devDependencies["@playwright/test"]' tools/harness/package.json)
+    if [ "$pinned" != "${pkgs.playwright-driver.version}" ]; then
+      echo "tools/harness pins @playwright/test $pinned but nixpkgs' playwright-driver is ${pkgs.playwright-driver.version} — pin it exactly to match" >&2
+      exit 1
+    fi
   '';
 }

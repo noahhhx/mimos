@@ -50,6 +50,15 @@ early step is conclusive, fix it then and keep this page as the record.
   not RFC 9457 problem-details as AGENTS.md requires. Errors Spring
   resolves itself bypass `ApiExceptionHandler` (step 3 already notes this
   for logging).
+- **Step 2 (2026-10-01).** `harness ui create-recipe` reproduces it: the
+  form shows "The API rejected the recipe." and the HAR has `POST
+  /api/v1/recipes` → 415 **with no `Content-Type` header at all** — the
+  browser sent `Content-Length: 315` and `Authorization`, but no media
+  type, so Spring rejects it (`HttpMediaTypeNotSupportedException:
+  Content-Type is not supported`, WARN). Chromium did not expose the 315
+  body bytes to the HAR. The `harness api` 201 differs from this request
+  in the `Content-Type` header, so the question moves to the web side:
+  how the request is built before `fetch` sends it.
 
 ## Done when
 
