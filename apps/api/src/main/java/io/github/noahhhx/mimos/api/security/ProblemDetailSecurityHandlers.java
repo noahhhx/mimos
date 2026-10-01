@@ -1,5 +1,6 @@
 package io.github.noahhhx.mimos.api.security;
 
+import io.github.noahhhx.mimos.api.support.RequestLoggingFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -17,7 +18,8 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * Emits RFC 9457 problem-details for authentication and authorization
  * failures from the security filter chain, where the normal MVC
- * exception-handling path does not run.
+ * exception-handling path does not run. The exception is handed to the
+ * access log ({@link RequestLoggingFilter}) for the same reason.
  */
 @Component
 public final class ProblemDetailSecurityHandlers implements AuthenticationEntryPoint, AccessDeniedHandler {
@@ -35,6 +37,7 @@ public final class ProblemDetailSecurityHandlers implements AuthenticationEntryP
     public void commence(
             HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)
             throws IOException {
+        RequestLoggingFilter.recordFailure(request, authException);
         response.setHeader("WWW-Authenticate", "Bearer");
         write(response, HttpStatus.UNAUTHORIZED, "A valid bearer token from the Mimos realm is required.", request);
     }
@@ -43,6 +46,7 @@ public final class ProblemDetailSecurityHandlers implements AuthenticationEntryP
     public void handle(
             HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException)
             throws IOException {
+        RequestLoggingFilter.recordFailure(request, accessDeniedException);
         write(response, HttpStatus.FORBIDDEN, "You are not allowed to do that.", request);
     }
 

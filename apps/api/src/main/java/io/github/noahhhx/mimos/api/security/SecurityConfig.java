@@ -1,5 +1,6 @@
 package io.github.noahhhx.mimos.api.security;
 
+import io.github.noahhhx.mimos.api.support.RequestLoggingFilter;
 import java.util.List;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -62,7 +63,9 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(properties.corsAllowedOrigins());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", RequestLoggingFilter.HEADER));
+        // Without this, browsers hide the echoed request ID from the web app.
+        configuration.setExposedHeaders(List.of(RequestLoggingFilter.HEADER));
         configuration.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

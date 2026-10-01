@@ -59,6 +59,14 @@ early step is conclusive, fix it then and keep this page as the record.
   body bytes to the HAR. The `harness api` 201 differs from this request
   in the `Content-Type` header, so the question moves to the web side:
   how the request is built before `fetch` sends it.
+- **Step 3 (2026-10-01).** On the debug stack, `harness ui create-recipe`
+  lists the 415's request ID, and its log lines show the request reached
+  the API with no `Content-Type` and was rejected before any handler ran:
+  `POST /api/v1/recipes -> 415 (8 ms) content-type=<none> accept=*/*
+  exception=HttpMediaTypeNotSupportedException: Content-Type is not
+  supported`, alongside Spring's `DefaultHandlerExceptionResolver` WARN.
+  This confirms step 2 from the server side and adds nothing new about the
+  cause, which lies in what the browser sends.
 
 ## Done when
 

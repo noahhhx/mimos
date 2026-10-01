@@ -1,0 +1,14 @@
+# Debug overlay for the agent harness (docs/harness/) — never part of the
+# product stack. Opt in with `harness up --debug`, or without Nix:
+#
+#   docker compose -f deploy/docker/compose.yml -f deploy/docker/compose.debug.yml up -d --wait
+#
+# Everything here stays local: later harness steps add actuator exposure
+# (step 4) and debug ports bound to 127.0.0.1 (step 5).
+services:
+  api:
+    environment:
+      # JSON log lines (Elastic Common Schema) with the request ID as a
+      # `requestId` field and the access line's details as fields; the
+      # default stack keeps human-readable logs.
+      LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs

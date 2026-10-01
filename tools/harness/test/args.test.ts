@@ -69,20 +69,28 @@ test("headers: Name:Value, an empty value means remove, a missing name is an err
 test("request headers: JSON by default with a body, overridable and removable case-insensitively", () => {
   const url = new URL("http://localhost:8080/api/v1/recipes");
   const body = Buffer.from("{}");
-  assert.deepEqual(requestHeaders(url, "tok", body, []), {
+  assert.deepEqual(requestHeaders(url, "tok", body, [], "id-1"), {
     Host: "localhost:8080",
     "User-Agent": "mimos-harness",
     Authorization: "Bearer tok",
+    "X-Request-Id": "id-1",
     "Content-Type": "application/json",
     "Content-Length": "2",
   });
-  const overridden = requestHeaders(url, undefined, body, [["content-type", "text/plain"]]);
+  const overridden = requestHeaders(url, undefined, body, [["content-type", "text/plain"]], "id-1");
   assert.equal(overridden["content-type"], "text/plain");
   assert.equal(overridden["Content-Type"], undefined);
   assert.equal(overridden.Authorization, undefined);
-  const removed = requestHeaders(url, undefined, body, [["CONTENT-TYPE", ""]]);
+  const removed = requestHeaders(url, undefined, body, [["CONTENT-TYPE", ""]], "id-1");
   assert.ok(!Object.keys(removed).some((name) => name.toLowerCase() === "content-type"));
-  assert.equal(requestHeaders(url, undefined, undefined, [])["Content-Type"], undefined);
+  assert.equal(requestHeaders(url, undefined, undefined, [], "id-1")["Content-Type"], undefined);
+});
+
+test("request headers: the request ID can be replaced or dropped like any other", () => {
+  const url = new URL("http://localhost:8080/api/v1/me");
+  assert.equal(requestHeaders(url, undefined, undefined, [["x-request-id", "mine"]], "id-1")["x-request-id"], "mine");
+  const dropped = requestHeaders(url, undefined, undefined, [["X-Request-Id", ""]], "id-1");
+  assert.ok(!Object.keys(dropped).some((name) => name.toLowerCase() === "x-request-id"));
 });
 
 test("token, up, and logs options", () => {
@@ -94,8 +102,11 @@ test("token, up, and logs options", () => {
   assert.deepEqual(parseLogsArgs(["--service", "api", "--service", "web", "--since", "10m"]), {
     services: ["api", "web"],
     since: "10m",
+    requestId: undefined,
     run: undefined,
   });
+  assert.equal(parseLogsArgs(["--request-id", "3f2b9c1e-0d4a-4b7e-9a51-6c2f8e7d1a90"]).requestId, "3f2b9c1e-0d4a-4b7e-9a51-6c2f8e7d1a90");
+  assert.throws(() => parseLogsArgs(["--request-id", "not an id"]), UsageError);
   assert.throws(() => parseUpArgs(["extra"]), UsageError);
 });
 

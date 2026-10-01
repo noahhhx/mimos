@@ -13,6 +13,10 @@ info:
     by the instance's Keycloak realm unless they live under `/api/v1/public`
     (read-only library access for SEO pages); failures are reported as
     RFC 9457 problem-details.
+
+    Every response carries an `X-Request-Id` header. Clients may send their
+    own (1–64 characters from `A-Z a-z 0-9 . _ -`) to correlate a call with
+    the server's logs; otherwise, or when it is malformed, one is generated.
 paths:
   /api/v1/me:
     get:

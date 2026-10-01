@@ -1,7 +1,8 @@
 # Agent harness — plan
 
-**Status:** in progress — steps 1 (stack control and API driving) and 2
-(browser driving) are built; their pages document usage. This page is the high-level design; each step has
+**Status:** in progress — steps 1 (stack control and API driving), 2
+(browser driving), and 3 (logs and request correlation) are built; their
+pages document usage. This page is the high-level design; each step has
 its own page (linked below) that gets fleshed out and updated as it is
 picked up. Edit freely — the plan is meant to be revisited.
 
@@ -90,7 +91,7 @@ browsers.
 
 | Command | Purpose | Step |
 | --- | --- | --- |
-| `harness up [--debug] [--no-build]` | Build images, `compose up --wait`, optionally with the debug overlay (`--debug` from step 3) | 1 |
+| `harness up [--debug] [--no-build]` | Build images, `compose up --wait`, optionally with the debug overlay | 1, 3 |
 | `harness down` / `harness reset` | Stop the stack / stop and wipe volumes | 1 |
 | `harness status` | Service state, health, image build time vs. latest source change | 1 |
 | `harness token [--as <user>] [--decode]` | Access token via password grant | 1 |
@@ -127,7 +128,7 @@ and docs, per AGENTS.md.
 | --- | --- | --- |
 | 1 | [Stack control and API driving](step-1-stack-and-api.md) | Done |
 | 2 | [Browser driving](step-2-browser.md) | Done |
-| 3 | [Logs and request correlation](step-3-logs.md) | Planned |
+| 3 | [Logs and request correlation](step-3-logs.md) | Done |
 | 4 | [Diagnostics](step-4-diagnostics.md) | Planned |
 | 5 | [Debugger](step-5-debugger.md) | Planned |
 | 6 | [Agent skill, docs, and CI](step-6-skill-docs-ci.md) | Planned |

@@ -7,10 +7,11 @@ import type { JSONReport } from "@playwright/test/reporter";
 
 import { displayCommand, parseCommandArgs, UsageError } from "../args.ts";
 import { fenced, finishRun, RUN_OPTION, RUN_USAGE, startRun, type Command } from "../command.ts";
-import { captureLogs, describeLogs, linesSince } from "../compose.ts";
+import { captureLogs, describeLogs, linesSince, type CapturedLog } from "../compose.ts";
 import { DEFAULT_USER, endpoints, REPO_ROOT, USERS } from "../config.ts";
 import { copyRedacted } from "../evidence.ts";
 import { exec } from "../exec.ts";
+import { describeRequestLines, formatLogLine, requestLines } from "../logs.ts";
 import { apiCallTable, exchanges, failureDetails, isFailure, type Exchange, type Har } from "../har.ts";
 import { checkBrowsers, globalErrors, playwrightCli, scenarioTests, type ScenarioTest } from "../playwright.ts";
 import { redactText } from "../redact.ts";
@@ -125,7 +126,15 @@ function testEvidence(run: Run, test: ScenarioTest): TestEvidence {
 
 const MARK: Record<string, string> = { passed: "✓", skipped: "–" };
 
-function testSection(test: ScenarioTest, evidence: TestEvidence, apiOrigin: string): string[] {
+/** The log lines each failed request produced, found by request ID; empty when logs were not captured. */
+type LinesFor = (exchange: Exchange) => string[];
+
+function linesFor(logs: readonly CapturedLog[] | Error): LinesFor {
+  return (exchange) =>
+    logs instanceof Error || exchange.requestId === undefined ? [] : describeRequestLines(requestLines(logs, exchange.requestId));
+}
+
+function testSection(test: ScenarioTest, evidence: TestEvidence, apiOrigin: string, logLines: LinesFor): string[] {
   const failed = test.status !== "passed" && test.status !== "skipped";
   const errors = evidence.console.filter((entry) => entry.type === "error" || entry.type === "pageerror");
   const section = [`### ${MARK[test.status] ?? "✗"} ${test.title} — ${test.status} (${seconds(test.durationMs)})`, ""];
@@ -153,7 +162,7 @@ function testSection(test: ScenarioTest, evidence: TestEvidence, apiOrigin: stri
     const failures = evidence.exchanges.filter(isFailure);
     if (failures.length > 0) {
       section.push("", `Failed requests (${failures.length}):`);
-      for (const failure of failures) section.push("", ...failureDetails(failure));
+      for (const failure of failures) section.push("", ...failureDetails(failure, logLines(failure)));
     }
     if (errors.length > 0) {
       section.push(
@@ -181,8 +190,9 @@ ${RUN_USAGE}
 Runs the scenario in Chromium (from devenv) against ${endpoints().web}. Writes
 browser/<scenario>/: the runner's output and JSON report, and per test a trace,
 HAR, console log, screenshots, and (on failure) a video — all redacted. summary.md
-gets each test's outcome, failing step, API calls, and every failed request in
-full. Exit code: 0 when every test passed, 1 otherwise.`;
+gets each test's outcome, failing step, API calls with their request IDs, and every
+failed request in full with the log lines it produced. Exit code: 0 when every test
+passed, 1 otherwise.`;
   },
   async run(argv) {
     const args = parseUiArgs(argv);
@@ -238,10 +248,13 @@ full. Exit code: 0 when every test passed, 1 otherwise.`;
         );
       }
       const evidence = tests.map((test) => testEvidence(run, test));
-      tests.forEach((test, index) => section.push("", ...testSection(test, evidence[index]!, endpoints().api)));
+      const logLines = linesFor(logs);
+      tests.forEach((test, index) => section.push("", ...testSection(test, evidence[index]!, endpoints().api, logLines)));
+      // Without per-request lines (no failed request, or an API that logs no IDs), fall back to the time window.
+      const correlated = evidence.some((each) => each.exchanges.filter(isFailure).some((failure) => logLines(failure).length > 0));
       const apiLog = logs instanceof Error ? undefined : logs.find((log) => log.service === "api");
-      const apiLines = linesSince(apiLog?.text ?? "", startedAt);
-      if (!passed && apiLines.length > 0) {
+      const apiLines = linesSince(apiLog?.text ?? "", startedAt).map(formatLogLine);
+      if (!passed && !correlated && apiLines.length > 0) {
         section.push("", "API log lines since the scenario started:", "", fenced(apiLines.slice(-20).join("\n")));
       }
       appendSummary(run, section.join("\n"));
@@ -251,7 +264,8 @@ full. Exit code: 0 when every test passed, 1 otherwise.`;
       tests.forEach((test, index) => {
         process.stdout.write(`${MARK[test.status] ?? "✗"} ${test.title} — ${test.status}${test.failedStep ? ` at: ${test.failedStep}` : ""}\n`);
         for (const failure of evidence[index]!.exchanges.filter(isFailure)) {
-          process.stdout.write(`  ${failure.method} ${failure.url} → ${failure.status || "no response"} ${failure.statusText}\n`);
+          const id = failure.requestId ? ` (request ${failure.requestId})` : "";
+          process.stdout.write(`  ${failure.method} ${failure.url} → ${failure.status || "no response"} ${failure.statusText}${id}\n`);
         }
       });
       process.stdout.write(`summary: ${relative(process.cwd(), join(run.dir, "summary.md"))}\n`);

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 import { displayCommand, parseCommandArgs, parseHeader, UsageError } from "../args.ts";
@@ -5,6 +6,7 @@ import { fenced, finishRun, RUN_OPTION, RUN_USAGE, startRun, type Command } from
 import { captureLogs, describeLogs, linesSince } from "../compose.ts";
 import { DEFAULT_USER, endpoints, USERS } from "../config.ts";
 import { isJson, mediaType, send } from "../http.ts";
+import { describeRequestLines, formatLogLine, REQUEST_ID_HEADER, requestLines } from "../logs.ts";
 import { redactBody, redactHeaders } from "../redact.ts";
 import { appendJsonLine, appendSummary, runStartedAt } from "../run.ts";
 import { fetchToken, passwordFor } from "./token.ts";
@@ -65,8 +67,8 @@ export function parseApiArgs(argv: string[]): ApiArgs {
 }
 
 /**
- * The headers actually sent: Host, auth, and (with a body) a JSON
- * Content-Type and Content-Length — then `--header` overrides, matched
+ * The headers actually sent: Host, auth, a request ID, and (with a body) a
+ * JSON Content-Type and Content-Length — then `--header` overrides, matched
  * case-insensitively, so content-type bugs can be reproduced exactly.
  */
 export function requestHeaders(
@@ -74,6 +76,7 @@ export function requestHeaders(
   token: string | undefined,
   body: Buffer | undefined,
   overrides: readonly [string, string][],
+  requestId: string,
 ): Record<string, string> {
   const headers = new Map<string, [string, string]>();
   const set = (name: string, value: string): void => {
@@ -83,6 +86,7 @@ export function requestHeaders(
   set("Host", url.host);
   set("User-Agent", "mimos-harness");
   if (token !== undefined) set("Authorization", `Bearer ${token}`);
+  set(REQUEST_ID_HEADER, requestId);
   if (body !== undefined) {
     set("Content-Type", "application/json");
     set("Content-Length", String(body.length));
@@ -133,7 +137,7 @@ Exit code: 0 for a status below 400, 1 otherwise.`,
     const body = readBody(args.body);
     const run = startRun("api", startedAt, args.run);
     const token = args.user === undefined ? undefined : await fetchToken(args.user);
-    const headers = requestHeaders(url, token, body, args.headers);
+    const headers = requestHeaders(url, token, body, args.headers, randomUUID());
 
     const sentAt = performance.now();
     const response = await send(args.method, url, headers, body);
@@ -141,10 +145,15 @@ Exit code: 0 for a status below 400, 1 otherwise.`,
     const failed = response.status >= 400;
 
     const requestBody = body?.toString("utf8");
-    const requestType = Object.entries(headers).find(([name]) => name.toLowerCase() === "content-type")?.[1];
+    const sentHeader = (name: string): string | undefined =>
+      Object.entries(headers).find(([candidate]) => candidate.toLowerCase() === name)?.[1];
+    const requestType = sentHeader("content-type");
+    // The API's echo is authoritative: it replaces a malformed ID (say, one sent with -H).
+    const requestId = response.headers[REQUEST_ID_HEADER.toLowerCase()] ?? sentHeader(REQUEST_ID_HEADER.toLowerCase());
     const line = appendJsonLine(run, "api/exchanges.jsonl", {
       at: startedAt.toISOString(),
       user: args.user ?? null,
+      requestId: requestId ?? null,
       durationMs,
       request: {
         method: args.method,
@@ -172,6 +181,7 @@ Exit code: 0 for a status below 400, 1 otherwise.`,
       `- **Request:** \`${args.method} ${url.href}\` as ${args.user ?? "anonymous"}` +
         (body ? ` · \`Content-Type: ${requestType ?? "(none)"}\` · ${body.length} bytes` : ""),
       `- **Response:** ${response.status} ${response.statusText} · \`${mediaType(contentType) || "(no content type)"}\` · ${durationMs} ms`,
+      `- **Request ID:** ${requestId ? `\`${requestId}\` — \`harness logs --request-id ${requestId}\`` : "none (the API sent no X-Request-Id)"}`,
       `- **Exchange:** \`api/exchanges.jsonl\` line ${line}`,
       logs instanceof Error
         ? `- **Logs:** not captured — ${logs.message}`
@@ -186,10 +196,15 @@ Exit code: 0 for a status below 400, 1 otherwise.`,
         fenced(prettyBody(redactBody(response.body, contentType), contentType).slice(0, 4000), problem ? "json" : ""),
       );
     }
-    const apiLog = logs instanceof Error ? undefined : logs.find((log) => log.service === "api");
-    const apiLines = linesSince(apiLog?.text ?? "", startedAt);
-    if (failed && apiLines.length > 0) {
-      section.push("", "API log lines since this request was sent:", "", fenced(apiLines.slice(-20).join("\n")));
+    if (failed && !(logs instanceof Error)) {
+      const matched = requestId ? describeRequestLines(requestLines(logs, requestId)) : [];
+      const apiLog = logs.find((log) => log.service === "api");
+      const window = linesSince(apiLog?.text ?? "", startedAt).map(formatLogLine);
+      if (matched.length > 0) {
+        section.push("", "Log lines for this request:", "", fenced(matched.slice(-20).join("\n")));
+      } else if (window.length > 0) {
+        section.push("", "No log line carries this request's ID; API log lines since it was sent:", "", fenced(window.slice(-20).join("\n")));
+      }
     }
     appendSummary(run, section.join("\n"));
     const exitCode = failed ? 1 : 0;

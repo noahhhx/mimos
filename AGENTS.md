@@ -199,7 +199,7 @@ mimos/
 ├── tools/
 │   └── harness/          # agent harness: deploy, drive, observe, debug the stack (docs/harness)
 └── deploy/
-    ├── docker/           # compose: postgres, keycloak, api, (web, minio)
+    ├── docker/           # compose: postgres, keycloak, api, web, plugin, (minio); compose.debug.yml overlay (harness only)
     ├── keycloak/         # realm export / config
     └── aws/              # IaC (tool TBD)
 ```
@@ -248,7 +248,11 @@ mimos/
   `.mcp.json` gives agent sessions a Playwright MCP browser for
   exploration. `@playwright/test` is pinned to nixpkgs'
   `playwright-driver` version — bump both together. Prefer `harness up` over a
-  bare `docker compose up`: it always rebuilds images. Planned in
+  bare `docker compose up`: it always rebuilds images. `harness up --debug`
+  adds `deploy/docker/compose.debug.yml` (JSON API logs; later, actuator
+  and debug ports) — debug-only behavior goes there, never in
+  `compose.yml`. `harness logs --request-id <id>` gathers one request's
+  lines across services. Planned in
   `docs/harness/` (high-level plan + one page per step; built steps' pages
   document usage). Read it before building harness pieces; keep step pages
   and their status current as steps land.
@@ -259,6 +263,16 @@ mimos/
   add a new one. Migrations run automatically on startup so self-hosters
   upgrade by pulling and restarting.
 - **Error handling:** RFC 9457 problem-details responses from the API.
+- **Logging and request IDs:** every API request gets an `X-Request-Id`
+  (a well-formed client one is kept, otherwise generated), echoed on the
+  response, in the MDC as `requestId`, and on every log line the request
+  produces. `RequestLoggingFilter` writes one access line per request, and
+  a 4xx/5xx line names the exception that caused it. Errors raised in the
+  security chain must reach `RequestLoggingFilter.recordFailure` (as
+  `ProblemDetailSecurityHandlers` does), or the line cannot name them.
+  Clients send their own ID per call (`apps/web/src/lib/request-id.ts`),
+  except cached server-side fetches: Next's fetch cache keys on headers.
+  Text logs by default; `LOGGING_STRUCTURED_FORMAT_CONSOLE=ecs` for JSON.
 - **Time/money-free:** no wall-clock dependence in domain logic; clocks and
   randomness are injected.
 - **Commit style:** conventional commits, present tense, scoped when it

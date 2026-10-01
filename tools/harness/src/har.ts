@@ -2,6 +2,7 @@ import { STATUS_CODES } from "node:http";
 
 import { fenced } from "./command.ts";
 import { isJson, mediaType } from "./http.ts";
+import { REQUEST_ID_HEADER } from "./logs.ts";
 
 /**
  * Reads the browser's HAR (already redacted — see evidence.ts) into the
@@ -57,6 +58,8 @@ export interface Exchange {
   responseType: string | undefined;
   responseBody: string | undefined;
   failureText: string | undefined;
+  /** The X-Request-Id the API echoed (authoritative — it replaces a malformed one), else the one sent. */
+  requestId: string | undefined;
 }
 
 function header(headers: readonly HarHeader[], name: string): string | undefined {
@@ -87,6 +90,7 @@ export function exchanges(har: Har): Exchange[] {
       responseType: header(entry.response.headers, "content-type") ?? (content?.mimeType || undefined),
       responseBody: body,
       failureText: entry.response._failureText,
+      requestId: header(entry.response.headers, REQUEST_ID_HEADER.toLowerCase()) ?? header(entry.request.headers, REQUEST_ID_HEADER.toLowerCase()),
     };
   });
 }
@@ -120,29 +124,35 @@ function statusOf(exchange: Exchange): string {
   return exchange.status === 0 ? `no response${exchange.failureText ? ` (${exchange.failureText})` : ""}` : `${exchange.status} ${exchange.statusText}`.trim();
 }
 
-/** `| # | Method | Path | Status | Sent | Received |` for every call to the API, in order. */
+/** `| # | Method | Path | Status | Sent | Received | Request ID |` for every call to the API, in order. */
 export function apiCallTable(all: readonly Exchange[], apiOrigin: string): string[] {
   const calls = all.filter((exchange) => new URL(exchange.url).origin === new URL(apiOrigin).origin);
   if (calls.length === 0) return ["No requests reached the API."];
   return [
-    "| # | Method | Path | Status | Sent | Received |",
-    "| --- | --- | --- | --- | --- | --- |",
+    "| # | Method | Path | Status | Sent | Received | Request ID |",
+    "| --- | --- | --- | --- | --- | --- | --- |",
     ...calls.map((call, index) => {
       const url = new URL(call.url);
       const sent =
         call.requestBodySize === 0 ? "—" : call.requestType ? `\`${mediaType(call.requestType)}\`` : "**no Content-Type**";
       const received = call.responseType ? `\`${mediaType(call.responseType)}\`` : "—";
       const mark = isFailure(call) ? "**" : "";
-      return `| ${index + 1} | ${call.method} | \`${url.pathname}${url.search}\` | ${mark}${statusOf(call)}${mark} | ${sent} | ${received} |`;
+      const id = call.requestId ? `\`${call.requestId}\`` : "—";
+      return `| ${index + 1} | ${call.method} | \`${url.pathname}${url.search}\` | ${mark}${statusOf(call)}${mark} | ${sent} | ${received} | ${id} |`;
     }),
   ];
 }
 
-/** One section per failed request: everything needed to reproduce it with `harness api`. */
-export function failureDetails(exchange: Exchange): string[] {
+/**
+ * One section per failed request: everything needed to reproduce it with
+ * `harness api`, plus the log lines it produced (already formatted) when the
+ * caller found any by its request ID.
+ */
+export function failureDetails(exchange: Exchange, logLines: readonly string[] = []): string[] {
   const lines = [
     `#### \`${exchange.method} ${exchange.url}\` → ${statusOf(exchange)}`,
     "",
+    ...(exchange.requestId ? [`Request ID: \`${exchange.requestId}\` — \`harness logs --request-id ${exchange.requestId}\``, ""] : []),
     "Request headers:",
     "",
     fenced(exchange.requestHeaders.map(({ name, value }) => `${name}: ${value}`).join("\n") || "(none)"),
@@ -160,6 +170,9 @@ export function failureDetails(exchange: Exchange): string[] {
       "",
       fenced(clip(pretty(exchange.responseBody, exchange.responseType)), isJson(exchange.responseType) ? "json" : ""),
     );
+  }
+  if (logLines.length > 0) {
+    lines.push("", "Log lines for this request:", "", fenced(logLines.slice(-20).join("\n")));
   }
   return lines;
 }

@@ -14,7 +14,7 @@ export function composeFiles(debug: boolean): string[] {
   if (debug) {
     const overlay = join(REPO_ROOT, DEBUG_OVERLAY);
     if (!existsSync(overlay)) {
-      throw new HarnessError(`--debug needs ${DEBUG_OVERLAY}, which arrives in harness step 3`);
+      throw new HarnessError(`--debug needs ${DEBUG_OVERLAY}, which is missing`);
     }
     files.push(overlay);
   }

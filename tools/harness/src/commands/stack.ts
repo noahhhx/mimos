@@ -33,7 +33,7 @@ export const upCommand: Command = {
   usage: `harness up [--no-build] [--debug]
 
   --no-build   skip \`docker compose build\` (images may be stale — see harness status)
-  --debug      add the debug overlay ${DEBUG_OVERLAY} (from harness step 3)
+  --debug      add the debug overlay ${DEBUG_OVERLAY} (JSON API logs; see docs/harness)
 ${RUN_USAGE}
 
 Runs \`docker compose build\` then \`up -d --wait\` on ${COMPOSE_FILE}. Output is

@@ -30,6 +30,13 @@ mimos:
 server:
   port: 8080
 
+logging:
+  pattern:
+    # Every line logged while a request runs carries its X-Request-Id
+    # (RequestLoggingFilter puts it in the MDC); structured formats
+    # (LOGGING_STRUCTURED_FORMAT_CONSOLE=ecs) get it as a requestId field.
+    correlation: "%correlationId{requestId(36)}"
+
 management:
   endpoints:
     web:
