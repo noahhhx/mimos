@@ -39,7 +39,8 @@ public class RecipeService {
 
     /** Creates a personal recipe for the given owner. */
     @Transactional
-    public Recipe create(UUID ownerProfileId, RecipeDraft draft) {
+    public Recipe create(UUID ownerProfileId, RecipeDraft submitted) {
+        RecipeDraft draft = withDistinctTags(submitted);
         validate(draft);
         Recipe recipe = new Recipe(
                 UUID.randomUUID(),
@@ -62,8 +63,9 @@ public class RecipeService {
 
     /** Replaces a personal recipe; library recipes are read-only. */
     @Transactional
-    public Recipe replace(UUID ownerProfileId, UUID recipeId, RecipeDraft draft) {
+    public Recipe replace(UUID ownerProfileId, UUID recipeId, RecipeDraft submitted) {
         Recipe existing = requireOwned(ownerProfileId, recipeId);
+        RecipeDraft draft = withDistinctTags(submitted);
         validate(draft);
         Recipe replaced = new Recipe(
                 existing.id(),
@@ -134,6 +136,20 @@ public class RecipeService {
 
     private static @Nullable String normalizeQuery(@Nullable String query) {
         return query == null || query.isBlank() ? null : query.strip();
+    }
+
+    /** A tag is a set member: repeating one is harmless, not an error (and not a duplicate row). */
+    private static RecipeDraft withDistinctTags(RecipeDraft draft) {
+        return new RecipeDraft(
+                draft.title(),
+                draft.description(),
+                draft.servings(),
+                draft.prepMinutes(),
+                draft.cookMinutes(),
+                draft.tags().stream().distinct().toList(),
+                draft.nutrition(),
+                draft.ingredients(),
+                draft.steps());
     }
 
     private static void validate(RecipeDraft draft) {

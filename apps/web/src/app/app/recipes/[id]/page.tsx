@@ -102,7 +102,13 @@ export default function RecipeDetailPage() {
       ) : editing ? (
         <>
           <h1>Edit recipe</h1>
-          <RecipeForm initial={recipe} />
+          <RecipeForm
+            initial={recipe}
+            onSaved={(saved) => {
+              setRecipe(saved);
+              setEditing(false);
+            }}
+          />
         </>
       ) : (
         <>

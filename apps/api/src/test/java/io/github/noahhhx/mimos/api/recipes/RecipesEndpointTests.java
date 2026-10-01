@@ -175,6 +175,42 @@ class RecipesEndpointTests extends ApiIntegrationTestSupport {
     }
 
     @Test
+    void repeatedTagsAreStoredOnce() {
+        RestClient api = api();
+        ObjectNode input = objectMapper.createObjectNode();
+        input.put("title", "Twice-Tagged Soup");
+        input.put("description", "Tagged dinner twice.");
+        input.put("servings", 2);
+        input.set(
+                "tags", objectMapper.createArrayNode().add("dinner").add("soup").add("dinner"));
+        input.set("nutrition", objectMapper.createObjectNode());
+        input.set("ingredients", objectMapper.createArrayNode().add(ingredient(1, "l", "stock")));
+        input.set("steps", objectMapper.createArrayNode().add(step("Simmer.")));
+
+        JsonNode created = requireNonNull(
+                api.post()
+                        .uri("/api/v1/recipes")
+                        .headers(headers -> headers.setBearerAuth(accessToken()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(input)
+                        .retrieve()
+                        .body(JsonNode.class),
+                "create returned no body");
+        assertThat(created.get("tags").valueStream().map(JsonNode::asText)).containsExactly("dinner", "soup");
+
+        JsonNode replaced = requireNonNull(
+                api.put()
+                        .uri("/api/v1/recipes/{id}", created.get("id").asText())
+                        .headers(headers -> headers.setBearerAuth(accessToken()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(input)
+                        .retrieve()
+                        .body(JsonNode.class),
+                "replace returned no body");
+        assertThat(replaced.get("tags").valueStream().map(JsonNode::asText)).containsExactly("dinner", "soup");
+    }
+
+    @Test
     void unauthenticatedAccessIsRejected() {
         api().get().uri("/api/v1/recipes").exchange((req, res) -> {
             assertThat(res.getStatusCode().value()).isEqualTo(401);

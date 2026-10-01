@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import type { RecipeDetail } from "@mimos/api-client";
 
-import { formatQuantity } from "@/lib/format";
+import { formatQuantity, hasNutrition } from "@/lib/format";
 
 /**
  * A recipe as you cook it: tickable ingredients and steps (local state only
@@ -45,7 +45,7 @@ export function RecipeView({ recipe }: { recipe: RecipeDetail }) {
         )}
       </header>
 
-      {recipe.nutrition && (recipe.nutrition.calories != null || recipe.nutrition.proteinG != null) && (
+      {hasNutrition(recipe.nutrition) && (
         <div className="card nutrition">
           <h2>Per serving</h2>
           <dl className="profile">

@@ -18,9 +18,18 @@ function problemDetail(result: { error?: { detail?: string } | unknown }): strin
 
 /**
  * Create/edit form for personal recipes. Same richness as the library:
- * ingredients, steps, times, tags, and per-serving nutrition.
+ * ingredients, steps, times, tags, and per-serving nutrition. Without
+ * `onSaved`, a save navigates to the recipe's page; an editor already on
+ * that page passes `onSaved` instead, since navigating to the current URL
+ * would leave it in edit mode.
  */
-export function RecipeForm({ initial }: { initial?: RecipeDetail }) {
+export function RecipeForm({
+  initial,
+  onSaved,
+}: {
+  initial?: RecipeDetail;
+  onSaved?: (recipe: RecipeDetail) => void;
+}) {
   const router = useRouter();
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
@@ -96,7 +105,11 @@ export function RecipeForm({ initial }: { initial?: RecipeDetail }) {
       setError(problemDetail(result));
       return;
     }
-    router.push(`/app/recipes/${result.data.id}`);
+    if (onSaved) {
+      onSaved(result.data);
+    } else {
+      router.push(`/app/recipes/${result.data.id}`);
+    }
   };
 
   return (

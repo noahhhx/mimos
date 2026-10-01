@@ -129,7 +129,7 @@ test("ui: one known scenario, headless as the test user by default", () => {
 });
 
 test("ui: scenarios are the spec files in tools/harness/scenarios", () => {
-  assert.deepEqual(scenarioNames(), ["create-recipe", "login"]);
+  assert.deepEqual(scenarioNames(), ["app-pages", "create-recipe", "edit-recipe", "login"]);
 });
 
 test("displayCommand quotes only what needs quoting", () => {

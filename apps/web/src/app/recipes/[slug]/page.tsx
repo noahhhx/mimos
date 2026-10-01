@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { getPublicRecipe } from "@mimos/api-client";
 
+import { hasNutrition } from "@/lib/format";
 import { publicApi } from "@/lib/server-api";
 
 /** Public recipe pages render server-side so recipes are findable (SEO). */
@@ -53,7 +54,7 @@ export default async function RecipePage({ params }: { params: Promise<{ slug: s
         )}
       </header>
 
-      {recipe.nutrition && (recipe.nutrition.calories != null || recipe.nutrition.proteinG != null) && (
+      {hasNutrition(recipe.nutrition) && (
         <div className="card nutrition">
           <h2>Per serving</h2>
           <dl className="profile">

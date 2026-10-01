@@ -53,6 +53,16 @@ export function formatQuantity(quantity: number, unit: string | null | undefined
   return unit ? `${number} ${unit}` : number;
 }
 
+/** Whether any per-serving value is known (absent values are unknown, not zero). */
+export function hasNutrition<T extends { calories?: number; proteinG?: number; carbsG?: number; fatG?: number }>(
+  nutrition: T | null | undefined,
+): nutrition is T {
+  return (
+    nutrition != null &&
+    [nutrition.calories, nutrition.proteinG, nutrition.carbsG, nutrition.fatG].some((value) => value != null)
+  );
+}
+
 export function formatKcal(value: number | null | undefined): string {
   return value != null ? `${Math.round(value)} kcal` : "—";
 }
