@@ -7,7 +7,7 @@
 openapi: 3.1.0
 info:
   title: Mimos API
-  version: 0.3.0
+  version: 0.4.0
   description: |
     The Mimos recipe companion API. Endpoints require a bearer token issued
     by the instance's Keycloak realm unless they live under `/api/v1/public`
@@ -593,12 +593,12 @@ components:
           description: Fat in grams.
     IngredientQuantity:
       type: object
-      description: 'One ingredient line: an amount, an optional unit, and a name.'
-      required: [quantity, name]
+      description: 'One ingredient line: an optional amount, an optional unit, and a name.'
+      required: [name]
       properties:
         quantity:
           type: number
-          description: Amount of the ingredient.
+          description: Amount of the ingredient; omitted for unmeasured ingredients ("salt, to taste"). Positive when present.
         unit:
           type: string
           description: Unit of measure; omitted for countable ingredients ("2 eggs").
@@ -825,7 +825,7 @@ components:
     ShoppingListItem:
       type: object
       description: One aggregated shopping-list line.
-      required: [id, name, quantity, category, checked]
+      required: [id, name, category, checked]
       properties:
         id:
           type: string
@@ -836,7 +836,7 @@ components:
           type: string
         quantity:
           type: number
-          description: Total amount across the week's recipes.
+          description: Total measured amount across the week's recipes; omitted when every recipe leaves the ingredient unmeasured (ADR-0007).
         category:
           type: string
           description: Aisle grouping (Produce, Meat & Seafood, Dairy & Eggs, ...).

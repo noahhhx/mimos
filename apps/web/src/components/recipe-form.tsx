@@ -87,7 +87,7 @@ export function RecipeForm({
       ingredients: ingredients
         .filter((row) => row.name.trim() !== "")
         .map((row) => ({
-          quantity: Number(row.quantity),
+          quantity: row.quantity.trim() === "" ? undefined : Number(row.quantity),
           unit: row.unit.trim() === "" ? undefined : row.unit.trim(),
           name: row.name.trim(),
         })),

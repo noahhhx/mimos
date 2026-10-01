@@ -21,5 +21,6 @@ public record LibrarySeed(
         List<SeedIngredient> ingredients,
         List<String> steps) {
 
-    public record SeedIngredient(double quantity, @Nullable String unit, String name) {}
+    public record SeedIngredient(
+            @Nullable Double quantity, @Nullable String unit, String name) {}
 }

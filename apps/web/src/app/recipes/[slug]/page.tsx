@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { getPublicRecipe } from "@mimos/api-client";
 
+import { Quantity } from "@/components/quantity";
 import { hasNutrition } from "@/lib/format";
 import { publicApi } from "@/lib/server-api";
 
@@ -76,11 +77,7 @@ export default async function RecipePage({ params }: { params: Promise<{ slug: s
           <ul className="ingredients">
             {recipe.ingredients.map((ingredient, index) => (
               <li key={index}>
-                <span className="quantity">
-                  {ingredient.quantity}
-                  {ingredient.unit ? ` ${ingredient.unit}` : ""}
-                </span>{" "}
-                {ingredient.name}
+                <Quantity quantity={ingredient.quantity} unit={ingredient.unit} /> {ingredient.name}
               </li>
             ))}
           </ul>

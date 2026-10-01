@@ -58,7 +58,9 @@ public class ShoppingListService {
                                 (a, b) -> a)))
                 .orElse(Map.of());
 
-        // Aggregate: (normalized name, unit) -> total quantity, first-seen display name.
+        // Aggregate: (normalized name, unit) -> first-seen display name, and the total of the
+        // measured quantities. Unmeasured ingredients add a line but nothing to its total, so a
+        // line with no measured contributions has no quantity (ADR-0007).
         Map<String, Double> totals = new LinkedHashMap<>();
         Map<String, String> displayNames = new LinkedHashMap<>();
         for (PlannedMeal meal : planned) {
@@ -69,20 +71,24 @@ public class ShoppingListService {
             double scale = meal.servings() / recipe.servings();
             for (Ingredient ingredient : recipe.ingredients()) {
                 String key = lineKey(Aisles.normalizeName(ingredient.name()), ingredient.unit());
-                totals.merge(key, ingredient.quantity() * scale, Double::sum);
+                Double quantity = ingredient.quantity();
+                if (quantity != null) {
+                    totals.merge(key, quantity * scale, Double::sum);
+                }
                 displayNames.putIfAbsent(key, ingredient.name());
             }
         }
 
-        List<ShoppingListRepository.ItemRow> items = totals.entrySet().stream()
+        List<ShoppingListRepository.ItemRow> items = displayNames.entrySet().stream()
                 .map(entry -> {
                     String key = entry.getKey();
-                    String name = java.util.Objects.requireNonNull(displayNames.get(key), "display name must exist");
+                    String name = entry.getValue();
                     String unit = unitOf(key);
+                    Double total = totals.get(key);
                     return new ShoppingListRepository.ItemRow(
                             name,
                             unit,
-                            round(entry.getValue()),
+                            total == null ? null : round(total),
                             Aisles.categorize(name),
                             previouslyChecked.getOrDefault(key, false));
                 })

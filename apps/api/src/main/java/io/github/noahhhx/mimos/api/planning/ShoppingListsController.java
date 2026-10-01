@@ -68,7 +68,7 @@ public class ShoppingListsController implements ShoppingListsApi {
                 .id(item.id())
                 .name(item.name())
                 .unit(item.unit())
-                .quantity(BigDecimal.valueOf(item.quantity()))
+                .quantity(item.quantity() == null ? null : BigDecimal.valueOf(item.quantity()))
                 .category(item.category())
                 .checked(item.checked());
     }

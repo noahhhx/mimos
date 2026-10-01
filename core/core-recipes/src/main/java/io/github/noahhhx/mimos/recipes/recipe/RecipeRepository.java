@@ -208,7 +208,8 @@ public class RecipeRepository {
                                 + placeholders(rows.size()) + ") order by recipe_id, position",
                         (rs, i) -> Map.entry(
                                 rs.getObject("recipe_id", UUID.class),
-                                new Ingredient(rs.getDouble("quantity"), rs.getString("unit"), rs.getString("name"))),
+                                new Ingredient(
+                                        nullableDouble(rs, "quantity"), rs.getString("unit"), rs.getString("name"))),
                         rowIds(rows))
                 .stream()
                 .collect(
@@ -298,10 +299,10 @@ public class RecipeRepository {
             int value = rs.getInt(column);
             return rs.wasNull() ? null : value;
         }
+    }
 
-        private static @Nullable Double nullableDouble(ResultSet rs, String column) throws SQLException {
-            BigDecimal value = rs.getBigDecimal(column);
-            return value == null ? null : value.doubleValue();
-        }
+    private static @Nullable Double nullableDouble(ResultSet rs, String column) throws SQLException {
+        BigDecimal value = rs.getBigDecimal(column);
+        return value == null ? null : value.doubleValue();
     }
 }

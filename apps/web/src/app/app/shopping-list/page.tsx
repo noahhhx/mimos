@@ -12,7 +12,8 @@ import {
 
 import { useAuth } from "@/components/auth-provider";
 import { apiClient } from "@/lib/api";
-import { addDays, dayLabel, formatQuantity, mondayOf } from "@/lib/format";
+import { Quantity } from "@/components/quantity";
+import { addDays, dayLabel, mondayOf } from "@/lib/format";
 
 const CATEGORY_ORDER = [
   "Produce",
@@ -178,7 +179,7 @@ export default function ShoppingListPage() {
                     checked={item.checked}
                     onChange={(e) => void toggle(item.id, e.target.checked)}
                   />{" "}
-                  <span className="quantity">{formatQuantity(item.quantity, item.unit)}</span> {item.name}
+                  <Quantity quantity={item.quantity} unit={item.unit} /> {item.name}
                 </label>
               </li>
             ))}

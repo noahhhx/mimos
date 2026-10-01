@@ -9,7 +9,15 @@ import org.jspecify.annotations.Nullable;
 /** A week's shopping list: aggregated items grouped by aisle category. */
 public record ShoppingList(UUID id, LocalDate startDate, Instant generatedAt, List<ShoppingListItem> items) {
 
-    /** One aggregated line: total quantity of an ingredient across the week. */
+    /**
+     * One aggregated line: total measured quantity of an ingredient across
+     * the week, or null when every recipe leaves it unmeasured (ADR-0007).
+     */
     public record ShoppingListItem(
-            UUID id, String name, @Nullable String unit, double quantity, String category, boolean checked) {}
+            UUID id,
+            String name,
+            @Nullable String unit,
+            @Nullable Double quantity,
+            String category,
+            boolean checked) {}
 }

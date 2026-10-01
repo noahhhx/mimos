@@ -44,7 +44,7 @@ public final class RecipeApiMapper {
                 .nutrition(toApiNutrition(recipe.nutrition()))
                 .ingredients(recipe.ingredients().stream()
                         .map(ingredient -> new IngredientQuantity()
-                                .quantity(BigDecimal.valueOf(ingredient.quantity()))
+                                .quantity(toBigDecimal(ingredient.quantity()))
                                 .unit(ingredient.unit())
                                 .name(ingredient.name()))
                         .toList())
@@ -69,7 +69,7 @@ public final class RecipeApiMapper {
     private static List<Ingredient> fromApiIngredients(RecipeInput input) {
         return input.getIngredients().stream()
                 .map(ingredient -> new Ingredient(
-                        ingredient.getQuantity().doubleValue(), ingredient.getUnit(), ingredient.getName()))
+                        fromBigDecimal(ingredient.getQuantity()), ingredient.getUnit(), ingredient.getName()))
                 .toList();
     }
 

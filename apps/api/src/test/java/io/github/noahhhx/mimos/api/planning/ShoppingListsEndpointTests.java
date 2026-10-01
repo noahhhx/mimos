@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
@@ -84,6 +85,41 @@ class ShoppingListsEndpointTests extends ApiIntegrationTestSupport {
                         .body(JsonNode.class),
                 "shopping list GET returned no body");
         assertThat(fetched.get("items")).hasSize(list.get("items").size());
+    }
+
+    @Test
+    void unmeasuredIngredientsAddALineButNothingToItsTotal() {
+        RestClient api = api();
+        String token = accessToken();
+        LocalDate monday = LocalDate.of(2026, 4, 6); // a Monday
+
+        // ADR-0007: "lemon" is measured once and unmeasured once; "sea salt" never is.
+        JsonNode fish = createRecipe(
+                api,
+                token,
+                "Unmeasured Fish",
+                2,
+                objectMapper
+                        .createArrayNode()
+                        .add(objectMapper.createObjectNode().put("quantity", 1).put("name", "lemon"))
+                        .add(objectMapper.createObjectNode().put("name", "sea salt")));
+        JsonNode salad = createRecipe(
+                api,
+                token,
+                "Unmeasured Salad",
+                2,
+                objectMapper
+                        .createArrayNode()
+                        .add(objectMapper.createObjectNode().put("name", "lemon")));
+        plan(api, token, monday, monday, "DINNER", fish.get("id").asText(), 2);
+        plan(api, token, monday, monday.plusDays(1), "LUNCH", salad.get("id").asText(), 2);
+
+        JsonNode list = generate(api, token, monday);
+
+        JsonNode lemon = requireNonNull(findItem(list, "lemon"), "lemon must be on the list");
+        assertThat(lemon.get("quantity").asDouble()).isEqualTo(1);
+        JsonNode salt = requireNonNull(findItem(list, "sea salt"), "sea salt must be on the list");
+        assertThat(salt.has("quantity")).isFalse();
     }
 
     @Test
@@ -172,6 +208,22 @@ class ShoppingListsEndpointTests extends ApiIntegrationTestSupport {
     /** A two-ingredient recipe: `amount unit ingredient` plus one egg. */
     private JsonNode createRecipe(
             RestClient api, String token, String title, int servings, double amount, String unit, String ingredient) {
+        return createRecipe(
+                api,
+                token,
+                title,
+                servings,
+                objectMapper
+                        .createArrayNode()
+                        .add(objectMapper
+                                .createObjectNode()
+                                .put("quantity", amount)
+                                .put("unit", unit)
+                                .put("name", ingredient))
+                        .add(objectMapper.createObjectNode().put("quantity", 1).put("name", "eggs")));
+    }
+
+    private JsonNode createRecipe(RestClient api, String token, String title, int servings, ArrayNode ingredients) {
         ObjectNode input = objectMapper.createObjectNode();
         input.put("title", title);
         input.put("description", "Test recipe.");
@@ -185,16 +237,7 @@ class ShoppingListsEndpointTests extends ApiIntegrationTestSupport {
                         .put("proteinG", 12)
                         .put("carbsG", 30)
                         .put("fatG", 10));
-        input.set(
-                "ingredients",
-                objectMapper
-                        .createArrayNode()
-                        .add(objectMapper
-                                .createObjectNode()
-                                .put("quantity", amount)
-                                .put("unit", unit)
-                                .put("name", ingredient))
-                        .add(objectMapper.createObjectNode().put("quantity", 1).put("name", "eggs")));
+        input.set("ingredients", ingredients);
         input.set(
                 "steps",
                 objectMapper

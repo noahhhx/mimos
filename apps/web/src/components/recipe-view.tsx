@@ -4,7 +4,8 @@ import { useState } from "react";
 
 import type { RecipeDetail } from "@mimos/api-client";
 
-import { formatQuantity, hasNutrition } from "@/lib/format";
+import { Quantity } from "@/components/quantity";
+import { hasNutrition } from "@/lib/format";
 
 /**
  * A recipe as you cook it: tickable ingredients and steps (local state only
@@ -73,8 +74,7 @@ export function RecipeView({ recipe }: { recipe: RecipeDetail }) {
                     checked={doneIngredients.has(index)}
                     onChange={() => toggle(doneIngredients, index, setDoneIngredients)}
                   />{" "}
-                  <span className="quantity">{formatQuantity(ingredient.quantity, ingredient.unit)}</span>{" "}
-                  {ingredient.name}
+                  <Quantity quantity={ingredient.quantity} unit={ingredient.unit} /> {ingredient.name}
                 </label>
               </li>
             ))}

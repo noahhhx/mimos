@@ -165,7 +165,8 @@ public class RecipeService {
         }
         for (Ingredient ingredient : draft.ingredients()) {
             requireText("ingredient name", ingredient.name(), MAX_TITLE_LENGTH);
-            if (Double.isNaN(ingredient.quantity()) || ingredient.quantity() <= 0) {
+            Double quantity = ingredient.quantity();
+            if (quantity != null && (quantity.isNaN() || quantity <= 0)) {
                 throw new IllegalArgumentException("ingredient quantity must be positive: " + ingredient.name());
             }
             if (ingredient.unit() != null && ingredient.unit().length() > 30) {

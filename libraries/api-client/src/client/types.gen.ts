@@ -60,13 +60,13 @@ export type Nutrition = {
 };
 
 /**
- * One ingredient line: an amount, an optional unit, and a name.
+ * One ingredient line: an optional amount, an optional unit, and a name.
  */
 export type IngredientQuantity = {
     /**
-     * Amount of the ingredient.
+     * Amount of the ingredient; omitted for unmeasured ingredients ("salt, to taste"). Positive when present.
      */
-    quantity: number;
+    quantity?: number;
     /**
      * Unit of measure; omitted for countable ingredients ("2 eggs").
      */
@@ -253,9 +253,9 @@ export type ShoppingListItem = {
     name: string;
     unit?: string;
     /**
-     * Total amount across the week's recipes.
+     * Total measured amount across the week's recipes; omitted when every recipe leaves the ingredient unmeasured (ADR-0007).
      */
-    quantity: number;
+    quantity?: number;
     /**
      * Aisle grouping (Produce, Meat & Seafood, Dairy & Eggs, ...).
      */

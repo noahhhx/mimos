@@ -211,6 +211,39 @@ class RecipesEndpointTests extends ApiIntegrationTestSupport {
     }
 
     @Test
+    void unmeasuredIngredientRoundTripsWithoutAQuantity() {
+        RestClient api = api();
+        ObjectNode input = minimalRecipe("Seasoned Stock");
+        input.set(
+                "ingredients",
+                objectMapper
+                        .createArrayNode()
+                        .add(ingredient(1, "l", "stock"))
+                        .add(objectMapper.createObjectNode().put("name", "salt, to taste")));
+
+        JsonNode created = requireNonNull(
+                api.post()
+                        .uri("/api/v1/recipes")
+                        .headers(headers -> headers.setBearerAuth(accessToken()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(input)
+                        .retrieve()
+                        .body(JsonNode.class),
+                "create returned no body");
+        JsonNode fetched = requireNonNull(
+                api.get()
+                        .uri("/api/v1/recipes/{id}", created.get("id").asText())
+                        .headers(headers -> headers.setBearerAuth(accessToken()))
+                        .retrieve()
+                        .body(JsonNode.class),
+                "get returned no body");
+        JsonNode salt = fetched.get("ingredients").get(1);
+        assertThat(salt.get("name").asText()).isEqualTo("salt, to taste");
+        assertThat(salt.has("quantity")).isFalse();
+        assertThat(fetched.get("ingredients").get(0).get("quantity").asDouble()).isEqualTo(1);
+    }
+
+    @Test
     void unauthenticatedAccessIsRejected() {
         api().get().uri("/api/v1/recipes").exchange((req, res) -> {
             assertThat(res.getStatusCode().value()).isEqualTo(401);
@@ -319,6 +352,19 @@ class RecipesEndpointTests extends ApiIntegrationTestSupport {
                 .put("proteinG", protein)
                 .put("carbsG", carbs)
                 .put("fatG", fat);
+    }
+
+    /** A valid recipe with one ingredient and one step, ready to vary. */
+    private ObjectNode minimalRecipe(String title) {
+        ObjectNode input = objectMapper.createObjectNode();
+        input.put("title", title);
+        input.put("description", "A test recipe.");
+        input.put("servings", 2);
+        input.set("tags", objectMapper.createArrayNode());
+        input.set("nutrition", objectMapper.createObjectNode());
+        input.set("ingredients", objectMapper.createArrayNode().add(ingredient(1, "l", "stock")));
+        input.set("steps", objectMapper.createArrayNode().add(step("Simmer.")));
+        return input;
     }
 
     private ObjectNode ingredient(double quantity, @Nullable String unit, String name) {

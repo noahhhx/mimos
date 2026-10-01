@@ -46,8 +46,15 @@ export function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-/** "2 cups flour" style quantity formatting (best effort, no smarts). */
-export function formatQuantity(quantity: number, unit: string | null | undefined): string {
+/**
+ * "2 cups flour" style quantity formatting (best effort, no smarts). An
+ * unmeasured ingredient ("salt, to taste") has no quantity: it formats as
+ * its unit alone, or as nothing.
+ */
+export function formatQuantity(quantity: number | null | undefined, unit: string | null | undefined): string {
+  if (quantity == null) {
+    return unit ?? "";
+  }
   const rounded = Math.round(quantity * 100) / 100;
   const number = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2).replace(/0$/, "");
   return unit ? `${number} ${unit}` : number;

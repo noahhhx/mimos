@@ -1,11 +1,12 @@
 import { expect, test } from "./fixtures.ts";
 
 /**
- * Create a recipe with a repeated tag and partial nutrition, then edit it
- * and land back on its view. Regression test for three bugs found driving
- * the form: a repeated tag was a 500 (duplicate `recipe_tag` row), the
- * nutrition card hid carbs and fat unless calories or protein were set, and
- * saving an edit left the page on the form.
+ * Create a recipe with a repeated tag, partial nutrition, and an unmeasured
+ * ingredient, then edit it and land back on its view.
+ * Regression test for bugs found driving the form: a repeated tag was a 500
+ * (duplicate `recipe_tag` row), the nutrition card hid carbs and fat unless
+ * calories or protein were set, saving an edit left the page on the form,
+ * and an ingredient could not go unmeasured (ADR-0007).
  */
 test("creates a recipe, then edits it back to its view", async ({ loggedInPage: page }) => {
   // Unique per run, so reruns against the same database never collide.
@@ -13,7 +14,7 @@ test("creates a recipe, then edits it back to its view", async ({ loggedInPage: 
   const recipe = page.locator("article.recipe");
   const formError = page.locator("main").getByRole("alert");
 
-  await test.step("create with a repeated tag and only carbs and fat", async () => {
+  await test.step("create with a repeated tag, only carbs and fat, and salt to taste", async () => {
     await page.goto("/app/recipes/new");
     await page.getByLabel("Title").fill(title);
     await page.getByLabel("Description").fill("Written by the harness's edit-recipe scenario.");
@@ -22,6 +23,8 @@ test("creates a recipe, then edits it back to its view", async ({ loggedInPage: 
     await page.getByLabel("Fat g").fill("10");
     await page.getByLabel("Ingredient 1 amount").fill("1");
     await page.getByLabel("Ingredient 1 name").fill("beans");
+    await page.getByRole("button", { name: "+ Ingredient" }).click();
+    await page.getByLabel("Ingredient 2 name").fill("salt, to taste");
     await page.getByLabel("Step 1").fill("Simmer the beans.");
     await page.getByRole("button", { name: "Create recipe" }).click();
     await expect(formError.or(recipe.getByRole("heading", { name: title, level: 1 }))).toBeVisible();
@@ -32,6 +35,12 @@ test("creates a recipe, then edits it back to its view", async ({ loggedInPage: 
     await expect(recipe.locator(".tag")).toHaveText(["dinner", "harness"]);
     await expect(recipe.getByRole("heading", { name: "Per serving" })).toBeVisible();
     await expect(recipe.locator(".nutrition")).toContainText("40 g");
+  });
+
+  await test.step("the unmeasured ingredient shows by name alone", async () => {
+    const salt = recipe.locator(".ingredients li").nth(1);
+    await expect(salt).toHaveText("salt, to taste");
+    await expect(salt.locator(".quantity")).toHaveCount(0);
   });
 
   await test.step("save an edit and land back on the view", async () => {

@@ -112,7 +112,13 @@ public class ShoppingListRepository {
     }
 
     /** An item to insert (id and position are assigned by the repository). */
-    public record ItemRow(String name, @Nullable String unit, double quantity, String category, boolean checked) {}
+    public record ItemRow(
+            String name, @Nullable String unit, @Nullable Double quantity, String category, boolean checked) {}
+
+    private static @Nullable Double nullableDouble(ResultSet rs, String column) throws SQLException {
+        java.math.BigDecimal value = rs.getBigDecimal(column);
+        return value == null ? null : value.doubleValue();
+    }
 
     private static final RowMapper<ShoppingList.ShoppingListItem> ITEM_MAPPER = new ItemMapper();
 
@@ -124,7 +130,7 @@ public class ShoppingListRepository {
                     rs.getObject("id", UUID.class),
                     rs.getString("name"),
                     rs.getString("unit"),
-                    rs.getDouble("quantity"),
+                    nullableDouble(rs, "quantity"),
                     rs.getString("category"),
                     rs.getBoolean("checked"));
         }
