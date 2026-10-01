@@ -1,10 +1,12 @@
 # Agent harness — plan
 
-**Status:** in progress — steps 1 (stack control and API driving), 2
-(browser driving), 3 (logs and request correlation), 4 (diagnostics), and
-5 (debugger) are built; their pages document usage. This page is the high-level design; each step has
-its own page (linked below) that gets fleshed out and updated as it is
-picked up. Edit freely — the plan is meant to be revisited.
+**Status:** in progress — steps 1–6 are built: stack control and API
+driving, browser driving, logs and request correlation, diagnostics, the
+debugger, and the agent skill, docs, and CI. **[Using the
+harness](usage.md) is the command reference.** This page is the
+high-level design. Each step has its own page (linked below), which records
+the decisions made while building it. Edit freely — the plan is meant to be
+revisited.
 
 ## Why
 
@@ -132,7 +134,7 @@ and docs, per AGENTS.md.
 | 3 | [Logs and request correlation](step-3-logs.md) | Done |
 | 4 | [Diagnostics](step-4-diagnostics.md) | Done |
 | 5 | [Debugger](step-5-debugger.md) | Done |
-| 6 | [Agent skill, docs, and CI](step-6-skill-docs-ci.md) | Planned |
+| 6 | [Agent skill, docs, and CI](step-6-skill-docs-ci.md) | Done |
 | 7 | [First use: the recipe 415](step-7-recipe-415.md) | Planned |
 
 ## Decisions

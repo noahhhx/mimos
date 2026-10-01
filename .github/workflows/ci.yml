@@ -91,7 +91,7 @@ jobs:
   compose:
     name: Self-hosted stack (compose)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
 
@@ -143,6 +143,62 @@ jobs:
           # API -> country-week plugin -> validated, attributed card (ADR-0006).
           curl -fsS -H "Authorization: Bearer $token" \
             "http://localhost:8080/api/v1/plans/$monday/suggestions" | grep -q '"pluginId":"country-week"'
+
+      # Browser scenarios (docs/harness/step-6-skill-docs-ci.md). The steps above
+      # are the devenv-free self-host parity check; from here on the agent
+      # harness runs through devenv, which provides Node and the browsers.
+      - uses: cachix/install-nix-action@v31
+
+      - uses: cachix/cachix-action@v16
+        with:
+          name: devenv
+
+      - name: Install devenv
+        run: nix profile install nixpkgs#devenv
+
+      - name: Install the npm workspace (Playwright) in the devenv shell
+        run: devenv shell -- npm ci
+
+      - name: Harness scenarios
+        env:
+          # Scenarios that reproduce an open bug: they must still fail, and one
+          # that passes fails the job until it is removed from this list.
+          # create-recipe: the recipe 415 (docs/harness/step-7-recipe-415.md).
+          KNOWN_FAILING: create-recipe
+        run: |
+          failed=0
+          for spec in tools/harness/scenarios/*.spec.ts; do
+            name=$(basename "$spec" .spec.ts)
+            # One run folder for the whole job; the first scenario creates it.
+            run=()
+            [ -e .harness/runs/latest ] && run=(--run latest)
+            if devenv shell -- harness ui "$name" "${run[@]}"; then outcome=passed; else outcome=failed; fi
+            if [[ " $KNOWN_FAILING " == *" $name "* ]]; then
+              if [ "$outcome" = passed ]; then
+                echo "::error::scenario $name passed but is listed in KNOWN_FAILING — remove it from the list"
+                failed=1
+              else
+                echo "::warning::scenario $name failed as expected (KNOWN_FAILING)"
+              fi
+            elif [ "$outcome" = failed ]; then
+              echo "::error::scenario $name failed — see the harness-runs artifact, summary.md first"
+              failed=1
+            fi
+          done
+          cat .harness/runs/latest/summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit $failed
+
+      - name: Upload harness evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harness-runs
+          # `latest` is a symlink to the run; leave it out so the run is not uploaded twice.
+          path: |
+            .harness/runs/
+            !.harness/runs/latest
+          include-hidden-files: true
+          if-no-files-found: ignore
 
       - name: Tear down
         if: always()

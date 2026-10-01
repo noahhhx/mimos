@@ -179,6 +179,7 @@ mimos/
 ├── pom.xml               # Maven parent/aggregator for the backend
 ├── mkdocs.yml            # documentation config
 ├── .mcp.json             # MCP servers for agent sessions (Playwright browser, via devenv)
+├── .claude/skills/       # Claude Code skills — thin pointers into AGENTS.md and docs (mimos-harness)
 ├── docs/                 # MkDocs source: guides, plugin authoring, harness plan, decisions/ADRs
 ├── apps/
 │   ├── api/              # Spring Boot modular monolith (the only deployable backend)
@@ -241,30 +242,18 @@ mimos/
   agents invoke it as `devenv shell -- <cmd>`. The shell's banner goes to
   stderr so that command's stdout stays clean.
 - **Agent harness:** `tools/harness` (`@mimos/harness`), on the PATH in the
-  devenv shell as `harness`; `devenv shell -- harness --help` lists the
-  commands, and evidence lands in `.harness/runs/<run>/` (gitignored) —
-  read `.harness/runs/latest/summary.md` first. Browser flows are
-  Playwright scenarios in `tools/harness/scenarios/` (`harness ui <name>`);
+  devenv shell as `harness`; how to use it is in "Debugging the running
+  stack" below. Browser flows are Playwright scenarios in
+  `tools/harness/scenarios/`, and every scenario runs in CI's compose job
+  (a known failure is listed in the job's `KNOWN_FAILING` until fixed).
   `.mcp.json` gives agent sessions a Playwright MCP browser for
-  exploration. `@playwright/test` is pinned to nixpkgs'
-  `playwright-driver` version — bump both together. Prefer `harness up` over a
-  bare `docker compose up`: it always rebuilds images. `harness up --debug`
-  adds `deploy/docker/compose.debug.yml` (JSON API logs, actuator
-  diagnostics, JDWP on `127.0.0.1:5005` and the Node inspector on
-  `127.0.0.1:9229`) — debug-only behavior goes there, never in
-  `compose.yml`, and debug ports bind to loopback only. `harness logs
-  --request-id <id>` gathers one request's lines across services. `harness diag` snapshots the stack (state,
-  actuator, `routes.txt` with each route's media types, migrations vs. the
-  repo, plugin manifests) with secrets redacted; `harness loglevel` changes
-  API log levels live (`--reset` restores them); `harness sql "<query>"`
-  queries the database read-only by default. `harness debug break
-  <Class:line|Class.method> --then "api …"` stops the API at a breakpoint
-  through `jdb`, suspending only the hitting thread, and records stack,
-  locals, and `--print` expressions (or an explicit "not hit") in
-  `debug/<n>/hits.md`. It always clears the breakpoint and detaches.
-  Planned in `docs/harness/` (high-level plan + one page per step; built steps' pages
-  document usage). Read it before building harness pieces; keep step pages
-  and their status current as steps land.
+  exploration. `@playwright/test` is pinned to nixpkgs' `playwright-driver`
+  version — bump both together. Debug-only behavior goes in
+  `deploy/docker/compose.debug.yml` (`harness up --debug`), never in
+  `compose.yml`, and debug ports bind to loopback only. The plan and one
+  page per step are in `docs/harness/`, the command reference in
+  `docs/harness/usage.md`; read them before building harness pieces, and
+  keep them current as the harness changes.
 - **Docs:** MkDocs. Doc changes ship with the code change they describe;
   `mkdocs build --strict` is the check once `mkdocs.yml` exists. Keep the
   nav in `mkdocs.yml` accurate; ADRs are pages under `docs/decisions/`.
@@ -288,6 +277,37 @@ mimos/
   helps (`feat(planning): ...`).
 - **Naming:** product name is **Mimos**; the repo/backend service is
   lowercase `mimos-api`; database `mimos`.
+
+## Debugging the running stack
+
+When something fails on the running stack — a 4xx/5xx, a broken page, a
+flow that does not work — investigate with the agent harness, not by
+guessing. Run it as `devenv shell -- harness <command>`; every command
+writes evidence to `.harness/runs/<run>/` (gitignored), and
+`.harness/runs/latest/summary.md` is the first thing to read.
+`docs/harness/usage.md` documents every command.
+
+1. **Start** — `harness up --debug`: fresh images plus the debug overlay
+   (JSON API logs, actuator diagnostics, JDWP on `127.0.0.1:5005`, the
+   Node inspector on `127.0.0.1:9229`). Prefer it over a bare `docker
+   compose up`, which does not rebuild images.
+2. **Reproduce** — a browser scenario (`harness ui <scenario>`; write one in
+   `tools/harness/scenarios/` if none covers the flow) or an API call
+   (`harness api <METHOD> <path> [--body <file>]`). No reproduction, no fix.
+3. **Read the evidence** — `summary.md` first (failing step, every API
+   call with its request ID, failed requests in full), then the HAR,
+   `harness logs --request-id <id>` (one request's lines across services),
+   and `harness diag` (state, actuator, `routes.txt` with each route's
+   media types, migrations vs. the repo, plugin manifests).
+4. **Hypothesize from evidence, and narrow it** — `harness loglevel <logger>
+   <level>` changes API log levels live (`--reset` restores them);
+   `harness sql "<query>"` reads the database; `harness debug break
+   <Class:line|Class.method> --then "<api|ui …>"` stops the API at a
+   breakpoint and records stack, locals, and `--print` expressions — or an
+   explicit "not hit", which is evidence too.
+5. **Fix** at the layer that is wrong, with a test at that layer.
+6. **Re-run the reproduction**; it must pass.
+7. **Keep the scenario** — it is the regression test, and CI runs it.
 
 ## Definition of done (for any change)
 
@@ -347,7 +367,9 @@ mimos/
   login) from `http://localhost:8080/api/v1/plans/{monday}/suggestions`
   or the plan page's Suggestions panel.
 - CI (`.github/workflows/ci.yml`) runs all of the above on every PR; the
-  compose job is the self-host parity check.
+  compose job is the self-host parity check. Its last steps run every
+  harness scenario through devenv against the booted stack and upload
+  `.harness/runs/` as the `harness-runs` artifact when one fails.
 
 ## Decision log
 

@@ -17,6 +17,7 @@ nav:
       - Authoring: plugins/index.md
   - Agent harness:
       - Plan: harness/index.md
+      - Using the harness: harness/usage.md
       - '1. Stack control and API driving': harness/step-1-stack-and-api.md
       - '2. Browser driving': harness/step-2-browser.md
       - '3. Logs and request correlation': harness/step-3-logs.md

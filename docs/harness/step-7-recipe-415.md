@@ -88,7 +88,9 @@ early step is conclusive, fix it then and keep this page as the record.
 ## Done when
 
 - The root cause is written down on this page (evidence → cause → fix).
-- `harness ui create-recipe` passes.
+- `harness ui create-recipe` passes, and `create-recipe` is removed from
+  `KNOWN_FAILING` in `.github/workflows/ci.yml` (CI fails until it is), so
+  the scenario runs as a regression test.
 - A regression test exists at the layer that was wrong (API endpoint test,
   contract, generated client, or web).
 - A short retrospective here: what evidence was decisive, what the
