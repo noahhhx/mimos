@@ -23,7 +23,7 @@ export default function NewRecipePage() {
 
   return (
     <>
-      <p>
+      <p className="back">
         <Link href="/app/recipes">← Recipes</Link>
       </p>
       <h1>New recipe</h1>

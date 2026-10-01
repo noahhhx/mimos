@@ -87,7 +87,7 @@ export default function RecipeDetailPage() {
 
   return (
     <>
-      <p>
+      <p className="back">
         <Link href="/app/recipes">← Recipes</Link>
       </p>
 

@@ -26,22 +26,24 @@ export function RecipeView({ recipe }: { recipe: RecipeDetail }) {
 
   return (
     <article className="recipe">
-      <h1>{recipe.title}</h1>
-      <p>{recipe.description}</p>
-      <p className="muted">
-        Serves {recipe.servings}
-        {recipe.prepMinutes != null ? ` · ${recipe.prepMinutes} min prep` : ""}
-        {recipe.cookMinutes != null ? ` · ${recipe.cookMinutes} min cook` : ""}
-      </p>
-      {recipe.tags.length > 0 && (
-        <p className="tags">
-          {recipe.tags.map((tag) => (
-            <span key={tag} className="tag">
-              {tag}
-            </span>
-          ))}
+      <header className="page-header">
+        <h1>{recipe.title}</h1>
+        <p className="lede">{recipe.description}</p>
+        <p className="muted">
+          Serves {recipe.servings}
+          {recipe.prepMinutes != null ? ` · ${recipe.prepMinutes} min prep` : ""}
+          {recipe.cookMinutes != null ? ` · ${recipe.cookMinutes} min cook` : ""}
         </p>
-      )}
+        {recipe.tags.length > 0 && (
+          <p className="tags">
+            {recipe.tags.map((tag) => (
+              <span key={tag} className="tag">
+                {tag}
+              </span>
+            ))}
+          </p>
+        )}
+      </header>
 
       {recipe.nutrition && (recipe.nutrition.calories != null || recipe.nutrition.proteinG != null) && (
         <div className="card nutrition">

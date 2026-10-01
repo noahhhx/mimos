@@ -19,11 +19,11 @@ export default async function LibraryPage({
 
   return (
     <>
-      <p>
-        <Link href="/">← Mimos</Link>
-      </p>
-      <h1>Recipe library</h1>
-      <p className="muted">Free recipes with everything needed to actually cook them.</p>
+      <header className="page-header">
+        <p className="eyebrow">Library</p>
+        <h1>Recipes</h1>
+        <p className="muted">Free recipes with everything needed to actually cook them.</p>
+      </header>
 
       <form className="search" action="/recipes" method="get">
         <input

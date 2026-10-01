@@ -7,24 +7,23 @@ import Link from "next/link";
 export default function HomePage() {
   return (
     <>
-      <h1>Mimos</h1>
-      <p className="muted">A recipe companion for people who cook.</p>
-
-      <div className="card">
-        <p>
-          Mimos comes with a library of free recipes, lets you write and keep your own, and turns
-          &ldquo;what am I cooking this week?&rdquo; into plans, shopping lists, and a picture of
-          what you&apos;re actually eating.
+      <section className="intro">
+        <p className="eyebrow">A recipe companion for people who cook</p>
+        <h1>Mimos</h1>
+        <p className="lede">
+          A library of free recipes, a place to keep your own, and &ldquo;what am I cooking this
+          week?&rdquo; turned into plans, shopping lists, and a picture of what you&apos;re actually
+          eating.
         </p>
-        <p>
+        <p className="cta">
           <Link href="/app" className="button">
             Open the app
-          </Link>{" "}
+          </Link>
           <Link href="/recipes" className="button secondary">
             Browse the library
           </Link>
         </p>
-      </div>
+      </section>
 
       <div className="card">
         <h2>Self-hosting</h2>
