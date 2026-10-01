@@ -5,6 +5,10 @@ spring:
     default: local
   flyway:
     enabled: true
+  jackson:
+    deserialization:
+      # 2.5 for an integer field (servings, minutes) is a 400, not a silent 2.
+      accept-float-as-int: false
 
 mimos:
   library:

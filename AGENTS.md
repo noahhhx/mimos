@@ -271,6 +271,8 @@ mimos/
   add a new one. Migrations run automatically on startup so self-hosters
   upgrade by pulling and restarting.
 - **Error handling:** RFC 9457 problem-details responses from the API.
+  Request bodies are read strictly: a fractional value for an integer
+  field is a 400, never truncated (`spring.jackson.deserialization.accept-float-as-int: false`).
 - **Logging and request IDs:** every API request gets an `X-Request-Id`
   (a well-formed client one is kept, otherwise generated), echoed on the
   response, in the MDC as `requestId`, and on every log line the request

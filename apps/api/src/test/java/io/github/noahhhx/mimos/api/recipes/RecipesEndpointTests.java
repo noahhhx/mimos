@@ -244,6 +244,28 @@ class RecipesEndpointTests extends ApiIntegrationTestSupport {
     }
 
     @Test
+    void fractionalServingsAreRejectedNotTruncated() {
+        RestClient api = api();
+        ObjectNode input = minimalRecipe("Two-and-a-half Servings");
+        input.put("servings", 2.5);
+
+        api.post()
+                .uri("/api/v1/recipes")
+                .headers(headers -> headers.setBearerAuth(accessToken()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(input)
+                .exchange((req, res) -> assertThat(res.getStatusCode().value()).isEqualTo(400));
+
+        input.put("servings", 2);
+        api.post()
+                .uri("/api/v1/recipes")
+                .headers(headers -> headers.setBearerAuth(accessToken()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(input)
+                .exchange((req, res) -> assertThat(res.getStatusCode().value()).isEqualTo(201));
+    }
+
+    @Test
     void unauthenticatedAccessIsRejected() {
         api().get().uri("/api/v1/recipes").exchange((req, res) -> {
             assertThat(res.getStatusCode().value()).isEqualTo(401);
