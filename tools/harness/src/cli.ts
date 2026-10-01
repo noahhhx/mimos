@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { HarnessError, UsageError } from "./args.ts";
 import type { Command } from "./command.ts";
 import { apiCommand } from "./commands/api.ts";
+import { debugCommand } from "./commands/debug.ts";
 import { diagCommand } from "./commands/diag.ts";
 import { loglevelCommand } from "./commands/loglevel.ts";
 import { logsCommand } from "./commands/logs.ts";
@@ -33,6 +34,7 @@ export const COMMANDS: readonly Command[] = [
   loglevelCommand,
   sqlCommand,
   psqlCommand,
+  debugCommand,
 ];
 
 function version(): string {

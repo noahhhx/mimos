@@ -1,8 +1,8 @@
 # Agent harness — plan
 
 **Status:** in progress — steps 1 (stack control and API driving), 2
-(browser driving), 3 (logs and request correlation), and 4 (diagnostics)
-are built; their pages document usage. This page is the high-level design; each step has
+(browser driving), 3 (logs and request correlation), 4 (diagnostics), and
+5 (debugger) are built; their pages document usage. This page is the high-level design; each step has
 its own page (linked below) that gets fleshed out and updated as it is
 picked up. Edit freely — the plan is meant to be revisited.
 
@@ -101,7 +101,7 @@ browsers.
 | `harness diag` | Diagnostics snapshot | 4 |
 | `harness loglevel <logger> [<level>]` / `--reset` | Show or change a log level live via actuator; restore the changed ones | 4 |
 | `harness psql` / `harness sql "<query>" [--write] [--csv]` | Interactive / recorded (read-only by default) database access | 4 |
-| `harness debug break <location> --then "<harness cmd>"` | Scripted `jdb` breakpoint capture | 5 |
+| `harness debug break <Class:line\|Class.method> [--then "<harness cmd>"] [--print <expr>]... [--hits <n>] [--timeout <s>]` | Scripted `jdb` breakpoint capture: stack, locals, `this`, expressions — or an explicit "not hit" | 5 |
 
 ## Run folder
 
@@ -115,7 +115,7 @@ browsers.
 ├── logs/                 # <service>.log for each compose service
 ├── diag/                 # diagnostics snapshot: compose.json, actuator/, routes.txt, migrations.csv, plugins/, keycloak/
 ├── sql/                  # <n>.txt / <n>.csv — one per harness sql query
-└── debug/                # breakpoint hits: stack, locals, expressions
+└── debug/<n>/            # one per debug session: hits.md (stack, locals, expressions), jdb.log, trigger.log
 ```
 
 `.harness/runs/latest` points at the most recent run.
@@ -131,7 +131,7 @@ and docs, per AGENTS.md.
 | 2 | [Browser driving](step-2-browser.md) | Done |
 | 3 | [Logs and request correlation](step-3-logs.md) | Done |
 | 4 | [Diagnostics](step-4-diagnostics.md) | Done |
-| 5 | [Debugger](step-5-debugger.md) | Planned |
+| 5 | [Debugger](step-5-debugger.md) | Done |
 | 6 | [Agent skill, docs, and CI](step-6-skill-docs-ci.md) | Planned |
 | 7 | [First use: the recipe 415](step-7-recipe-415.md) | Planned |
 

@@ -76,6 +76,14 @@ early step is conclusive, fix it then and keep this page as the record.
   handler or message converter ever ran. So the server is behaving as
   declared, and the fix belongs where the browser request is built (or,
   if bodies without a media type should be accepted, in the contract).
+- **Step 5 (2026-10-01).** `harness debug break
+  RecipesController.createRecipe --then "ui create-recipe"` → **not hit**:
+  the handler never runs for the browser's request. The same breakpoint
+  with `--then "api POST /api/v1/recipes --body recipe.json"` is hit, with
+  `recipeInput.getTitle()` the posted title. This is the plan's predicted
+  "not hit" and agrees with step 4. It adds no new cause, but it proves
+  the rejection happens before the handler, without reading framework
+  logs.
 
 ## Done when
 

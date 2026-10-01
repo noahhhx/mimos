@@ -39,6 +39,11 @@ export function endpoints(env: Env = process.env): Endpoints {
   };
 }
 
+/** Debug ports the overlay publishes on 127.0.0.1 (compose.debug.yml reads the same variables). */
+export function debugPorts(env: Env = process.env): { jdwp: number; inspector: number } {
+  return { jdwp: Number(env.API_DEBUG_PORT ?? "5005"), inspector: Number(env.WEB_INSPECT_PORT ?? "9229") };
+}
+
 /** The stack's database, as compose.yml names it (`psql` runs inside the postgres container). */
 export function database(env: Env = process.env): { user: string; name: string } {
   return { user: env.POSTGRES_USER ?? "mimos", name: env.POSTGRES_DB ?? "mimos" };

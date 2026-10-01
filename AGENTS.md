@@ -250,14 +250,19 @@ mimos/
   `playwright-driver` version — bump both together. Prefer `harness up` over a
   bare `docker compose up`: it always rebuilds images. `harness up --debug`
   adds `deploy/docker/compose.debug.yml` (JSON API logs, actuator
-  diagnostics; later, debug ports) — debug-only behavior goes there, never
-  in `compose.yml`. `harness logs --request-id <id>` gathers one request's
-  lines across services. `harness diag` snapshots the stack (state,
+  diagnostics, JDWP on `127.0.0.1:5005` and the Node inspector on
+  `127.0.0.1:9229`) — debug-only behavior goes there, never in
+  `compose.yml`, and debug ports bind to loopback only. `harness logs
+  --request-id <id>` gathers one request's lines across services. `harness diag` snapshots the stack (state,
   actuator, `routes.txt` with each route's media types, migrations vs. the
   repo, plugin manifests) with secrets redacted; `harness loglevel` changes
   API log levels live (`--reset` restores them); `harness sql "<query>"`
-  queries the database read-only by default. Planned in
-  `docs/harness/` (high-level plan + one page per step; built steps' pages
+  queries the database read-only by default. `harness debug break
+  <Class:line|Class.method> --then "api …"` stops the API at a breakpoint
+  through `jdb`, suspending only the hitting thread, and records stack,
+  locals, and `--print` expressions (or an explicit "not hit") in
+  `debug/<n>/hits.md`. It always clears the breakpoint and detaches.
+  Planned in `docs/harness/` (high-level plan + one page per step; built steps' pages
   document usage). Read it before building harness pieces; keep step pages
   and their status current as steps land.
 - **Docs:** MkDocs. Doc changes ship with the code change they describe;
@@ -321,6 +326,10 @@ mimos/
 - `devenv shell -- harness diag` — diagnostics snapshot of a running
   stack (full with `harness up --debug`); exit 1 means it found a problem
   (listed in `.harness/runs/latest/summary.md`).
+- `devenv shell -- harness debug break MeController:27 --then "api GET
+  /api/v1/me"` — debugger smoke against a stack started with `harness up
+  --debug`: exit 0 and a hit with locals in
+  `.harness/runs/latest/debug/1/hits.md`.
 - `devenv shell -- harness ui login` — browser smoke against a running
   stack (Chromium from devenv); `harness ui create-recipe` is expected to
   fail until the recipe 415 is fixed (`docs/harness/step-7-recipe-415.md`).
