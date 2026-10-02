@@ -10,6 +10,8 @@ import {
 } from "@mimos/api-client";
 
 import { useAuth } from "@/components/auth-provider";
+import { PageHeader } from "@/components/page-header";
+import { RecipeList } from "@/components/recipe-list";
 import { apiClient } from "@/lib/api";
 
 /**
@@ -56,7 +58,7 @@ export default function RecipesPage() {
   if (!user) {
     return (
       <>
-        <h1>Recipes</h1>
+        <PageHeader title="Recipes" />
         <p>You need to sign in to use Mimos.</p>
         <button className="button" onClick={() => void signIn()}>
           Sign in
@@ -69,12 +71,15 @@ export default function RecipesPage() {
 
   return (
     <>
-      <div className="toolbar">
-        <h1>Recipes</h1>
-        <Link href="/app/recipes/new" className="button">
-          + New recipe
-        </Link>
-      </div>
+      <PageHeader
+        eyebrow="Your recipe book"
+        title="Recipes"
+        actions={
+          <Link href="/app/recipes/new" className="button">
+            + New recipe
+          </Link>
+        }
+      />
 
       <div className="tabs" role="tablist">
         <button
@@ -122,35 +127,12 @@ export default function RecipesPage() {
           </p>
         </div>
       ) : (
-        <ul className="recipe-cards">
-          {recipes.map((recipe) => (
-            <li key={recipe.id} className="card recipe-card">
-              <h2>
-                {tab === "mine" || !recipe.slug ? (
-                  <Link href={`/app/recipes/${recipe.id}`}>{recipe.title}</Link>
-                ) : (
-                  <Link href={`/recipes/${recipe.slug}`}>{recipe.title}</Link>
-                )}
-              </h2>
-              <p>{recipe.description}</p>
-              <p className="muted">
-                {recipe.servings} servings
-                {recipe.nutrition?.calories != null
-                  ? ` · ~${Math.round(recipe.nutrition.calories)} kcal/serving`
-                  : ""}
-              </p>
-              {recipe.tags.length > 0 && (
-                <p className="tags">
-                  {recipe.tags.map((tag) => (
-                    <span key={tag} className="tag">
-                      {tag}
-                    </span>
-                  ))}
-                </p>
-              )}
-            </li>
-          ))}
-        </ul>
+        <RecipeList
+          recipes={recipes}
+          hrefOf={(recipe) =>
+            tab === "mine" || !recipe.slug ? `/app/recipes/${recipe.id}` : `/recipes/${recipe.slug}`
+          }
+        />
       )}
     </>
   );

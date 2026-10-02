@@ -18,6 +18,7 @@ import {
 } from "@mimos/api-client";
 
 import { useAuth } from "@/components/auth-provider";
+import { PageHeader } from "@/components/page-header";
 import { apiClient } from "@/lib/api";
 import { MEAL_TYPES, addDays, dayLabel, mealLabel, mondayOf, weekDays } from "@/lib/format";
 
@@ -94,7 +95,7 @@ export default function PlanPage() {
   if (!user) {
     return (
       <>
-        <h1>Plan</h1>
+        <PageHeader title="Plan" />
         <p>You need to sign in to plan meals.</p>
         <button className="button" onClick={() => void signIn()}>
           Sign in
@@ -192,26 +193,23 @@ export default function PlanPage() {
 
   return (
     <>
-      <div className="toolbar">
-        <h1>Plan</h1>
-        <div className="actions">
-          <Link className="button secondary" href={`/app/shopping-list?week=${weekStart}`}>
-            Shopping list
-          </Link>
-        </div>
-      </div>
-
-      <div className="toolbar week-nav">
-        <button className="button secondary" onClick={() => setWeekStart(addDays(weekStart, -7))}>
-          ← Previous
-        </button>
-        <strong>
-          Week of {dayLabel(weekStart)}
-        </strong>
-        <button className="button secondary" onClick={() => setWeekStart(addDays(weekStart, 7))}>
-          Next →
-        </button>
-      </div>
+      <PageHeader
+        eyebrow={`Week of ${dayLabel(weekStart)}`}
+        title="Plan"
+        actions={
+          <>
+            <button className="button secondary" onClick={() => setWeekStart(addDays(weekStart, -7))}>
+              ← Previous
+            </button>
+            <button className="button secondary" onClick={() => setWeekStart(addDays(weekStart, 7))}>
+              Next →
+            </button>
+            <Link className="button secondary" href={`/app/shopping-list?week=${weekStart}`}>
+              Shopping list
+            </Link>
+          </>
+        }
+      />
 
       {error && (
         <div className="card error" role="alert">

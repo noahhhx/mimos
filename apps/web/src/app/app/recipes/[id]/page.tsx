@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { deleteRecipe, getRecipe, type RecipeDetail } from "@mimos/api-client";
 
 import { useAuth } from "@/components/auth-provider";
+import { PageHeader } from "@/components/page-header";
 import { RecipeForm } from "@/components/recipe-form";
 import { RecipeView } from "@/components/recipe-view";
 import { apiClient } from "@/lib/api";
@@ -52,7 +53,7 @@ export default function RecipeDetailPage() {
   if (!user) {
     return (
       <>
-        <h1>Recipe</h1>
+        <PageHeader title="Recipe" />
         <p>You need to sign in to use Mimos.</p>
         <button className="button" onClick={() => void signIn()}>
           Sign in
@@ -67,7 +68,7 @@ export default function RecipeDetailPage() {
         <p>
           <Link href="/app/recipes">← Recipes</Link>
         </p>
-        <h1>Recipe not found</h1>
+        <PageHeader title="Recipe not found" />
         <p className="muted">It may have been deleted, or it belongs to someone else.</p>
       </>
     );
@@ -101,7 +102,7 @@ export default function RecipeDetailPage() {
         <p className="muted">Loading…</p>
       ) : editing ? (
         <>
-          <h1>Edit recipe</h1>
+          <PageHeader title="Edit recipe" />
           <RecipeForm
             initial={recipe}
             onSaved={(saved) => {

@@ -1,9 +1,9 @@
 # Evening Kitchen restyle: plan
 
-**Status:** steps 1 (tokens, fonts, theme default) and 2 (public pages)
-are done, with step 4's [ADR-0008](../decisions/adr-0008-visual-direction.md)
-and AGENTS.md update; step 3 is next. This page is the brief for the agent
-that builds it. Decisions made with the owner are marked **decided**; don't
+**Status:** done. The decisions are recorded in
+[ADR-0008](../decisions/adr-0008-visual-direction.md); pages are built from
+`SplitPage`, `PageHeader` and `RecipeList` in `apps/web/src/components/`.
+This page was the brief for the agent that built it. Decisions made with the owner are marked **decided**; don't
 relitigate them without asking. The new Kitchen home screen is a separate
 plan, [Kitchen home](kitchen-home.md), and comes after this one.
 

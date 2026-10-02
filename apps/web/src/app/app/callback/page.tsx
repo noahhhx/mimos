@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { PageHeader } from "@/components/page-header";
 import { userManager } from "@/lib/auth";
 
 /**
@@ -35,7 +36,7 @@ export default function CallbackPage() {
   if (error) {
     return (
       <>
-        <h1>Sign-in failed</h1>
+        <PageHeader title="Sign-in failed" />
         <div className="card" role="alert">
           <p>{error}</p>
         </div>

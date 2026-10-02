@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { RecipeForm } from "@/components/recipe-form";
 import { useAuth } from "@/components/auth-provider";
+import { PageHeader } from "@/components/page-header";
 
 /** Write a new personal recipe with the same richness as the library. */
 export default function NewRecipePage() {
@@ -14,7 +15,7 @@ export default function NewRecipePage() {
   if (!user) {
     return (
       <>
-        <h1>New recipe</h1>
+        <PageHeader title="New recipe" />
         <p>You need to sign in to write recipes.</p>
         <button className="button" onClick={() => void signIn()}>
           Sign in
@@ -28,7 +29,7 @@ export default function NewRecipePage() {
       <p className="back">
         <Link href="/app/recipes">← Recipes</Link>
       </p>
-      <h1>New recipe</h1>
+      <PageHeader title="New recipe" />
       <RecipeForm onCancel={() => router.push("/app/recipes")} />
     </>
   );

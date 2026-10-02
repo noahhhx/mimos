@@ -12,6 +12,7 @@ import {
 } from "@mimos/api-client";
 
 import { useAuth } from "@/components/auth-provider";
+import { PageHeader } from "@/components/page-header";
 import { apiClient } from "@/lib/api";
 import { MEAL_TYPES, addDays, dayLabel, formatKcal, mealLabel, mondayOf, todayIso, weekDays } from "@/lib/format";
 
@@ -58,7 +59,7 @@ export default function LogPage() {
   if (!user) {
     return (
       <>
-        <h1>Log</h1>
+        <PageHeader title="Log" />
         <p>You need to sign in to keep a log.</p>
         <button className="button" onClick={() => void signIn()}>
           Sign in
@@ -111,17 +112,20 @@ export default function LogPage() {
 
   return (
     <>
-      <h1>Log</h1>
-
-      <div className="toolbar week-nav">
-        <button className="button secondary" onClick={() => setWeekStart(addDays(weekStart, -7))}>
-          ← Previous
-        </button>
-        <strong>Week of {dayLabel(weekStart)}</strong>
-        <button className="button secondary" onClick={() => setWeekStart(addDays(weekStart, 7))}>
-          Next →
-        </button>
-      </div>
+      <PageHeader
+        eyebrow={`Week of ${dayLabel(weekStart)}`}
+        title="Log"
+        actions={
+          <>
+            <button className="button secondary" onClick={() => setWeekStart(addDays(weekStart, -7))}>
+              ← Previous
+            </button>
+            <button className="button secondary" onClick={() => setWeekStart(addDays(weekStart, 7))}>
+              Next →
+            </button>
+          </>
+        }
+      />
 
       {error && (
         <div className="card error" role="alert">

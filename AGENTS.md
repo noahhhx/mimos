@@ -152,7 +152,8 @@ is the contract:
   shadows) and no transitions or animations. Fonts are committed files
   in `src/fonts/` loaded with `next/font/local`; never a font host or a
   font npm package. Rebuild them as `src/fonts/README.md` says (its tools
-  come from devenv).
+  come from devenv). Pages start with `PageHeader` (eyebrow, serif h1,
+  amber rule, actions) or, for a rail layout, `SplitPage`.
 - Unit tests live in `apps/web/test/` and run on `node --test` (native type
   stripping, no test framework). A module they import must not touch the
   browser or Next, and imports its siblings with a `.ts` extension (Node

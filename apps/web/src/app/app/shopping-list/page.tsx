@@ -11,6 +11,7 @@ import {
 } from "@mimos/api-client";
 
 import { useAuth } from "@/components/auth-provider";
+import { PageHeader } from "@/components/page-header";
 import { apiClient } from "@/lib/api";
 import { Quantity } from "@/components/quantity";
 import { addDays, dayLabel, mondayOf } from "@/lib/format";
@@ -71,7 +72,7 @@ export default function ShoppingListPage() {
   if (!user) {
     return (
       <>
-        <h1>Shopping list</h1>
+        <PageHeader title="Shopping list" />
         <p>You need to sign in to use Mimos.</p>
         <button className="button" onClick={() => void signIn()}>
           Sign in
@@ -123,26 +124,25 @@ export default function ShoppingListPage() {
 
   return (
     <>
-      <div className="toolbar">
-        <h1>Shopping list</h1>
-        <div className="actions">
-          <Link className="button secondary" href={`/app/plan?week=${weekStart}`}>
-            Plan
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow={`Week of ${dayLabel(weekStart)}`}
+        title="Shopping list"
+        actions={
+          <>
+            <button className="button secondary" onClick={() => setWeekStart(addDays(weekStart, -7))}>
+              ← Previous
+            </button>
+            <button className="button secondary" onClick={() => setWeekStart(addDays(weekStart, 7))}>
+              Next →
+            </button>
+            <Link className="button secondary" href={`/app/plan?week=${weekStart}`}>
+              Plan
+            </Link>
+          </>
+        }
+      />
 
-      <div className="toolbar week-nav">
-        <button className="button secondary" onClick={() => setWeekStart(addDays(weekStart, -7))}>
-          ← Previous
-        </button>
-        <strong>Week of {dayLabel(weekStart)}</strong>
-        <button className="button secondary" onClick={() => setWeekStart(addDays(weekStart, 7))}>
-          Next →
-        </button>
-      </div>
-
-      <p>
+      <p className="generate">
         <button className="button" onClick={() => void generate()} disabled={generating}>
           {generating ? "Generating…" : neverGenerated ? "Generate from this week's plan" : "Regenerate"}
         </button>
@@ -168,7 +168,7 @@ export default function ShoppingListPage() {
       )}
 
       {categories.map((category) => (
-        <section key={category} className="card">
+        <section key={category} className="aisle">
           <h2>{category}</h2>
           <ul className="shopping-items">
             {(byCategory.get(category) ?? []).map((item) => (
