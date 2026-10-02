@@ -40,6 +40,11 @@
     # Exploratory browsing for agents (registered in .mcp.json); its wrapper
     # points at the same nixpkgs browsers as below.
     pkgs.playwright-mcp
+    # Rebuilding the committed web fonts (apps/web/src/fonts/README.md):
+    # pyftsubset subsets the upstream TTFs, woff2_compress packs them. The
+    # product build only uses the committed files.
+    pkgs.python313Packages.fonttools
+    pkgs.woff2
   ];
 
   # Browsers for `harness ui` (Playwright scenarios) come from nixpkgs:

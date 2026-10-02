@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Evening Kitchen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+/* Evening Kitchen — the reference mockup for the web restyle (docs/design/).
+   Light by default (warm paper); dark, when chosen, is the kitchen after work
+   with one lamp on. One amber line, big type, low-contrast rules, a left rail
+   that keeps the day and week in view. Straight edges, no motion. */
+:root {
+  --bg: #f4eee5;
+  --surface: #fbf7f1;
+  --raised: #efe6da;
+  --fg: #2b221c;
+  --muted: #76685c;
+  --line: #ddd2c3;
+  --amber: #94560f;
+  --on-amber: #fbf7f1;
+  --ember: #a84a25;
+
+  --serif: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --sans: "Public Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #191512; --surface: #221c18; --raised: #2b241f; --fg: #f1e7d9; --muted: #a8998b;
+  --line: #3a312a; --amber: #e9aa50; --on-amber: #191512; --ember: #d97a4f;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 17px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-underline-offset: 4px; text-decoration-color: var(--line); }
+a:hover { text-decoration-color: var(--amber); }
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding-inline: 16px; }
+@media (min-width: 640px) { .wrap { padding-inline: 32px; } }
+
+.mock-note { font-size: 13px; color: var(--muted); padding-block: 6px; border-bottom: 1px solid var(--line); }
+
+.site-header .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 16px; }
+.brand { font-family: var(--serif); font-size: 26px; font-weight: 500; text-decoration: none; display: flex; align-items: baseline; gap: 10px; }
+.brand-mark { width: 18px; height: 2px; background: var(--amber); transform: translateY(-6px); }
+nav.site { display: flex; align-items: center; gap: 24px; font-size: 15px; }
+nav.site a { text-decoration: none; color: var(--muted); }
+nav.site a[aria-current] { color: var(--fg); }
+.theme-toggle { width: 34px; height: 34px; padding: 0; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; display: grid; place-items: center; }
+.theme-toggle span { width: 12px; height: 12px; border: 1px solid currentColor; background: linear-gradient(90deg, currentColor 50%, transparent 50%); }
+
+main { padding-block: 40px 72px; }
+section.block { margin-bottom: 96px; }
+
+h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(40px, 7vw, 68px); line-height: 1.02; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
+h3 { font-family: var(--serif); font-weight: 500; font-size: 26px; line-height: 1.2; margin: 0; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.lede { font-family: var(--serif); font-size: 22px; line-height: 1.45; max-width: 36ch; color: var(--muted); }
+.amber-rule { width: 64px; height: 2px; background: var(--amber); margin: 22px 0; }
+
+.button { display: inline-flex; align-items: center; min-height: 46px; padding: 0 20px; border: 1px solid var(--amber); background: var(--amber); color: var(--on-amber); font: inherit; font-weight: 600; font-size: 16px; text-decoration: none; cursor: pointer; }
+.button.secondary { background: transparent; color: var(--fg); border-color: var(--line); }
+.btns { display: flex; gap: 12px; flex-wrap: wrap; }
+
+/* Layout: rail + main */
+.split { display: grid; gap: 40px; grid-template-columns: 1fr; }
+@media (min-width: 880px) { .split { grid-template-columns: 300px 1fr; gap: 56px; } }
+.split > * { min-width: 0; }
+
+.rail .week { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.rail .week li { display: grid; grid-template-columns: 64px 1fr; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.rail .d { font-size: 13px; color: var(--muted); padding-top: 2px; font-variant-numeric: tabular-nums; }
+.rail .today { position: relative; }
+.rail .today::before { content: ""; position: absolute; left: -14px; top: 10px; bottom: 10px; width: 2px; background: var(--amber); }
+.rail .today .d { color: var(--amber); }
+.rail .today a { font-weight: 600; }
+.rail .open { color: var(--muted); font-family: var(--serif); font-size: 18px; }
+
+.tonight { background: var(--surface); border-top: 2px solid var(--amber); padding: 32px; }
+.tonight h3 { font-size: clamp(34px, 5vw, 48px); line-height: 1.05; margin: 4px 0 14px; }
+.tonight p { max-width: 50ch; margin-bottom: 22px; }
+.tonight .facts { display: flex; flex-wrap: wrap; gap: 8px 28px; margin-bottom: 26px; font-variant-numeric: tabular-nums; }
+.tonight .facts b { display: block; font-family: var(--serif); font-weight: 400; font-size: 28px; line-height: 1.1; }
+.tonight .facts span { font-size: 13px; color: var(--muted); }
+
+.pair { display: grid; gap: 1px; grid-template-columns: 1fr; margin-top: 1px; background: var(--line); }
+@media (min-width: 640px) { .pair { grid-template-columns: 1fr 1fr; } }
+.pair > div { background: var(--bg); padding: 26px 32px 26px 0; min-width: 0; }
+@media (min-width: 640px) { .pair > div + div { padding-left: 32px; padding-right: 0; } }
+.shop { list-style: none; margin: 0; padding: 0; }
+.shop li { display: flex; gap: 12px; align-items: baseline; padding: 6px 0; }
+.shop .sq { width: 12px; height: 12px; border: 1px solid var(--muted); flex: none; transform: translateY(1px); }
+.shop .got { color: var(--muted); text-decoration: line-through; }
+.shop .got .sq { background: var(--muted); }
+.suggest p { margin: 6px 0 14px; }
+.from { font-size: 13px; color: var(--muted); }
+.from b { color: var(--fg); font-weight: 600; border: 1px solid var(--line); padding: 0 6px; margin-right: 6px; }
+
+/* Library */
+.search { display: flex; gap: 12px; margin-bottom: 8px; }
+.search input { flex: 1; min-width: 0; height: 50px; padding: 0 0; border: 0; border-bottom: 1px solid var(--muted); background: transparent; color: var(--fg); font-family: var(--serif); font-size: 22px; }
+.search input::placeholder { color: var(--muted); }
+.list { list-style: none; margin: 32px 0 0; padding: 0; border-top: 1px solid var(--line); }
+.list li { position: relative; display: grid; grid-template-columns: 1fr; gap: 4px 32px; padding: 20px 0; border-bottom: 1px solid var(--line); }
+@media (min-width: 720px) { .list li { grid-template-columns: 1.1fr 1.4fr auto; align-items: baseline; } }
+.list li:hover h3 { color: var(--amber); }
+.list h3 a { text-decoration: none; }
+.list h3 a::after { content: ""; position: absolute; inset: 0; }
+.list .meta { font-size: 14px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* Recipe */
+.recipe .ing { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.recipe .ing li { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 18px; }
+.recipe .ing b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.recipe .per { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 32px 0 0; }
+.recipe .per dt { font-size: 13px; color: var(--muted); }
+.recipe .per dd { margin: 0; font-family: var(--serif); font-size: 30px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.recipe .per div { border-top: 1px solid var(--line); padding-top: 8px; }
+.steps { list-style: none; margin: 0; padding: 0; counter-reset: s; }
+.steps li { counter-increment: s; display: grid; grid-template-columns: 56px 1fr; padding: 20px 0; border-bottom: 1px solid var(--line); font-family: var(--serif); font-size: 23px; line-height: 1.45; }
+.steps li:first-child { padding-top: 0; }
+.steps li::before { content: counter(s); font-family: var(--sans); font-size: 14px; font-weight: 600; color: var(--amber); padding-top: 7px; }
+
+footer { border-top: 1px solid var(--line); padding-block: 24px; font-size: 14px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="mock-note"><div class="wrap">Reference mockup · Evening Kitchen · sample data, not wired up</div></div>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="#"><span class="brand-mark" aria-hidden="true"></span>Mimos</a>
+    <nav class="site" aria-label="Site">
+      <a href="#library">Library</a>
+      <a href="#kitchen" aria-current="page">Kitchen</a>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle light and dark mode"><span aria-hidden="true"></span></button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="block split" id="kitchen">
+    <aside class="rail">
+      <p class="muted">Friday, 2 October</p>
+      <h1>Good evening.</h1>
+      <div class="amber-rule"></div>
+      <h2>This week</h2>
+      <ul class="week">
+        <li><span class="d">Mon 28</span><a href="#">Minestrone</a></li>
+        <li><span class="d">Tue 29</span><a href="#">Coconut Chicken Curry</a></li>
+        <li><span class="d">Wed 30</span><a href="#">Spaghetti Aglio e Olio</a></li>
+        <li><span class="d">Thu 1</span><a href="#">Sheet-Pan Chicken and Potatoes</a></li>
+        <li class="today"><span class="d">Fri 2</span><a href="#">Red Lentil Dahl</a></li>
+        <li><span class="d">Sat 3</span><a href="#">Beef Chili</a></li>
+        <li><span class="d">Sun 4</span><span class="open">Nothing yet</span></li>
+      </ul>
+    </aside>
+    <div>
+      <div class="tonight">
+        <h2>Tonight</h2>
+        <h3>Red Lentil Dahl</h3>
+        <p>Cheap, fast, and better on day two. Red lentils collapse into a soft, spoonable stew without any help.</p>
+        <div class="facts">
+          <div><b>40</b><span>minutes</span></div>
+          <div><b>4</b><span>servings</span></div>
+          <div><b>430</b><span>kcal each</span></div>
+        </div>
+        <div class="btns"><a class="button" href="#recipe">Start cooking</a><a class="button secondary" href="#">Swap meal</a></div>
+      </div>
+      <div class="pair">
+        <div>
+          <h2>Still to buy · 5 of 14</h2>
+          <ul class="shop">
+            <li><span class="sq"></span>800 g canned tomatoes</li>
+            <li><span class="sq"></span>500 g ground beef</li>
+            <li><span class="sq"></span>2 cans kidney beans</li>
+            <li><span class="sq"></span>Plain yogurt</li>
+            <li class="got"><span class="sq"></span>2 cups red lentils</li>
+          </ul>
+        </div>
+        <div class="suggest">
+          <h2>A thought for Sunday</h2>
+          <h3>Lebanon week</h3>
+          <p class="muted">Lean into Lebanese cooking — Mujadara would fill the open evening.</p>
+          <p class="from"><b>LB</b>from Country of the Week</p>
+          <p style="margin-top:14px"><button class="button secondary" type="button">Add to Sunday</button></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block split" id="library">
+    <aside class="rail">
+      <h1>The library</h1>
+      <div class="amber-rule"></div>
+      <p class="lede">Free recipes for the evenings you don't want to think too hard.</p>
+    </aside>
+    <div>
+      <form class="search" onsubmit="event.preventDefault()">
+        <input id="q5" type="search" placeholder="What do you feel like?" aria-label="Search the library">
+        <button class="button secondary" type="submit">Search</button>
+      </form>
+      <ul class="list">
+        <li><h3><a href="#recipe">Red Lentil Dahl</a></h3><p class="muted">Cheap, fast, and better on day two.</p><span class="meta">40 min · 430 kcal</span></li>
+        <li><h3><a href="#">Shakshuka</a></h3><p class="muted">Eggs poached in a smoky spiced tomato sauce.</p><span class="meta">35 min · 310 kcal</span></li>
+        <li><h3><a href="#">Mujadara</a></h3><p class="muted">Lentils and rice under a mountain of crispy onions.</p><span class="meta">55 min · 470 kcal</span></li>
+        <li><h3><a href="#">Minestrone</a></h3><p class="muted">A vegetable soup that eats like a meal.</p><span class="meta">60 min · 320 kcal</span></li>
+        <li><h3><a href="#">Banana Bread</a></h3><p class="muted">Browned butter takes it from good to the thing people ask about.</p><span class="meta">70 min · 290 kcal</span></li>
+        <li><h3><a href="#">Coconut Chicken Curry</a></h3><p class="muted">A mild, creamy weeknight curry that mostly looks after itself.</p><span class="meta">45 min · 560 kcal</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="block split recipe" id="recipe">
+    <aside class="rail">
+      <p class="muted">Dinner · serves 4 · 40 min</p>
+      <h1>Red Lentil Dahl</h1>
+      <div class="amber-rule"></div>
+      <h2>You'll need</h2>
+      <ul class="ing">
+        <li><b>2 cups</b> red lentils</li><li><b>2 tbsp</b> oil</li><li><b>1</b> onion, diced</li>
+        <li><b>3</b> garlic cloves, minced</li><li><b>1 tbsp</b> ginger, grated</li><li><b>2 tsp</b> cumin</li>
+        <li><b>400 g</b> canned tomatoes</li><li><b>1 tbsp</b> butter</li>
+      </ul>
+      <dl class="per">
+        <div><dt>kcal per serving</dt><dd>430</dd></div>
+        <div><dt>Protein</dt><dd>21 g</dd></div>
+        <div><dt>Carbs</dt><dd>62 g</dd></div>
+        <div><dt>Fat</dt><dd>9 g</dd></div>
+      </dl>
+    </aside>
+    <div>
+      <p class="lede" style="max-width:none;margin-bottom:32px">Cheap, fast, and better on day two. Red lentils collapse into a soft, spoonable stew without any help.</p>
+      <h2>Method</h2>
+      <ol class="steps">
+        <li>Rinse the lentils until the water runs clear.</li>
+        <li>Fry the onion in the oil until golden, then add the garlic, ginger, and spices for a minute.</li>
+        <li>Add the lentils, tomatoes, and 4 cups of water. Simmer until the lentils have collapsed, 20–25 minutes.</li>
+        <li>Swirl in the butter and season generously with salt.</li>
+        <li>Serve with rice or bread and a dollop of yogurt.</li>
+      </ol>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap">Mimos runs the same in our cloud or on your own hardware.</div></footer>
+
+<script>
+document.querySelector("[data-theme-toggle]").addEventListener("click", function () {
+  var root = document.documentElement;
+  root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark";
+});
+</script>
+</body>
+</html>

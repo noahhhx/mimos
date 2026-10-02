@@ -144,6 +144,15 @@ is the contract:
   can differ without rebuilds.
 - Logic a future mobile app would share (API clients, types, validation
   schemas) lives in `libraries/`, not in app code.
+- **Visual design** is Evening Kitchen (ADR-0008; plan and mockup in
+  `docs/design/`). Colors are tokens in `src/app/globals.css`, with light
+  in `:root` (the default) and dark in `:root[data-theme="dark"]` (only
+  when chosen with the toggle) — no literal colors in components. Errors
+  use `--danger`, never `--accent`. Straight edges (no radius, no soft
+  shadows) and no transitions or animations. Fonts are committed files
+  in `src/fonts/` loaded with `next/font/local`; never a font host or a
+  font npm package. Rebuild them as `src/fonts/README.md` says (its tools
+  come from devenv).
 - Unit tests live in `apps/web/test/` and run on `node --test` (native type
   stripping, no test framework). A module they import must not touch the
   browser or Next, and imports its siblings with a `.ts` extension (Node
@@ -193,7 +202,7 @@ mimos/
 ├── docs/                 # MkDocs source: guides, plugin authoring, harness plan, decisions/ADRs
 ├── apps/
 │   ├── api/              # Spring Boot modular monolith (the only deployable backend)
-│   └── web/              # Next.js frontend
+│   └── web/              # Next.js frontend (src/fonts/: committed web fonts, ADR-0008)
 ├── contracts/
 │   ├── api/              # OpenAPI spec — the source of truth for the HTTP API (ADR-0003)
 │   └── plugins/          # versioned plugin extension-API specs (ADR-0006)
