@@ -32,7 +32,7 @@ const LOADING = { state: "loading" } as const;
 const FAILED = { state: "error" } as const;
 
 /**
- * The Kitchen home (docs/design/kitchen-home.md): what's for dinner
+ * The Kitchen home (docs/design/index.md, "Kitchen home"): what's for dinner
  * tonight, the week's dinners in the rail, what's left to buy, and a
  * plugin's thought for an open evening. GET-only — loading it changes
  * nothing.

@@ -4,7 +4,7 @@ import { endpoints } from "../src/config.ts";
 import { expect, test } from "./fixtures.ts";
 
 /**
- * The Kitchen home (docs/design/kitchen-home.md): with tonight open and
+ * The Kitchen home (docs/design/index.md, "Kitchen home"): with tonight open and
  * every earlier evening of the week planned, the Country of the Week card
  * (in the default compose stack) offers tonight; adding it puts the
  * recipe under Tonight and on today's row of the week. Whatever the

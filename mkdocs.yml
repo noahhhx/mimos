@@ -16,8 +16,7 @@ nav:
   - Plugins:
       - Authoring: plugins/index.md
   - Design:
-      - 'Evening Kitchen restyle': design/index.md
-      - 'Kitchen home': design/kitchen-home.md
+      - 'Visual design': design/index.md
   - Agent harness:
       - Plan: harness/index.md
       - Using the harness: harness/usage.md

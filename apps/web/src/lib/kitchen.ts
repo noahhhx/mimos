@@ -10,7 +10,7 @@ import type {
 import { weekDays } from "./format.ts";
 
 /**
- * The Kitchen home's choices (docs/design/kitchen-home.md), as pure
+ * The Kitchen home's choices (docs/design/index.md, "Kitchen home"), as pure
  * functions of the week's data and an injected time, so they can be tested
  * without a browser.
  */

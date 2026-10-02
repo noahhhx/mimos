@@ -144,7 +144,7 @@ is the contract:
   can differ without rebuilds.
 - Logic a future mobile app would share (API clients, types, validation
   schemas) lives in `libraries/`, not in app code.
-- **Visual design** is Evening Kitchen (ADR-0008; plan and mockup in
+- **Visual design** is Evening Kitchen (ADR-0008; reference and original mockup in
   `docs/design/`). Colors are tokens in `src/app/globals.css`, with light
   in `:root` (the default) and dark in `:root[data-theme="dark"]` (only
   when chosen with the toggle) — no literal colors in components. Errors
