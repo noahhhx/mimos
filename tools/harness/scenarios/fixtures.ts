@@ -63,7 +63,8 @@ export const test = base.extend<HarnessFixtures>({
       await page.locator("#password").fill(password);
       await page.locator("#kc-login").click();
       await expect(page).toHaveURL(/\/app$/);
-      await expect(page.getByRole("heading", { name: "Your kitchen" })).toBeVisible();
+      // The Kitchen home's week rail: its h1 is a greeting that changes with the hour.
+      await expect(page.getByRole("heading", { name: "This week" })).toBeVisible();
     });
     await use(page);
   },

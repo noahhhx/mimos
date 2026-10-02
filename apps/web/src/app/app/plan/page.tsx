@@ -21,6 +21,7 @@ import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";
 import { apiClient } from "@/lib/api";
 import { MEAL_TYPES, addDays, dayLabel, mealLabel, mondayOf, weekDays } from "@/lib/format";
+import { applySuggestionEntries } from "@/lib/suggestions";
 
 /**
  * The week planner: a day × meal grid fed from both the library and your
@@ -164,26 +165,9 @@ export default function PlanPage() {
     setLogged(`${entry.recipeTitle} logged.`);
   };
 
-  // Applying a card reuses the plan-entry endpoint — the same one the
-  // picker uses; plugins have no write path of their own (ADR-0006).
   const applySuggestion = async (suggestion: PlanSuggestion) => {
     setApplying(true);
-    let added = 0;
-    for (const entry of suggestion.entries) {
-      const result = await addMealPlanEntry({
-        client: apiClient,
-        path: { startDate: weekStart },
-        body: {
-          date: entry.date,
-          mealType: entry.mealType,
-          recipeId: entry.recipeId,
-          servings: entry.servings,
-        },
-      });
-      if (!result.error) {
-        added++;
-      }
-    }
+    const added = await applySuggestionEntries(weekStart, suggestion.entries);
     setApplying(false);
     setNotice(
       added > 0 ? `Added ${added} meal${added === 1 ? "" : "s"} from "${suggestion.title}".` : "Could not add that suggestion.",

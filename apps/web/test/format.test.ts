@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { formatQuantity, hasNutrition } from "../src/lib/format.ts";
+import { formatQuantity, hasNutrition, todayIso } from "../src/lib/format.ts";
 
 describe("formatQuantity", () => {
   it("formats an amount with its unit", () => {
@@ -22,5 +22,33 @@ describe("hasNutrition", () => {
     assert.equal(hasNutrition({ fatG: 0 }), true);
     assert.equal(hasNutrition({}), false);
     assert.equal(hasNutrition(undefined), false);
+  });
+});
+
+describe("todayIso", () => {
+  const original = process.env.TZ;
+  const inZone = (zone: string, run: () => void) => {
+    process.env.TZ = zone;
+    try {
+      run();
+    } finally {
+      if (original === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = original;
+      }
+    }
+  };
+
+  it("is the local date in the evening west of UTC, where the UTC date is already tomorrow", () => {
+    inZone("America/Los_Angeles", () => {
+      assert.equal(todayIso(new Date("2026-10-03T06:30:00Z")), "2026-10-02"); // 23:30 local
+    });
+  });
+
+  it("is the local date in the early morning east of UTC, where the UTC date is still yesterday", () => {
+    inZone("Asia/Tokyo", () => {
+      assert.equal(todayIso(new Date("2026-10-01T15:30:00Z")), "2026-10-02"); // 00:30 local
+    });
   });
 });

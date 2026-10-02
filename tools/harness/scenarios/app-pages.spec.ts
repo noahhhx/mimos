@@ -6,7 +6,7 @@ import { expect, test } from "./fixtures.ts";
  * request." family of bugs).
  */
 const PAGES = [
-  { path: "/app", heading: "Your kitchen" },
+  { path: "/app", heading: /^Good (morning|afternoon|evening)\.$/ },
   { path: "/app/recipes", heading: "Recipes" },
   { path: "/app/plan", heading: /plan/i },
   { path: "/app/shopping-list", heading: /shopping list/i },

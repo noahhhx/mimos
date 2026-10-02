@@ -4,8 +4,8 @@
 [ADR-0008](../decisions/adr-0008-visual-direction.md); pages are built from
 `SplitPage`, `PageHeader` and `RecipeList` in `apps/web/src/components/`.
 This page was the brief for the agent that built it. Decisions made with the owner are marked **decided**; don't
-relitigate them without asking. The new Kitchen home screen is a separate
-plan, [Kitchen home](kitchen-home.md), and comes after this one.
+relitigate them without asking. The Kitchen home screen was a separate
+plan, [Kitchen home](kitchen-home.md), built after this one.
 
 ## Why
 

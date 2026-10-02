@@ -505,26 +505,229 @@ dl.profile dd {
   overflow-wrap: anywhere;
 }
 
-.quick-links {
+/* ---------- Kitchen home (app/app/page.tsx) ---------- */
+
+.kitchen .page-header > p {
+  margin-bottom: 12px;
+}
+
+.week-dinners {
   margin: 0;
   padding: 0;
   list-style: none;
   border-top: 1px solid var(--line);
 }
 
-.quick-links li {
+.week-dinners li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 8px;
+  padding: 10px 0;
   border-bottom: 1px solid var(--line);
 }
 
-.quick-links a {
-  display: block;
-  padding: 12px 0;
-  font-weight: 500;
-  text-decoration: none;
+.week-dinners .day {
+  padding-top: 2px;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
-.quick-links a:hover {
+/* Today: an amber bar in the gutter and an amber day label. */
+.week-dinners .today::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: -14px;
+  width: 2px;
+  background: var(--accent);
+}
+
+.week-dinners .today .day {
   color: var(--accent);
+}
+
+.week-dinners .today a {
+  font-weight: 600;
+}
+
+.week-dinners .open {
+  font-family: var(--serif);
+  font-size: 18px;
+  color: var(--muted);
+}
+
+.tonight {
+  padding: 32px;
+  border-top: 2px solid var(--accent);
+  background: var(--surface);
+}
+
+.tonight h2 {
+  margin: 0 0 4px;
+}
+
+.tonight h3 {
+  margin: 0 0 14px;
+  font-size: clamp(34px, 5vw, 48px);
+  font-weight: 400;
+  line-height: 1.05;
+  overflow-wrap: break-word;
+}
+
+.tonight .description {
+  max-width: 50ch;
+  margin: 0 0 22px;
+}
+
+.tonight .facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  margin: 0 0 26px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The number reads first; the label (dt, first in the markup) sits under it. */
+.tonight .facts div {
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.tonight .facts dt {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.tonight .facts dd {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+.tonight .buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.tonight .card.error {
+  margin: 0 0 22px;
+}
+
+@media (max-width: 639px) {
+  .tonight {
+    padding: 24px 20px;
+  }
+}
+
+/* Two columns under Tonight, divided by a hairline. */
+.kitchen-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1px;
+  margin-top: 1px;
+  background: var(--line);
+}
+
+.kitchen-pair > section {
+  min-width: 0;
+  padding: 26px 0;
+  background: var(--bg);
+}
+
+.kitchen-pair h2 {
+  margin-top: 0;
+}
+
+.kitchen-pair h3 {
+  margin: 0;
+}
+
+@container (min-width: 600px) {
+  .kitchen-pair {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .kitchen-pair > section {
+    padding-right: 32px;
+  }
+
+  .kitchen-pair > section + section {
+    padding-left: 32px;
+    padding-right: 0;
+  }
+
+  /* No thought this week: the list takes the whole row. */
+  .kitchen-pair > section:only-child {
+    grid-column: 1 / -1;
+  }
+}
+
+.to-buy {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.to-buy li {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 6px 0;
+}
+
+.to-buy .box {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--muted);
+  transform: translateY(1px);
+}
+
+.to-buy .got {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.to-buy .got .box {
+  background: var(--muted);
+}
+
+.kitchen-pair .more {
+  margin: 12px 0 0;
+  font-size: 15px;
+}
+
+.thought p {
+  margin: 6px 0 14px;
+}
+
+.thought .from {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.thought .suggestion-icon {
+  margin-right: 6px;
+}
+
+.kitchen-profile {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  font-size: 15px;
+}
+
+.kitchen-profile h2 {
+  margin-top: 0;
+}
+
+.kitchen-profile dl.profile {
+  margin-bottom: 20px;
 }
 
 /* ---------- Tabs & app nav ---------- */

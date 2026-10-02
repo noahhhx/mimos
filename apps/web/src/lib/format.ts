@@ -42,8 +42,25 @@ export function dayLabel(isoDate: string): string {
   });
 }
 
-export function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+/** "Sunday": an ISO date's weekday, in the user's locale. */
+export function weekdayName(isoDate: string): string {
+  return new Date(`${isoDate}T00:00:00Z`).toLocaleDateString(undefined, { weekday: "long", timeZone: "UTC" });
+}
+
+/** "Mon 28": an ISO date's short weekday and day of the month. */
+export function shortDayLabel(isoDate: string): string {
+  const day = new Date(`${isoDate}T00:00:00Z`);
+  return `${day.toLocaleDateString(undefined, { weekday: "short", timeZone: "UTC" })} ${day.getUTCDate()}`;
+}
+
+/**
+ * The local calendar date of `now` as ISO (not `toISOString()`, which is
+ * the UTC date: wrong in the evening west of UTC and the early morning east
+ * of it).
+ */
+export function todayIso(now: Date = new Date()): string {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
 /**

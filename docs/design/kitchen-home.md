@@ -1,9 +1,11 @@
 # Kitchen home: plan
 
-**Status:** planned, not started. Build it **after** the [Evening Kitchen
-restyle](index.md), whose tokens, fonts and rail layout it uses. It is a
-separate change because it adds behavior (new data on the home page),
-while the restyle only changes appearance.
+**Status:** done. Built on the [Evening Kitchen restyle](index.md)'s
+tokens, fonts and rail layout, as a separate change because it adds
+behavior (new data on the home page). The page is
+`apps/web/src/app/app/page.tsx`; its choices (greeting, tonight, the week,
+the thought, still to buy) are pure functions in `src/lib/kitchen.ts`.
+Where building changed a rule below, the rule says what was built.
 
 ## Why
 
@@ -34,14 +36,19 @@ In the main column:
    button (to the recipe) and a "Swap meal" button (to the plan page for
    this week).
 2. Two columns below it:
-   - **Still to buy · N of M**: up to five unchecked shopping-list items,
-     then checked ones struck through, with a link to the full list.
-   - **A thought for {day}**: the first plugin suggestion card that fills
-     an open dinner this week. It keeps the card's own title and blurb, the
+   - **Still to buy · N of M** (N unchecked of M items): at most five
+     rows, unchecked items first and checked ones, struck through,
+     filling what's left, with a link to the full list.
+   - **A thought for {day}**: the first plugin suggestion card with a
+     dinner entry on an open evening **from today on** (past days are
+     never offered). It keeps the card's own title and blurb, names the
+     proposed recipe ("{recipe} would fill the open evening."), the
      attribution "from {pluginName}" with its icon code, and an "Add to
-     {day}" button.
+     {day}" button that adds **that one entry**, not the whole card (the
+     plan page's Suggestions panel still applies whole cards).
 3. **Profile**: a small, quiet section at the bottom with name and member
-   since (the current `dl.profile`), plus "Sign out".
+   since (`dl.profile`, without the subject ID it used to show), plus
+   "Sign out".
 
 ## Data: existing endpoints only
 
@@ -60,21 +67,32 @@ own: one failing call shows an inline `role="alert"` in that block and
 leaves the rest of the page usable.
 
 Applying the suggestion reuses `addMealPlanEntry`, exactly as the plan
-page's Suggestions panel does (ADR-0006: no new mutation path). Factor the
-shared apply logic out of `app/app/plan/page.tsx` rather than copying it.
+page's Suggestions panel does (ADR-0006: no new mutation path). Both pages
+call `applySuggestionEntries` in `src/lib/suggestions.ts`.
+
+Country of the Week fills open dinners Monday forward and knows nothing
+of today (its suggestions are clock-free by design), and the seeded
+library matches one or two recipes per country. So on a week whose early
+evenings are open, its card proposes only past days and the home page
+shows no thought; it appears once the earlier evenings are planned. A
+plugin-side change (for example, sending today in the context) would be
+an extension-API change under ADR-0006, so it is left for later.
 
 ## Rules and edge cases
 
 - **"Tonight" = today's `DINNER` entry.** If today has several dinners,
   take the first. If there's no dinner but other meals are planned today,
-  show the last planned one under the label "Today". If nothing is
-  planned, show an empty panel: "Nothing planned for tonight", with a
-  primary button "Plan tonight" linking to the plan page.
+  show the latest main meal under the label "Today": lunch, then
+  breakfast, then a snack. If nothing is planned, show an empty panel:
+  "Nothing planned for tonight", with a primary button "Plan tonight"
+  linking to the plan page.
 - **Today is the local date.** `todayIso()` in `src/lib/format.ts` uses
   `toISOString()`, which is UTC, so it is wrong in the evening west of UTC
   and in the early morning east of it. Since the home page is "tonight",
   add a local-date helper (or fix `todayIso` and check its one caller,
   `app/app/log/page.tsx`) with a unit test covering a time near midnight.
+  Built: `todayIso(now?)` now returns the local date, which also fixes the
+  log page's default day.
 - **Greeting by local hour:** morning 05:00–11:59, afternoon 12:00–17:59,
   evening otherwise. Put it in a pure function in `src/lib/` that takes a
   `Date` (time injected, per AGENTS.md), and unit-test the boundaries with
@@ -92,16 +110,16 @@ shared apply logic out of `app/app/plan/page.tsx` rather than copying it.
 - **Scenarios that change.** `tools/harness/scenarios/fixtures.ts` waits for
   the heading "Your kitchen" after login, and `login.spec.ts` checks the
   "Profile" heading and `dl.profile`. The greeting replaces "Your kitchen"
-  as the `h1`. Choose one stable signal (for example, a
-  `getByRole("region", { name: "Tonight" })`, or keep an accessible name
-  on the page) and update both files in the same change. Keep the
-  "Profile" heading and `dl.profile` so `login.spec.ts` still holds.
-- **New scenario** `kitchen-home.spec.ts`: log in, plan a library recipe as
-  today's dinner through the API or the plan page, open `/app`, and expect
-  it under Tonight and marked in the week. Expect the Country of the Week
-  card, which runs in the default compose stack, and add it to the open
-  day. Then expect it in the week list. Clean up what it planned so reruns
-  are stable.
+  as the `h1`. Built: the login fixture waits for the "This week" heading,
+  `app-pages.spec.ts` matches the greeting, and the "Profile" heading and
+  `dl.profile` stay, so `login.spec.ts` holds unchanged.
+- **New scenario** `kitchen-home.spec.ts`. Built as: plan every open
+  evening before today through the API (so the plugin's card reaches
+  today, see above), open `/app` and expect the empty Tonight panel, add
+  the Country of the Week thought to tonight, then expect it under
+  Tonight and on today's row of the week, also after a reload. It removes
+  every entry it planned, and fails with a clear message if tonight
+  already has a dinner.
 
 ## Done when
 
