@@ -15,20 +15,12 @@ import { PageHeader } from "@/components/page-header";
 import { apiClient } from "@/lib/api";
 import { Quantity } from "@/components/quantity";
 import { addDays, dayLabel, mondayOf } from "@/lib/format";
-
-const CATEGORY_ORDER = [
-  "Produce",
-  "Meat & Seafood",
-  "Dairy & Eggs",
-  "Bakery",
-  "Frozen",
-  "Pantry",
-  "Other",
-];
+import { aislesToShop } from "@/lib/shopping";
 
 /**
  * The week's shopping list, grouped by aisle and checkable with one thumb
- * in the store. Regenerating keeps what you've already ticked off.
+ * in the store, with what's still to buy on top. Regenerating keeps what
+ * you've already ticked off.
  */
 export default function ShoppingListPage() {
   const { user, signIn } = useAuth();
@@ -114,13 +106,7 @@ export default function ShoppingListPage() {
     }
   };
 
-  const byCategory = new Map<string, ShoppingList["items"]>();
-  for (const item of list?.items ?? []) {
-    byCategory.set(item.category, [...(byCategory.get(item.category) ?? []), item]);
-  }
-  const categories = [...byCategory.keys()].sort(
-    (a, b) => CATEGORY_ORDER.indexOf(a) - CATEGORY_ORDER.indexOf(b),
-  );
+  const aisles = aislesToShop(list?.items ?? []);
 
   return (
     <>
@@ -167,11 +153,11 @@ export default function ShoppingListPage() {
         </div>
       )}
 
-      {categories.map((category) => (
+      {aisles.map(({ category, items }) => (
         <section key={category} className="aisle">
           <h2>{category}</h2>
           <ul className="shopping-items">
-            {(byCategory.get(category) ?? []).map((item) => (
+            {items.map((item) => (
               <li key={item.id}>
                 <label className={item.checked ? "done" : undefined}>
                   <input
