@@ -737,7 +737,10 @@ dl.profile dd {
   display: flex;
   gap: 24px;
   overflow-x: auto;
-  border-bottom: 1px solid var(--line);
+  /* The rule is a background, not a border, so the active underline can sit
+     on it without overflowing: overflow-x: auto makes overflow-y auto too,
+     and a 1px overflow there shows a vertical scrollbar. */
+  background: linear-gradient(var(--line), var(--line)) bottom / 100% 1px no-repeat;
 }
 
 .app-nav {
@@ -751,7 +754,6 @@ dl.profile dd {
 .app-nav a,
 .tabs button {
   flex: none;
-  margin-bottom: -1px;
   padding: 12px 0;
   border: 0;
   border-bottom: 2px solid transparent;
