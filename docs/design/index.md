@@ -70,6 +70,11 @@ Contrast is measured against `--bg`.
   is a CSS container, so rows inside it respond to its width, not the
   viewport's. Pages that don't suit a rail (forms, the plan grid) use a
   single column with `PageHeader`.
+- **Profile menu** (`profile-menu.tsx`): signed in, the header's right
+  holds a user icon in a square beside the theme toggle. It opens
+  a `--surface` panel with their name, member-since date, "Your data"
+  and "Sign out"; Escape or a click outside closes it. Signed out, it is
+  not shown.
 - **`RecipeList`** (`recipe-list.tsx`): recipes as rows (serif title,
   muted description, small tags, minutes and kcal on the right), the
   whole row being the link.
@@ -125,7 +130,7 @@ covers the page end to end.
   current plugin contract this block rarely appears mid-week;
   [ADR-0009](../decisions/adr-0009-plugin-context-today.md) proposes a
   fix.
-- **Profile:** name, member since, and "Sign out".
+- The profile lives in the header's profile menu, not on this page.
 
 The page only reads data. Each block loads and fails on its own, with an
 inline alert in the block that failed.

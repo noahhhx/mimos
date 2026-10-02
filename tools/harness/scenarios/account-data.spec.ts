@@ -49,7 +49,7 @@ test("exports an account and imports it into a fresh one", async ({ page }, test
   });
 
   await test.step("sign out", async () => {
-    await page.getByRole("navigation", { name: "App" }).getByRole("link", { name: "Kitchen" }).click();
+    await page.getByRole("banner").getByRole("button", { name: "Profile" }).click();
     await page.getByRole("button", { name: "Sign out" }).click();
     await expect(page).toHaveURL(/\/$/);
   });
@@ -90,7 +90,7 @@ async function register(page: Page, username: string): Promise<void> {
 }
 
 async function openYourData(page: Page): Promise<void> {
-  await page.getByRole("navigation", { name: "App" }).getByRole("link", { name: "Kitchen" }).click();
+  await page.getByRole("banner").getByRole("button", { name: "Profile" }).click();
   await page.getByRole("link", { name: "Your data" }).click();
   await expect(page.getByRole("heading", { name: "Your data", level: 1 })).toBeVisible();
 }

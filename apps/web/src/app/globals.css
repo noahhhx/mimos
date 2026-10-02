@@ -195,8 +195,21 @@ main.wrap {
 .site-nav {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 16px;
   font-size: 15px;
+}
+
+@media (min-width: 640px) {
+  .site-nav {
+    gap: 24px;
+  }
+}
+
+/* The theme toggle and the profile menu, kept together at the right. */
+.site-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .site-nav a {
@@ -231,6 +244,85 @@ main.wrap {
   height: 12px;
   border: 1px solid currentColor;
   background: linear-gradient(90deg, currentColor 50%, transparent 50%);
+}
+
+/* The profile menu (components/profile-menu.tsx): a user icon in a square
+   like the theme toggle, opening a panel under the header's right. */
+.profile-menu {
+  position: relative;
+}
+
+.profile-toggle {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.profile-toggle:hover,
+.profile-toggle[aria-expanded="true"] {
+  border-color: var(--accent);
+}
+
+.profile-panel {
+  position: absolute;
+  top: calc(100% + 15px);
+  right: 0;
+  z-index: 30;
+  width: max-content;
+  min-width: 220px;
+  max-width: calc(100vw - 32px);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 15px;
+}
+
+.profile-who {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.profile-who p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.profile-who .profile-name {
+  font-family: var(--serif);
+  font-size: 19px;
+}
+
+.profile-who .muted {
+  font-size: 13px;
+}
+
+.profile-who .error {
+  color: var(--danger);
+}
+
+.profile-panel a,
+.profile-panel button {
+  display: block;
+  width: 100%;
+  padding: 10px 18px;
+  border: 0;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.profile-panel a:hover,
+.profile-panel button:hover {
+  background: var(--hover);
 }
 
 /* ---------- Page headers ---------- */
@@ -484,27 +576,6 @@ main.wrap {
   border-left-color: var(--accent);
 }
 
-dl.profile {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 8px 24px;
-  margin: 0;
-}
-
-dl.profile dt {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
-  padding-top: 3px;
-}
-
-dl.profile dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
 /* ---------- Kitchen home (app/app/page.tsx) ---------- */
 
 .kitchen .page-header > p {
@@ -713,27 +784,6 @@ dl.profile dd {
 
 .thought .suggestion-icon {
   margin-right: 6px;
-}
-
-.kitchen-profile {
-  margin-top: 48px;
-  padding-top: 24px;
-  border-top: 1px solid var(--line);
-  font-size: 15px;
-}
-
-.kitchen-profile h2 {
-  margin-top: 0;
-}
-
-.kitchen-profile dl.profile {
-  margin-bottom: 20px;
-}
-
-.profile-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 
 /* ---------- Tabs & app nav ---------- */

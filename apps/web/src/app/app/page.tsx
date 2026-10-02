@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import {
-  getMe,
   getMealPlan,
   getPlanSuggestions,
   getRecipe,
@@ -13,7 +12,6 @@ import {
   type PlanSuggestion,
   type RecipeDetail,
   type ShoppingList,
-  type UserProfile,
 } from "@mimos/api-client";
 
 import { useAuth } from "@/components/auth-provider";
@@ -38,7 +36,7 @@ const FAILED = { state: "error" } as const;
  * nothing.
  */
 export default function KitchenPage() {
-  const { user, signIn, signOut } = useAuth();
+  const { user, signIn } = useAuth();
   // Read once per visit: the greeting, today and the week all follow from it.
   const [now] = useState(() => new Date());
   const today = todayIso(now);
@@ -49,7 +47,6 @@ export default function KitchenPage() {
   // `null` data: the week's list has not been generated yet.
   const [shopping, setShopping] = useState<Load<ShoppingList | null>>(LOADING);
   const [suggestions, setSuggestions] = useState<PlanSuggestion[]>([]);
-  const [profile, setProfile] = useState<Load<UserProfile>>(LOADING);
   const [applying, setApplying] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -77,11 +74,6 @@ export default function KitchenPage() {
         setShopping({ state: "ok", data: result.data });
       } else {
         setShopping(result.response?.status === 404 ? { state: "ok", data: null } : FAILED);
-      }
-    });
-    void getMe({ client: apiClient }).then((result) => {
-      if (!cancelled) {
-        setProfile(result.data ? { state: "ok", data: result.data } : FAILED);
       }
     });
     return () => {
@@ -257,32 +249,6 @@ export default function KitchenPage() {
           </section>
         )}
       </div>
-
-      <section className="kitchen-profile" aria-labelledby="profile-heading">
-        <h2 id="profile-heading">Profile</h2>
-        {profile.state === "error" ? (
-          <p className="card error" role="alert">
-            Could not load your profile.
-          </p>
-        ) : profile.state === "loading" ? (
-          <p className="muted">Loading your profile…</p>
-        ) : (
-          <dl className="profile">
-            <dt>Name</dt>
-            <dd>{profile.data.displayName}</dd>
-            <dt>Member since</dt>
-            <dd>{new Date(profile.data.createdAt).toLocaleDateString()}</dd>
-          </dl>
-        )}
-        <p className="profile-actions">
-          <Link className="button secondary" href="/app/account">
-            Your data
-          </Link>
-          <button className="button secondary" onClick={() => void signOut()}>
-            Sign out
-          </button>
-        </p>
-      </section>
     </SplitPage>
   );
 }

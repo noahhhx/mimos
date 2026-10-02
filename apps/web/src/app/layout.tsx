@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 
+import { AuthProvider } from "@/components/auth-provider";
 import { SiteHeader } from "@/components/site-header";
 
 import "./globals.css";
@@ -53,8 +54,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body>
-        <SiteHeader />
-        <main className="wrap">{children}</main>
+        {/* Site-wide so the header's profile menu sees who is signed in. */}
+        <AuthProvider>
+          <SiteHeader />
+          <main className="wrap">{children}</main>
+        </AuthProvider>
       </body>
     </html>
   );
