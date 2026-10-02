@@ -103,6 +103,40 @@ public class MealPlanRepository {
                 .toList();
     }
 
+    /** Every entry the owner has planned, with its week, in week and display order. */
+    public List<WeekEntry> loadAllEntryInputs(UUID ownerProfileId) {
+        return jdbc.query(
+                """
+                select p.id as plan_id, p.start_date, e.id, e.entry_date, e.meal_type, e.recipe_id, e.servings
+                from meal_plan_entry e
+                join meal_plan p on p.id = e.meal_plan_id
+                where p.owner_profile_id = ?
+                order by p.start_date,
+                         e.entry_date,
+                         case e.meal_type
+                             when 'BREAKFAST' then 0
+                             when 'LUNCH' then 1
+                             when 'DINNER' then 2
+                             when 'SNACK' then 3
+                         end,
+                         e.id
+                """,
+                (rs, i) -> new WeekEntry(
+                        rs.getObject("plan_id", UUID.class),
+                        rs.getDate("start_date").toLocalDate(),
+                        ENTRY_INPUT_MAPPER.mapRow(rs, i)),
+                ownerProfileId);
+    }
+
+    public boolean hasEntries(UUID ownerProfileId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                select exists (
+                    select 1 from meal_plan_entry e
+                    join meal_plan p on p.id = e.meal_plan_id
+                    where p.owner_profile_id = ?)
+                """, Boolean.class, ownerProfileId));
+    }
+
     /** A single entry (owner-checked via the plan join), for patch/delete confirmation. */
     public Optional<PlannedMealInput> findEntry(UUID ownerProfileId, UUID entryId) {
         List<PlannedMealInput> rows = jdbc.query("""
@@ -116,6 +150,9 @@ public class MealPlanRepository {
 
     /** Raw entry data before title resolution. */
     public record PlannedMealInput(UUID id, LocalDate date, MealType mealType, UUID recipeId, double servings) {}
+
+    /** An entry with its plan and the Monday of the plan's week. */
+    public record WeekEntry(UUID planId, LocalDate startDate, PlannedMealInput entry) {}
 
     private static final RowMapper<PlannedMealInput> ENTRY_INPUT_MAPPER = new EntryInputMapper();
 

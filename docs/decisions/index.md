@@ -16,6 +16,7 @@ right at the time.
 | [ADR-0008](adr-0008-visual-direction.md)                           | Visual direction (Evening Kitchen) |
 | [ADR-0009](adr-0009-plugin-context-today.md)                       | Tell plugins which day it is (proposed) |
 | [ADR-0010](adr-0010-keycloak-login-theme.md)                       | Keycloak login theme |
+| [ADR-0011](adr-0011-account-export-import.md)                      | Account export and import |
 
 New ADRs are sequential: `adr-NNNN-title.md`, with the numbering in this
 index. Once accepted, an ADR is never rewritten — superseding decisions get

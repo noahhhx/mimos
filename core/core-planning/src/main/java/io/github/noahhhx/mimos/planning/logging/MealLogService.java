@@ -4,6 +4,7 @@ import io.github.noahhhx.mimos.recipes.recipe.Nutrition;
 import io.github.noahhhx.mimos.recipes.recipe.Recipe;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeService;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -72,6 +73,46 @@ public class MealLogService {
         }
         repository.insert(ownerProfileId, log);
         return log;
+    }
+
+    /**
+     * Restores a logged meal from an account export (ADR-0011). The draft's
+     * nutrition is the total as logged, kept as history rather than derived
+     * from today's recipe; a referenced recipe must be visible to the owner.
+     */
+    public MealLog restore(UUID ownerProfileId, MealLogDraft draft, Instant loggedAt) {
+        if (draft.date() == null) {
+            throw new IllegalArgumentException("date is required");
+        }
+        requireServings(draft.servings());
+        if (draft.recipeId() != null
+                && recipes.findVisible(draft.recipeId(), ownerProfileId).isEmpty()) {
+            throw new NoSuchElementException("recipe not found: " + draft.recipeId());
+        }
+        if (draft.description() == null) {
+            throw new IllegalArgumentException("description is required");
+        }
+        MealLog log = new MealLog(
+                UUID.randomUUID(),
+                draft.date(),
+                draft.mealType(),
+                draft.recipeId(),
+                requireDescription(draft.description()),
+                draft.servings(),
+                zerosForStorage(nonNegative(draft.nutrition())),
+                loggedAt);
+        repository.insert(ownerProfileId, log);
+        return log;
+    }
+
+    /** Every log the owner has, in display order. */
+    public List<MealLog> findAll(UUID ownerProfileId) {
+        return repository.findAll(ownerProfileId);
+    }
+
+    /** Whether the owner has logged any meal. */
+    public boolean hasLogs(UUID ownerProfileId) {
+        return repository.existsFor(ownerProfileId);
     }
 
     /** The owner's logs in a date range (inclusive), in display order. */

@@ -1,5 +1,6 @@
 package io.github.noahhhx.mimos.api.support;
 
+import io.github.noahhhx.mimos.api.account.AccountNotEmptyException;
 import io.github.noahhhx.mimos.recipes.recipe.ReadOnlyRecipeException;
 import java.net.URI;
 import java.util.NoSuchElementException;
@@ -21,7 +22,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 /**
  * Maps every error raised in Spring MVC to an RFC 9457 problem-details
  * response: domain exceptions (400 invalid, 404 not found or not visible,
- * 403 read-only curated content), Spring MVC's own errors (unsupported or
+ * 403 read-only curated content, 409 import into a non-empty account), Spring MVC's own errors (unsupported or
  * unacceptable media type, unsupported method, unknown path, malformed
  * input), which {@link ResponseEntityExceptionHandler} renders, and anything
  * unexpected as a 500. Security failures are handled by the security chain
@@ -45,6 +46,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ReadOnlyRecipeException.class)
     ProblemDetail forbidden(ReadOnlyRecipeException exception) {
         return problem(HttpStatus.FORBIDDEN, "Read-only", exception.getMessage());
+    }
+
+    @ExceptionHandler(AccountNotEmptyException.class)
+    ProblemDetail conflict(AccountNotEmptyException exception) {
+        return problem(HttpStatus.CONFLICT, "Account not empty", exception.getMessage());
     }
 
     /**

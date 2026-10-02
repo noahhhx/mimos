@@ -7,7 +7,7 @@
 openapi: 3.1.0
 info:
   title: Mimos API
-  version: 0.4.0
+  version: 0.5.0
   description: |
     The Mimos recipe companion API. Endpoints require a bearer token issued
     by the instance's Keycloak realm unless they live under `/api/v1/public`
@@ -36,6 +36,67 @@ paths:
         '401':
           $ref: '#/components/responses/Problem'
         '403':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/account/export:
+    get:
+      tags: [account]
+      operationId: exportAccount
+      summary: Export the caller's data
+      description: >
+        The caller's personal recipes, meal plans, shopping lists, and meal
+        logs as one versioned document (ADR-0011). Library recipes are
+        referenced by slug, not included. The response is offered as a
+        file download.
+      responses:
+        '200':
+          description: The caller's data in the current export format version.
+          headers:
+            Content-Disposition:
+              description: '`attachment` with a dated file name.'
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountExport'
+        '401':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/account/import:
+    post:
+      tags: [account]
+      operationId: importAccount
+      summary: Import an export into the caller's (empty) account
+      description: >
+        Restores a document produced by `exportAccount`, from this or any
+        other Mimos instance, into the caller's account. Any format version
+        up to the current one is accepted; older ones are upgraded first.
+        The account must be empty: no personal recipes, planned meals,
+        logged meals, or shopping list items. The import is all or
+        nothing.
+      requestBody:
+        required: true
+        description: >
+          An `AccountExport` document of any supported version. Declared
+          free-form because older versions do not match the current
+          schema.
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: What was imported, and what could not be.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportReport'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '409':
           $ref: '#/components/responses/Problem'
 
   /api/v1/recipes:
@@ -928,3 +989,192 @@ components:
           type: number
         fatG:
           type: number
+    AccountExport:
+      type: object
+      description: >
+        One user's data, in export format version 1 (ADR-0011). Any change
+        to this schema bumps the version and adds an upgrade step from the
+        previous one.
+      required: [format, version, exportedAt, recipes, mealPlans, shoppingLists, mealLogs]
+      properties:
+        format:
+          type: string
+          enum: [mimos.export]
+        version:
+          type: integer
+          description: The format version. This instance exports version 1.
+        exportedAt:
+          type: string
+          format: date-time
+        recipes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExportedRecipe'
+        mealPlans:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExportedMealPlan'
+        shoppingLists:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExportedShoppingList'
+        mealLogs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExportedMealLog'
+    ExportedRecipe:
+      type: object
+      description: A personal recipe. `id` is a key within the document; import assigns a new one.
+      required:
+        [id, title, description, servings, tags, nutrition, ingredients, steps, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        servings:
+          type: integer
+        prepMinutes:
+          type: integer
+        cookMinutes:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: string
+        nutrition:
+          allOf:
+            - $ref: '#/components/schemas/Nutrition'
+        ingredients:
+          type: array
+          items:
+            $ref: '#/components/schemas/IngredientQuantity'
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeStep'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ExportedMealPlan:
+      type: object
+      description: A week of planned meals, keyed by its Monday.
+      required: [startDate, entries]
+      properties:
+        startDate:
+          type: string
+          format: date
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExportedPlanEntry'
+    ExportedPlanEntry:
+      type: object
+      description: One planned meal. Exactly one of `recipeId` and `librarySlug` is present.
+      required: [date, mealType, servings]
+      properties:
+        date:
+          type: string
+          format: date
+        mealType:
+          $ref: '#/components/schemas/MealType'
+        recipeId:
+          type: string
+          format: uuid
+          description: A recipe in this document's `recipes`.
+        librarySlug:
+          type: string
+          description: A curated library recipe, by its public slug.
+        servings:
+          type: number
+    ExportedShoppingList:
+      type: object
+      description: A week's generated shopping list, as it was when exported.
+      required: [startDate, generatedAt, items]
+      properties:
+        startDate:
+          type: string
+          format: date
+        generatedAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExportedShoppingListItem'
+    ExportedShoppingListItem:
+      type: object
+      required: [name, category, checked]
+      properties:
+        name:
+          type: string
+        unit:
+          type: string
+        quantity:
+          type: number
+          description: Omitted when every recipe leaves the ingredient unmeasured (ADR-0007).
+        category:
+          type: string
+        checked:
+          type: boolean
+    ExportedMealLog:
+      type: object
+      description: >
+        One logged meal, with the nutrition copied when it was logged. At
+        most one of `recipeId` and `librarySlug` is present; neither means
+        an ad-hoc meal or one whose recipe was deleted.
+      required: [date, mealType, description, servings, nutrition, loggedAt]
+      properties:
+        date:
+          type: string
+          format: date
+        mealType:
+          $ref: '#/components/schemas/MealType'
+        recipeId:
+          type: string
+          format: uuid
+          description: A recipe in this document's `recipes`.
+        librarySlug:
+          type: string
+          description: A curated library recipe, by its public slug.
+        description:
+          type: string
+        servings:
+          type: number
+        nutrition:
+          allOf:
+            - $ref: '#/components/schemas/Nutrition'
+        loggedAt:
+          type: string
+          format: date-time
+    ImportReport:
+      type: object
+      description: The outcome of an import.
+      required: [sourceVersion, recipes, plannedMeals, shoppingLists, mealLogs, warnings]
+      properties:
+        sourceVersion:
+          type: integer
+          description: The format version of the imported document, before any upgrade.
+        recipes:
+          type: integer
+          description: Personal recipes imported.
+        plannedMeals:
+          type: integer
+          description: Planned meals imported.
+        shoppingLists:
+          type: integer
+          description: Shopping lists imported.
+        mealLogs:
+          type: integer
+          description: Logged meals imported.
+        warnings:
+          type: array
+          description: Data that could not be carried over as it was, in plain words.
+          items:
+            type: string

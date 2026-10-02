@@ -39,6 +39,15 @@ public class IdentityService {
         return jdbc.queryForObject(SELECT_PROFILE, PROFILE_MAPPER, subjectId);
     }
 
+    /**
+     * Locks the profile row until the surrounding transaction ends, so
+     * account-wide operations (import, ADR-0011) for one user run one at a
+     * time.
+     */
+    public void lockProfile(UUID profileId) {
+        jdbc.queryForList("select id from user_profile where id = ? for update", UUID.class, profileId);
+    }
+
     private static final class ProfileRowMapper implements RowMapper<UserProfileRecord> {
 
         @Override

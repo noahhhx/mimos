@@ -325,6 +325,137 @@ export type DailyLogSummary = {
     fatG: number;
 };
 
+/**
+ * One user's data, in export format version 1 (ADR-0011). Any change to this schema bumps the version and adds an upgrade step from the previous one.
+ *
+ */
+export type AccountExport = {
+    format: 'mimos.export';
+    /**
+     * The format version. This instance exports version 1.
+     */
+    version: number;
+    exportedAt: string;
+    recipes: Array<ExportedRecipe>;
+    mealPlans: Array<ExportedMealPlan>;
+    shoppingLists: Array<ExportedShoppingList>;
+    mealLogs: Array<ExportedMealLog>;
+};
+
+/**
+ * A personal recipe. `id` is a key within the document; import assigns a new one.
+ */
+export type ExportedRecipe = {
+    id: string;
+    title: string;
+    description: string;
+    servings: number;
+    prepMinutes?: number;
+    cookMinutes?: number;
+    tags: Array<string>;
+    nutrition: Nutrition;
+    ingredients: Array<IngredientQuantity>;
+    steps: Array<RecipeStep>;
+    createdAt: string;
+    updatedAt: string;
+};
+
+/**
+ * A week of planned meals, keyed by its Monday.
+ */
+export type ExportedMealPlan = {
+    startDate: string;
+    entries: Array<ExportedPlanEntry>;
+};
+
+/**
+ * One planned meal. Exactly one of `recipeId` and `librarySlug` is present.
+ */
+export type ExportedPlanEntry = {
+    date: string;
+    mealType: MealType;
+    /**
+     * A recipe in this document's `recipes`.
+     */
+    recipeId?: string;
+    /**
+     * A curated library recipe, by its public slug.
+     */
+    librarySlug?: string;
+    servings: number;
+};
+
+/**
+ * A week's generated shopping list, as it was when exported.
+ */
+export type ExportedShoppingList = {
+    startDate: string;
+    generatedAt: string;
+    items: Array<ExportedShoppingListItem>;
+};
+
+export type ExportedShoppingListItem = {
+    name: string;
+    unit?: string;
+    /**
+     * Omitted when every recipe leaves the ingredient unmeasured (ADR-0007).
+     */
+    quantity?: number;
+    category: string;
+    checked: boolean;
+};
+
+/**
+ * One logged meal, with the nutrition copied when it was logged. At most one of `recipeId` and `librarySlug` is present; neither means an ad-hoc meal or one whose recipe was deleted.
+ *
+ */
+export type ExportedMealLog = {
+    date: string;
+    mealType: MealType;
+    /**
+     * A recipe in this document's `recipes`.
+     */
+    recipeId?: string;
+    /**
+     * A curated library recipe, by its public slug.
+     */
+    librarySlug?: string;
+    description: string;
+    servings: number;
+    nutrition: Nutrition;
+    loggedAt: string;
+};
+
+/**
+ * The outcome of an import.
+ */
+export type ImportReport = {
+    /**
+     * The format version of the imported document, before any upgrade.
+     */
+    sourceVersion: number;
+    /**
+     * Personal recipes imported.
+     */
+    recipes: number;
+    /**
+     * Planned meals imported.
+     */
+    plannedMeals: number;
+    /**
+     * Shopping lists imported.
+     */
+    shoppingLists: number;
+    /**
+     * Logged meals imported.
+     */
+    mealLogs: number;
+    /**
+     * Data that could not be carried over as it was, in plain words.
+     */
+    warnings: Array<string>;
+};
+
 export type RecipeId = string;
 
 export type RecipeSlug = string;
@@ -368,6 +499,70 @@ export type GetMeResponses = {
 };
 
 export type GetMeResponse = GetMeResponses[keyof GetMeResponses];
+
+export type ExportAccountData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/account/export';
+};
+
+export type ExportAccountErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type ExportAccountError = ExportAccountErrors[keyof ExportAccountErrors];
+
+export type ExportAccountResponses = {
+    /**
+     * The caller's data in the current export format version.
+     */
+    200: AccountExport;
+};
+
+export type ExportAccountResponse = ExportAccountResponses[keyof ExportAccountResponses];
+
+export type ImportAccountData = {
+    /**
+     * An `AccountExport` document of any supported version. Declared free-form because older versions do not match the current schema.
+     *
+     */
+    body: {
+        [key: string]: unknown;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/account/import';
+};
+
+export type ImportAccountErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    409: Problem;
+};
+
+export type ImportAccountError = ImportAccountErrors[keyof ImportAccountErrors];
+
+export type ImportAccountResponses = {
+    /**
+     * What was imported, and what could not be.
+     */
+    200: ImportReport;
+};
+
+export type ImportAccountResponse = ImportAccountResponses[keyof ImportAccountResponses];
 
 export type ListMyRecipesData = {
     body?: never;

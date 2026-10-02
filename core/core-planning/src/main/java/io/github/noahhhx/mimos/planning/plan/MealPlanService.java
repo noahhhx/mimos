@@ -4,6 +4,8 @@ import io.github.noahhhx.mimos.recipes.recipe.Recipe;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeService;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -85,23 +87,48 @@ public class MealPlanService {
                 .entries();
     }
 
+    /** Every week the owner has planned meals in, oldest first; weeks without entries are left out. */
+    public List<MealPlan> plansWithEntries(UUID ownerProfileId) {
+        List<MealPlanRepository.WeekEntry> all = plans.loadAllEntryInputs(ownerProfileId);
+        Map<UUID, Recipe> recipesById = recipes.findByIds(
+                all.stream().map(weekEntry -> weekEntry.entry().recipeId()).toList());
+        Map<UUID, MealPlan> byPlan = new LinkedHashMap<>();
+        for (MealPlanRepository.WeekEntry weekEntry : all) {
+            byPlan.computeIfAbsent(
+                            weekEntry.planId(),
+                            planId -> new MealPlan(planId, ownerProfileId, weekEntry.startDate(), new ArrayList<>()))
+                    .entries()
+                    .add(toPlannedMeal(weekEntry.entry(), recipesById));
+        }
+        return byPlan.values().stream()
+                .map(plan -> new MealPlan(plan.id(), ownerProfileId, plan.startDate(), List.copyOf(plan.entries())))
+                .toList();
+    }
+
+    /** Whether the owner has planned any meal in any week. */
+    public boolean hasEntries(UUID ownerProfileId) {
+        return plans.hasEntries(ownerProfileId);
+    }
+
     private MealPlan hydrate(UUID ownerProfileId, LocalDate startDate, UUID planId) {
         List<MealPlanRepository.PlannedMealInput> inputs = plans.loadEntryInputs(ownerProfileId, startDate);
         Map<UUID, Recipe> recipesById = recipes.findByIds(inputs.stream()
                 .map(MealPlanRepository.PlannedMealInput::recipeId)
                 .toList());
-        List<PlannedMeal> entries = inputs.stream()
-                .map(input -> new PlannedMeal(
-                        input.id(),
-                        input.date(),
-                        input.mealType(),
-                        input.recipeId(),
-                        recipesById.containsKey(input.recipeId())
-                                ? recipesById.get(input.recipeId()).title()
-                                : "Deleted recipe",
-                        input.servings()))
-                .toList();
+        List<PlannedMeal> entries =
+                inputs.stream().map(input -> toPlannedMeal(input, recipesById)).toList();
         return new MealPlan(planId, ownerProfileId, startDate, entries);
+    }
+
+    private static PlannedMeal toPlannedMeal(MealPlanRepository.PlannedMealInput input, Map<UUID, Recipe> recipesById) {
+        Recipe recipe = recipesById.get(input.recipeId());
+        return new PlannedMeal(
+                input.id(),
+                input.date(),
+                input.mealType(),
+                input.recipeId(),
+                recipe != null ? recipe.title() : "Deleted recipe",
+                input.servings());
     }
 
     private PlannedMeal withTitle(MealPlanRepository.PlannedMealInput entry) {

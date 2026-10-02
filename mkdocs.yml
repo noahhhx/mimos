@@ -39,3 +39,4 @@ nav:
       - 'ADR-0008: Visual direction': decisions/adr-0008-visual-direction.md
       - 'ADR-0009: Tell plugins which day it is (proposed)': decisions/adr-0009-plugin-context-today.md
       - 'ADR-0010: Keycloak login theme': decisions/adr-0010-keycloak-login-theme.md
+      - 'ADR-0011: Account export and import': decisions/adr-0011-account-export-import.md

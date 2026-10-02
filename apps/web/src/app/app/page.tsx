@@ -274,9 +274,14 @@ export default function KitchenPage() {
             <dd>{new Date(profile.data.createdAt).toLocaleDateString()}</dd>
           </dl>
         )}
-        <button className="button secondary" onClick={() => void signOut()}>
-          Sign out
-        </button>
+        <p className="profile-actions">
+          <Link className="button secondary" href="/app/account">
+            Your data
+          </Link>
+          <button className="button secondary" onClick={() => void signOut()}>
+            Sign out
+          </button>
+        </p>
       </section>
     </SplitPage>
   );

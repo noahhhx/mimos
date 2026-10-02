@@ -46,6 +46,7 @@ change** — an out-of-date AGENTS.md is worse than none.
 | Sync       | intervals.icu is the activity data source (future). Design for it, don't build it yet. |
 | Library content | Seed file `core/core-recipes/src/main/resources/library/library-seed.json`, loaded by an idempotent startup seeder (`mimos.library.seed-enabled`, default on). Content fixes ship with a restart; never via Flyway migrations. See ADR-0005. |
 | Public API | Unauthenticated read-only access to the curated library under `/api/v1/public/**` (SEO pages). Personal recipes never appear there; everything else requires a bearer token. |
+| Account data | Per-user export/import as one versioned JSON document (`GET /api/v1/account/export`, `POST /api/v1/account/import`): domain-shaped, never a table dump; library recipes by slug; import only into an empty account, atomically, through domain validation. Format changes bump the version, add an `ExportUpgrader` step and a frozen `export/v<N>.json` test fixture. See ADR-0011. |
 | Plugins    | HTTP sidecar plugins, pull-only in v1: config registry (`mimos.plugins.*`), manifest at `GET /manifest`, one capability (`plan-suggestions`), declarative cards, library-only context. See ADR-0006. |
 | Agent harness | `tools/harness` (`@mimos/harness`, TypeScript on Node type stripping) behind a devenv `harness` script; all agent tooling from devenv/nixpkgs; Playwright pinned to nixpkgs' `playwright-driver`; `.mcp.json` committed; debug-only behavior in `deploy/docker/compose.debug.yml`; scenarios run in CI via devenv. Plan and decisions in `docs/harness/`. |
 
@@ -72,6 +73,11 @@ wire-format contract:
 - `core-planning` — meal plans, shopping lists, logging. Depends on
   recipes (through `RecipeService`'s public interface only — never its
   tables), nothing else. Owns its tables' JDBC persistence.
+- `apps/api` package `account` — account export/import (ADR-0011): an
+  adapter over the core modules' public services, like the controllers.
+  It never touches tables, so a migration that keeps the domain's meaning
+  needs no export change; one that changes it needs a new format version
+  (upgrade step + frozen fixture).
 - `integrations/plugins` — the plugin runtime: registry, outbound
   extension-API client, suggestion-card validation (ADR-0006). Depends on
   the core modules' public interfaces only; external API types never cross
@@ -183,7 +189,7 @@ is the contract:
 - Security failures (401/403) are RFC 9457 problem-details, as are API errors
   generally. Domain errors map once in `ApiExceptionHandler`:
   `IllegalArgumentException` → 400, `NoSuchElementException` → 404,
-  `ReadOnlyRecipeException` → 403. It extends Spring's
+  `ReadOnlyRecipeException` → 403, `AccountNotEmptyException` → 409. It extends Spring's
   `ResponseEntityExceptionHandler`, so Spring MVC's own errors (415, 405,
   unknown-path 404, 406, malformed input) are problem-details too; anything
   unmapped is a 500 problem, logged with its stack trace, its message never
@@ -194,7 +200,10 @@ is the contract:
 - API integration tests use Testcontainers Postgres **and** Keycloak (the
   realm export from `deploy/keycloak` is on the test classpath); the Keycloak
   container module is `com.github.dasniko:testcontainers-keycloak` (the
-  upstream module left the core Testcontainers BOM).
+  upstream module left the core Testcontainers BOM). `test` and `test2`
+  are shared by every test class; a test that needs an untouched account
+  creates one with `ApiIntegrationTestSupport.createUser()` (Keycloak
+  admin API).
 
 ## Repo layout (target)
 

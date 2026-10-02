@@ -147,3 +147,6 @@ Rules for using this file:
 16. **Self-host release readiness.** Versioned images, documented upgrade
     path (pull and restart), backups story, and the plugin authoring docs.
     *Done when: a stranger can self-host Mimos from the docs alone.*
+    Per-user export/import is done (ADR-0011, the web app's "Your data"
+    page); the instance-level backup story (database and Keycloak) is
+    still open.

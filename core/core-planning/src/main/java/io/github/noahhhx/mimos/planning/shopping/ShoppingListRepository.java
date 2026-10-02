@@ -81,6 +81,28 @@ public class ShoppingListRepository {
         return Optional.of(new ShoppingList(listId, startDate, generatedAt, items));
     }
 
+    /** Every list the owner has, oldest week first. */
+    public List<ShoppingList> findAllLists(UUID ownerProfileId) {
+        return jdbc
+                .queryForList(
+                        "select start_date from shopping_list where owner_profile_id = ? order by start_date",
+                        LocalDate.class,
+                        ownerProfileId)
+                .stream()
+                .flatMap(startDate -> findList(ownerProfileId, startDate).stream())
+                .toList();
+    }
+
+    /** Whether any of the owner's lists has an item (an empty generated list holds nothing). */
+    public boolean hasItems(UUID ownerProfileId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                select exists (
+                    select 1 from shopping_list_item i
+                    join shopping_list l on l.id = i.shopping_list_id
+                    where l.owner_profile_id = ?)
+                """, Boolean.class, ownerProfileId));
+    }
+
     /** The item if it belongs to the owner's list for the week. */
     public Optional<ShoppingList.ShoppingListItem> findItem(UUID ownerProfileId, LocalDate startDate, UUID itemId) {
         List<ShoppingList.ShoppingListItem> items = jdbc.query("""

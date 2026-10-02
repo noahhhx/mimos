@@ -730,6 +730,12 @@ dl.profile dd {
   margin-bottom: 20px;
 }
 
+.profile-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 /* ---------- Tabs & app nav ---------- */
 
 .app-nav,

@@ -73,6 +73,16 @@ public class MealLogRepository {
                 Date.valueOf(to));
     }
 
+    /** Every log the owner has, in display order. */
+    public List<MealLog> findAll(UUID ownerProfileId) {
+        return jdbc.query(SELECT_BASE + " where owner_profile_id = ?" + ORDER, LOG_MAPPER, ownerProfileId);
+    }
+
+    public boolean existsFor(UUID ownerProfileId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject(
+                "select exists (select 1 from meal_log where owner_profile_id = ?)", Boolean.class, ownerProfileId));
+    }
+
     /** The owner's log entry, if it exists. */
     public Optional<MealLog> findById(UUID ownerProfileId, UUID logId) {
         List<MealLog> logs =

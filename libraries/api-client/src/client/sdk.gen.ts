@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddMealPlanEntryData, AddMealPlanEntryErrors, AddMealPlanEntryResponses, CreateMealLogData, CreateMealLogErrors, CreateMealLogResponses, CreateRecipeData, CreateRecipeErrors, CreateRecipeResponses, DeleteMealLogData, DeleteMealLogErrors, DeleteMealLogResponses, DeleteMealPlanEntryData, DeleteMealPlanEntryErrors, DeleteMealPlanEntryResponses, DeleteRecipeData, DeleteRecipeErrors, DeleteRecipeResponses, GenerateShoppingListData, GenerateShoppingListErrors, GenerateShoppingListResponses, GetMealPlanData, GetMealPlanErrors, GetMealPlanResponses, GetMeData, GetMeErrors, GetMeResponses, GetPlanSuggestionsData, GetPlanSuggestionsErrors, GetPlanSuggestionsResponses, GetPublicRecipeData, GetPublicRecipeErrors, GetPublicRecipeResponses, GetRecipeData, GetRecipeErrors, GetRecipeResponses, GetShoppingListData, GetShoppingListErrors, GetShoppingListResponses, ListLibraryRecipesData, ListLibraryRecipesErrors, ListLibraryRecipesResponses, ListMealLogsData, ListMealLogsErrors, ListMealLogsResponses, ListMyRecipesData, ListMyRecipesErrors, ListMyRecipesResponses, ListPublicRecipesData, ListPublicRecipesResponses, ReplaceRecipeData, ReplaceRecipeErrors, ReplaceRecipeResponses, SummarizeMealLogsData, SummarizeMealLogsErrors, SummarizeMealLogsResponses, UpdateMealPlanEntryData, UpdateMealPlanEntryErrors, UpdateMealPlanEntryResponses, UpdateShoppingListItemData, UpdateShoppingListItemErrors, UpdateShoppingListItemResponses } from './types.gen';
+import type { AddMealPlanEntryData, AddMealPlanEntryErrors, AddMealPlanEntryResponses, CreateMealLogData, CreateMealLogErrors, CreateMealLogResponses, CreateRecipeData, CreateRecipeErrors, CreateRecipeResponses, DeleteMealLogData, DeleteMealLogErrors, DeleteMealLogResponses, DeleteMealPlanEntryData, DeleteMealPlanEntryErrors, DeleteMealPlanEntryResponses, DeleteRecipeData, DeleteRecipeErrors, DeleteRecipeResponses, ExportAccountData, ExportAccountErrors, ExportAccountResponses, GenerateShoppingListData, GenerateShoppingListErrors, GenerateShoppingListResponses, GetMealPlanData, GetMealPlanErrors, GetMealPlanResponses, GetMeData, GetMeErrors, GetMeResponses, GetPlanSuggestionsData, GetPlanSuggestionsErrors, GetPlanSuggestionsResponses, GetPublicRecipeData, GetPublicRecipeErrors, GetPublicRecipeResponses, GetRecipeData, GetRecipeErrors, GetRecipeResponses, GetShoppingListData, GetShoppingListErrors, GetShoppingListResponses, ImportAccountData, ImportAccountErrors, ImportAccountResponses, ListLibraryRecipesData, ListLibraryRecipesErrors, ListLibraryRecipesResponses, ListMealLogsData, ListMealLogsErrors, ListMealLogsResponses, ListMyRecipesData, ListMyRecipesErrors, ListMyRecipesResponses, ListPublicRecipesData, ListPublicRecipesResponses, ReplaceRecipeData, ReplaceRecipeErrors, ReplaceRecipeResponses, SummarizeMealLogsData, SummarizeMealLogsErrors, SummarizeMealLogsResponses, UpdateMealPlanEntryData, UpdateMealPlanEntryErrors, UpdateMealPlanEntryResponses, UpdateShoppingListItemData, UpdateShoppingListItemErrors, UpdateShoppingListItemResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -25,6 +25,29 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  *
  */
 export const getMe = <ThrowOnError extends boolean = false>(options?: Options<GetMeData, ThrowOnError>): RequestResult<GetMeResponses, GetMeErrors, ThrowOnError> => (options?.client ?? client).get<GetMeResponses, GetMeErrors, ThrowOnError>({ url: '/api/v1/me', ...options });
+
+/**
+ * Export the caller's data
+ *
+ * The caller's personal recipes, meal plans, shopping lists, and meal logs as one versioned document (ADR-0011). Library recipes are referenced by slug, not included. The response is offered as a file download.
+ *
+ */
+export const exportAccount = <ThrowOnError extends boolean = false>(options?: Options<ExportAccountData, ThrowOnError>): RequestResult<ExportAccountResponses, ExportAccountErrors, ThrowOnError> => (options?.client ?? client).get<ExportAccountResponses, ExportAccountErrors, ThrowOnError>({ url: '/api/v1/account/export', ...options });
+
+/**
+ * Import an export into the caller's (empty) account
+ *
+ * Restores a document produced by `exportAccount`, from this or any other Mimos instance, into the caller's account. Any format version up to the current one is accepted; older ones are upgraded first. The account must be empty: no personal recipes, planned meals, logged meals, or shopping list items. The import is all or nothing.
+ *
+ */
+export const importAccount = <ThrowOnError extends boolean = false>(options: Options<ImportAccountData, ThrowOnError>): RequestResult<ImportAccountResponses, ImportAccountErrors, ThrowOnError> => (options.client ?? client).post<ImportAccountResponses, ImportAccountErrors, ThrowOnError>({
+    url: '/api/v1/account/import',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * The caller's personal recipes

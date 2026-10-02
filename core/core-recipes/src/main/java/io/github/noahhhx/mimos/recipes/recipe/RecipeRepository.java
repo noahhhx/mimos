@@ -106,6 +106,11 @@ public class RecipeRepository {
         return loadAll(sql.text() + " order by created_at desc", sql.args());
     }
 
+    public boolean existsOwnedBy(UUID ownerProfileId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject(
+                "select exists (select 1 from recipe where owner_profile_id = ?)", Boolean.class, ownerProfileId));
+    }
+
     /** Curated library recipes, by title, optionally filtered by a search term. */
     public List<Recipe> findLibrary(@Nullable String query) {
         Sql sql = searchSql(" where owner_profile_id is null", List.of(), query);

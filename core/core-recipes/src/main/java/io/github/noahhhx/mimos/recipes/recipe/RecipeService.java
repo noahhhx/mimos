@@ -1,6 +1,7 @@
 package io.github.noahhhx.mimos.recipes.recipe;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -61,6 +62,33 @@ public class RecipeService {
         return recipe;
     }
 
+    /**
+     * Restores a personal recipe from an account export (ADR-0011): validated
+     * like any new recipe, with a new id and the exported timestamps.
+     */
+    @Transactional
+    public Recipe restore(UUID ownerProfileId, RecipeDraft submitted, Instant createdAt, Instant updatedAt) {
+        RecipeDraft draft = withDistinctTags(submitted);
+        validate(draft);
+        Recipe recipe = new Recipe(
+                UUID.randomUUID(),
+                ownerProfileId,
+                null,
+                draft.title(),
+                draft.description(),
+                draft.servings(),
+                draft.prepMinutes(),
+                draft.cookMinutes(),
+                draft.nutrition(),
+                draft.tags(),
+                draft.ingredients(),
+                draft.steps(),
+                createdAt,
+                updatedAt);
+        repository.insert(recipe);
+        return recipe;
+    }
+
     /** Replaces a personal recipe; library recipes are read-only. */
     @Transactional
     public Recipe replace(UUID ownerProfileId, UUID recipeId, RecipeDraft submitted) {
@@ -103,6 +131,11 @@ public class RecipeService {
     /** The viewer's personal recipes, optionally filtered by a search term. */
     public List<Recipe> findOwned(UUID viewerProfileId, @Nullable String query) {
         return repository.findOwnedBy(viewerProfileId, normalizeQuery(query));
+    }
+
+    /** Whether the owner has any personal recipes. */
+    public boolean hasOwned(UUID ownerProfileId) {
+        return repository.existsOwnedBy(ownerProfileId);
     }
 
     /** Curated library recipes, optionally filtered by a search term. */

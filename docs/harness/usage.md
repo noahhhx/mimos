@@ -73,9 +73,11 @@ form errors, Enter submits), `kitchen-home` (Tonight, the week rail, and
 adding the plugin's thought; it plans the week's earlier evenings and
 removes what it planned), `app-pages` (every signed-in page loads
 without errors), `app-nav` (the app nav has no vertical overflow,
-which would show a scrollbar beside its links), and `keycloak-theme`
+which would show a scrollbar beside its links), `keycloak-theme`
 (Keycloak's sign-in, error, and register pages wear the Mimos theme;
-screenshots at phone and desktop width). See [writing a scenario](step-2-browser.md#writing-a-scenario).
+screenshots at phone and desktop width), and `account-data` (registers
+two fresh accounts: one writes a recipe and downloads its export, which
+it cannot import over its own data; the other imports it, ADR-0011). See [writing a scenario](step-2-browser.md#writing-a-scenario).
 For exploration before a scenario exists, `.mcp.json` registers a
 Playwright MCP browser ([step 2](step-2-browser.md#exploring-with-the-mcp-browser)).
 

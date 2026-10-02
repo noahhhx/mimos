@@ -7,6 +7,7 @@ import io.github.noahhhx.mimos.recipes.recipe.Recipe;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeService;
 import java.time.Clock;
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -28,6 +29,10 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class ShoppingListService {
+
+    static final int MAX_ITEMS = 1000;
+    static final int MAX_NAME_LENGTH = 200;
+    static final int MAX_UNIT_LENGTH = 30;
 
     private final MealPlanService mealPlanService;
     private final RecipeService recipes;
@@ -106,6 +111,44 @@ public class ShoppingListService {
         return repository.findList(ownerProfileId, startDate);
     }
 
+    /** Every list the owner has, oldest week first. */
+    public List<ShoppingList> findAll(UUID ownerProfileId) {
+        return repository.findAllLists(ownerProfileId);
+    }
+
+    /** Whether any of the owner's lists has an item. */
+    public boolean hasItems(UUID ownerProfileId) {
+        return repository.hasItems(ownerProfileId);
+    }
+
+    /**
+     * Restores a list as it was exported (ADR-0011): items, order, and
+     * check-off state as given, not regenerated from the plan, replacing
+     * any list the owner has for the week.
+     */
+    @Transactional
+    public ShoppingList restore(
+            UUID ownerProfileId, LocalDate startDate, Instant generatedAt, List<ShoppingListRepository.ItemRow> items) {
+        requireMonday(startDate);
+        if (items.size() > MAX_ITEMS) {
+            throw new IllegalArgumentException("a shopping list can have at most " + MAX_ITEMS + " items");
+        }
+        for (ShoppingListRepository.ItemRow item : items) {
+            requireText("item name", item.name(), MAX_NAME_LENGTH);
+            requireText("item category", item.category(), MAX_NAME_LENGTH);
+            if (item.unit() != null && item.unit().length() > MAX_UNIT_LENGTH) {
+                throw new IllegalArgumentException("item unit must be at most " + MAX_UNIT_LENGTH + " characters");
+            }
+            Double quantity = item.quantity();
+            if (quantity != null && (quantity.isNaN() || quantity.isInfinite() || quantity < 0)) {
+                throw new IllegalArgumentException("item quantity must not be negative: " + item.name());
+            }
+        }
+        repository.replaceList(ownerProfileId, startDate, generatedAt, items);
+        return find(ownerProfileId, startDate)
+                .orElseThrow(() -> new IllegalStateException("list must exist after restoring"));
+    }
+
     /** Checks an item off (or back on). */
     @Transactional
     public ShoppingList.ShoppingListItem updateChecked(
@@ -122,6 +165,15 @@ public class ShoppingListService {
     private static void requireMonday(LocalDate startDate) {
         if (startDate.getDayOfWeek() != DayOfWeek.MONDAY) {
             throw new IllegalArgumentException("startDate must be the Monday of the week");
+        }
+    }
+
+    private static void requireText(String field, @Nullable String value, int maxLength) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(field + " is required");
+        }
+        if (value.length() > maxLength) {
+            throw new IllegalArgumentException(field + " must be at most " + maxLength + " characters");
         }
     }
 
