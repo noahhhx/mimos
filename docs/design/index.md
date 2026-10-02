@@ -105,7 +105,10 @@ covers the page end to end.
   evening from today on, showing that card's title, blurb, proposed recipe
   and plugin attribution. "Add to {day}" adds that one entry through the
   plan-entry endpoint (`applySuggestionEntries`, shared with the plan
-  page; ADR-0006). No such card, or no plugins, hides the block.
+  page; ADR-0006). No such card, or no plugins, hides the block. With the
+  current plugin contract this block rarely appears mid-week;
+  [ADR-0009](../decisions/adr-0009-plugin-context-today.md) proposes a
+  fix.
 - **Profile:** name, member since, and "Sign out".
 
 The page only reads data. Each block loads and fails on its own, with an
