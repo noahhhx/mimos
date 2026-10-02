@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import Script from "next/script";
 
 import { AuthProvider } from "@/components/auth-provider";
 import { SiteHeader } from "@/components/site-header";
@@ -52,6 +53,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${newsreader.variable} ${publicSans.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        {/* Public URLs from the container's env (ADR-0012), set before any app code runs. */}
+        <Script src="/runtime-config.js" strategy="beforeInteractive" />
       </head>
       <body>
         {/* Site-wide so the header's profile menu sees who is signed in. */}

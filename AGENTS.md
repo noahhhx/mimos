@@ -42,7 +42,8 @@ change** — an out-of-date AGENTS.md is worse than none.
 | Config     | 12-factor: environment variables + Spring profiles. `local` profile is the default and must always work. |
 | Runtime    | Docker. Every deployable (API, web, plugins) ships a Dockerfile that is built in CI; no bare-metal assumptions in app code. |
 | Docs       | MkDocs; `mkdocs.yml` at repo root, source in `docs/`. ADRs live in `docs/decisions/`. |
-| Deploy     | Local/self-host via `deploy/docker` (compose); AWS via IaC in `deploy/aws`. No click-ops. |
+| Deploy     | Build-from-source and CI parity via `deploy/docker` (compose); servers run the published images via `deploy/selfhost` (compose, production-mode Keycloak, operator's TLS proxy); AWS via IaC in `deploy/aws`. No click-ops. |
+| Images     | CI publishes `ghcr.io/noahhhx/mimos-{api,web,keycloak,country-week}` (amd64) after every other job passes: `main` + `sha-*` from main, semver + `latest` from `v*` tags. Images carry no deployment-specific config. See ADR-0012. |
 | Sync       | intervals.icu is the activity data source (future). Design for it, don't build it yet. |
 | Library content | Seed file `core/core-recipes/src/main/resources/library/library-seed.json`, loaded by an idempotent startup seeder (`mimos.library.seed-enabled`, default on). Content fixes ship with a restart; never via Flyway migrations. See ADR-0005. |
 | Public API | Unauthenticated read-only access to the curated library under `/api/v1/public/**` (SEO pages). Personal recipes never appear there; everything else requires a bearer token. |
@@ -138,16 +139,19 @@ is the contract:
   `mimos-web` client (Authorization Code + PKCE); the app calls the API
   directly with bearer tokens and the API allows CORS for the web origin
   (ADR-0004). No server-side sessions, no Next-auth.
-- Public URLs (API, Keycloak, app) are `NEXT_PUBLIC_*` build args — see
-  `apps/web/Dockerfile` and the compose `web` service. Changing them means
-  rebuilding the web image.
+- Public URLs (API, Keycloak, app) are runtime env (`MIMOS_API_URL`,
+  `MIMOS_OIDC_AUTHORITY`, `MIMOS_OIDC_CLIENT_ID`, `MIMOS_APP_URL`), never
+  build args (ADR-0012): the server reads them in `src/lib/config.ts`, the
+  browser from `/runtime-config.js`, which the root layout loads
+  `beforeInteractive`. Never add a `NEXT_PUBLIC_*` value — it would bake
+  one deployment's config into the published image.
 - Runs as a standalone Node container in compose (non-root). No
   Vercel-specific features that break self-hosting; anything platform-tied
   is rejected on the same grounds as prime directive #2.
 - Server-side fetches (public pages) reach the API through `API_SERVER_URL`
   (runtime env, default `http://api:8080` in compose) — distinct from
-  `NEXT_PUBLIC_API_URL` so the browser-facing and container-facing URLs
-  can differ without rebuilds.
+  `MIMOS_API_URL` so the browser-facing and container-facing URLs can
+  differ.
 - Logic a future mobile app would share (API clients, types, validation
   schemas) lives in `libraries/`, not in app code.
 - **Visual design** is Evening Kitchen (ADR-0008; reference and original mockup in
@@ -171,7 +175,11 @@ is the contract:
 
 - Keycloak runs as a container in local compose; realm/client config is
   exported and checked into `deploy/keycloak` so environments are
-  reproducible.
+  reproducible. The web origin in the realm is the import-time placeholder
+  `${MIMOS_WEB_ORIGIN:http://localhost:3000}`. The Keycloak image bakes in
+  the export minus its `users` (ADR-0012); only the dev compose stack mounts
+  the full export with `test`/`test2`. Users added to the export never
+  reach a published image.
 - Keycloak's pages wear the `mimos` login theme (ADR-0010):
   `deploy/keycloak/themes/mimos/` extends `keycloak.v2` with CSS only (no
   copied templates, so upstream form ids stay), light only. Compose builds
@@ -237,6 +245,7 @@ mimos/
 │   └── harness/          # agent harness: deploy, drive, observe, debug the stack (docs/harness)
 └── deploy/
     ├── docker/           # compose: postgres, keycloak, api, web, plugin, (minio); compose.debug.yml overlay (harness only)
+    ├── selfhost/         # compose + .env.example for servers, from the published images (ADR-0012)
     ├── keycloak/         # realm export, mimos login theme, Keycloak image (ADR-0010)
     └── aws/              # IaC (tool TBD)
 ```
@@ -406,8 +415,15 @@ writes evidence to `.harness/runs/<run>/` (gitignored), and
   `http://localhost:3000/recipes`, and a plugin suggestion card (after
   login) from `http://localhost:8080/api/v1/plans/{monday}/suggestions`
   or the plan page's Suggestions panel.
+- `POSTGRES_PASSWORD=x KEYCLOAK_ADMIN_PASSWORD=x docker compose -f
+  deploy/selfhost/compose.yml --env-file deploy/selfhost/.env.example
+  config -q` — the self-host compose file resolves. To boot it against
+  local builds, tag them `ghcr.io/noahhhx/mimos-<name>:<tag>`, set
+  `MIMOS_VERSION=<tag>` and localhost URLs in an env file, and use a
+  different project name (`-p`) from the dev stack.
 - CI (`.github/workflows/ci.yml`) runs all of the above on every PR; the
-  compose job is the self-host parity check. Its last steps run every
+  compose job is the self-host parity check. On a push to main or a `v*`
+  tag, the `publish` job then pushes the images (ADR-0012). Its last steps run every
   harness scenario through devenv against the booted stack and upload
   `.harness/runs/` as the `harness-runs` artifact when one fails.
 

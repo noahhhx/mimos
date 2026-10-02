@@ -3,6 +3,8 @@ name: CI
 on:
   push:
     branches: [main]
+    # Release tags publish versioned images (the publish job).
+    tags: ['v*']
   pull_request:
 
 concurrency:
@@ -98,6 +100,14 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Validate the self-host compose file
+        # .env.example leaves the secrets blank on purpose; the file must
+        # resolve once they are set.
+        env:
+          POSTGRES_PASSWORD: ci
+          KEYCLOAK_ADMIN_PASSWORD: ci
+        run: docker compose -f deploy/selfhost/compose.yml --env-file deploy/selfhost/.env.example config -q
+
       - name: Boot the stack
         run: docker compose -f deploy/docker/compose.yml up -d --wait
 
@@ -116,6 +126,11 @@ jobs:
 
       - name: Smoke test - web frontend serves the public page
         run: curl -fsS http://localhost:3000/ | grep -q '<h1>Mimos</h1>'
+
+      - name: Smoke test - web serves its public config from the environment
+        run: |
+          curl -fsS http://localhost:3000/runtime-config.js \
+            | grep -qF '"apiUrl":"http://localhost:8080","oidcAuthority":"http://localhost:8081/realms/mimos"'
 
       - name: Smoke test - library is seeded and publicly readable
         run: |
@@ -206,3 +221,59 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose -f deploy/docker/compose.yml down -v --remove-orphans
+
+  # Images for self-hosting (ADR-0012, deploy/selfhost): only what passed
+  # every job above. main publishes `main` and `sha-<commit>`; a release tag
+  # v1.2.3 publishes `1.2.3`, `1.2` and `latest`.
+  publish:
+    name: Publish images (${{ matrix.image }})
+    if: github.event_name == 'push'
+    needs: [build, docs, clients, compose]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: mimos-api
+            dockerfile: apps/api/Dockerfile
+          - image: mimos-web
+            dockerfile: apps/web/Dockerfile
+          - image: mimos-keycloak
+            dockerfile: deploy/keycloak/Dockerfile
+          - image: mimos-country-week
+            dockerfile: plugins/country-week/Dockerfile
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          tags: |
+            type=ref,event=branch
+            type=sha
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}

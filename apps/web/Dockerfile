@@ -20,18 +20,9 @@ COPY contracts/ contracts/
 COPY libraries/ libraries/
 COPY apps/web/ apps/web/
 
-# NEXT_PUBLIC_* values are inlined at build time; the compose stack passes
-# them as build args so a self-hoster can point the frontend at their own
-# Keycloak and API.
-ARG NEXT_PUBLIC_API_URL=http://localhost:8080
-ARG NEXT_PUBLIC_KEYCLOAK_AUTHORITY=http://localhost:8081/realms/mimos
-ARG NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=mimos-web
-ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
-    NEXT_PUBLIC_KEYCLOAK_AUTHORITY=$NEXT_PUBLIC_KEYCLOAK_AUTHORITY \
-    NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=$NEXT_PUBLIC_KEYCLOAK_CLIENT_ID \
-    NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
-
+# No URLs are baked in: the app reads them from the container's env at run
+# time (MIMOS_API_URL, MIMOS_OIDC_AUTHORITY, MIMOS_OIDC_CLIENT_ID,
+# MIMOS_APP_URL, API_SERVER_URL — ADR-0012), so one image serves any host.
 RUN npm run build -w @mimos/web
 
 # ---- runtime stage ----

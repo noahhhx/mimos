@@ -15,7 +15,9 @@ hardware. Both are first-class.
 
 ## Quickstart (self-hosted)
 
-Requires Docker.
+To run Mimos on a server from the published images, follow
+[Self-hosting](self-hosting.md). To try it from a checkout (requires
+Docker):
 
 ```bash
 git clone https://github.com/noahhhx/mimos.git

@@ -13,6 +13,7 @@ theme:
 
 nav:
   - Home: index.md
+  - Self-hosting: self-hosting.md
   - Plugins:
       - Authoring: plugins/index.md
   - Design:
@@ -40,3 +41,4 @@ nav:
       - 'ADR-0009: Tell plugins which day it is (proposed)': decisions/adr-0009-plugin-context-today.md
       - 'ADR-0010: Keycloak login theme': decisions/adr-0010-keycloak-login-theme.md
       - 'ADR-0011: Account export and import': decisions/adr-0011-account-export-import.md
+      - 'ADR-0012: Published images and runtime web config': decisions/adr-0012-published-images.md

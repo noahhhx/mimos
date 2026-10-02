@@ -16,8 +16,8 @@
       "publicClient": true,
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
-      "redirectUris": ["http://localhost:3000/*"],
-      "webOrigins": ["http://localhost:3000"]
+      "redirectUris": ["${MIMOS_WEB_ORIGIN:http://localhost:3000}/*"],
+      "webOrigins": ["${MIMOS_WEB_ORIGIN:http://localhost:3000}"]
     }
   ],
   "users": [

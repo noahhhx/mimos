@@ -78,7 +78,7 @@ export const BUILD_INPUTS: Readonly<Record<string, { dockerfile: string; paths: 
   },
   keycloak: {
     dockerfile: "deploy/keycloak/Dockerfile",
-    paths: ["deploy/keycloak/themes", "apps/web/src/fonts"],
+    paths: ["deploy/keycloak/themes", "deploy/keycloak/mimos-realm.json", "apps/web/src/fonts"],
   },
   web: {
     dockerfile: "apps/web/Dockerfile",

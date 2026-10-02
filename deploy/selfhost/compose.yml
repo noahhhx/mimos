@@ -1,0 +1,139 @@
+# Mimos for your own server, from the published images (ADR-0012).
+#
+#   cp .env.example .env    # then fill it in
+#   docker compose up -d --wait
+#
+# Your reverse proxy terminates TLS and forwards three public URLs to the
+# ports below: WEB_ORIGIN -> web, API_PUBLIC_URL -> api, KEYCLOAK_PUBLIC_URL
+# -> keycloak. HTTPS is required for any address other than localhost:
+# sign-in uses the browser's Web Crypto API, which only exists in secure
+# contexts. The guide is docs/self-hosting.md.
+#
+# Needs Docker Compose 2.23.1 or later (inline `configs`).
+name: mimos
+
+services:
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mimos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: mimos
+    configs:
+      # Keycloak keeps its users and sessions in its own database. Runs on
+      # the first start only (an empty data volume).
+      - source: keycloak-database
+        target: /docker-entrypoint-initdb.d/10-keycloak.sql
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d mimos"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+
+  keycloak:
+    image: ghcr.io/noahhhx/mimos-keycloak:${MIMOS_VERSION:-main}
+    restart: unless-stopped
+    # Production mode. The image's realm (no users) is imported on the first
+    # start; after that the realm in the database is left alone, so manage
+    # it in the admin console at KEYCLOAK_PUBLIC_URL/admin.
+    command: ["start", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: ${POSTGRES_USER:-mimos}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KC_HOSTNAME: ${KEYCLOAK_PUBLIC_URL:?set KEYCLOAK_PUBLIC_URL in .env}
+      # TLS ends at your reverse proxy, which must send X-Forwarded-* headers.
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+      # A temporary admin for the first sign-in to the admin console.
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?set KEYCLOAK_ADMIN_PASSWORD in .env}
+      # Where the mimos-web client may redirect after sign-in (first import).
+      MIMOS_WEB_ORIGIN: ${WEB_ORIGIN:?set WEB_ORIGIN in .env}
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${KEYCLOAK_PORT:-8081}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  api:
+    image: ghcr.io/noahhhx/mimos-api:${MIMOS_VERSION:-main}
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mimos
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-mimos}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      # Tokens carry the public issuer; the signing keys are fetched over the
+      # compose network.
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: ${KEYCLOAK_PUBLIC_URL}/realms/mimos
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/mimos/protocol/openid-connect/certs
+      MIMOS_SECURITY_CORS_ALLOWED_ORIGINS: ${WEB_ORIGIN}
+      # The reference plugin (ADR-0006). To run without plugins, remove these
+      # two lines and the country-week service.
+      MIMOS_PLUGINS_0_ID: country-week
+      MIMOS_PLUGINS_0_URL: http://country-week:8080
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${API_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  # Reference plugin: reachable on the compose network only.
+  country-week:
+    image: ghcr.io/noahhhx/mimos-country-week:${MIMOS_VERSION:-main}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/manifest || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  web:
+    image: ghcr.io/noahhhx/mimos-web:${MIMOS_VERSION:-main}
+    restart: unless-stopped
+    environment:
+      MIMOS_APP_URL: ${WEB_ORIGIN}
+      MIMOS_API_URL: ${API_PUBLIC_URL:?set API_PUBLIC_URL in .env}
+      MIMOS_OIDC_AUTHORITY: ${KEYCLOAK_PUBLIC_URL}/realms/mimos
+      # Public recipe pages are rendered server-side over the compose network.
+      API_SERVER_URL: http://api:8080
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+configs:
+  keycloak-database:
+    content: |
+      CREATE DATABASE keycloak;
+
+volumes:
+  postgres-data:

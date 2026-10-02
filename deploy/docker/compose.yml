@@ -20,11 +20,15 @@ services:
 
   keycloak:
     # Stock Keycloak plus the Mimos login theme (deploy/keycloak/Dockerfile).
+    # The full realm export, local test users included, is mounted over the
+    # image's user-less copy.
     build:
       context: ../..
       dockerfile: deploy/keycloak/Dockerfile
     command: ["start-dev", "--import-realm"]
     environment:
+      # Allowed redirect origin for the mimos-web client (realm placeholder).
+      MIMOS_WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
       KC_HTTP_ENABLED: "true"
@@ -90,16 +94,15 @@ services:
     build:
       context: ../..
       dockerfile: apps/web/Dockerfile
-      args:
-        # Inlined at build time (NEXT_PUBLIC_*); a self-hoster overrides these
-        # to point the frontend at their own API and Keycloak.
-        NEXT_PUBLIC_API_URL: ${API_PUBLIC_URL:-http://localhost:8080}
-        NEXT_PUBLIC_KEYCLOAK_AUTHORITY: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}/realms/mimos
-        NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-mimos-web}
-        NEXT_PUBLIC_APP_URL: ${WEB_ORIGIN:-http://localhost:3000}
     environment:
+      # Browser-facing URLs, read at run time (ADR-0012): no rebuild to
+      # retarget.
+      MIMOS_API_URL: ${API_PUBLIC_URL:-http://localhost:8080}
+      MIMOS_OIDC_AUTHORITY: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}/realms/mimos
+      MIMOS_OIDC_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-mimos-web}
+      MIMOS_APP_URL: ${WEB_ORIGIN:-http://localhost:3000}
       # Server-side fetches (public recipe pages) use the internal compose
-      # network; runtime env, not a build arg, so no rebuild to retarget.
+      # network.
       API_SERVER_URL: ${API_INTERNAL_URL:-http://api:8080}
     ports:
       - "${WEB_PORT:-3000}:3000"
