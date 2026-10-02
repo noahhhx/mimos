@@ -10,7 +10,7 @@ COPY contracts/ contracts/
 COPY core/ core/
 COPY integrations/ integrations/
 COPY apps/ apps/
-COPY deploy/keycloak/ deploy/keycloak/
+COPY deploy/keycloak/mimos-realm.json deploy/keycloak/
 
 RUN --mount=type=cache,target=/root/.m2 \
     mvn -B -DskipTests package

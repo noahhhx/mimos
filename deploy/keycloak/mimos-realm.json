@@ -1,6 +1,9 @@
 {
   "realm": "mimos",
+  "displayName": "Mimos",
+  "displayNameHtml": "Mimos",
   "enabled": true,
+  "loginTheme": "mimos",
   "registrationAllowed": true,
   "loginWithEmailAllowed": true,
   "clients": [

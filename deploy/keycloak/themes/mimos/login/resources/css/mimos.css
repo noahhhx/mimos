@@ -1,0 +1,429 @@
+/* Mimos login theme: Evening Kitchen (docs/design/index.md) over keycloak.v2.
+   keycloak.v2 renders PatternFly 5 markup; this file remaps PatternFly's
+   global tokens onto ours, then restyles the few components a login page
+   uses. The token values mirror apps/web/src/app/globals.css (light) —
+   change them there and here together. */
+
+/* The app's committed fonts, copied in by deploy/keycloak/Dockerfile. */
+@font-face {
+  font-family: "Newsreader";
+  src: url("../fonts/newsreader/Newsreader.woff2") format("woff2");
+  font-weight: 400 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Public Sans";
+  src: url("../fonts/public-sans/PublicSans.woff2") format("woff2");
+  font-weight: 400 600;
+  font-display: swap;
+}
+
+/* ---------- Tokens ---------- */
+
+:root {
+  --bg: #f4eee5;
+  --surface: #fbf7f1;
+  --hover: #efe6da;
+  --fg: #2b221c;
+  --muted: #76685c;
+  --line: #ddd2c3;
+  --accent: #94560f;
+  --on-accent: #fbf7f1;
+  --danger: #a84a25;
+  --accent-deep: color-mix(in srgb, var(--accent) 82%, var(--fg));
+
+  --serif: "Newsreader", Georgia, serif;
+  --sans: "Public Sans", system-ui, sans-serif;
+
+  /* PatternFly's globals (defined under :where(:root), so these win). */
+  --pf-v5-global--FontFamily--text: var(--sans);
+  --pf-v5-global--FontFamily--text--vf: var(--sans);
+  --pf-v5-global--FontFamily--heading: var(--serif);
+  --pf-v5-global--FontFamily--heading--vf: var(--serif);
+  --pf-v5-global--BackgroundColor--100: var(--surface);
+  --pf-v5-global--BackgroundColor--200: var(--bg);
+  --pf-v5-global--BackgroundColor--light-100: var(--surface);
+  --pf-v5-global--BackgroundColor--light-300: var(--bg);
+  --pf-v5-global--Color--100: var(--fg);
+  --pf-v5-global--Color--200: var(--muted);
+  --pf-v5-global--icon--Color--light: var(--muted);
+  --pf-v5-global--primary-color--100: var(--accent);
+  --pf-v5-global--primary-color--200: var(--accent-deep);
+  --pf-v5-global--primary-color--dark-100: var(--accent);
+  --pf-v5-global--active-color--100: var(--accent);
+  --pf-v5-global--link--Color: var(--fg);
+  --pf-v5-global--link--Color--hover: var(--fg);
+  --pf-v5-global--link--Color--visited: var(--fg);
+  --pf-v5-global--BorderColor--100: var(--line);
+  --pf-v5-global--BorderColor--200: var(--line);
+  --pf-v5-global--BorderColor--300: var(--line);
+  --pf-v5-global--danger-color--100: var(--danger);
+  --pf-v5-global--danger-color--200: var(--danger);
+  --pf-v5-global--disabled-color--100: var(--muted);
+  --pf-v5-global--disabled-color--200: var(--line);
+  --pf-v5-global--disabled-color--300: var(--hover);
+  --pf-v5-global--BorderRadius--sm: 0;
+  --pf-v5-global--BorderRadius--lg: 0;
+  --pf-v5-global--BoxShadow--sm: none;
+  --pf-v5-global--BoxShadow--md: none;
+  --pf-v5-global--BoxShadow--lg: none;
+  --pf-v5-global--BoxShadow--xl: none;
+  --pf-v5-global--Transition: none;
+  --pf-v5-global--TransitionDuration: 0s;
+
+  color-scheme: light;
+}
+
+/* Straight edges and no motion, whatever a PatternFly component asks for. */
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+/* ---------- Page ---------- */
+
+.login-pf body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* One narrow column at every width (PatternFly goes two-column on wide screens). */
+.pf-v5-c-login__container {
+  display: block;
+  max-width: calc(480px + 32px);
+  padding: 0 16px;
+}
+
+/* The brand, as in the app's header: a short amber dash, then the serif name. */
+.pf-v5-c-login__header {
+  margin: 40px 0 24px;
+  padding: 0;
+}
+
+#kc-header-wrapper {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+  color: var(--fg) !important;
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-align: start;
+  text-transform: none;
+}
+
+#kc-header-wrapper::before {
+  content: "";
+  flex: none;
+  width: 18px;
+  height: 2px;
+  background: var(--accent);
+  transform: translateY(-6px);
+}
+
+/* The form sits in a card: --surface with a --line border, no shadow. */
+.pf-v5-c-login__main {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.pf-v5-c-login__main-header {
+  display: block;
+  padding: 32px 28px 0;
+  border-top: 0;
+}
+
+.pf-v5-c-login__main-body {
+  padding: 24px 28px 28px;
+}
+
+.pf-v5-c-login__main-footer {
+  padding: 0;
+}
+
+@media (max-width: 480px) {
+  .pf-v5-c-login__main-header {
+    padding: 24px 20px 0;
+  }
+
+  .pf-v5-c-login__main-body {
+    padding: 20px 20px 24px;
+  }
+}
+
+/* The page title, as PageHeader: serif h1 over the short amber rule. */
+#kc-page-title {
+  margin: 0;
+  color: var(--fg);
+  font-family: var(--serif);
+  font-size: clamp(32px, 7vw, 38px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+#kc-page-title::after {
+  content: "";
+  display: block;
+  width: 64px;
+  height: 2px;
+  margin-top: 18px;
+  background: var(--accent);
+}
+
+/* ---------- Forms ---------- */
+
+/* "* Required fields", above the register form. */
+.pf-v5-c-login__main-body .subtitle {
+  margin-bottom: 20px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.pf-v5-c-form {
+  gap: 20px;
+}
+
+/* Field labels are the app's small uppercase labels. */
+.pf-v5-c-form__label,
+.pf-v5-c-form__label-text {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.pf-v5-c-form__group-label {
+  padding-bottom: 6px;
+}
+
+.pf-v5-c-form__label-required {
+  color: var(--danger);
+}
+
+/* Inputs: --surface, a whole --line border, --muted on hover, amber on focus. */
+.pf-v5-c-form-control {
+  --pf-v5-c-form-control--FontSize: 16px;
+  --pf-v5-c-form-control--PaddingTop: 8px;
+  --pf-v5-c-form-control--PaddingBottom: 8px;
+  --pf-v5-c-form-control--PaddingLeft: 10px;
+  --pf-v5-c-form-control--PaddingRight: 10px;
+  --pf-v5-c-form-control--m-readonly--BackgroundColor: var(--hover);
+  background: var(--surface);
+  font-family: var(--sans);
+}
+
+.pf-v5-c-form-control::before {
+  border: 1px solid var(--line);
+}
+
+.pf-v5-c-form-control::after {
+  border-bottom: 0;
+}
+
+.pf-v5-c-form-control:hover::before {
+  border-color: var(--muted);
+}
+
+.pf-v5-c-form-control:focus-within::before {
+  border-color: var(--accent);
+}
+
+.pf-v5-c-form-control.pf-m-error::before {
+  border-color: var(--danger);
+}
+
+.pf-v5-c-form-control.pf-m-readonly:hover::before {
+  border-color: var(--line);
+}
+
+.pf-v5-c-form-control > :is(input, select, textarea):focus {
+  outline: none;
+}
+
+.pf-v5-c-form-control:has(> :is(input, select, textarea):focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The show-password and restart-login buttons sit flush beside their input. */
+.pf-v5-c-button.pf-m-control {
+  --pf-v5-c-button--m-control--BackgroundColor: var(--surface);
+  --pf-v5-c-button--m-control--hover--BackgroundColor: var(--hover);
+  --pf-v5-c-button--m-control--focus--BackgroundColor: var(--hover);
+  --pf-v5-c-button--m-control--active--BackgroundColor: var(--hover);
+  --pf-v5-c-button--m-control--Color: var(--muted);
+  --pf-v5-c-button--m-control--hover--Color: var(--fg);
+  --pf-v5-c-button--m-control--focus--Color: var(--fg);
+  --pf-v5-c-button--m-control--active--Color: var(--fg);
+}
+
+.pf-v5-c-button.pf-m-control::after {
+  border: 1px solid var(--line);
+  border-left-width: 0;
+}
+
+.pf-v5-c-input-group__item:first-child .pf-v5-c-button.pf-m-control::after {
+  border-left-width: 1px;
+  border-right-width: 0;
+}
+
+.pf-v5-c-check {
+  align-items: center;
+}
+
+.pf-v5-c-check__input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.pf-v5-c-check__label {
+  color: var(--fg);
+  font-size: 15px;
+}
+
+.pf-v5-c-helper-text {
+  font-size: 15px;
+}
+
+.pf-v5-c-helper-text__item-text.pf-m-error,
+.pf-v5-c-helper-text__item.pf-m-error {
+  color: var(--danger);
+  font-weight: 500;
+}
+
+/* ---------- Buttons (the app's .button family) ---------- */
+
+.pf-v5-c-button {
+  --pf-v5-c-button--FontSize: 15px;
+  --pf-v5-c-button--FontWeight: 600;
+  --pf-v5-c-button--PaddingLeft: 18px;
+  --pf-v5-c-button--PaddingRight: 18px;
+  font-family: var(--sans);
+}
+
+.pf-v5-c-button:is(.pf-m-primary, .pf-m-secondary) {
+  min-height: 42px;
+}
+
+.pf-v5-c-button.pf-m-primary {
+  --pf-v5-c-button--m-primary--Color: var(--on-accent);
+  --pf-v5-c-button--m-primary--hover--Color: var(--on-accent);
+  --pf-v5-c-button--m-primary--focus--Color: var(--on-accent);
+  --pf-v5-c-button--m-primary--active--Color: var(--on-accent);
+}
+
+/* Secondary: transparent with a --line border that turns amber on hover. */
+.pf-v5-c-button.pf-m-secondary {
+  --pf-v5-c-button--m-secondary--Color: var(--fg);
+  --pf-v5-c-button--m-secondary--hover--Color: var(--fg);
+  --pf-v5-c-button--m-secondary--focus--Color: var(--fg);
+  --pf-v5-c-button--m-secondary--active--Color: var(--fg);
+  --pf-v5-c-button--m-secondary--after--BorderColor: var(--line);
+  --pf-v5-c-button--m-secondary--hover--after--BorderColor: var(--accent);
+  --pf-v5-c-button--m-secondary--focus--after--BorderColor: var(--accent);
+  --pf-v5-c-button--m-secondary--active--after--BorderColor: var(--accent);
+  --pf-v5-c-button--hover--after--BorderWidth: 1px;
+  --pf-v5-c-button--focus--after--BorderWidth: 1px;
+  --pf-v5-c-button--active--after--BorderWidth: 1px;
+}
+
+.pf-v5-c-button.pf-m-link {
+  --pf-v5-c-button--m-link--Color: var(--fg);
+  --pf-v5-c-button--m-link--hover--Color: var(--fg);
+  --pf-v5-c-button--m-link--focus--Color: var(--fg);
+  --pf-v5-c-button--m-link--active--Color: var(--fg);
+}
+
+.pf-v5-c-form__actions {
+  margin-top: 4px;
+}
+
+/* ---------- Links ---------- */
+
+.pf-v5-c-login a:not(.pf-v5-c-button) {
+  color: var(--fg);
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 4px;
+}
+
+.pf-v5-c-login a:not(.pf-v5-c-button):hover {
+  text-decoration-color: var(--accent);
+}
+
+/* ---------- Focus ---------- */
+
+a:focus-visible,
+button:focus-visible,
+input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Notices (the app's .card.error and .card.ok) ---------- */
+
+.pf-v5-c-alert.pf-m-inline {
+  display: block;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  border: 0;
+  border-left: 3px solid var(--accent);
+  background: var(--bg);
+  box-shadow: none;
+  color: var(--fg);
+  font-size: 15px;
+}
+
+.pf-v5-c-alert.pf-m-inline::before {
+  content: none;
+}
+
+.pf-v5-c-alert.pf-m-inline.pf-m-danger {
+  border-left-color: var(--danger);
+}
+
+.pf-v5-c-alert__icon {
+  display: none;
+}
+
+.pf-v5-c-alert__title {
+  color: inherit;
+  font-size: inherit;
+  font-weight: 500;
+}
+
+.pf-v5-c-alert.pf-m-danger .pf-v5-c-alert__title {
+  color: var(--danger);
+}
+
+/* ---------- The "New user? Register" band ---------- */
+
+.pf-v5-c-login__main-footer-band {
+  margin-top: 24px;
+  padding: 20px 0 0;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 15px;
+  text-align: start;
+}
+
+.pf-v5-c-login__main-footer-band:first-child {
+  margin-block-start: 24px;
+}

@@ -152,7 +152,8 @@ is the contract:
   shadows) and no transitions or animations. Fonts are committed files
   in `src/fonts/` loaded with `next/font/local`; never a font host or a
   font npm package. Rebuild them as `src/fonts/README.md` says (its tools
-  come from devenv). Pages start with `PageHeader` (eyebrow, serif h1,
+  come from devenv). Keycloak's login theme mirrors the light tokens and
+  reuses these fonts (`deploy/keycloak`, ADR-0010); change both together. Pages start with `PageHeader` (eyebrow, serif h1,
   amber rule, actions) or, for a rail layout, `SplitPage`.
 - Unit tests live in `apps/web/test/` and run on `node --test` (native type
   stripping, no test framework). A module they import must not touch the
@@ -165,6 +166,12 @@ is the contract:
 - Keycloak runs as a container in local compose; realm/client config is
   exported and checked into `deploy/keycloak` so environments are
   reproducible.
+- Keycloak's pages wear the `mimos` login theme (ADR-0010):
+  `deploy/keycloak/themes/mimos/` extends `keycloak.v2` with CSS only (no
+  copied templates, so upstream form ids stay), light only. Compose builds
+  `deploy/keycloak/Dockerfile`, which adds the theme and the web app's
+  committed fonts to the stock image. Its tokens mirror `globals.css`;
+  the `keycloak-theme` harness scenario checks it.
 - Spring Security with OIDC resource-server on the API. Authorization roles
   are realm/client roles from Keycloak; no parallel user tables in the app
   beyond a lightweight profile keyed by subject ID.
@@ -221,7 +228,7 @@ mimos/
 │   └── harness/          # agent harness: deploy, drive, observe, debug the stack (docs/harness)
 └── deploy/
     ├── docker/           # compose: postgres, keycloak, api, web, plugin, (minio); compose.debug.yml overlay (harness only)
-    ├── keycloak/         # realm export / config
+    ├── keycloak/         # realm export, mimos login theme, Keycloak image (ADR-0010)
     └── aws/              # IaC (tool TBD)
 ```
 

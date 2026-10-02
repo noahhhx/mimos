@@ -74,7 +74,11 @@ export const DEFAULT_USER = "test";
 export const BUILD_INPUTS: Readonly<Record<string, { dockerfile: string; paths: readonly string[] }>> = {
   api: {
     dockerfile: "apps/api/Dockerfile",
-    paths: ["pom.xml", ".mvn", "contracts", "core", "integrations", "apps/api", "deploy/keycloak"],
+    paths: ["pom.xml", ".mvn", "contracts", "core", "integrations", "apps/api", "deploy/keycloak/mimos-realm.json"],
+  },
+  keycloak: {
+    dockerfile: "deploy/keycloak/Dockerfile",
+    paths: ["deploy/keycloak/themes", "apps/web/src/fonts"],
   },
   web: {
     dockerfile: "apps/web/Dockerfile",

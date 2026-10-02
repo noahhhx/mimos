@@ -79,6 +79,22 @@ Contrast is measured against `--bg`.
   `role="status"`) have a 3px left border in `--danger` or `--accent`.
 - Pages must work at 390px with no horizontal scroll, in both themes.
 
+## Sign-in pages
+
+Keycloak's pages (sign in, register, errors) use the `mimos` login theme
+in `deploy/keycloak/themes/mimos/` ([ADR-0010](../decisions/adr-0010-keycloak-login-theme.md)):
+the brand above a `--surface` card holding a `PageHeader`-style title and
+rule, the app's labels, inputs, and buttons, and errors in `--danger`. It
+restyles Keycloak's `keycloak.v2` templates with CSS only, light only.
+
+- Its tokens in `resources/css/mimos.css` mirror the light values in
+  `globals.css`; change both together.
+- The fonts are the app's own files, copied in by
+  `deploy/keycloak/Dockerfile`.
+- After a change, rebuild the Keycloak image (`harness up` does) and run
+  `harness ui keycloak-theme`; its screenshots show each page at phone
+  and desktop width.
+
 ## Kitchen home
 
 The signed-in home (`app/app/page.tsx`) answers "what am I cooking
