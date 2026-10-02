@@ -1,9 +1,9 @@
 # Evening Kitchen restyle: plan
 
-**Status:** step 1 (tokens, fonts, theme default) is done, with step 4's
-[ADR-0008](../decisions/adr-0008-visual-direction.md) and AGENTS.md update;
-steps 2 and 3 are next. This page is the brief for the agent that builds
-it. Decisions made with the owner are marked **decided**; don't
+**Status:** steps 1 (tokens, fonts, theme default) and 2 (public pages)
+are done, with step 4's [ADR-0008](../decisions/adr-0008-visual-direction.md)
+and AGENTS.md update; step 3 is next. This page is the brief for the agent
+that builds it. Decisions made with the owner are marked **decided**; don't
 relitigate them without asking. The new Kitchen home screen is a separate
 plan, [Kitchen home](kitchen-home.md), and comes after this one.
 

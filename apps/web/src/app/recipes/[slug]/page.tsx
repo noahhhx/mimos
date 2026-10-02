@@ -4,8 +4,7 @@ import { notFound } from "next/navigation";
 
 import { getPublicRecipe } from "@mimos/api-client";
 
-import { Quantity } from "@/components/quantity";
-import { hasNutrition } from "@/lib/format";
+import { RecipeView } from "@/components/recipe-view";
 import { publicApi } from "@/lib/server-api";
 
 /** Public recipe pages render server-side so recipes are findable (SEO). */
@@ -32,70 +31,15 @@ export default async function RecipePage({ params }: { params: Promise<{ slug: s
   }
 
   return (
-    <article className="recipe">
+    <>
       <p className="back">
         <Link href="/recipes">← Library</Link>
       </p>
-      <header className="page-header">
-        <h1>{recipe.title}</h1>
-        <p className="lede">{recipe.description}</p>
-        <p className="muted">
-          Serves {recipe.servings}
-          {recipe.prepMinutes != null ? ` · ${recipe.prepMinutes} min prep` : ""}
-          {recipe.cookMinutes != null ? ` · ${recipe.cookMinutes} min cook` : ""}
+      <RecipeView recipe={recipe}>
+        <p className="muted recipe-cta">
+          Cook this every week? <Link href="/app">Plan it in Mimos</Link> — the shopping list builds itself.
         </p>
-        {recipe.tags.length > 0 && (
-          <p className="tags">
-            {recipe.tags.map((tag) => (
-              <span key={tag} className="tag">
-                {tag}
-              </span>
-            ))}
-          </p>
-        )}
-      </header>
-
-      {hasNutrition(recipe.nutrition) && (
-        <div className="card nutrition">
-          <h2>Per serving</h2>
-          <dl className="profile">
-            <dt>Calories</dt>
-            <dd>{recipe.nutrition.calories != null ? `${Math.round(recipe.nutrition.calories)} kcal` : "—"}</dd>
-            <dt>Protein</dt>
-            <dd>{recipe.nutrition.proteinG != null ? `${Math.round(recipe.nutrition.proteinG)} g` : "—"}</dd>
-            <dt>Carbs</dt>
-            <dd>{recipe.nutrition.carbsG != null ? `${Math.round(recipe.nutrition.carbsG)} g` : "—"}</dd>
-            <dt>Fat</dt>
-            <dd>{recipe.nutrition.fatG != null ? `${Math.round(recipe.nutrition.fatG)} g` : "—"}</dd>
-          </dl>
-        </div>
-      )}
-
-      <div className="recipe-columns">
-        <section className="card">
-          <h2>Ingredients</h2>
-          <ul className="ingredients">
-            {recipe.ingredients.map((ingredient, index) => (
-              <li key={index}>
-                <Quantity quantity={ingredient.quantity} unit={ingredient.unit} /> {ingredient.name}
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="card">
-          <h2>Steps</h2>
-          <ol className="steps">
-            {recipe.steps.map((step, index) => (
-              <li key={index}>{step.instruction}</li>
-            ))}
-          </ol>
-        </section>
-      </div>
-
-      <p className="muted">
-        Cook this every week? <Link href="/app">Plan it in Mimos</Link> — the shopping list builds itself.
-      </p>
-    </article>
+      </RecipeView>
+    </>
   );
 }

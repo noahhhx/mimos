@@ -1,7 +1,7 @@
-import Link from "next/link";
-
 import { listPublicRecipes } from "@mimos/api-client";
 
+import { RecipeList } from "@/components/recipe-list";
+import { SplitPage } from "@/components/split-page";
 import { publicApi } from "@/lib/server-api";
 
 /**
@@ -18,22 +18,26 @@ export default async function LibraryPage({
   const recipes = result.data ?? [];
 
   return (
-    <>
-      <header className="page-header">
-        <p className="eyebrow">Library</p>
-        <h1>Recipes</h1>
-        <p className="muted">Free recipes with everything needed to actually cook them.</p>
-      </header>
-
+    <SplitPage
+      rail={
+        <>
+          <header className="page-header">
+            <p className="eyebrow">Library</p>
+            <h1>Recipes</h1>
+          </header>
+          <p className="lede">Free recipes with everything needed to actually cook them.</p>
+        </>
+      }
+    >
       <form className="search" action="/recipes" method="get">
         <input
           type="search"
           name="q"
           defaultValue={q ?? ""}
-          placeholder="Search recipes…"
+          placeholder="What do you feel like?"
           aria-label="Search the library"
         />
-        <button className="button" type="submit">
+        <button className="button secondary" type="submit">
           Search
         </button>
       </form>
@@ -43,30 +47,8 @@ export default async function LibraryPage({
           <p>{q ? `Nothing matches “${q}”.` : "The library is empty."}</p>
         </div>
       ) : (
-        <ul className="recipe-cards">
-          {recipes.map((recipe) => (
-            <li key={recipe.id} className="card recipe-card">
-              <h2>
-                <Link href={`/recipes/${recipe.slug}`}>{recipe.title}</Link>
-              </h2>
-              <p>{recipe.description}</p>
-              <p className="muted">
-                {recipe.servings} servings
-                {recipe.nutrition?.calories != null ? ` · ~${Math.round(recipe.nutrition.calories)} kcal/serving` : ""}
-              </p>
-              {recipe.tags.length > 0 && (
-                <p className="tags">
-                  {recipe.tags.map((tag) => (
-                    <span key={tag} className="tag">
-                      {tag}
-                    </span>
-                  ))}
-                </p>
-              )}
-            </li>
-          ))}
-        </ul>
+        <RecipeList recipes={recipes} hrefOf={(recipe) => `/recipes/${recipe.slug}`} />
       )}
-    </>
+    </SplitPage>
   );
 }

@@ -108,7 +108,7 @@ pre {
 
 .wrap {
   width: 100%;
-  max-width: 960px;
+  max-width: 1080px;
   margin: 0 auto;
   padding: 0 16px;
 }
@@ -233,30 +233,31 @@ main.wrap {
 
 /* ---------- Page headers ---------- */
 
-.intro,
+/* A page header is an eyebrow, the serif h1 and the short amber rule. */
 .page-header {
   margin-bottom: 40px;
 }
 
-/* The short amber rule that closes a page's header. */
-.intro::after,
 .page-header::after {
   content: "";
   display: block;
   width: 64px;
   height: 2px;
-  margin-top: 24px;
+  margin-top: 22px;
   background: var(--accent);
 }
 
-.intro > p,
 .page-header > p {
   margin: 0 0 8px;
 }
 
-.intro > :last-child,
 .page-header > :last-child {
   margin-bottom: 0;
+}
+
+.page-header h1 {
+  margin: 0;
+  overflow-wrap: break-word;
 }
 
 .lede {
@@ -267,11 +268,63 @@ main.wrap {
   color: var(--muted);
 }
 
-.intro > p.cta {
+.cta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 24px;
+  gap: 12px;
+  margin: 0 0 32px;
+}
+
+/* ---------- Split page: rail + main (components/split-page.tsx) ---------- */
+
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 40px;
+}
+
+@media (min-width: 880px) {
+  .split {
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 56px;
+  }
+}
+
+/* Rows in the main column lay out by its width, not the viewport's. */
+.split-main {
+  container-type: inline-size;
+}
+
+.rail .page-header {
+  margin-bottom: 22px;
+}
+
+/* Rail titles stay a little smaller so they fit the 300px column. */
+@media (min-width: 880px) {
+  .rail h1 {
+    font-size: 56px;
+  }
+}
+
+.rail .lede {
+  margin: 0;
+  max-width: 36ch;
+}
+
+.rail h2 {
+  margin: 32px 0 12px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ---------- Buttons ---------- */
@@ -579,15 +632,104 @@ input[type="search"] {
   flex-wrap: wrap;
 }
 
+/* The library search: an underlined serif field. */
 .search {
   display: flex;
-  gap: 8px;
-  margin: 0 0 24px;
+  align-items: end;
+  gap: 12px;
+  margin: 0 0 32px;
 }
 
 .search input {
-  margin: 0;
   flex: 1;
+  min-width: 0;
+  height: 50px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--muted);
+  background: transparent;
+  font-family: var(--serif);
+  font-size: 22px;
+}
+
+.search input::placeholder {
+  color: var(--muted);
+}
+
+.search input:focus {
+  border-bottom-color: var(--accent);
+}
+
+/* ---------- Recipe rows (components/recipe-list.tsx) ---------- */
+
+.recipe-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.recipe-list li {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px 32px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+@container (min-width: 600px) {
+  .recipe-list li {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto;
+    align-items: baseline;
+  }
+}
+
+.recipe-list h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--fg);
+}
+
+/* The whole row is the link. */
+.recipe-list h2 a {
+  text-decoration: none;
+}
+
+.recipe-list h2 a::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.recipe-list li:hover h2 {
+  color: var(--accent);
+}
+
+.recipe-list p {
+  margin: 0;
+}
+
+.recipe-list .tags {
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.recipe-list .tag {
+  font-size: 10px;
+}
+
+.recipe-list-meta {
+  font-size: 14px;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------- Recipe tiles ---------- */
@@ -666,57 +808,52 @@ input[type="search"] {
   color: var(--muted);
 }
 
-/* ---------- Recipe page ---------- */
+/* ---------- Recipe page (components/recipe-view.tsx) ---------- */
 
-/* Recipe sections drop the card chrome for the label-left itinerary rows. */
-.recipe .card {
+.recipe-meta {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.recipe .page-header .tags {
+  margin-top: 16px;
+}
+
+.recipe .split-main > .lede {
+  max-width: none;
+  margin: 0 0 32px;
+}
+
+.recipe .split-main h2 {
+  margin-top: 0;
+}
+
+.recipe-cta {
+  margin: 32px 0 0;
+}
+
+.per-serving {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   margin: 0;
-  padding: 32px 0;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  background: none;
 }
 
-@media (min-width: 640px) {
-  .recipe .card {
-    grid-template-columns: 120px 1fr;
-  }
-
-  .recipe .card > :not(h2) {
-    grid-column: 2;
-  }
+.per-serving div {
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
 }
 
-.recipe .card > h2 {
+.per-serving dt {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.per-serving dd {
   margin: 0;
-  padding-top: 3px;
-}
-
-.recipe .card > :not(h2) {
-  min-width: 0;
-  max-width: 640px;
-}
-
-.recipe-columns {
-  display: block;
-}
-
-.recipe > p.muted:last-child {
-  margin-top: 32px;
-}
-
-.nutrition dl.profile {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-template-rows: auto auto;
-  grid-auto-flow: column;
-  gap: 4px 16px;
-}
-
-.nutrition dl.profile dd {
   font-family: var(--serif);
-  font-size: 28px;
+  font-size: 30px;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
 }
@@ -748,10 +885,14 @@ input[type="search"] {
 }
 
 /* Method steps are big serif text, readable from the counter. */
+.steps {
+  border-top: 0;
+}
+
 .steps li {
   display: grid;
-  grid-template-columns: 40px 1fr;
-  padding: 16px 0;
+  grid-template-columns: 48px 1fr;
+  padding: 20px 0;
   counter-increment: step;
   font-family: var(--serif);
   font-size: 23px;
@@ -765,6 +906,16 @@ input[type="search"] {
   font-weight: 600;
   color: var(--accent);
   padding-top: 7px;
+}
+
+.steps li:first-child {
+  padding-top: 0;
+}
+
+/* Tapping a step ticks it off; its checkbox is hidden but still focusable. */
+.steps.cook li:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .quantity {
