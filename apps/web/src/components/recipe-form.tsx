@@ -203,7 +203,7 @@ export function RecipeForm({
             >
               {unitChoices(row.unit).map((unit) => (
                 <option key={unit} value={unit}>
-                  {unit === "" ? "none" : unit}
+                  {unit === "" ? "pieces" : unit}
                 </option>
               ))}
             </select>

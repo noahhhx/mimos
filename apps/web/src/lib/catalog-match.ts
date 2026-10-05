@@ -10,7 +10,7 @@ import type { CatalogIngredient, IngredientLineStatus, NutritionBasis } from "@m
 const UNITS_BY_BASIS: Record<NutritionBasis, string> = {
   PER_100_G: "g or kg",
   PER_100_ML: "ml, l, tsp or tbsp",
-  PER_PIECE: "pieces, with no unit",
+  PER_PIECE: "pieces",
 };
 
 const PER_BASIS: Record<NutritionBasis, string> = {

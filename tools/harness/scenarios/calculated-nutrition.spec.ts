@@ -45,6 +45,10 @@ test("calculates a recipe's nutrition from its ingredients", async ({ loggedInPa
     await page.getByLabel("Ingredient 3 name").fill("garlic cloves");
     await page.getByLabel("Ingredient 3 note").fill("sliced");
     await expect(row(3)).toContainText("Matched to Garlic clove");
+    await page.getByLabel("Ingredient 3 unit").selectOption("g");
+    await expect(row(3)).toContainText("Not counted. Garlic clove counts in pieces.");
+    await page.getByLabel("Ingredient 3 unit").selectOption({ label: "pieces" });
+    await expect(row(3)).not.toContainText("Not counted.");
 
     await page.getByRole("button", { name: "+ Ingredient" }).click();
     await page.getByLabel("Ingredient 4 amount").fill("30");

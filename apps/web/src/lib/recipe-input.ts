@@ -31,7 +31,7 @@ export type RecipeFormValues = {
   steps: string[];
 };
 
-/** The units the form offers: metric only (ADR-0015), with "" for a count of pieces ("2 eggs"). */
+/** The units the form offers: metric only (ADR-0015), with "" for a count of pieces ("2 eggs"), shown as "pieces". */
 export const UNITS = ["", "g", "kg", "ml", "l", "tsp", "tbsp"];
 
 /**
