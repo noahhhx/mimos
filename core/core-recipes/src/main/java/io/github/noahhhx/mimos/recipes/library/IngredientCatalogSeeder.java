@@ -40,7 +40,7 @@ public class IngredientCatalogSeeder implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         List<CatalogIngredient> entries = readSeeds();
-        entries.forEach(catalog::upsert);
+        entries.forEach(catalog::upsertShared);
         log.info("Ingredient catalog seed: {} ingredients", entries.size());
     }
 

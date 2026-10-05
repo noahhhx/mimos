@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddMealPlanEntryData, AddMealPlanEntryErrors, AddMealPlanEntryResponses, CreateMealLogData, CreateMealLogErrors, CreateMealLogResponses, CreateRecipeData, CreateRecipeErrors, CreateRecipeResponses, DeleteMealLogData, DeleteMealLogErrors, DeleteMealLogResponses, DeleteMealPlanEntryData, DeleteMealPlanEntryErrors, DeleteMealPlanEntryResponses, DeleteRecipeData, DeleteRecipeErrors, DeleteRecipeResponses, EstimateRecipeNutritionData, EstimateRecipeNutritionErrors, EstimateRecipeNutritionResponses, ExportAccountData, ExportAccountErrors, ExportAccountResponses, GenerateShoppingListData, GenerateShoppingListErrors, GenerateShoppingListResponses, GetMealPlanData, GetMealPlanErrors, GetMealPlanResponses, GetMeData, GetMeErrors, GetMeResponses, GetPlanSuggestionsData, GetPlanSuggestionsErrors, GetPlanSuggestionsResponses, GetPublicRecipeData, GetPublicRecipeErrors, GetPublicRecipeResponses, GetRecipeData, GetRecipeErrors, GetRecipeResponses, GetShoppingListData, GetShoppingListErrors, GetShoppingListResponses, ImportAccountData, ImportAccountErrors, ImportAccountResponses, ListIngredientsData, ListIngredientsErrors, ListIngredientsResponses, ListLibraryRecipesData, ListLibraryRecipesErrors, ListLibraryRecipesResponses, ListMealLogsData, ListMealLogsErrors, ListMealLogsResponses, ListMyPluginsData, ListMyPluginsErrors, ListMyPluginsResponses, ListMyRecipesData, ListMyRecipesErrors, ListMyRecipesResponses, ListPublicRecipesData, ListPublicRecipesResponses, ReplaceRecipeData, ReplaceRecipeErrors, ReplaceRecipeResponses, SummarizeMealLogsData, SummarizeMealLogsErrors, SummarizeMealLogsResponses, UpdateMealPlanEntryData, UpdateMealPlanEntryErrors, UpdateMealPlanEntryResponses, UpdateMyPluginData, UpdateMyPluginErrors, UpdateMyPluginResponses, UpdateShoppingListItemData, UpdateShoppingListItemErrors, UpdateShoppingListItemResponses } from './types.gen';
+import type { AddMealPlanEntryData, AddMealPlanEntryErrors, AddMealPlanEntryResponses, CreateIngredientData, CreateIngredientErrors, CreateIngredientResponses, CreateMealLogData, CreateMealLogErrors, CreateMealLogResponses, CreateRecipeData, CreateRecipeErrors, CreateRecipeResponses, DeleteIngredientData, DeleteIngredientErrors, DeleteIngredientResponses, DeleteMealLogData, DeleteMealLogErrors, DeleteMealLogResponses, DeleteMealPlanEntryData, DeleteMealPlanEntryErrors, DeleteMealPlanEntryResponses, DeleteRecipeData, DeleteRecipeErrors, DeleteRecipeResponses, EstimateRecipeNutritionData, EstimateRecipeNutritionErrors, EstimateRecipeNutritionResponses, ExportAccountData, ExportAccountErrors, ExportAccountResponses, GenerateShoppingListData, GenerateShoppingListErrors, GenerateShoppingListResponses, GetMealPlanData, GetMealPlanErrors, GetMealPlanResponses, GetMeData, GetMeErrors, GetMeResponses, GetPlanSuggestionsData, GetPlanSuggestionsErrors, GetPlanSuggestionsResponses, GetPublicRecipeData, GetPublicRecipeErrors, GetPublicRecipeResponses, GetRecipeData, GetRecipeErrors, GetRecipeResponses, GetShoppingListData, GetShoppingListErrors, GetShoppingListResponses, ImportAccountData, ImportAccountErrors, ImportAccountResponses, ListIngredientsData, ListIngredientsErrors, ListIngredientsResponses, ListLibraryRecipesData, ListLibraryRecipesErrors, ListLibraryRecipesResponses, ListMealLogsData, ListMealLogsErrors, ListMealLogsResponses, ListMyPluginsData, ListMyPluginsErrors, ListMyPluginsResponses, ListMyRecipesData, ListMyRecipesErrors, ListMyRecipesResponses, ListPublicRecipesData, ListPublicRecipesResponses, ReplaceIngredientData, ReplaceIngredientErrors, ReplaceIngredientResponses, ReplaceRecipeData, ReplaceRecipeErrors, ReplaceRecipeResponses, SummarizeMealLogsData, SummarizeMealLogsErrors, SummarizeMealLogsResponses, UpdateMealPlanEntryData, UpdateMealPlanEntryErrors, UpdateMealPlanEntryResponses, UpdateMyPluginData, UpdateMyPluginErrors, UpdateMyPluginResponses, UpdateShoppingListItemData, UpdateShoppingListItemErrors, UpdateShoppingListItemResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -83,7 +83,7 @@ export const listMyRecipes = <ThrowOnError extends boolean = false>(options?: Op
 /**
  * Create a personal recipe
  *
- * Creates a recipe owned by the caller and returns it with its id. Steps are in cooking order. Prefer calculated nutrition: set nutritionSource to INGREDIENTS and give each ingredient line the catalogSlug of what it is (find slugs with listIngredients), with its amount in g, kg, ml, l, tsp, or tbsp, or no unit for a count of pieces, matching the entry's basis. Check the result first with estimateRecipeNutrition. With MANUAL, send per-serving nutrition and leave out values you do not know rather than guessing zero.
+ * Creates a recipe owned by the caller and returns it with its id. Steps are in cooking order. Prefer calculated nutrition: set nutritionSource to INGREDIENTS and give each ingredient line the catalogSlug of what it is (find slugs with listIngredients, or add a missing one with createIngredient), with its amount in g, kg, ml, l, tsp, or tbsp, or no unit for a count of pieces, matching the entry's basis. Put prep like "minced" in the line's note, not its name. Check the result first with estimateRecipeNutrition. With MANUAL, send per-serving nutrition and leave out values you do not know rather than guessing zero.
  *
  */
 export const createRecipe = <ThrowOnError extends boolean = false>(options: Options<CreateRecipeData, ThrowOnError>): RequestResult<CreateRecipeResponses, CreateRecipeErrors, ThrowOnError> => (options.client ?? client).post<CreateRecipeResponses, CreateRecipeErrors, ThrowOnError>({
@@ -136,12 +136,50 @@ export const estimateRecipeNutrition = <ThrowOnError extends boolean = false>(op
 });
 
 /**
- * The shared ingredient catalog
+ * The ingredients the caller can use
  *
- * Ingredients with known nutrition, shared by everyone on this instance. Link an ingredient line to one with its slug (catalogSlug) so a recipe's nutrition can be calculated. Each entry's nutrition is for its basis: 100 g, 100 ml, or one piece.
+ * Ingredients with known nutrition: the shared ones everyone on this instance sees (isShared) and the caller's own. Link an ingredient line to one with its slug (catalogSlug) so a recipe's nutrition can be calculated. Each entry's nutrition is for its basis: 100 g, 100 ml, or one piece. When nothing fits, add one with createIngredient.
  *
  */
 export const listIngredients = <ThrowOnError extends boolean = false>(options?: Options<ListIngredientsData, ThrowOnError>): RequestResult<ListIngredientsResponses, ListIngredientsErrors, ThrowOnError> => (options?.client ?? client).get<ListIngredientsResponses, ListIngredientsErrors, ThrowOnError>({ url: '/api/v1/ingredients', ...options });
+
+/**
+ * Add one of the caller's own ingredients
+ *
+ * Adds an ingredient only the caller sees, with its nutrition for a basis (per 100 g, per 100 ml, or per piece), usually copied from a food label. All four values are required; use 0 when there is none. Returns it with a new slug to use as a line's catalogSlug.
+ *
+ */
+export const createIngredient = <ThrowOnError extends boolean = false>(options: Options<CreateIngredientData, ThrowOnError>): RequestResult<CreateIngredientResponses, CreateIngredientErrors, ThrowOnError> => (options.client ?? client).post<CreateIngredientResponses, CreateIngredientErrors, ThrowOnError>({
+    url: '/api/v1/ingredients',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete one of the caller's own ingredients
+ *
+ * Recipe lines that used it stay, but no longer count toward calculated nutrition. Shared ingredients are read-only.
+ *
+ */
+export const deleteIngredient = <ThrowOnError extends boolean = false>(options: Options<DeleteIngredientData, ThrowOnError>): RequestResult<DeleteIngredientResponses, DeleteIngredientErrors, ThrowOnError> => (options.client ?? client).delete<DeleteIngredientResponses, DeleteIngredientErrors, ThrowOnError>({ url: '/api/v1/ingredients/{ingredientSlug}', ...options });
+
+/**
+ * Replace one of the caller's own ingredients
+ *
+ * Replaces its name, basis, and nutrition. The slug stays, so every recipe that uses it is recalculated. Shared ingredients are read-only.
+ *
+ */
+export const replaceIngredient = <ThrowOnError extends boolean = false>(options: Options<ReplaceIngredientData, ThrowOnError>): RequestResult<ReplaceIngredientResponses, ReplaceIngredientErrors, ThrowOnError> => (options.client ?? client).put<ReplaceIngredientResponses, ReplaceIngredientErrors, ThrowOnError>({
+    url: '/api/v1/ingredients/{ingredientSlug}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * The curated recipe library

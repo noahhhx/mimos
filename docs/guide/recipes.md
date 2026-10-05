@@ -29,13 +29,16 @@ clear when you leave it.
 1. In **Recipes**, choose **+ New recipe**.
 2. Give it a title, a short description, and how many servings it makes.
    Prep and cook minutes and tags are optional; separate tags with commas.
-3. Add the ingredients, one per line, each with an amount, a unit, and a
-   name. Leave the amount blank for things you don't measure, like
-   "salt, to taste", and leave the unit blank for things you count, like
-   "2 eggs".
-4. Check what each ingredient **counts as**. Mimos fills it in from the
-   name when it recognises the ingredient; pick another one, or **Not
-   counted**, if it guessed wrong.
+3. Add the ingredients, one per line. Type each one's name and pick it
+   from the list that appears; put how it's prepared, like "minced", in
+   **Note**. Give it an amount and a unit, leave the amount blank for
+   things you don't measure, like "salt, to taste", and leave the unit
+   blank for things you count, like "2 eggs".
+4. If an ingredient isn't in the list, choose **+ Add "…" as a new
+   ingredient** and copy its calories, protein, carbs, and fat from the
+   label. It's saved as your own: only you see it, and you can use it in
+   any of your recipes. Under each ingredient, Mimos says what it matched;
+   choose **Don't count it** if the match is wrong.
 5. Under **Nutrition per serving**, leave **Calculate from ingredients**
    chosen to have Mimos work it out, or choose **Enter it myself** to type
    it in. Mimos uses it for your [food log](log.md).
@@ -46,9 +49,9 @@ clear when you leave it.
 ### How nutrition is calculated
 
 Mimos keeps a list of common ingredients with their calories, protein,
-carbs, and fat, shared by everyone on this Mimos. An ingredient adds to
-the recipe's nutrition when it counts as one of them and is measured in
-units that ingredient uses:
+carbs, and fat, shared by everyone on this Mimos, alongside the ones you
+add yourself. An ingredient adds to the recipe's nutrition when it
+matches one of them and is measured in units that ingredient uses:
 
 | The ingredient is measured by | Use these units |
 | ----------------------------- | --------------- |

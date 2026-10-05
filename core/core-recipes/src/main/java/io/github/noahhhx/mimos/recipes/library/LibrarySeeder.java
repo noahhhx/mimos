@@ -101,7 +101,11 @@ public class LibrarySeeder implements ApplicationRunner {
                 seed.tags(),
                 seed.ingredients().stream()
                         .map(ingredient -> new Ingredient(
-                                ingredient.quantity(), ingredient.unit(), ingredient.name(), ingredient.catalogSlug()))
+                                ingredient.quantity(),
+                                ingredient.unit(),
+                                ingredient.name(),
+                                ingredient.note(),
+                                ingredient.catalogSlug()))
                         .toList(),
                 seed.steps().stream().map(RecipeStep::new).toList(),
                 createdAt,

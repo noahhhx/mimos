@@ -62,6 +62,7 @@ export function RecipeView({ recipe, children }: { recipe: RecipeDetail; childre
                   onChange={() => toggle(doneIngredients, index, setDoneIngredients)}
                 />{" "}
                 <Quantity quantity={ingredient.quantity} unit={ingredient.unit} /> {ingredient.name}
+                {ingredient.note ? `, ${ingredient.note}` : ""}
               </label>
             </li>
           ))}

@@ -96,7 +96,7 @@ describe("toRecipeInput", () => {
     assert.deepEqual(form.ingredients, [{ quantity: "", unit: "", name: "salt" }]);
   });
 
-  it("round-trips calculated nutrition and each line's catalog link", () => {
+  it("round-trips calculated nutrition and each line's note and catalog link", () => {
     const form = formValuesOf({
       id: "00000000-0000-0000-0000-000000000000",
       title: "Soup",
@@ -106,7 +106,7 @@ describe("toRecipeInput", () => {
       tags: [],
       nutrition: { calories: 240 },
       nutritionSource: "INGREDIENTS",
-      ingredients: [{ quantity: 250, unit: "g", name: "red lentils", catalogSlug: "red-lentils" }, { name: "salt" }],
+      ingredients: [{ quantity: 250, unit: "g", name: "red lentils", note: "rinsed", catalogSlug: "red-lentils" }, { name: "salt" }],
       steps: [{ instruction: "Simmer." }],
     });
     const result = toRecipeInput(form);
@@ -114,7 +114,7 @@ describe("toRecipeInput", () => {
     assert.equal(result.input.nutritionSource, "INGREDIENTS");
     assert.equal(
       JSON.stringify(result.input.ingredients),
-      '[{"quantity":250,"unit":"g","name":"red lentils","catalogSlug":"red-lentils"},{"name":"salt"}]',
+      '[{"quantity":250,"unit":"g","name":"red lentils","note":"rinsed","catalogSlug":"red-lentils"},{"name":"salt"}]',
     );
   });
 });

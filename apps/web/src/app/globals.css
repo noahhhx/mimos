@@ -902,6 +902,54 @@ input[type="radio"] {
   cursor: pointer;
 }
 
+/* An ingredient row: narrow amount and unit, the ingredient search widest. */
+.ingredient-row label.narrow {
+  flex: 0 1 6rem;
+}
+
+.ingredient-picker {
+  position: relative;
+  flex: 3 1 14rem;
+  min-width: 12rem;
+}
+
+.picker-options {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% - 12px);
+  right: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--muted);
+  background: var(--surface);
+}
+
+.picker-options li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.picker-options li.active {
+  background: var(--line);
+}
+
+/* Adding an ingredient of your own, inline under its row. */
+.new-ingredient {
+  flex-basis: 100%;
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+}
+
+.error-text {
+  color: var(--danger);
+}
+
 /* Why an ingredient line does not count toward calculated nutrition, under its row. */
 .ingredient-hint {
   flex-basis: 100%;

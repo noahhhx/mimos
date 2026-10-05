@@ -123,8 +123,19 @@ class ExportFixturesTests extends ApiIntegrationTestSupport {
                 get(api, token, "/api/v1/recipes/" + recipes.get(1).get("id").asText());
         assertThat(soup.get("nutritionSource").asText()).isEqualTo("INGREDIENTS");
         assertThat(soup.get("ingredients").get(0).get("catalogSlug").asText()).isEqualTo("red-lentils");
-        // 250 g red lentils and 2 carrots over 4 servings, from today's catalog.
-        assertThat(soup.get("nutrition").get("calories").asDouble()).isEqualTo(236);
+        assertThat(soup.get("ingredients").get(1).get("note").asText()).isEqualTo("diced");
+        // The export's own ingredient comes back under a new slug, and the line follows it.
+        JsonNode stock = soup.get("ingredients").get(2);
+        assertThat(stock.get("catalogSlug").asText())
+                .startsWith("homemade-stock-")
+                .isNotEqualTo("homemade-stock-a1b2c3");
+        JsonNode own = get(api, token, "/api/v1/ingredients?q=homemade");
+        assertThat(own).hasSize(1);
+        assertThat(own.get(0).get("isShared").asBoolean()).isFalse();
+        assertThat(own.get(0).get("slug").asText())
+                .isEqualTo(stock.get("catalogSlug").asText());
+        // 250 g red lentils, 2 carrots, and 1 l of the stock (8 kcal per 100 ml) over 4 servings.
+        assertThat(soup.get("nutrition").get("calories").asDouble()).isEqualTo(256);
         JsonNode toast =
                 get(api, token, "/api/v1/recipes/" + recipes.get(0).get("id").asText());
         assertThat(toast.get("nutritionSource").asText()).isEqualTo("MANUAL");

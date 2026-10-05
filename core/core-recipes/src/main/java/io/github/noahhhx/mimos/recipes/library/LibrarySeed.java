@@ -25,5 +25,6 @@ public record LibrarySeed(
             @Nullable Double quantity,
             @Nullable String unit,
             String name,
+            @Nullable String note,
             @Nullable String catalogSlug) {}
 }

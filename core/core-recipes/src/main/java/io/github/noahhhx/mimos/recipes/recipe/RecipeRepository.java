@@ -151,12 +151,18 @@ public class RecipeRepository {
         for (int i = 0; i < recipe.ingredients().size(); i++) {
             Ingredient ingredient = recipe.ingredients().get(i);
             ingredientRows.add(new Object[] {
-                recipe.id(), i, ingredient.quantity(), ingredient.unit(), ingredient.name(), ingredient.catalogSlug()
+                recipe.id(),
+                i,
+                ingredient.quantity(),
+                ingredient.unit(),
+                ingredient.name(),
+                ingredient.note(),
+                ingredient.catalogSlug()
             });
         }
         jdbc.batchUpdate(
-                "insert into recipe_ingredient (recipe_id, position, quantity, unit, name, catalog_slug)"
-                        + " values (?, ?, ?, ?, ?, ?)",
+                "insert into recipe_ingredient (recipe_id, position, quantity, unit, name, note, catalog_slug)"
+                        + " values (?, ?, ?, ?, ?, ?, ?)",
                 ingredientRows);
         List<Object[]> stepRows = new ArrayList<>();
         for (int i = 0; i < recipe.steps().size(); i++) {
@@ -233,7 +239,7 @@ public class RecipeRepository {
     private Map<UUID, List<Ingredient>> loadIngredients(List<RecipeRow> rows) {
         return jdbc
                 .query(
-                        "select recipe_id, position, quantity, unit, name, catalog_slug from recipe_ingredient"
+                        "select recipe_id, position, quantity, unit, name, note, catalog_slug from recipe_ingredient"
                                 + " where recipe_id in ("
                                 + placeholders(rows.size()) + ") order by recipe_id, position",
                         (rs, i) -> Map.entry(
@@ -242,6 +248,7 @@ public class RecipeRepository {
                                         nullableDouble(rs, "quantity"),
                                         rs.getString("unit"),
                                         rs.getString("name"),
+                                        rs.getString("note"),
                                         rs.getString("catalog_slug"))),
                         rowIds(rows))
                 .stream()

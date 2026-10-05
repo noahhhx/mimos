@@ -13,7 +13,7 @@
 openapi: 3.1.0
 info:
   title: Mimos API
-  version: 0.7.0
+  version: 0.8.0
   description: |
     The Mimos recipe companion API. Endpoints require a bearer token issued
     by the instance's Keycloak realm unless they live under `/api/v1/public`
@@ -196,10 +196,11 @@ paths:
         Creates a recipe owned by the caller and returns it with its id.
         Steps are in cooking order. Prefer calculated nutrition: set
         nutritionSource to INGREDIENTS and give each ingredient line the
-        catalogSlug of what it is (find slugs with listIngredients), with
-        its amount in g, kg, ml, l, tsp, or tbsp, or no unit for a count of
-        pieces, matching the entry's basis. Check the result first with
-        estimateRecipeNutrition. With MANUAL, send per-serving nutrition and
+        catalogSlug of what it is (find slugs with listIngredients, or add
+        a missing one with createIngredient), with its amount in g, kg, ml,
+        l, tsp, or tbsp, or no unit for a count of pieces, matching the
+        entry's basis. Put prep like "minced" in the line's note, not its
+        name. Check the result first with estimateRecipeNutrition. With MANUAL, send per-serving nutrition and
         leave out values you do not know rather than guessing zero.
       requestBody:
         required: true
@@ -314,12 +315,14 @@ paths:
     get:
       tags: [recipes]
       operationId: listIngredients
-      summary: The shared ingredient catalog
+      summary: The ingredients the caller can use
       description: >
-        Ingredients with known nutrition, shared by everyone on this
-        instance. Link an ingredient line to one with its slug
-        (catalogSlug) so a recipe's nutrition can be calculated. Each
-        entry's nutrition is for its basis: 100 g, 100 ml, or one piece.
+        Ingredients with known nutrition: the shared ones everyone on this
+        instance sees (isShared) and the caller's own. Link an ingredient
+        line to one with its slug (catalogSlug) so a recipe's nutrition
+        can be calculated. Each entry's nutrition is for its basis: 100 g,
+        100 ml, or one piece. When nothing fits, add one with
+        createIngredient.
       parameters:
         - name: q
           in: query
@@ -328,7 +331,7 @@ paths:
             type: string
       responses:
         '200':
-          description: Catalog ingredients, sorted by name.
+          description: Ingredients, sorted by name.
           content:
             application/json:
               schema:
@@ -336,6 +339,81 @@ paths:
                 items:
                   $ref: '#/components/schemas/CatalogIngredient'
         '401':
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [recipes]
+      operationId: createIngredient
+      summary: Add one of the caller's own ingredients
+      description: >
+        Adds an ingredient only the caller sees, with its nutrition for a
+        basis (per 100 g, per 100 ml, or per piece), usually copied from a
+        food label. All four values are required; use 0 when there is
+        none. Returns it with a new slug to use as a line's catalogSlug.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngredientInput'
+      responses:
+        '201':
+          description: The created ingredient.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogIngredient'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/ingredients/{ingredientSlug}:
+    parameters:
+      - $ref: '#/components/parameters/IngredientSlug'
+    put:
+      tags: [recipes]
+      operationId: replaceIngredient
+      summary: Replace one of the caller's own ingredients
+      description: >
+        Replaces its name, basis, and nutrition. The slug stays, so every
+        recipe that uses it is recalculated. Shared ingredients are
+        read-only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngredientInput'
+      responses:
+        '200':
+          description: The replaced ingredient.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogIngredient'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+    delete:
+      tags: [recipes]
+      operationId: deleteIngredient
+      summary: Delete one of the caller's own ingredients
+      description: >
+        Recipe lines that used it stay, but no longer count toward
+        calculated nutrition. Shared ingredients are read-only.
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
           $ref: '#/components/responses/Problem'
 
   /api/v1/recipes/library:
@@ -719,6 +797,12 @@ components:
       required: true
       schema:
         type: string
+    IngredientSlug:
+      name: ingredientSlug
+      in: path
+      required: true
+      schema:
+        type: string
     PlanWeek:
       name: startDate
       in: path
@@ -846,6 +930,9 @@ components:
         name:
           type: string
           description: Ingredient name as written in the recipe.
+        note:
+          type: string
+          description: Optional prep note shown after the name, like "minced" or "to serve".
         catalogSlug:
           type: string
           description: >
@@ -868,11 +955,26 @@ components:
       enum: [PER_100_G, PER_100_ML, PER_PIECE]
     CatalogIngredient:
       type: object
-      description: An ingredient in the shared catalog, with its nutrition for its basis.
-      required: [slug, name, basis, nutrition]
+      description: An ingredient with known nutrition for its basis, shared or the caller's own.
+      required: [slug, name, basis, nutrition, isShared]
       properties:
         slug:
           type: string
+        name:
+          type: string
+        isShared:
+          type: boolean
+          description: True for the shared ingredients everyone sees, false for the caller's own.
+        basis:
+          $ref: '#/components/schemas/NutritionBasis'
+        nutrition:
+          allOf:
+            - $ref: '#/components/schemas/Nutrition'
+    IngredientInput:
+      type: object
+      description: One of the caller's own ingredients as submitted; nutrition needs all four values.
+      required: [name, basis, nutrition]
+      properties:
         name:
           type: string
         basis:
@@ -1245,7 +1347,7 @@ components:
         One user's data, in export format version 2 (ADR-0011). Any change
         to this schema bumps the version and adds an upgrade step from the
         previous one.
-      required: [format, version, exportedAt, recipes, mealPlans, shoppingLists, mealLogs]
+      required: [format, version, exportedAt, ingredients, recipes, mealPlans, shoppingLists, mealLogs]
       properties:
         format:
           type: string
@@ -1256,6 +1358,11 @@ components:
         exportedAt:
           type: string
           format: date-time
+        ingredients:
+          type: array
+          description: The user's own ingredients; recipe lines refer to them by slug.
+          items:
+            $ref: '#/components/schemas/ExportedIngredient'
         recipes:
           type: array
           items:
@@ -1272,6 +1379,20 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ExportedMealLog'
+    ExportedIngredient:
+      type: object
+      description: One of the user's own ingredients. `slug` is a key within the document; import assigns a new one.
+      required: [slug, name, basis, nutrition]
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+        basis:
+          $ref: '#/components/schemas/NutritionBasis'
+        nutrition:
+          allOf:
+            - $ref: '#/components/schemas/Nutrition'
     ExportedRecipe:
       type: object
       description: A personal recipe. `id` is a key within the document; import assigns a new one.

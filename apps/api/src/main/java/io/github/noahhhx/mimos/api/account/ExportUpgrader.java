@@ -66,8 +66,13 @@ public final class ExportUpgrader {
         return new Upgraded(version, upgraded);
     }
 
-    /** Version 2 (ADR-0015): every recipe says where its nutrition comes from; all version 1 nutrition was typed. */
+    /**
+     * Version 2 (ADR-0015, ADR-0016): every recipe says where its nutrition
+     * comes from, and all version 1 nutrition was typed; the user's own
+     * ingredients get a section, empty before they existed.
+     */
     private static ObjectNode markNutritionManual(ObjectNode document) {
+        document.putArray("ingredients");
         document.path("recipes").forEach(recipe -> {
             if (recipe instanceof ObjectNode exported) {
                 exported.put("nutritionSource", "MANUAL");

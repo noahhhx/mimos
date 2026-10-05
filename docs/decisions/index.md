@@ -21,6 +21,7 @@ right at the time.
 | [ADR-0013](adr-0013-per-user-plugin-opt-in.md)                     | Plugins are opt-in per user |
 | [ADR-0014](adr-0014-agent-access-mcp.md)                           | Agent access over MCP |
 | [ADR-0015](adr-0015-ingredient-catalog.md)                         | Ingredient catalog and calculated nutrition |
+| [ADR-0016](adr-0016-personal-ingredients.md)                       | Personal ingredients and the ingredient search |
 
 New ADRs are sequential: `adr-NNNN-title.md`, with the numbering in this
 index. Once accepted, an ADR is never rewritten — superseding decisions get

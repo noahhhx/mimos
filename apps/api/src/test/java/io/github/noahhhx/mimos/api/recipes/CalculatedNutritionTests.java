@@ -5,11 +5,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.noahhhx.mimos.api.support.ApiIntegrationTestSupport;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.client.RestClient;
@@ -155,6 +158,7 @@ class CalculatedNutritionTests extends ApiIntegrationTestSupport {
                 .put("format", "mimos.export")
                 .put("version", 2)
                 .put("exportedAt", "2026-10-02T09:00:00Z");
+        document.set("ingredients", objectMapper.createArrayNode());
         document.set("recipes", objectMapper.createArrayNode().add(recipe));
         document.set("mealPlans", objectMapper.createArrayNode());
         document.set("shoppingLists", objectMapper.createArrayNode());
@@ -169,6 +173,82 @@ class CalculatedNutritionTests extends ApiIntegrationTestSupport {
         assertThat(detail.get("nutrition").get("calories").asDouble()).isEqualTo(512);
         assertThat(detail.get("ingredients").get(1).get("catalogSlug").asText()).isEqualTo("olive-oil");
         assertThat(detail.get("ingredients").get(6).has("catalogSlug")).isFalse();
+    }
+
+    @Test
+    void ownIngredientsArePrivateEditableAndDeletable() {
+        String owner = accessToken(createUser());
+        String other = accessToken(createUser());
+        JsonNode created = post(owner, "/api/v1/ingredients", ingredientInput("Dragon fruit", 60));
+        String slug = created.get("slug").asText();
+        assertThat(slug).startsWith("dragon-fruit-");
+        assertThat(created.get("isShared").asBoolean()).isFalse();
+        assertThat(slugs(get(owner, "/api/v1/ingredients?q=dragon"))).containsExactly(slug);
+        assertThat(slugs(get(other, "/api/v1/ingredients?q=dragon"))).isEmpty();
+
+        ObjectNode recipe = aglioRecipe();
+        recipe.put("servings", 1);
+        recipe.set("ingredients", objectMapper.createArrayNode().add(line(2, null, "dragon fruit", slug)));
+        String recipeId = post(owner, "/api/v1/recipes", recipe).get("id").asText();
+        assertThat(calories(get(owner, "/api/v1/recipes/" + recipeId))).isEqualTo(120);
+
+        send(owner, "PUT", "/api/v1/ingredients/" + slug, ingredientInput("Dragon fruit", 70), 200);
+        assertThat(calories(get(owner, "/api/v1/recipes/" + recipeId))).isEqualTo(140);
+        assertThat(get(owner, "/api/v1/account/export")
+                        .get("ingredients")
+                        .get(0)
+                        .get("name")
+                        .asText())
+                .isEqualTo("Dragon fruit");
+
+        send(other, "POST", "/api/v1/recipes", recipe, 400);
+        send(other, "PUT", "/api/v1/ingredients/" + slug, ingredientInput("Mine now", 1), 404);
+        send(owner, "PUT", "/api/v1/ingredients/olive-oil", ingredientInput("Olive oil", 1), 403);
+        ObjectNode partial = ingredientInput("Mystery", 10);
+        ((ObjectNode) partial.get("nutrition")).remove("fatG");
+        send(owner, "POST", "/api/v1/ingredients", partial, 400);
+
+        send(owner, "DELETE", "/api/v1/ingredients/" + slug, null, 204);
+        JsonNode unlinked = get(owner, "/api/v1/recipes/" + recipeId);
+        assertThat(unlinked.get("ingredients").get(0).has("catalogSlug")).isFalse();
+        assertThat(unlinked.get("nutrition").has("calories")).isFalse();
+    }
+
+    private ObjectNode ingredientInput(String name, double calories) {
+        ObjectNode input = objectMapper.createObjectNode().put("name", name).put("basis", "PER_PIECE");
+        input.set(
+                "nutrition",
+                objectMapper
+                        .createObjectNode()
+                        .put("calories", calories)
+                        .put("proteinG", 1.2)
+                        .put("carbsG", 13)
+                        .put("fatG", 0.4));
+        return input;
+    }
+
+    private static double calories(JsonNode recipe) {
+        return recipe.get("nutrition").get("calories").asDouble();
+    }
+
+    private static List<String> slugs(JsonNode ingredients) {
+        List<String> slugs = new ArrayList<>();
+        ingredients.forEach(ingredient -> slugs.add(ingredient.get("slug").asText()));
+        return slugs;
+    }
+
+    private void send(String token, String method, String uri, @Nullable JsonNode body, int expectedStatus) {
+        RestClient.RequestBodySpec request = RestClient.builder()
+                .baseUrl("http://localhost:" + port)
+                .build()
+                .method(HttpMethod.valueOf(method))
+                .uri(uri)
+                .headers(headers -> headers.setBearerAuth(token));
+        if (body != null) {
+            request.contentType(MediaType.APPLICATION_JSON).body(body);
+        }
+        int status = request.exchange((req, res) -> res.getStatusCode().value());
+        assertThat(status).as("%s %s", method, uri).isEqualTo(expectedStatus);
     }
 
     private static void assertAglioNutrition(JsonNode nutrition) {

@@ -1,6 +1,7 @@
 package io.github.noahhhx.mimos.api.support;
 
 import io.github.noahhhx.mimos.api.account.AccountNotEmptyException;
+import io.github.noahhhx.mimos.recipes.recipe.ReadOnlyIngredientException;
 import io.github.noahhhx.mimos.recipes.recipe.ReadOnlyRecipeException;
 import java.net.URI;
 import java.util.NoSuchElementException;
@@ -45,6 +46,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ReadOnlyRecipeException.class)
     ProblemDetail forbidden(ReadOnlyRecipeException exception) {
+        return problem(HttpStatus.FORBIDDEN, "Read-only", exception.getMessage());
+    }
+
+    @ExceptionHandler(ReadOnlyIngredientException.class)
+    ProblemDetail forbidden(ReadOnlyIngredientException exception) {
         return problem(HttpStatus.FORBIDDEN, "Read-only", exception.getMessage());
     }
 

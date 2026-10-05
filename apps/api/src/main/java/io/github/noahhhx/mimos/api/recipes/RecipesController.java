@@ -1,15 +1,17 @@
 package io.github.noahhhx.mimos.api.recipes;
 
 import io.github.noahhhx.mimos.api.identity.CurrentUserService;
-import io.github.noahhhx.mimos.recipes.recipe.IngredientCatalog;
+import io.github.noahhhx.mimos.recipes.recipe.IngredientService;
 import io.github.noahhhx.mimos.recipes.recipe.Recipe;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeService;
 import java.util.List;
+import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.openapitools.api.RecipesApi;
 import org.openapitools.model.CatalogIngredient;
+import org.openapitools.model.IngredientInput;
 import org.openapitools.model.NutritionEstimate;
 import org.openapitools.model.NutritionEstimateInput;
 import org.openapitools.model.RecipeDetail;
@@ -28,12 +30,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class RecipesController implements RecipesApi {
 
     private final RecipeService recipeService;
-    private final IngredientCatalog catalog;
+    private final IngredientService ingredients;
     private final CurrentUserService currentUser;
 
-    public RecipesController(RecipeService recipeService, IngredientCatalog catalog, CurrentUserService currentUser) {
+    public RecipesController(
+            RecipeService recipeService, IngredientService ingredients, CurrentUserService currentUser) {
         this.recipeService = recipeService;
-        this.catalog = catalog;
+        this.ingredients = ingredients;
         this.currentUser = currentUser;
     }
 
@@ -78,15 +81,41 @@ public class RecipesController implements RecipesApi {
 
     @Override
     public ResponseEntity<NutritionEstimate> estimateRecipeNutrition(NutritionEstimateInput input) {
+        UUID profileId = currentUser.requireProfile().id();
         return ResponseEntity.ok(RecipeApiMapper.toApiEstimate(recipeService.estimateNutrition(
-                RecipeApiMapper.fromApiIngredients(input.getIngredients()), input.getServings())));
+                profileId, RecipeApiMapper.fromApiIngredients(input.getIngredients()), input.getServings())));
     }
 
     @Override
     public ResponseEntity<List<CatalogIngredient>> listIngredients(@Nullable String q) {
-        return ResponseEntity.ok(catalog.list(q).stream()
+        UUID profileId = currentUser.requireProfile().id();
+        String term = q == null ? "" : q.strip().toLowerCase(Locale.ROOT);
+        return ResponseEntity.ok(ingredients.findVisible(profileId).stream()
+                .filter(entry -> entry.name().toLowerCase(Locale.ROOT).contains(term)
+                        || entry.slug().contains(term))
                 .map(RecipeApiMapper::toApiCatalogIngredient)
                 .toList());
+    }
+
+    @Override
+    public ResponseEntity<CatalogIngredient> createIngredient(IngredientInput ingredientInput) {
+        UUID profileId = currentUser.requireProfile().id();
+        return ResponseEntity.status(201)
+                .body(RecipeApiMapper.toApiCatalogIngredient(
+                        ingredients.create(profileId, RecipeApiMapper.toIngredientDraft(ingredientInput))));
+    }
+
+    @Override
+    public ResponseEntity<CatalogIngredient> replaceIngredient(String ingredientSlug, IngredientInput ingredientInput) {
+        UUID profileId = currentUser.requireProfile().id();
+        return ResponseEntity.ok(RecipeApiMapper.toApiCatalogIngredient(
+                ingredients.replace(profileId, ingredientSlug, RecipeApiMapper.toIngredientDraft(ingredientInput))));
+    }
+
+    @Override
+    public ResponseEntity<Void> deleteIngredient(String ingredientSlug) {
+        ingredients.delete(currentUser.requireProfile().id(), ingredientSlug);
+        return ResponseEntity.noContent().build();
     }
 
     @Override

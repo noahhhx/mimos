@@ -1,19 +1,40 @@
 package io.github.noahhhx.mimos.recipes.recipe;
 
+import java.util.UUID;
+import org.jspecify.annotations.Nullable;
+
 /**
- * An entry in the instance's shared ingredient catalog (ADR-0015): its
- * nutrition for one {@link NutritionBasis}, every value known.
+ * An ingredient with known nutrition for one {@link NutritionBasis}, every
+ * value known (ADR-0015). Shared entries are seeded for everyone; an entry
+ * with an owner is that user's own (ADR-0016).
  */
 public record CatalogIngredient(
-        String slug, String name, NutritionBasis basis, double calories, double proteinG, double carbsG, double fatG) {
+        String slug,
+        @Nullable UUID ownerProfileId,
+        String name,
+        NutritionBasis basis,
+        double calories,
+        double proteinG,
+        double carbsG,
+        double fatG) {
 
     public CatalogIngredient {
         if (slug.isBlank() || name.isBlank()) {
             throw new IllegalArgumentException("a catalog ingredient needs a slug and a name");
         }
-        if (calories < 0 || proteinG < 0 || carbsG < 0 || fatG < 0) {
-            throw new IllegalArgumentException("catalog ingredient " + slug + " has a negative nutrition value");
+        if (!(calories >= 0 && proteinG >= 0 && carbsG >= 0 && fatG >= 0)
+                || Double.isInfinite(calories + proteinG + carbsG + fatG)) {
+            throw new IllegalArgumentException("nutrition values must be numbers, zero or more");
         }
+    }
+
+    public boolean isShared() {
+        return ownerProfileId == null;
+    }
+
+    /** Whether this owner may link recipe lines to the entry: it is shared, or theirs. */
+    public boolean isVisibleTo(@Nullable UUID profileId) {
+        return ownerProfileId == null || ownerProfileId.equals(profileId);
     }
 
     public Nutrition nutrition() {

@@ -35,12 +35,12 @@ public class RecipeService {
     static final int MAX_TAG_LENGTH = 30;
 
     private final RecipeRepository repository;
-    private final IngredientCatalog catalog;
+    private final IngredientService ingredients;
     private final Clock clock;
 
-    public RecipeService(RecipeRepository repository, IngredientCatalog catalog, Clock clock) {
+    public RecipeService(RecipeRepository repository, IngredientService ingredients, Clock clock) {
         this.repository = repository;
-        this.catalog = catalog;
+        this.ingredients = ingredients;
         this.clock = clock;
     }
 
@@ -75,16 +75,16 @@ public class RecipeService {
     }
 
     /**
-     * Calculates per-serving nutrition for ingredient lines that are not
-     * saved yet, and reports which lines counted (ADR-0015).
+     * Calculates per-serving nutrition for the viewer's ingredient lines
+     * that are not saved yet, and reports which lines counted (ADR-0015).
      */
-    public NutritionEstimate estimateNutrition(List<Ingredient> ingredients, int servings) {
+    public NutritionEstimate estimateNutrition(UUID viewerProfileId, List<Ingredient> lines, int servings) {
         requireServings(servings);
-        if (ingredients.size() > MAX_INGREDIENTS) {
+        if (lines.size() > MAX_INGREDIENTS) {
             throw new IllegalArgumentException("a recipe can have at most " + MAX_INGREDIENTS + " ingredients");
         }
-        ingredients.forEach(RecipeService::validateIngredient);
-        return NutritionCalculator.estimate(ingredients, servings, requireCatalogEntries(ingredients));
+        lines.forEach(RecipeService::validateIngredient);
+        return NutritionCalculator.estimate(lines, servings, requireCatalogEntries(viewerProfileId, lines));
     }
 
     private Recipe save(
@@ -97,7 +97,7 @@ public class RecipeService {
             boolean isNew) {
         RecipeDraft draft = withDistinctTags(submitted);
         validate(draft);
-        requireCatalogEntries(draft.ingredients());
+        requireCatalogEntries(ownerProfileId, draft.ingredients());
         Recipe recipe = new Recipe(
                 id,
                 ownerProfileId,
@@ -123,13 +123,13 @@ public class RecipeService {
         return repository.findById(id).orElseThrow();
     }
 
-    /** The catalog entries the lines link to; a slug not in the catalog is a 400. */
-    private Map<String, CatalogIngredient> requireCatalogEntries(List<Ingredient> ingredients) {
-        Set<String> slugs = ingredients.stream()
+    /** The catalog entries the lines link to; a slug the owner cannot see is a 400. */
+    private Map<String, CatalogIngredient> requireCatalogEntries(UUID ownerProfileId, List<Ingredient> lines) {
+        Set<String> slugs = lines.stream()
                 .map(Ingredient::catalogSlug)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
-        Map<String, CatalogIngredient> found = catalog.findBySlugs(slugs);
+        Map<String, CatalogIngredient> found = ingredients.findVisibleBySlugs(ownerProfileId, slugs);
         for (String slug : slugs) {
             if (!found.containsKey(slug)) {
                 throw new IllegalArgumentException("ingredient catalog has no entry \"" + slug + "\"");
@@ -243,6 +243,9 @@ public class RecipeService {
         }
         if (ingredient.unit() != null && ingredient.unit().length() > 30) {
             throw new IllegalArgumentException("ingredient unit must be at most 30 characters");
+        }
+        if (ingredient.note() != null && ingredient.note().length() > MAX_TITLE_LENGTH) {
+            throw new IllegalArgumentException("ingredient note must be at most " + MAX_TITLE_LENGTH + " characters");
         }
     }
 

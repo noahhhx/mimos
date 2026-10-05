@@ -12,6 +12,7 @@ import io.github.noahhhx.mimos.recipes.recipe.RecipeService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -95,7 +96,8 @@ class LibrarySeedTests extends ApiIntegrationTestSupport {
             Recipe recipe = recipeService.findBySlug(seed.get("slug").asText()).orElseThrow();
             assertThat(recipe.nutritionSource()).as(recipe.slug()).isEqualTo(NutritionSource.INGREDIENTS);
             assertThat(recipe.nutrition().calories()).as(recipe.slug()).isPositive();
-            NutritionEstimate estimate = recipeService.estimateNutrition(recipe.ingredients(), recipe.servings());
+            NutritionEstimate estimate =
+                    recipeService.estimateNutrition(UUID.randomUUID(), recipe.ingredients(), recipe.servings());
             for (int line = 0; line < estimate.lines().size(); line++) {
                 assertThat(estimate.lines().get(line))
                         .as(

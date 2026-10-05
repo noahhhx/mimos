@@ -2,6 +2,7 @@ package io.github.noahhhx.mimos.api.recipes;
 
 import io.github.noahhhx.mimos.recipes.recipe.CatalogIngredient;
 import io.github.noahhhx.mimos.recipes.recipe.Ingredient;
+import io.github.noahhhx.mimos.recipes.recipe.IngredientDraft;
 import io.github.noahhhx.mimos.recipes.recipe.Nutrition;
 import io.github.noahhhx.mimos.recipes.recipe.NutritionEstimate;
 import io.github.noahhhx.mimos.recipes.recipe.NutritionSource;
@@ -11,6 +12,7 @@ import io.github.noahhhx.mimos.recipes.recipe.RecipeStep;
 import java.math.BigDecimal;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import org.openapitools.model.IngredientInput;
 import org.openapitools.model.IngredientLineStatus;
 import org.openapitools.model.IngredientQuantity;
 import org.openapitools.model.NutritionBasis;
@@ -72,8 +74,17 @@ public final class RecipeApiMapper {
         return new org.openapitools.model.CatalogIngredient()
                 .slug(entry.slug())
                 .name(entry.name())
+                .isShared(entry.isShared())
                 .basis(NutritionBasis.valueOf(entry.basis().name()))
                 .nutrition(toApiNutrition(entry.nutrition()));
+    }
+
+    public static IngredientDraft toIngredientDraft(IngredientInput input) {
+        return new IngredientDraft(
+                input.getName(),
+                io.github.noahhhx.mimos.recipes.recipe.NutritionBasis.valueOf(
+                        input.getBasis().name()),
+                fromApiNutrition(input.getNutrition()));
     }
 
     public static org.openapitools.model.NutritionEstimate toApiEstimate(NutritionEstimate estimate) {
@@ -94,6 +105,7 @@ public final class RecipeApiMapper {
                         .quantity(toBigDecimal(ingredient.quantity()))
                         .unit(ingredient.unit())
                         .name(ingredient.name())
+                        .note(ingredient.note())
                         .catalogSlug(ingredient.catalogSlug()))
                 .toList();
     }
@@ -104,6 +116,7 @@ public final class RecipeApiMapper {
                         fromBigDecimal(ingredient.getQuantity()),
                         ingredient.getUnit(),
                         ingredient.getName(),
+                        ingredient.getNote(),
                         ingredient.getCatalogSlug()))
                 .toList();
     }

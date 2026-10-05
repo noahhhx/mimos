@@ -8,8 +8,12 @@ import type { NutritionEstimateInput, NutritionSource, RecipeDetail, RecipeInput
  * row at fault instead of passing on the API's whole-recipe message.
  */
 
-/** `catalogSlug` is the catalog entry the line counts as for calculated nutrition (ADR-0015). */
-export type IngredientRow = { quantity: string; unit: string; name: string; catalogSlug?: string };
+/**
+ * `catalogSlug` is the ingredient the line counts as for calculated
+ * nutrition (ADR-0015): absent until linked or decided, and "" once its
+ * author chose not to count it, so it is not linked again by name.
+ */
+export type IngredientRow = { quantity: string; unit: string; name: string; note?: string; catalogSlug?: string };
 
 export type RecipeFormValues = {
   title: string;
@@ -48,6 +52,7 @@ export function formValuesOf(recipe?: RecipeDetail): RecipeFormValues {
           quantity: text(i.quantity),
           unit: i.unit ?? "",
           name: i.name,
+          ...(i.note ? { note: i.note } : {}),
           ...(i.catalogSlug ? { catalogSlug: i.catalogSlug } : {}),
         }))
       : [{ ...EMPTY_INGREDIENT }],
@@ -81,10 +86,12 @@ export function toRecipeInput(values: RecipeFormValues): { input: RecipeInput } 
     if (quantity !== undefined && !(Number.isFinite(quantity) && quantity > 0)) {
       errors.push(`${label}'s amount must be more than 0, or leave it blank for "to taste".`);
     }
+    const note = row.note?.trim() ?? "";
     ingredients.push({
       quantity,
       unit: unit === "" ? undefined : unit,
       name,
+      ...(note !== "" ? { note } : {}),
       ...(row.catalogSlug ? { catalogSlug: row.catalogSlug } : {}),
     });
   });

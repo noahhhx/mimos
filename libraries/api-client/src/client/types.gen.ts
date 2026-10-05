@@ -102,6 +102,10 @@ export type IngredientQuantity = {
      */
     name: string;
     /**
+     * Optional prep note shown after the name, like "minced" or "to serve".
+     */
+    note?: string;
+    /**
      * Slug of the catalog ingredient this line counts as for calculated nutrition (see listIngredients); omitted when the line is not linked.
      *
      */
@@ -121,10 +125,23 @@ export type NutritionSource = 'MANUAL' | 'INGREDIENTS';
 export type NutritionBasis = 'PER_100_G' | 'PER_100_ML' | 'PER_PIECE';
 
 /**
- * An ingredient in the shared catalog, with its nutrition for its basis.
+ * An ingredient with known nutrition for its basis, shared or the caller's own.
  */
 export type CatalogIngredient = {
     slug: string;
+    name: string;
+    /**
+     * True for the shared ingredients everyone sees, false for the caller's own.
+     */
+    isShared: boolean;
+    basis: NutritionBasis;
+    nutrition: Nutrition;
+};
+
+/**
+ * One of the caller's own ingredients as submitted; nutrition needs all four values.
+ */
+export type IngredientInput = {
     name: string;
     basis: NutritionBasis;
     nutrition: Nutrition;
@@ -416,10 +433,24 @@ export type AccountExport = {
      */
     version: number;
     exportedAt: string;
+    /**
+     * The user's own ingredients; recipe lines refer to them by slug.
+     */
+    ingredients: Array<ExportedIngredient>;
     recipes: Array<ExportedRecipe>;
     mealPlans: Array<ExportedMealPlan>;
     shoppingLists: Array<ExportedShoppingList>;
     mealLogs: Array<ExportedMealLog>;
+};
+
+/**
+ * One of the user's own ingredients. `slug` is a key within the document; import assigns a new one.
+ */
+export type ExportedIngredient = {
+    slug: string;
+    name: string;
+    basis: NutritionBasis;
+    nutrition: Nutrition;
 };
 
 /**
@@ -540,6 +571,8 @@ export type ImportReport = {
 export type RecipeId = string;
 
 export type RecipeSlug = string;
+
+export type IngredientSlug = string;
 
 /**
  * The Monday that starts the planned week, as an ISO date (2026-10-05). Any other day is rejected with a 400.
@@ -925,12 +958,115 @@ export type ListIngredientsError = ListIngredientsErrors[keyof ListIngredientsEr
 
 export type ListIngredientsResponses = {
     /**
-     * Catalog ingredients, sorted by name.
+     * Ingredients, sorted by name.
      */
     200: Array<CatalogIngredient>;
 };
 
 export type ListIngredientsResponse = ListIngredientsResponses[keyof ListIngredientsResponses];
+
+export type CreateIngredientData = {
+    body: IngredientInput;
+    path?: never;
+    query?: never;
+    url: '/api/v1/ingredients';
+};
+
+export type CreateIngredientErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type CreateIngredientError = CreateIngredientErrors[keyof CreateIngredientErrors];
+
+export type CreateIngredientResponses = {
+    /**
+     * The created ingredient.
+     */
+    201: CatalogIngredient;
+};
+
+export type CreateIngredientResponse = CreateIngredientResponses[keyof CreateIngredientResponses];
+
+export type DeleteIngredientData = {
+    body?: never;
+    path: {
+        ingredientSlug: string;
+    };
+    query?: never;
+    url: '/api/v1/ingredients/{ingredientSlug}';
+};
+
+export type DeleteIngredientErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type DeleteIngredientError = DeleteIngredientErrors[keyof DeleteIngredientErrors];
+
+export type DeleteIngredientResponses = {
+    /**
+     * Deleted.
+     */
+    204: void;
+};
+
+export type DeleteIngredientResponse = DeleteIngredientResponses[keyof DeleteIngredientResponses];
+
+export type ReplaceIngredientData = {
+    body: IngredientInput;
+    path: {
+        ingredientSlug: string;
+    };
+    query?: never;
+    url: '/api/v1/ingredients/{ingredientSlug}';
+};
+
+export type ReplaceIngredientErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type ReplaceIngredientError = ReplaceIngredientErrors[keyof ReplaceIngredientErrors];
+
+export type ReplaceIngredientResponses = {
+    /**
+     * The replaced ingredient.
+     */
+    200: CatalogIngredient;
+};
+
+export type ReplaceIngredientResponse = ReplaceIngredientResponses[keyof ReplaceIngredientResponses];
 
 export type ListLibraryRecipesData = {
     body?: never;

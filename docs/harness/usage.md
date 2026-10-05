@@ -68,9 +68,10 @@ narrowing the recipe 415.
 Scenarios: `login` (sign-in smoke), `create-recipe` (writes a recipe
 through the form; the recipe 415's regression test), `edit-recipe`
 (repeated tags, partial nutrition, an unmeasured ingredient, cancelling
-and saving an edit), `calculated-nutrition` (lines link to the
-ingredient catalog by name, nutrition updates as you type, and the saved
-recipe shows the same figures, ADR-0015), `recipe-form-errors` (browser-blocked input, per-row
+and saving an edit), `calculated-nutrition` (lines link to
+ingredients by name or by searching, a missing one is added as the
+user's own, nutrition updates as you type, and the saved recipe shows
+the same figures, ADR-0015 and ADR-0016), `recipe-form-errors` (browser-blocked input, per-row
 form errors, Enter submits), `kitchen-home` (Tonight, the week rail, and
 adding the plugin's thought; it turns the plugin on, plans the week's
 earlier evenings, and puts both back as it found them), `plugin-opt-in`

@@ -11,12 +11,15 @@ import {
   type CatalogIngredient,
   type IngredientLineStatus,
   type Nutrition,
+  type NutritionBasis,
   type RecipeDetail,
 } from "@mimos/api-client";
 
+import { IngredientPicker } from "@/components/ingredient-picker";
+import { NewIngredient } from "@/components/new-ingredient";
 import { PerServing } from "@/components/per-serving";
 import { apiClient } from "@/lib/api";
-import { lineHint, suggestCatalogSlug } from "@/lib/catalog-match";
+import { basisForUnit, describeEntry, lineHint, lineNameOf, mentions, suggestCatalogSlug } from "@/lib/catalog-match";
 import {
   EMPTY_INGREDIENT,
   formValuesOf,
@@ -63,6 +66,7 @@ export function RecipeForm({
   const [saving, setSaving] = useState(false);
   const [catalog, setCatalog] = useState<CatalogIngredient[]>([]);
   const [estimate, setEstimate] = useState<Estimate>();
+  const [adding, setAdding] = useState<{ index: number; name: string; basis: NutritionBasis }>();
   const calculated = values.nutritionSource === "INGREDIENTS";
   const bySlug = useMemo(() => new Map(catalog.map((entry) => [entry.slug, entry])), [catalog]);
   const estimateRequest = useMemo(() => (calculated ? toEstimateInput(values) : undefined), [calculated, values]);
@@ -173,8 +177,8 @@ export function RecipeForm({
 
       <h2>Ingredients</h2>
       <p className="muted">
-        Leave the amount blank for ingredients you don&apos;t measure, like salt to taste. To count an ingredient
-        toward nutrition, pick what it counts as and measure it in grams, millilitres, spoons, or pieces.
+        Search for each ingredient, or add your own when it isn&apos;t there. Measure it in grams, millilitres,
+        spoons, or pieces to count it toward nutrition, and leave the amount blank for things like salt to taste.
       </p>
       <datalist id="metric-units">
         {METRIC_UNITS.map((unit) => (
@@ -183,7 +187,7 @@ export function RecipeForm({
       </datalist>
       {values.ingredients.map((row, index) => (
         <div className="field-row ingredient-row" key={index}>
-          <label>
+          <label className="narrow">
             Amount
             <input
               type="number"
@@ -195,7 +199,7 @@ export function RecipeForm({
               aria-label={`Ingredient ${index + 1} amount`}
             />
           </label>
-          <label>
+          <label className="narrow">
             Unit
             <input
               value={row.unit}
@@ -205,37 +209,46 @@ export function RecipeForm({
               aria-label={`Ingredient ${index + 1} unit`}
             />
           </label>
+          <IngredientPicker
+            label={`Ingredient ${index + 1} name`}
+            name={row.name}
+            catalog={catalog}
+            onType={(name) => typeIngredient(index, name)}
+            onPick={(entry) => linkIngredient(index, entry)}
+            onAdd={(name) => setAdding({ index, name, basis: basisForUnit(row.unit) })}
+          />
           <label>
-            Name
+            Note
             <input
-              value={row.name}
-              onChange={(e) => renameIngredient(index, e.target.value)}
-              placeholder="flour"
+              value={row.note ?? ""}
+              onChange={(e) => updateIngredient(index, { note: e.target.value })}
+              placeholder="minced"
               maxLength={200}
-              aria-label={`Ingredient ${index + 1} name`}
+              aria-label={`Ingredient ${index + 1} note`}
             />
-          </label>
-          <label>
-            Counts as
-            <select
-              value={row.catalogSlug ?? ""}
-              onChange={(e) => updateIngredient(index, { catalogSlug: e.target.value })}
-              aria-label={`Ingredient ${index + 1} counts as`}
-            >
-              <option value="">Not counted</option>
-              {catalog.map((entry) => (
-                <option key={entry.slug} value={entry.slug}>
-                  {entry.name}
-                </option>
-              ))}
-            </select>
           </label>
           <button type="button" className="button secondary" onClick={() => removeRow("ingredient", index)}>
             Remove
           </button>
+          <MatchedTo
+            entry={row.catalogSlug ? bySlug.get(row.catalogSlug) : undefined}
+            onUnlink={() => updateIngredient(index, { catalogSlug: "" })}
+          />
           {calculated && estimate !== "failed" && (
             <IngredientHint
               hint={lineHint(estimate?.statuses.get(index), row.catalogSlug ? bySlug.get(row.catalogSlug) : undefined)}
+            />
+          )}
+          {adding?.index === index && (
+            <NewIngredient
+              initialName={adding.name}
+              initialBasis={adding.basis}
+              onCreated={(entry) => {
+                setCatalog((current) => [...current, entry].sort((a, b) => a.name.localeCompare(b.name)));
+                linkIngredient(index, entry);
+                setAdding(undefined);
+              }}
+              onCancel={() => setAdding(undefined)}
             />
           )}
         </div>
@@ -330,12 +343,22 @@ export function RecipeForm({
     set({ ingredients: values.ingredients.map((row, i) => (i === index ? { ...row, ...patch } : row)) });
   }
 
-  /** A renamed line follows the catalog suggestion, unless its author picked what it counts as. */
-  function renameIngredient(index: number, name: string) {
-    const row = values.ingredients[index];
-    const followsSuggestion =
-      row.catalogSlug === undefined || row.catalogSlug === suggestCatalogSlug(row.name, catalog);
-    updateIngredient(index, followsSuggestion ? { name, catalogSlug: suggestCatalogSlug(name, catalog) } : { name });
+  /**
+   * Typing keeps a line's link while the name still names its entry
+   * ("garlic clove" to "garlic cloves"); otherwise the line links to the
+   * ingredient its name names, unless its author chose not to count it.
+   */
+  function typeIngredient(index: number, name: string) {
+    const slug = values.ingredients[index].catalogSlug;
+    const linked = bySlug.get(slug ?? "");
+    const keep = slug === "" || (linked !== undefined && mentions(name, linked));
+    updateIngredient(index, keep ? { name } : { name, catalogSlug: suggestCatalogSlug(name, catalog) });
+  }
+
+  /** Links a line to an entry, keeping what was typed when it already names the entry. */
+  function linkIngredient(index: number, entry: CatalogIngredient) {
+    const typed = values.ingredients[index].name;
+    updateIngredient(index, { name: mentions(typed, entry) ? typed : lineNameOf(entry), catalogSlug: entry.slug });
   }
 
   function removeRow(kind: "ingredient" | "step", index: number) {
@@ -345,6 +368,21 @@ export function RecipeForm({
       set({ steps: values.steps.filter((_, i) => i !== index) });
     }
   }
+}
+
+/** What a linked line counts as, with a way to stop counting it. */
+function MatchedTo({ entry, onUnlink }: { entry: CatalogIngredient | undefined; onUnlink: () => void }) {
+  if (!entry) {
+    return null;
+  }
+  return (
+    <p className="ingredient-hint muted">
+      Matched to {entry.name} ({describeEntry(entry)}).{" "}
+      <button type="button" className="button secondary small" onClick={onUnlink}>
+        Don&apos;t count it
+      </button>
+    </p>
+  );
 }
 
 function IngredientHint({ hint }: { hint: string | undefined }) {

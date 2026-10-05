@@ -8,6 +8,7 @@ import io.github.noahhhx.mimos.planning.plan.MealPlanService;
 import io.github.noahhhx.mimos.planning.plan.PlannedMeal;
 import io.github.noahhhx.mimos.planning.shopping.ShoppingList;
 import io.github.noahhhx.mimos.planning.shopping.ShoppingListService;
+import io.github.noahhhx.mimos.recipes.recipe.IngredientService;
 import io.github.noahhhx.mimos.recipes.recipe.Nutrition;
 import io.github.noahhhx.mimos.recipes.recipe.Recipe;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeService;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.openapitools.model.AccountExport;
+import org.openapitools.model.ExportedIngredient;
 import org.openapitools.model.ExportedMealLog;
 import org.openapitools.model.ExportedMealPlan;
 import org.openapitools.model.ExportedPlanEntry;
@@ -44,6 +46,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AccountExporter {
 
     private final RecipeService recipes;
+    private final IngredientService ingredients;
     private final MealPlanService mealPlans;
     private final ShoppingListService shoppingLists;
     private final MealLogService mealLogs;
@@ -51,11 +54,13 @@ public class AccountExporter {
 
     public AccountExporter(
             RecipeService recipes,
+            IngredientService ingredients,
             MealPlanService mealPlans,
             ShoppingListService shoppingLists,
             MealLogService mealLogs,
             Clock clock) {
         this.recipes = recipes;
+        this.ingredients = ingredients;
         this.mealPlans = mealPlans;
         this.shoppingLists = shoppingLists;
         this.mealLogs = mealLogs;
@@ -81,6 +86,14 @@ public class AccountExporter {
                 .format(AccountExport.FormatEnum.MIMOS_EXPORT)
                 .version(ExportUpgrader.CURRENT_VERSION)
                 .exportedAt(toOffset(clock.instant()))
+                .ingredients(ingredients.findOwned(ownerProfileId).stream()
+                        .map(ingredient -> new ExportedIngredient()
+                                .slug(ingredient.slug())
+                                .name(ingredient.name())
+                                .basis(org.openapitools.model.NutritionBasis.valueOf(
+                                        ingredient.basis().name()))
+                                .nutrition(toApiNutrition(ingredient.nutrition())))
+                        .toList())
                 .recipes(owned.stream().map(AccountExporter::toExported).toList())
                 .mealPlans(plans.stream()
                         .map(plan -> toExported(plan, ownedIds, librarySlugs))

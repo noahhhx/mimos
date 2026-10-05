@@ -2,6 +2,19 @@
   "format": "mimos.export",
   "version": 2,
   "exportedAt": "2026-10-05T09:00:00Z",
+  "ingredients": [
+    {
+      "slug": "homemade-stock-a1b2c3",
+      "name": "Homemade stock",
+      "basis": "PER_100_ML",
+      "nutrition": {
+        "calories": 8,
+        "proteinG": 1,
+        "carbsG": 0.5,
+        "fatG": 0.2
+      }
+    }
+  ],
   "recipes": [
     {
       "id": "6f1c2a7e-0b1d-4c55-9a52-0d6c1f0a1b01",
@@ -15,10 +28,10 @@
         "vegan"
       ],
       "nutrition": {
-        "calories": 236,
-        "proteinG": 15.3,
-        "carbsG": 42.3,
-        "fatG": 1.4
+        "calories": 256,
+        "proteinG": 17.8,
+        "carbsG": 43.5,
+        "fatG": 1.9
       },
       "nutritionSource": "INGREDIENTS",
       "ingredients": [
@@ -31,7 +44,15 @@
         {
           "quantity": 2,
           "name": "carrots",
-          "catalogSlug": "carrot"
+          "catalogSlug": "carrot",
+          "note": "diced"
+        },
+        {
+          "quantity": 1,
+          "unit": "l",
+          "name": "stock",
+          "note": "homemade",
+          "catalogSlug": "homemade-stock-a1b2c3"
         },
         {
           "name": "salt",
