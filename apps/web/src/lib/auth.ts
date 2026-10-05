@@ -1,6 +1,7 @@
 import { UserManager } from "oidc-client-ts";
 
 import { appBaseUrl, oidcAuthority, oidcClientId } from "./config";
+import { createSession } from "./session";
 
 /**
  * The browser talks to Keycloak directly as the public `mimos-web` client
@@ -15,3 +16,6 @@ export const userManager = new UserManager({
   scope: "openid profile",
   automaticSilentRenew: true,
 });
+
+/** The signed-in user with a usable token, renewed if needed; null once the session is over. */
+export const currentUser = createSession(userManager);

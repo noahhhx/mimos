@@ -21,6 +21,9 @@ choose **Register** under the sign-in form and fill in your details.
     Whoever runs your Mimos can turn registration off. If they have, ask
     them to create an account for you.
 
+Mimos keeps you signed in while you use it. After a long break, such as a
+tab left open overnight, it asks you to sign in again.
+
 ## Find your way around
 
 After you sign in you land in the **Kitchen**, your home page. It shows

@@ -53,4 +53,32 @@ describe("authorizedFetch", () => {
     assert.equal(sent[0]?.headers.get("Accept"), "application/json");
     assert.equal(sent[0]?.headers.get("Authorization"), "Bearer token-1");
   });
+
+  it("reports a 401 for a call that carried a token, and still returns the response", async () => {
+    mock.method(globalThis, "fetch", async () => new Response(null, { status: 401 }));
+    let unauthorized = 0;
+
+    const response = await authorizedFetch(
+      async () => "token-1",
+      async () => {
+        unauthorized++;
+      },
+    )(new Request(API));
+
+    assert.equal(response.status, 401);
+    assert.equal(unauthorized, 1);
+  });
+
+  it("does not report a 401 for a call made signed out, or other failures", async () => {
+    let unauthorized = 0;
+    const onUnauthorized = async () => {
+      unauthorized++;
+    };
+    mock.method(globalThis, "fetch", async () => new Response(null, { status: 401 }));
+    await authorizedFetch(async () => undefined, onUnauthorized)(new Request(API));
+    mock.method(globalThis, "fetch", async () => new Response(null, { status: 403 }));
+    await authorizedFetch(async () => "token-1", onUnauthorized)(new Request(API));
+
+    assert.equal(unauthorized, 0);
+  });
 });

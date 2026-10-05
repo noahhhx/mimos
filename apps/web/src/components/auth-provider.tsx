@@ -3,7 +3,7 @@
 import { User } from "oidc-client-ts";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
-import { userManager } from "@/lib/auth";
+import { currentUser, userManager } from "@/lib/auth";
 
 type AuthState = {
   user: User | null;
@@ -21,7 +21,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const onUnloaded = () => setUser(null);
     userManager.events.addUserLoaded(onLoaded);
     userManager.events.addUserUnloaded(onUnloaded);
-    void userManager.getUser().then(setUser);
+    // Not getUser(): a stored session can be long expired, and showing it as
+    // signed in would only lead to 401s.
+    void currentUser().then(setUser);
     return () => {
       userManager.events.removeUserLoaded(onLoaded);
       userManager.events.removeUserUnloaded(onUnloaded);
