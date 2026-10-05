@@ -307,7 +307,9 @@ class RecipesEndpointTests extends ApiIntegrationTestSupport {
     void unauthenticatedAccessIsRejected() {
         api().get().uri("/api/v1/recipes").exchange((req, res) -> {
             assertThat(res.getStatusCode().value()).isEqualTo(401);
-            assertThat(res.getHeaders().getFirst(HttpHeaders.WWW_AUTHENTICATE)).isEqualTo("Bearer");
+            assertThat(res.getHeaders().getFirst(HttpHeaders.WWW_AUTHENTICATE))
+                    .isEqualTo("Bearer resource_metadata=\"http://localhost:" + port
+                            + "/.well-known/oauth-protected-resource/api/v1/recipes\"");
             return null;
         });
     }

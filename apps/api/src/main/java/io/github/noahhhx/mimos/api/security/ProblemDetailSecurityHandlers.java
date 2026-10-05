@@ -12,7 +12,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.util.UrlUtils;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -27,6 +29,8 @@ public final class ProblemDetailSecurityHandlers implements AuthenticationEntryP
     /** Serialized problem shape (RFC 9457); kept explicit and dependency-free. */
     record Problem(URI type, String title, int status, String detail, URI instance, Instant timestamp) {}
 
+    private static final String PROTECTED_RESOURCE_METADATA = "/.well-known/oauth-protected-resource";
+
     private final ObjectMapper objectMapper;
 
     public ProblemDetailSecurityHandlers(ObjectMapper objectMapper) {
@@ -38,7 +42,7 @@ public final class ProblemDetailSecurityHandlers implements AuthenticationEntryP
             HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)
             throws IOException {
         RequestLoggingFilter.recordFailure(request, authException);
-        response.setHeader("WWW-Authenticate", "Bearer");
+        response.setHeader("WWW-Authenticate", "Bearer resource_metadata=\"" + resourceMetadataUrl(request) + "\"");
         write(response, HttpStatus.UNAUTHORIZED, "A valid bearer token from the Mimos realm is required.", request);
     }
 
@@ -48,6 +52,20 @@ public final class ProblemDetailSecurityHandlers implements AuthenticationEntryP
             throws IOException {
         RequestLoggingFilter.recordFailure(request, accessDeniedException);
         write(response, HttpStatus.FORBIDDEN, "You are not allowed to do that.", request);
+    }
+
+    /**
+     * Where an OAuth client (an MCP client, ADR-0014) learns which
+     * authorization server to sign in with (RFC 9728): the metadata of the
+     * resource that was requested, served by Spring Security's
+     * {@code OAuth2ProtectedResourceMetadataFilter}.
+     */
+    private static String resourceMetadataUrl(HttpServletRequest request) {
+        return UriComponentsBuilder.fromUriString(UrlUtils.buildFullRequestUrl(request))
+                .replacePath(PROTECTED_RESOURCE_METADATA + request.getRequestURI())
+                .replaceQuery(null)
+                .build()
+                .toUriString();
     }
 
     private void write(HttpServletResponse response, HttpStatus status, String detail, HttpServletRequest request)

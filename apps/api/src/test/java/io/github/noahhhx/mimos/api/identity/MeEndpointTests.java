@@ -64,7 +64,9 @@ class MeEndpointTests extends ApiIntegrationTestSupport {
             assertThat(res.getHeaders().getContentType())
                     .isNotNull()
                     .matches(ct -> ct.isCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
-            assertThat(res.getHeaders().getFirst(HttpHeaders.WWW_AUTHENTICATE)).isEqualTo("Bearer");
+            assertThat(res.getHeaders().getFirst(HttpHeaders.WWW_AUTHENTICATE))
+                    .isEqualTo("Bearer resource_metadata=\"http://localhost:" + port
+                            + "/.well-known/oauth-protected-resource/api/v1/me\"");
             return objectMapper.readTree(res.getBody().readAllBytes());
         });
 

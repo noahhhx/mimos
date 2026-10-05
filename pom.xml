@@ -33,7 +33,20 @@
         <nullaway.version>0.13.8</nullaway.version>
         <error-prone.version>2.50.0</error-prone.version>
         <testcontainers-keycloak.version>4.2.1</testcontainers-keycloak.version>
+        <spring-ai.version>2.0.1</spring-ai.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <!-- JSpecify nullness annotations (@Nullable, @NullMarked). RUNTIME retention:

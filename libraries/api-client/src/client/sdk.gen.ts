@@ -74,11 +74,17 @@ export const importAccount = <ThrowOnError extends boolean = false>(options: Opt
 
 /**
  * The caller's personal recipes
+ *
+ * Recipes the caller wrote. Curated library recipes are listed by listLibraryRecipes instead.
+ *
  */
 export const listMyRecipes = <ThrowOnError extends boolean = false>(options?: Options<ListMyRecipesData, ThrowOnError>): RequestResult<ListMyRecipesResponses, ListMyRecipesErrors, ThrowOnError> => (options?.client ?? client).get<ListMyRecipesResponses, ListMyRecipesErrors, ThrowOnError>({ url: '/api/v1/recipes', ...options });
 
 /**
  * Create a personal recipe
+ *
+ * Creates a recipe owned by the caller and returns it with its id. Nutrition is per serving; leave out values you do not know rather than guessing zero. Steps are in cooking order.
+ *
  */
 export const createRecipe = <ThrowOnError extends boolean = false>(options: Options<CreateRecipeData, ThrowOnError>): RequestResult<CreateRecipeResponses, CreateRecipeErrors, ThrowOnError> => (options.client ?? client).post<CreateRecipeResponses, CreateRecipeErrors, ThrowOnError>({
     url: '/api/v1/recipes',
@@ -102,7 +108,7 @@ export const getRecipe = <ThrowOnError extends boolean = false>(options: Options
 /**
  * Replace a personal recipe
  *
- * Only the recipe's owner may replace it; curated library recipes are read-only.
+ * Replaces every field, so send the whole recipe (read it first with getRecipe and change what you need). Only the recipe's owner may replace it; curated library recipes are read-only.
  *
  */
 export const replaceRecipe = <ThrowOnError extends boolean = false>(options: Options<ReplaceRecipeData, ThrowOnError>): RequestResult<ReplaceRecipeResponses, ReplaceRecipeErrors, ThrowOnError> => (options.client ?? client).put<ReplaceRecipeResponses, ReplaceRecipeErrors, ThrowOnError>({
@@ -122,7 +128,7 @@ export const listLibraryRecipes = <ThrowOnError extends boolean = false>(options
 /**
  * The curated recipe library (unauthenticated)
  *
- * Public read access to the library for the SEO recipe pages. Only curated recipes are exposed — personal recipes never appear here.
+ * Public read access to the library for the SEO recipe pages. Only curated recipes are exposed; personal recipes never appear here.
  *
  */
 export const listPublicRecipes = <ThrowOnError extends boolean = false>(options?: Options<ListPublicRecipesData, ThrowOnError>): RequestResult<ListPublicRecipesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListPublicRecipesResponses, unknown, ThrowOnError>({ url: '/api/v1/public/recipes', ...options });
@@ -135,13 +141,16 @@ export const getPublicRecipe = <ThrowOnError extends boolean = false>(options: O
 /**
  * The caller's meal plan for a week
  *
- * Returns the plan for the week starting at `startDate` (the Monday of the week). The plan is created empty on first access.
+ * Returns the plan for the week starting at `startDate`, which must be a Monday. The plan is created empty on first access. Each entry has the id that updateMealPlanEntry and deleteMealPlanEntry take.
  *
  */
 export const getMealPlan = <ThrowOnError extends boolean = false>(options: Options<GetMealPlanData, ThrowOnError>): RequestResult<GetMealPlanResponses, GetMealPlanErrors, ThrowOnError> => (options.client ?? client).get<GetMealPlanResponses, GetMealPlanErrors, ThrowOnError>({ url: '/api/v1/plans/{startDate}', ...options });
 
 /**
  * Plan a meal in the week
+ *
+ * Plans a recipe (personal or library, by its id) for a day and meal. `startDate` is the week's Monday and `date` must fall within that week (Monday to Sunday). A slot can hold more than one recipe. Servings may be fractional.
+ *
  */
 export const addMealPlanEntry = <ThrowOnError extends boolean = false>(options: Options<AddMealPlanEntryData, ThrowOnError>): RequestResult<AddMealPlanEntryResponses, AddMealPlanEntryErrors, ThrowOnError> => (options.client ?? client).post<AddMealPlanEntryResponses, AddMealPlanEntryErrors, ThrowOnError>({
     url: '/api/v1/plans/{startDate}/entries',
@@ -172,26 +181,32 @@ export const updateMealPlanEntry = <ThrowOnError extends boolean = false>(option
 /**
  * Suggestion cards for a planned week
  *
- * Declarative suggestion cards from the instance's registered plugins (ADR-0006): validated, attributed, advisory only — applying a card is done through the existing plan-entry endpoint. Only plugins the caller turned on are asked (ADR-0013). Returns an empty list when the caller turned none on, or all of theirs are unavailable.
+ * Suggestion cards from the instance's plugins (ADR-0006), each attributed to its plugin. Cards are advisory and change nothing on their own: to apply a card, call addMealPlanEntry once for each of its entries, with the entry's date, mealType, recipeId, and servings. Only plugins the caller turned on are asked (ADR-0013; see listMyPlugins and updateMyPlugin). Returns an empty list when the caller turned none on, or all of theirs are unavailable.
  *
  */
 export const getPlanSuggestions = <ThrowOnError extends boolean = false>(options: Options<GetPlanSuggestionsData, ThrowOnError>): RequestResult<GetPlanSuggestionsResponses, GetPlanSuggestionsErrors, ThrowOnError> => (options.client ?? client).get<GetPlanSuggestionsResponses, GetPlanSuggestionsErrors, ThrowOnError>({ url: '/api/v1/plans/{startDate}/suggestions', ...options });
 
 /**
  * The shopping list generated for a week
+ *
+ * Returns the list as it was last generated, with each item's checked state; items not checked are still to buy. 404 when the week's list was never generated. The list does not follow later changes to the plan; call generateShoppingList to rebuild it.
+ *
  */
 export const getShoppingList = <ThrowOnError extends boolean = false>(options: Options<GetShoppingListData, ThrowOnError>): RequestResult<GetShoppingListResponses, GetShoppingListErrors, ThrowOnError> => (options.client ?? client).get<GetShoppingListResponses, GetShoppingListErrors, ThrowOnError>({ url: '/api/v1/plans/{startDate}/shopping-list', ...options });
 
 /**
  * Generate (or regenerate) the shopping list for a week
  *
- * Aggregates ingredient quantities across the week's planned recipes (scaled by planned servings). Checked-off items keep their checked state when the list is regenerated.
+ * Builds the week's list from its plan: ingredient quantities summed across the planned recipes, scaled by planned servings, grouped by aisle. Call it after changing the plan. Checked-off items keep their checked state when the list is regenerated.
  *
  */
 export const generateShoppingList = <ThrowOnError extends boolean = false>(options: Options<GenerateShoppingListData, ThrowOnError>): RequestResult<GenerateShoppingListResponses, GenerateShoppingListErrors, ThrowOnError> => (options.client ?? client).post<GenerateShoppingListResponses, GenerateShoppingListErrors, ThrowOnError>({ url: '/api/v1/plans/{startDate}/shopping-list', ...options });
 
 /**
  * Check an item off (or back on)
+ *
+ * Item ids come from getShoppingList or generateShoppingList. They change when the list is regenerated.
+ *
  */
 export const updateShoppingListItem = <ThrowOnError extends boolean = false>(options: Options<UpdateShoppingListItemData, ThrowOnError>): RequestResult<UpdateShoppingListItemResponses, UpdateShoppingListItemErrors, ThrowOnError> => (options.client ?? client).patch<UpdateShoppingListItemResponses, UpdateShoppingListItemErrors, ThrowOnError>({
     url: '/api/v1/plans/{startDate}/shopping-list/items/{itemId}',

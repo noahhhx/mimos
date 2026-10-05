@@ -4,6 +4,12 @@
 # (libraries/api-client, generated on demand + verified in CI) are both
 # derived from this file. Hand-edit generated code and the build or the CI
 # drift check will fail; change the spec instead. See docs/decisions/ADR-0003.
+#
+# The MCP server at /mcp (ADR-0014) serves every operation under /api/v1/
+# as an agent tool, named by its operationId and described by its summary
+# and description, so write those for an agent that has only this text to
+# go on. A new endpoint is a tool automatically; an operation opts out with
+# the vendor extension `x-mcp: false`.
 openapi: 3.1.0
 info:
   title: Mimos API
@@ -98,6 +104,7 @@ paths:
     get:
       tags: [account]
       operationId: exportAccount
+      x-mcp: false
       summary: Export the caller's data
       description: >
         The caller's personal recipes, meal plans, shopping lists, and meal
@@ -123,6 +130,7 @@ paths:
     post:
       tags: [account]
       operationId: importAccount
+      x-mcp: false
       summary: Import an export into the caller's (empty) account
       description: >
         Restores a document produced by `exportAccount`, from this or any
@@ -160,6 +168,9 @@ paths:
       tags: [recipes]
       operationId: listMyRecipes
       summary: The caller's personal recipes
+      description: >
+        Recipes the caller wrote. Curated library recipes are listed by
+        listLibraryRecipes instead.
       parameters:
         - name: q
           in: query
@@ -181,6 +192,10 @@ paths:
       tags: [recipes]
       operationId: createRecipe
       summary: Create a personal recipe
+      description: >
+        Creates a recipe owned by the caller and returns it with its id.
+        Nutrition is per serving; leave out values you do not know rather
+        than guessing zero. Steps are in cooking order.
       requestBody:
         required: true
         content:
@@ -222,8 +237,9 @@ paths:
       operationId: replaceRecipe
       summary: Replace a personal recipe
       description: >
-        Only the recipe's owner may replace it; curated library recipes are
-        read-only.
+        Replaces every field, so send the whole recipe (read it first with
+        getRecipe and change what you need). Only the recipe's owner may
+        replace it; curated library recipes are read-only.
       requestBody:
         required: true
         content:
@@ -286,10 +302,11 @@ paths:
     get:
       tags: [public]
       operationId: listPublicRecipes
+      x-mcp: false
       summary: The curated recipe library (unauthenticated)
       description: >
         Public read access to the library for the SEO recipe pages. Only
-        curated recipes are exposed — personal recipes never appear here.
+        curated recipes are exposed; personal recipes never appear here.
       parameters:
         - name: q
           in: query
@@ -311,6 +328,7 @@ paths:
     get:
       tags: [public]
       operationId: getPublicRecipe
+      x-mcp: false
       summary: A library recipe by slug (unauthenticated)
       responses:
         '200':
@@ -330,8 +348,9 @@ paths:
       operationId: getMealPlan
       summary: The caller's meal plan for a week
       description: >
-        Returns the plan for the week starting at `startDate` (the Monday of
-        the week). The plan is created empty on first access.
+        Returns the plan for the week starting at `startDate`, which must be
+        a Monday. The plan is created empty on first access. Each entry has
+        the id that updateMealPlanEntry and deleteMealPlanEntry take.
       responses:
         '200':
           description: The week's plan.
@@ -350,6 +369,11 @@ paths:
       tags: [planning]
       operationId: addMealPlanEntry
       summary: Plan a meal in the week
+      description: >
+        Plans a recipe (personal or library, by its id) for a day and meal.
+        `startDate` is the week's Monday and `date` must fall within that
+        week (Monday to Sunday). A slot can hold more than one recipe.
+        Servings may be fractional.
       requestBody:
         required: true
         content:
@@ -418,10 +442,12 @@ paths:
       operationId: getPlanSuggestions
       summary: Suggestion cards for a planned week
       description: >
-        Declarative suggestion cards from the instance's registered plugins
-        (ADR-0006): validated, attributed, advisory only — applying a card is
-        done through the existing plan-entry endpoint. Only plugins the
-        caller turned on are asked (ADR-0013). Returns an empty list when
+        Suggestion cards from the instance's plugins (ADR-0006), each
+        attributed to its plugin. Cards are advisory and change nothing on
+        their own: to apply a card, call addMealPlanEntry once for each of
+        its entries, with the entry's date, mealType, recipeId, and
+        servings. Only plugins the caller turned on are asked (ADR-0013;
+        see listMyPlugins and updateMyPlugin). Returns an empty list when
         the caller turned none on, or all of theirs are unavailable.
       responses:
         '200':
@@ -442,6 +468,11 @@ paths:
       tags: [shopping-lists]
       operationId: getShoppingList
       summary: The shopping list generated for a week
+      description: >
+        Returns the list as it was last generated, with each item's checked
+        state; items not checked are still to buy. 404 when the week's list
+        was never generated. The list does not follow later changes to the
+        plan; call generateShoppingList to rebuild it.
       responses:
         '200':
           description: The week's shopping list.
@@ -460,9 +491,10 @@ paths:
       operationId: generateShoppingList
       summary: Generate (or regenerate) the shopping list for a week
       description: >
-        Aggregates ingredient quantities across the week's planned recipes
-        (scaled by planned servings). Checked-off items keep their checked
-        state when the list is regenerated.
+        Builds the week's list from its plan: ingredient quantities summed
+        across the planned recipes, scaled by planned servings, grouped by
+        aisle. Call it after changing the plan. Checked-off items keep their
+        checked state when the list is regenerated.
       responses:
         '200':
           description: The generated shopping list.
@@ -482,6 +514,9 @@ paths:
       tags: [shopping-lists]
       operationId: updateShoppingListItem
       summary: Check an item off (or back on)
+      description: >
+        Item ids come from getShoppingList or generateShoppingList. They
+        change when the list is regenerated.
       requestBody:
         required: true
         content:
@@ -625,7 +660,9 @@ components:
       name: startDate
       in: path
       required: true
-      description: The Monday of the planned week (ISO date).
+      description: >
+        The Monday that starts the planned week, as an ISO date
+        (2026-10-05). Any other day is rejected with a 400.
       schema:
         type: string
         format: date
@@ -921,7 +958,7 @@ components:
             $ref: '#/components/schemas/PlanSuggestion'
     PlanSuggestion:
       type: object
-      description: One plugin suggestion card — advisory, validated by the server, attributed to its plugin.
+      description: One plugin suggestion card, advisory, validated by the server, and attributed to its plugin.
       required: [pluginId, pluginName, title, entries]
       properties:
         pluginId:

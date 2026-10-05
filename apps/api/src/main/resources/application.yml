@@ -9,6 +9,44 @@ spring:
     deserialization:
       # 2.5 for an integer field (servings, minutes) is a 400, not a silent 2.
       accept-float-as-int: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Keycloak realm from the local compose stack. Inside compose the
+          # container resolves the JWKS via the internal host (see
+          # deploy/docker/compose.yml) while still validating this issuer.
+          # MCP clients are sent here to sign in (ADR-0014).
+          issuer-uri: http://localhost:8081/realms/mimos
+  ai:
+    mcp:
+      server:
+        # MCP at /mcp (ADR-0014): one tool per API operation, derived from
+        # contracts/api/openapi.yaml at startup. Stateless: every call is
+        # authenticated on its own, so no session survives a restart.
+        protocol: STATELESS
+        name: mimos
+        version: "@project.version@"
+        # Tools only; Spring AI's ToolCallback bridge is not on the classpath.
+        tool-callback-converter: false
+        capabilities:
+          resource: false
+          prompt: false
+          completion: false
+        instructions: >
+          Mimos is a recipe companion: a curated recipe library shared by
+          everyone on this instance, the user's own personal recipes, weekly
+          meal plans, shopping lists generated from a plan, and a log of meals
+          eaten with their calories and macros. Library recipes are read-only;
+          personal recipes belong to the user and only they can see them. A
+          plan week starts on a Monday, and every plan, suggestion, and
+          shopping-list tool takes that Monday as startDate. Search recipes by
+          title, tag, or ingredient with the q parameter of listMyRecipes and
+          listLibraryRecipes, and plan a meal with addMealPlanEntry using a
+          recipe id from either list. A shopping list is a snapshot: call
+          generateShoppingList after changing the plan, and getShoppingList to
+          read what is still unchecked. Errors come back as RFC 9457 problem
+          details; read the detail and correct the call.
 
 mimos:
   library:
@@ -22,17 +60,13 @@ mimos:
   # plugins:
   #   - id: country-week
   #     url: http://country-week:8080
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          # Keycloak realm from the local compose stack. Inside compose the
-          # container resolves the JWKS via the internal host (see
-          # deploy/docker/compose.yml) while still validating this issuer.
-          issuer-uri: http://localhost:8081/realms/mimos
 
 server:
   port: 8080
+  # Behind a reverse proxy the API builds absolute URLs (the MCP sign-in
+  # metadata, ADR-0014) from X-Forwarded-Proto/-Host. Tomcat trusts them
+  # only from private-network and loopback addresses.
+  forward-headers-strategy: native
 
 logging:
   pattern:

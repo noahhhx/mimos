@@ -225,7 +225,7 @@ export type PlanSuggestions = {
 };
 
 /**
- * One plugin suggestion card — advisory, validated by the server, attributed to its plugin.
+ * One plugin suggestion card, advisory, validated by the server, and attributed to its plugin.
  */
 export type PlanSuggestion = {
     /**
@@ -487,7 +487,8 @@ export type RecipeId = string;
 export type RecipeSlug = string;
 
 /**
- * The Monday of the planned week (ISO date).
+ * The Monday that starts the planned week, as an ISO date (2026-10-05). Any other day is rejected with a 400.
+ *
  */
 export type PlanWeek = string;
 
@@ -899,7 +900,8 @@ export type GetMealPlanData = {
     body?: never;
     path: {
         /**
-         * The Monday of the planned week (ISO date).
+         * The Monday that starts the planned week, as an ISO date (2026-10-05). Any other day is rejected with a 400.
+         *
          */
         startDate: string;
     };
@@ -933,7 +935,8 @@ export type AddMealPlanEntryData = {
     body: MealPlanEntryInput;
     path: {
         /**
-         * The Monday of the planned week (ISO date).
+         * The Monday that starts the planned week, as an ISO date (2026-10-05). Any other day is rejected with a 400.
+         *
          */
         startDate: string;
     };
@@ -971,7 +974,8 @@ export type DeleteMealPlanEntryData = {
     body?: never;
     path: {
         /**
-         * The Monday of the planned week (ISO date).
+         * The Monday that starts the planned week, as an ISO date (2026-10-05). Any other day is rejected with a 400.
+         *
          */
         startDate: string;
         entryId: string;
@@ -1010,7 +1014,8 @@ export type UpdateMealPlanEntryData = {
     body: MealPlanEntryPatch;
     path: {
         /**
-         * The Monday of the planned week (ISO date).
+         * The Monday that starts the planned week, as an ISO date (2026-10-05). Any other day is rejected with a 400.
+         *
          */
         startDate: string;
         entryId: string;
@@ -1049,7 +1054,8 @@ export type GetPlanSuggestionsData = {
     body?: never;
     path: {
         /**
-         * The Monday of the planned week (ISO date).
+         * The Monday that starts the planned week, as an ISO date (2026-10-05). Any other day is rejected with a 400.
+         *
          */
         startDate: string;
     };
@@ -1083,7 +1089,8 @@ export type GetShoppingListData = {
     body?: never;
     path: {
         /**
-         * The Monday of the planned week (ISO date).
+         * The Monday that starts the planned week, as an ISO date (2026-10-05). Any other day is rejected with a 400.
+         *
          */
         startDate: string;
     };
@@ -1121,7 +1128,8 @@ export type GenerateShoppingListData = {
     body?: never;
     path: {
         /**
-         * The Monday of the planned week (ISO date).
+         * The Monday that starts the planned week, as an ISO date (2026-10-05). Any other day is rejected with a 400.
+         *
          */
         startDate: string;
     };
@@ -1155,7 +1163,8 @@ export type UpdateShoppingListItemData = {
     body: ShoppingListItemPatch;
     path: {
         /**
-         * The Monday of the planned week (ISO date).
+         * The Monday that starts the planned week, as an ISO date (2026-10-05). Any other day is rejected with a 400.
+         *
          */
         startDate: string;
         itemId: string;
