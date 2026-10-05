@@ -4,7 +4,7 @@ A Mimos plugin is an HTTP sidecar service the instance owner runs next to
 `mimos-api`. Mimos calls out; the plugin never calls back, holds no
 tokens, and cannot write anything. The wire format is specified as
 OpenAPI in
-[`contracts/plugins/plan-suggestions/v1/`](https://github.com/noahhhx/mimos/tree/main/contracts/plugins/plan-suggestions/v1),
+[`contracts/plugins/v1/`](https://github.com/noahhhx/mimos/tree/main/contracts/plugins/v1),
 and TypeScript plugins can compile against the generated types in
 [`@mimos/plugin-sdk`](https://github.com/noahhhx/mimos/tree/main/libraries/plugin-sdk).
 The design behind it, with the reasoning, is

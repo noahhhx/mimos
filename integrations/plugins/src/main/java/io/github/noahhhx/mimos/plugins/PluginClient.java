@@ -1,8 +1,11 @@
 package io.github.noahhhx.mimos.plugins;
 
 import java.net.http.HttpClient;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
@@ -80,6 +83,33 @@ final class PluginClient {
         return parseCards(suggestions);
     }
 
+    /**
+     * Calls {@code POST /v1/week-panel} for one user's week (ADR-0017): a
+     * render without {@code action}, an action and then a render with one.
+     */
+    WeekPanel fetchWeekPanel(
+            PluginManifest manifest, UUID subject, LocalDate weekStartDate, @Nullable PanelAction action) {
+        ObjectNode request = MAPPER.createObjectNode();
+        request.put("subject", subject.toString());
+        request.put("weekStartDate", weekStartDate.toString());
+        if (action != null) {
+            ObjectNode actionNode = request.putObject("action");
+            actionNode.put("id", action.id());
+            if (action.value() != null) {
+                actionNode.put("value", action.value());
+            }
+        }
+        JsonNode body = restClient
+                .post()
+                .uri("/v1/week-panel")
+                .contentType(MediaType.APPLICATION_JSON)
+                .headers(headers -> authorize(headers))
+                .body(request)
+                .retrieve()
+                .body(JsonNode.class);
+        return WeekPanelParser.parse(manifest, body);
+    }
+
     private void authorize(org.springframework.http.HttpHeaders headers) {
         String secret = registration.sharedSecret();
         if (secret != null && !secret.isBlank()) {
@@ -89,6 +119,7 @@ final class PluginClient {
 
     private static ObjectNode toJson(SuggestionContext context) {
         ObjectNode root = MAPPER.createObjectNode();
+        root.put("subject", context.subject().toString());
         root.put("weekStartDate", context.weekStartDate().toString());
         ArrayNode slots = root.putArray("plannedSlots");
         for (PlannedSlot slot : context.plannedSlots()) {

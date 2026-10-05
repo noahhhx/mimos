@@ -1,5 +1,6 @@
 package io.github.noahhhx.mimos.plugins;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -41,6 +42,26 @@ public class PluginOptInService {
         return new HashSet<>(
                 jdbc.queryForList("select plugin_id from plugin_opt_in where profile_id = ?", String.class, profileId));
     }
+
+    /**
+     * The plugins offering {@code capability} that this user turned on, in
+     * registration order, each with the manifest it was judged by. Opt-in is
+     * consent (ADR-0013): no other plugin may be called with this user's
+     * context or subject.
+     */
+    List<EnabledPlugin> enabledPlugins(UUID profileId, String capability) {
+        Set<String> enabled = enabledPluginIds(profileId);
+        List<EnabledPlugin> result = new ArrayList<>();
+        for (Plugin plugin : registry.pluginsWithCapability(capability)) {
+            PluginManifest manifest = plugin.manifest();
+            if (manifest != null && enabled.contains(manifest.id())) {
+                result.add(new EnabledPlugin(plugin, manifest));
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    record EnabledPlugin(Plugin plugin, PluginManifest manifest) {}
 
     /**
      * Turns a plugin on or off for this user. Turning one on needs it to be

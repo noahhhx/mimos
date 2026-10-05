@@ -13,7 +13,7 @@
 openapi: 3.1.0
 info:
   title: Mimos API
-  version: 0.8.0
+  version: 0.9.0
   description: |
     The Mimos recipe companion API. Endpoints require a bearer token issued
     by the instance's Keycloak realm unless they live under `/api/v1/public`
@@ -600,6 +600,77 @@ paths:
         '400':
           $ref: '#/components/responses/Problem'
         '401':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/plans/{startDate}/panels:
+    parameters:
+      - $ref: '#/components/parameters/PlanWeek'
+    get:
+      tags: [plugins]
+      operationId: getWeekPanels
+      summary: Plugin panels for a planned week
+      description: >
+        The week's panels from the plugins the caller turned on that offer
+        one (ADR-0017), in registration order. A panel is declarative: a
+        summary line for when it is collapsed, then blocks of text,
+        highlights, a wheel, and buttons. To press a button, call
+        pressWeekPanelAction with the plugin's id and the button's id and
+        value. Reading panels changes nothing. A plugin that fails is left
+        out; the list is empty when the caller turned none on.
+      responses:
+        '200':
+          description: Panels from the caller's healthy plugins.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeekPanels'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/plans/{startDate}/panels/{pluginId}/actions:
+    parameters:
+      - $ref: '#/components/parameters/PlanWeek'
+      - name: pluginId
+        in: path
+        required: true
+        description: The plugin's manifest id, as in the panel's pluginId.
+        schema:
+          type: string
+    post:
+      tags: [plugins]
+      operationId: pressWeekPanelAction
+      summary: Press a button in a plugin's week panel
+      description: >
+        Sends one button press to the plugin and returns its panel as it
+        is afterwards. Use the id and value of a button from that plugin's
+        current panel for the same week (getWeekPanels); what a button does
+        is the plugin's to decide and is described by its label and the
+        panel's text. Country of the Week, for example, offers spin, then
+        choose, skip, or remove for the country the wheel landed on. 404
+        when the plugin is not available or the caller has not turned it
+        on; 502 when the plugin fails to answer.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PanelAction'
+      responses:
+        '200':
+          description: The panel after the action.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeekPanel'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '502':
           $ref: '#/components/responses/Problem'
 
   /api/v1/plans/{startDate}/shopping-list:
@@ -1235,6 +1306,138 @@ components:
           description: Hydrated by the server from its own recipe data.
         servings:
           type: number
+    WeekPanels:
+      type: object
+      description: A week's plugin panels (ADR-0017).
+      required: [panels]
+      properties:
+        panels:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeekPanel'
+    WeekPanel:
+      type: object
+      description: >
+        One plugin's panel for a week, validated by the server and
+        attributed to its plugin. Render every string as plain text.
+      required: [pluginId, pluginName, blocks]
+      properties:
+        pluginId:
+          type: string
+          description: The plugin's manifest id.
+        pluginName:
+          type: string
+          description: The plugin's manifest name, shown as attribution.
+        summary:
+          $ref: '#/components/schemas/PanelSummary'
+        blocks:
+          type: array
+          items:
+            $ref: '#/components/schemas/PanelBlock'
+    PanelSummary:
+      type: object
+      description: The line shown while the panel is collapsed, such as a week's chosen country and its flag.
+      required: [label]
+      properties:
+        icon:
+          type: string
+          description: A short glyph (at most 8 characters), such as a flag emoji.
+        label:
+          type: string
+          description: At most 60 characters.
+    PanelBlock:
+      oneOf:
+        - $ref: '#/components/schemas/PanelTextBlock'
+        - $ref: '#/components/schemas/PanelHighlightBlock'
+        - $ref: '#/components/schemas/PanelWheelBlock'
+        - $ref: '#/components/schemas/PanelActionsBlock'
+      discriminator:
+        propertyName: type
+        mapping:
+          text: '#/components/schemas/PanelTextBlock'
+          highlight: '#/components/schemas/PanelHighlightBlock'
+          wheel: '#/components/schemas/PanelWheelBlock'
+          actions: '#/components/schemas/PanelActionsBlock'
+    PanelTextBlock:
+      type: object
+      required: [type, text]
+      properties:
+        type:
+          type: string
+        text:
+          type: string
+    PanelHighlightBlock:
+      type: object
+      description: One thing shown large, such as a chosen country.
+      required: [type, title]
+      properties:
+        type:
+          type: string
+        icon:
+          type: string
+        title:
+          type: string
+        text:
+          type: string
+    PanelWheelBlock:
+      type: object
+      description: >
+        A wheel of 2 to 60 segments. With landing, the wheel spins and stops
+        on that segment, and the blocks after it are shown once it stops.
+      required: [type, segments]
+      properties:
+        type:
+          type: string
+        segments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PanelWheelSegment'
+        landing:
+          type: integer
+          description: Index into segments of where this spin stops.
+    PanelWheelSegment:
+      type: object
+      required: [label]
+      properties:
+        label:
+          type: string
+        icon:
+          type: string
+    PanelActionsBlock:
+      type: object
+      description: A row of buttons; press one with pressWeekPanelAction.
+      required: [type, actions]
+      properties:
+        type:
+          type: string
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PanelButton'
+    PanelButton:
+      type: object
+      required: [id, label]
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        value:
+          type: string
+        primary:
+          type: boolean
+          description: The one button to draw as the main action.
+    PanelAction:
+      type: object
+      description: A button press, the id and value of a button from the plugin's panel.
+      required: [id]
+      properties:
+        id:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9-]{0,39}$'
+        value:
+          type: string
+          maxLength: 100
     ShoppingListItem:
       type: object
       description: One aggregated shopping-list line.

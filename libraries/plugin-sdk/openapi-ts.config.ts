@@ -1,7 +1,7 @@
 import { defineConfig } from "@hey-api/openapi-ts";
 
 export default defineConfig({
-  input: "../../contracts/plugins/plan-suggestions/v1/openapi.yaml",
+  input: "../../contracts/plugins/v1/openapi.yaml",
   output: {
     path: "src",
   },

@@ -28,6 +28,7 @@ class SuggestionServiceValidationTests {
 
     private static SuggestionContext context() {
         return new SuggestionContext(
+                UUID.randomUUID(),
                 MONDAY,
                 List.of(new PlannedSlot(MONDAY, MealType.LUNCH, 2, SPAGHETTI)),
                 List.of(

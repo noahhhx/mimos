@@ -26,7 +26,7 @@ export type PluginManifest = {
      */
     apiVersions: Array<string>;
     /**
-     * Capabilities the plugin provides. v1 defines one: `plan-suggestions`. Unknown capabilities are ignored with a warning (a newer plugin on an older core degrades, not fails).
+     * Capabilities the plugin provides. v1 defines `plan-suggestions` and `week-panel`. Unknown capabilities are ignored with a warning (a newer plugin on an older core degrades, not fails).
      *
      */
     capabilities: Array<string>;
@@ -40,6 +40,7 @@ export type PluginManifest = {
  * Everything the plugin may know about the request.
  */
 export type SuggestionContext = {
+    subject?: Subject;
     /**
      * The Monday of the week being planned.
      */
@@ -96,6 +97,111 @@ export type SuggestedEntry = {
     servings: number;
 };
 
+/**
+ * The user, as a pseudonym: stable for one user and one plugin, different for every plugin, unrelated to any identity Mimos or its identity provider holds. Sent with every request Mimos makes on a user's behalf (optional on plan-suggestions only for older cores).
+ *
+ */
+export type Subject = string;
+
+export type WeekPanelRequest = {
+    subject: Subject;
+    /**
+     * The Monday of the week the panel is for.
+     */
+    weekStartDate: string;
+    action?: PanelAction;
+};
+
+/**
+ * A button the user pressed: the `id` and `value` of an action this plugin rendered. They pass through the user's browser, so treat them as untrusted input.
+ *
+ */
+export type PanelAction = {
+    id: string;
+    value?: string;
+};
+
+/**
+ * A declarative panel, validated by Mimos and rendered as plain text. At most 8 blocks. An invalid block, or one of a type this Mimos does not know, is dropped; an invalid summary is dropped.
+ *
+ */
+export type WeekPanel = {
+    summary?: PanelSummary;
+    blocks: Array<PanelBlock>;
+};
+
+/**
+ * The line shown while the panel is collapsed.
+ */
+export type PanelSummary = {
+    /**
+     * A short glyph, such as a flag emoji.
+     */
+    icon?: string;
+    label: string;
+};
+
+export type PanelBlock = ({
+    type: 'text';
+} & TextBlock) | ({
+    type: 'highlight';
+} & HighlightBlock) | ({
+    type: 'wheel';
+} & WheelBlock) | ({
+    type: 'actions';
+} & ActionsBlock);
+
+export type TextBlock = {
+    type: 'text';
+    text: string;
+};
+
+/**
+ * One thing shown large, such as a chosen country.
+ */
+export type HighlightBlock = {
+    type: 'highlight';
+    icon?: string;
+    title: string;
+    text?: string;
+};
+
+/**
+ * A wheel of segments. With `landing`, the wheel spins and stops on that segment, and the blocks after it appear once it stops.
+ *
+ */
+export type WheelBlock = {
+    type: 'wheel';
+    segments: Array<WheelSegment>;
+    /**
+     * Index into `segments`.
+     */
+    landing?: number;
+};
+
+export type WheelSegment = {
+    label: string;
+    icon?: string;
+};
+
+/**
+ * A row of buttons. Pressing one sends its `id` and `value` back as the request's `action`.
+ */
+export type ActionsBlock = {
+    type: 'actions';
+    actions: Array<PanelButton>;
+};
+
+export type PanelButton = {
+    id: string;
+    label: string;
+    value?: string;
+    /**
+     * The one button to draw as the main action.
+     */
+    primary?: boolean;
+};
+
 export type GetManifestData = {
     body?: never;
     path?: never;
@@ -127,3 +233,19 @@ export type CreatePlanSuggestionsResponses = {
 };
 
 export type CreatePlanSuggestionsResponse = CreatePlanSuggestionsResponses[keyof CreatePlanSuggestionsResponses];
+
+export type RenderWeekPanelData = {
+    body: WeekPanelRequest;
+    path?: never;
+    query?: never;
+    url: '/v1/week-panel';
+};
+
+export type RenderWeekPanelResponses = {
+    /**
+     * The panel.
+     */
+    200: WeekPanel;
+};
+
+export type RenderWeekPanelResponse = RenderWeekPanelResponses[keyof RenderWeekPanelResponses];

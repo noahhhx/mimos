@@ -343,6 +343,113 @@ export type PlanSuggestionEntry = {
 };
 
 /**
+ * A week's plugin panels (ADR-0017).
+ */
+export type WeekPanels = {
+    panels: Array<WeekPanel>;
+};
+
+/**
+ * One plugin's panel for a week, validated by the server and attributed to its plugin. Render every string as plain text.
+ *
+ */
+export type WeekPanel = {
+    /**
+     * The plugin's manifest id.
+     */
+    pluginId: string;
+    /**
+     * The plugin's manifest name, shown as attribution.
+     */
+    pluginName: string;
+    summary?: PanelSummary;
+    blocks: Array<PanelBlock>;
+};
+
+/**
+ * The line shown while the panel is collapsed, such as a week's chosen country and its flag.
+ */
+export type PanelSummary = {
+    /**
+     * A short glyph (at most 8 characters), such as a flag emoji.
+     */
+    icon?: string;
+    /**
+     * At most 60 characters.
+     */
+    label: string;
+};
+
+export type PanelBlock = ({
+    type: 'text';
+} & PanelTextBlock) | ({
+    type: 'highlight';
+} & PanelHighlightBlock) | ({
+    type: 'wheel';
+} & PanelWheelBlock) | ({
+    type: 'actions';
+} & PanelActionsBlock);
+
+export type PanelTextBlock = {
+    type: string;
+    text: string;
+};
+
+/**
+ * One thing shown large, such as a chosen country.
+ */
+export type PanelHighlightBlock = {
+    type: string;
+    icon?: string;
+    title: string;
+    text?: string;
+};
+
+/**
+ * A wheel of 2 to 60 segments. With landing, the wheel spins and stops on that segment, and the blocks after it are shown once it stops.
+ *
+ */
+export type PanelWheelBlock = {
+    type: string;
+    segments: Array<PanelWheelSegment>;
+    /**
+     * Index into segments of where this spin stops.
+     */
+    landing?: number;
+};
+
+export type PanelWheelSegment = {
+    label: string;
+    icon?: string;
+};
+
+/**
+ * A row of buttons; press one with pressWeekPanelAction.
+ */
+export type PanelActionsBlock = {
+    type: string;
+    actions: Array<PanelButton>;
+};
+
+export type PanelButton = {
+    id: string;
+    label: string;
+    value?: string;
+    /**
+     * The one button to draw as the main action.
+     */
+    primary?: boolean;
+};
+
+/**
+ * A button press, the id and value of a button from the plugin's panel.
+ */
+export type PanelAction = {
+    id: string;
+    value?: string;
+};
+
+/**
  * One aggregated shopping-list line.
  */
 export type ShoppingListItem = {
@@ -1334,6 +1441,88 @@ export type GetPlanSuggestionsResponses = {
 };
 
 export type GetPlanSuggestionsResponse = GetPlanSuggestionsResponses[keyof GetPlanSuggestionsResponses];
+
+export type GetWeekPanelsData = {
+    body?: never;
+    path: {
+        /**
+         * The Monday that starts the planned week, as an ISO date (2026-10-05). Any other day is rejected with a 400.
+         *
+         */
+        startDate: string;
+    };
+    query?: never;
+    url: '/api/v1/plans/{startDate}/panels';
+};
+
+export type GetWeekPanelsErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type GetWeekPanelsError = GetWeekPanelsErrors[keyof GetWeekPanelsErrors];
+
+export type GetWeekPanelsResponses = {
+    /**
+     * Panels from the caller's healthy plugins.
+     */
+    200: WeekPanels;
+};
+
+export type GetWeekPanelsResponse = GetWeekPanelsResponses[keyof GetWeekPanelsResponses];
+
+export type PressWeekPanelActionData = {
+    body: PanelAction;
+    path: {
+        /**
+         * The Monday that starts the planned week, as an ISO date (2026-10-05). Any other day is rejected with a 400.
+         *
+         */
+        startDate: string;
+        /**
+         * The plugin's manifest id, as in the panel's pluginId.
+         */
+        pluginId: string;
+    };
+    query?: never;
+    url: '/api/v1/plans/{startDate}/panels/{pluginId}/actions';
+};
+
+export type PressWeekPanelActionErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    502: Problem;
+};
+
+export type PressWeekPanelActionError = PressWeekPanelActionErrors[keyof PressWeekPanelActionErrors];
+
+export type PressWeekPanelActionResponses = {
+    /**
+     * The panel after the action.
+     */
+    200: WeekPanel;
+};
+
+export type PressWeekPanelActionResponse = PressWeekPanelActionResponses[keyof PressWeekPanelActionResponses];
 
 export type GetShoppingListData = {
     body?: never;

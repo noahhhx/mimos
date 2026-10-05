@@ -30,13 +30,15 @@ public record PluginManifest(
 
     public static final String SCHEMA = "mimos.plugin.manifest/v1";
     public static final String CAPABILITY_PLAN_SUGGESTIONS = "plan-suggestions";
+    public static final String CAPABILITY_WEEK_PANEL = "week-panel";
 
     static final Pattern ID_PATTERN = Pattern.compile("^[a-z0-9][a-z0-9-]*$");
     static final int MAX_NAME_LENGTH = 100;
     static final int MAX_HOMEPAGE_URL_LENGTH = 2048;
 
     /** Known capabilities this version of Mimos can call. */
-    static final java.util.Set<String> KNOWN_CAPABILITIES = java.util.Set.of(CAPABILITY_PLAN_SUGGESTIONS);
+    static final java.util.Set<String> KNOWN_CAPABILITIES =
+            java.util.Set.of(CAPABILITY_PLAN_SUGGESTIONS, CAPABILITY_WEEK_PANEL);
 
     static final String CURRENT_API_MAJOR_VERSION = "1";
 

@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddMealPlanEntryData, AddMealPlanEntryErrors, AddMealPlanEntryResponses, CreateIngredientData, CreateIngredientErrors, CreateIngredientResponses, CreateMealLogData, CreateMealLogErrors, CreateMealLogResponses, CreateRecipeData, CreateRecipeErrors, CreateRecipeResponses, DeleteIngredientData, DeleteIngredientErrors, DeleteIngredientResponses, DeleteMealLogData, DeleteMealLogErrors, DeleteMealLogResponses, DeleteMealPlanEntryData, DeleteMealPlanEntryErrors, DeleteMealPlanEntryResponses, DeleteRecipeData, DeleteRecipeErrors, DeleteRecipeResponses, EstimateRecipeNutritionData, EstimateRecipeNutritionErrors, EstimateRecipeNutritionResponses, ExportAccountData, ExportAccountErrors, ExportAccountResponses, GenerateShoppingListData, GenerateShoppingListErrors, GenerateShoppingListResponses, GetMealPlanData, GetMealPlanErrors, GetMealPlanResponses, GetMeData, GetMeErrors, GetMeResponses, GetPlanSuggestionsData, GetPlanSuggestionsErrors, GetPlanSuggestionsResponses, GetPublicRecipeData, GetPublicRecipeErrors, GetPublicRecipeResponses, GetRecipeData, GetRecipeErrors, GetRecipeResponses, GetShoppingListData, GetShoppingListErrors, GetShoppingListResponses, ImportAccountData, ImportAccountErrors, ImportAccountResponses, ListIngredientsData, ListIngredientsErrors, ListIngredientsResponses, ListLibraryRecipesData, ListLibraryRecipesErrors, ListLibraryRecipesResponses, ListMealLogsData, ListMealLogsErrors, ListMealLogsResponses, ListMyPluginsData, ListMyPluginsErrors, ListMyPluginsResponses, ListMyRecipesData, ListMyRecipesErrors, ListMyRecipesResponses, ListPublicRecipesData, ListPublicRecipesResponses, ReplaceIngredientData, ReplaceIngredientErrors, ReplaceIngredientResponses, ReplaceRecipeData, ReplaceRecipeErrors, ReplaceRecipeResponses, SummarizeMealLogsData, SummarizeMealLogsErrors, SummarizeMealLogsResponses, UpdateMealPlanEntryData, UpdateMealPlanEntryErrors, UpdateMealPlanEntryResponses, UpdateMyPluginData, UpdateMyPluginErrors, UpdateMyPluginResponses, UpdateShoppingListItemData, UpdateShoppingListItemErrors, UpdateShoppingListItemResponses } from './types.gen';
+import type { AddMealPlanEntryData, AddMealPlanEntryErrors, AddMealPlanEntryResponses, CreateIngredientData, CreateIngredientErrors, CreateIngredientResponses, CreateMealLogData, CreateMealLogErrors, CreateMealLogResponses, CreateRecipeData, CreateRecipeErrors, CreateRecipeResponses, DeleteIngredientData, DeleteIngredientErrors, DeleteIngredientResponses, DeleteMealLogData, DeleteMealLogErrors, DeleteMealLogResponses, DeleteMealPlanEntryData, DeleteMealPlanEntryErrors, DeleteMealPlanEntryResponses, DeleteRecipeData, DeleteRecipeErrors, DeleteRecipeResponses, EstimateRecipeNutritionData, EstimateRecipeNutritionErrors, EstimateRecipeNutritionResponses, ExportAccountData, ExportAccountErrors, ExportAccountResponses, GenerateShoppingListData, GenerateShoppingListErrors, GenerateShoppingListResponses, GetMealPlanData, GetMealPlanErrors, GetMealPlanResponses, GetMeData, GetMeErrors, GetMeResponses, GetPlanSuggestionsData, GetPlanSuggestionsErrors, GetPlanSuggestionsResponses, GetPublicRecipeData, GetPublicRecipeErrors, GetPublicRecipeResponses, GetRecipeData, GetRecipeErrors, GetRecipeResponses, GetShoppingListData, GetShoppingListErrors, GetShoppingListResponses, GetWeekPanelsData, GetWeekPanelsErrors, GetWeekPanelsResponses, ImportAccountData, ImportAccountErrors, ImportAccountResponses, ListIngredientsData, ListIngredientsErrors, ListIngredientsResponses, ListLibraryRecipesData, ListLibraryRecipesErrors, ListLibraryRecipesResponses, ListMealLogsData, ListMealLogsErrors, ListMealLogsResponses, ListMyPluginsData, ListMyPluginsErrors, ListMyPluginsResponses, ListMyRecipesData, ListMyRecipesErrors, ListMyRecipesResponses, ListPublicRecipesData, ListPublicRecipesResponses, PressWeekPanelActionData, PressWeekPanelActionErrors, PressWeekPanelActionResponses, ReplaceIngredientData, ReplaceIngredientErrors, ReplaceIngredientResponses, ReplaceRecipeData, ReplaceRecipeErrors, ReplaceRecipeResponses, SummarizeMealLogsData, SummarizeMealLogsErrors, SummarizeMealLogsResponses, UpdateMealPlanEntryData, UpdateMealPlanEntryErrors, UpdateMealPlanEntryResponses, UpdateMyPluginData, UpdateMyPluginErrors, UpdateMyPluginResponses, UpdateShoppingListItemData, UpdateShoppingListItemErrors, UpdateShoppingListItemResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -246,6 +246,29 @@ export const updateMealPlanEntry = <ThrowOnError extends boolean = false>(option
  *
  */
 export const getPlanSuggestions = <ThrowOnError extends boolean = false>(options: Options<GetPlanSuggestionsData, ThrowOnError>): RequestResult<GetPlanSuggestionsResponses, GetPlanSuggestionsErrors, ThrowOnError> => (options.client ?? client).get<GetPlanSuggestionsResponses, GetPlanSuggestionsErrors, ThrowOnError>({ url: '/api/v1/plans/{startDate}/suggestions', ...options });
+
+/**
+ * Plugin panels for a planned week
+ *
+ * The week's panels from the plugins the caller turned on that offer one (ADR-0017), in registration order. A panel is declarative: a summary line for when it is collapsed, then blocks of text, highlights, a wheel, and buttons. To press a button, call pressWeekPanelAction with the plugin's id and the button's id and value. Reading panels changes nothing. A plugin that fails is left out; the list is empty when the caller turned none on.
+ *
+ */
+export const getWeekPanels = <ThrowOnError extends boolean = false>(options: Options<GetWeekPanelsData, ThrowOnError>): RequestResult<GetWeekPanelsResponses, GetWeekPanelsErrors, ThrowOnError> => (options.client ?? client).get<GetWeekPanelsResponses, GetWeekPanelsErrors, ThrowOnError>({ url: '/api/v1/plans/{startDate}/panels', ...options });
+
+/**
+ * Press a button in a plugin's week panel
+ *
+ * Sends one button press to the plugin and returns its panel as it is afterwards. Use the id and value of a button from that plugin's current panel for the same week (getWeekPanels); what a button does is the plugin's to decide and is described by its label and the panel's text. Country of the Week, for example, offers spin, then choose, skip, or remove for the country the wheel landed on. 404 when the plugin is not available or the caller has not turned it on; 502 when the plugin fails to answer.
+ *
+ */
+export const pressWeekPanelAction = <ThrowOnError extends boolean = false>(options: Options<PressWeekPanelActionData, ThrowOnError>): RequestResult<PressWeekPanelActionResponses, PressWeekPanelActionErrors, ThrowOnError> => (options.client ?? client).post<PressWeekPanelActionResponses, PressWeekPanelActionErrors, ThrowOnError>({
+    url: '/api/v1/plans/{startDate}/panels/{pluginId}/actions',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * The shopping list generated for a week
