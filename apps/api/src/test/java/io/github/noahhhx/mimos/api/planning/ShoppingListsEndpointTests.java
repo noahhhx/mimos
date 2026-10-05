@@ -125,7 +125,8 @@ class ShoppingListsEndpointTests extends ApiIntegrationTestSupport {
     @Test
     void countedIngredientsRoundUpToWholeItems() {
         RestClient api = api();
-        String token = accessToken();
+        // Its own account: SuggestionsEndpointTests plans this week for `test` and counts the slots.
+        String token = accessToken(createUser());
         LocalDate monday = LocalDate.of(2026, 5, 4); // a Monday
 
         // An 8-serving soup with 1 onion and 2 cups stock, planned twice at 1 serving.
