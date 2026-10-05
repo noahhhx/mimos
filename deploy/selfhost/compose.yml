@@ -102,6 +102,9 @@ services:
   country-week:
     image: ghcr.io/noahhhx/mimos-country-week:${MIMOS_VERSION:-main}
     restart: unless-stopped
+    volumes:
+      # Each user's wheel (ADR-0017). Losing it forgets every wheel, nothing else.
+      - country-week-data:/data
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/manifest || exit 1"]
       interval: 10s
@@ -137,3 +140,4 @@ configs:
 
 volumes:
   postgres-data:
+  country-week-data:

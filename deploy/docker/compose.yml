@@ -83,6 +83,9 @@ services:
     build:
       context: ../..
       dockerfile: plugins/country-week/Dockerfile
+    volumes:
+      # Each user's wheel (ADR-0017). Losing it forgets every wheel, nothing else.
+      - country-week-data:/data
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/manifest || exit 1"]
       interval: 10s
@@ -118,3 +121,4 @@ services:
 
 volumes:
   postgres-data:
+  country-week-data:
