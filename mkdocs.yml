@@ -100,3 +100,4 @@ nav:
   - Self-hosting: self-hosting.md
   - Writing a plugin:
       - plugins/index.md
+      - Country of the Week: plugins/country-week.md

@@ -26,3 +26,17 @@ you are, and it can't change anything. Its suggestions only reach your plan
 when you choose **Add to plan**. See [Suggestions](planning.md#suggestions).
 
 A plugin you leave off sees nothing about you.
+
+## Country of the Week
+
+Country of the Week picks a country each week and suggests dinners from
+its cuisine: Italian, Indian, Greek, Japanese, Lebanese, or Mexican. It
+only picks a country the library has recipes for.
+
+Its card fills the dinners you haven't planned yet, from Monday on, at 2
+servings each. Change the servings after you add them. It never suggests
+a dinner you already planned, and when every dinner is planned it shows
+no card. Everyone on your Mimos gets the same country for a given week.
+
+To write a plugin like it, see
+[Country of the Week](../plugins/country-week.md) in the plugin guide.

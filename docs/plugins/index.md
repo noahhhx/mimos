@@ -14,6 +14,8 @@ Any language that can serve JSON over HTTP works. The reference plugin,
 [Country of the Week](https://github.com/noahhhx/mimos/tree/main/plugins/country-week),
 is plain TypeScript on `node:http` with zero runtime dependencies — it
 runs straight from source on Node's native type stripping.
+[Country of the Week](country-week.md) walks through it, and is the
+quickest way to start your own.
 
 ## What your plugin serves
 
