@@ -1,11 +1,10 @@
 import type { LibraryRecipe, PlannedSlot, PluginSuggestionCard } from "@mimos/plugin-sdk";
 
-import { COUNTRIES, type Country } from "./countries.ts";
+import { type Country, flag } from "./countries.ts";
 
 /**
- * Country of the Week's suggestion logic — pure functions of the context
- * Mimos sends (no clock, no randomness: the week itself picks the
- * country, so a week always suggests the same one).
+ * Recipe suggestions for the country chosen for a week: pure functions of
+ * that country and the context Mimos sends.
  */
 
 /** The library recipes that fit a country's cuisine (tags or title). */
@@ -21,28 +20,10 @@ export function matchesFor(country: Country, recipes: LibraryRecipe[]): LibraryR
   });
 }
 
-/** Days since the Unix epoch for an ISO week-start date — the deterministic picker's index. */
-export function dayNumber(weekStartDate: string): number {
-  return Math.floor(Date.parse(`${weekStartDate}T00:00:00Z`) / 86_400_000);
-}
-
-/**
- * The country this week leans into: deterministic in the week, among the
- * countries whose cuisine the given catalog can actually cook. `null`
- * when nothing matches.
- */
-export function pickCountry(weekStartDate: string, recipes: LibraryRecipe[]): Country | null {
-  const candidates = COUNTRIES.filter((country) => matchesFor(country, recipes).length > 0);
-  if (candidates.length === 0) {
-    return null;
-  }
-  return candidates[Math.abs(dayNumber(weekStartDate)) % candidates.length] ?? null;
-}
-
 /**
  * Builds the card: matched recipes into the week's still-unplanned dinner
- * slots, Monday forward. All dinners already planned (or nothing
- * matching) means no card — the plugin never re-plans a taken slot.
+ * slots, Monday forward. All dinners already planned, or nothing
+ * matching, means no card: the plugin never re-plans a taken slot.
  */
 export function buildCard(
   country: Country,
@@ -77,18 +58,16 @@ export function buildCard(
   return {
     title: `${country.name} week`,
     blurb: `Lean into ${country.cuisine} cooking with ${entries.length} dinner${entries.length === 1 ? "" : "s"} from the library this week.`,
-    icon: country.icon,
+    icon: flag(country),
     entries,
   };
 }
 
-/** The full suggestion for a context: a card, or nothing to suggest. */
-export function suggest(context: {
-  weekStartDate: string;
-  plannedSlots: PlannedSlot[];
-  libraryRecipes: LibraryRecipe[];
-}): PluginSuggestionCard[] {
-  const country = pickCountry(context.weekStartDate, context.libraryRecipes);
+/** The cards for a week: none until a country is chosen for it. */
+export function suggest(
+  country: Country | null,
+  context: { weekStartDate: string; plannedSlots: PlannedSlot[]; libraryRecipes: LibraryRecipe[] },
+): PluginSuggestionCard[] {
   if (country === null) {
     return [];
   }

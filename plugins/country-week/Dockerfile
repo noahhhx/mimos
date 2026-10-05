@@ -21,19 +21,25 @@ RUN npm run typecheck -w @mimos/country-week
 
 # ---- runtime stage ----
 # Runs straight from TypeScript source on Node's native type stripping
-# (engines: node >= 22.18) — a deliberate zero-build choice for a two-file
-# sidecar; the SDK is type-only, so no node_modules at runtime.
+# (engines: node >= 22.18), a deliberate zero-build choice for a small
+# sidecar; the SDK is type-only, so no node_modules at runtime. Each user's
+# wheel lives in a node:sqlite file under /data: mount a volume there
+# (ADR-0017).
 FROM node:22-alpine
 
 RUN addgroup --system --gid 1001 mimos \
- && adduser --system --uid 1001 --ingroup mimos --home /app mimos
+ && adduser --system --uid 1001 --ingroup mimos --home /app mimos \
+ && mkdir /data \
+ && chown mimos:mimos /data
 
 WORKDIR /app
 ENV NODE_ENV=production \
-    PORT=8080
+    PORT=8080 \
+    COUNTRY_WEEK_DB=/data/country-week.db
 
 COPY --from=build --chown=mimos:mimos /build/plugins/country-week/src ./src
 
 USER mimos
 EXPOSE 8080
-CMD ["node", "src/server.ts"]
+# node:sqlite still warns that it is experimental on Node 22.
+CMD ["node", "--disable-warning=ExperimentalWarning", "src/server.ts"]

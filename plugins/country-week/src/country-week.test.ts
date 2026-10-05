@@ -3,13 +3,19 @@ import { test } from "node:test";
 
 import type { LibraryRecipe, PlannedSlot } from "@mimos/plugin-sdk";
 
-import { COUNTRIES } from "./countries.ts";
-import { buildCard, dayNumber, matchesFor, pickCountry, suggest } from "./country-week.ts";
+import { type Country, countryByCode } from "./countries.ts";
+import { buildCard, matchesFor, suggest } from "./country-week.ts";
 
 const WEEK = "2026-09-07"; // a Monday
 
 function recipe(id: string, title: string, tags: string[]): LibraryRecipe {
   return { id, title, tags, servings: 4 };
+}
+
+function country(code: string): Country {
+  const found = countryByCode(code);
+  assert.ok(found);
+  return found;
 }
 
 const CATALOG: LibraryRecipe[] = [
@@ -24,59 +30,27 @@ const CATALOG: LibraryRecipe[] = [
 ];
 
 test("matchesFor finds cuisine by tag and by title keyword, case-insensitively", () => {
-  const italy = COUNTRIES.find((country) => country.id === "italy");
-  assert.ok(italy);
+  const italy = country("IT");
   // r-1 by tag ("italian"), r-2 by title ("minestrone").
   assert.deepEqual(
     matchesFor(italy, CATALOG).map((recipe) => recipe.id),
     ["r-1", "r-2"],
   );
-  const india = COUNTRIES.find((country) => country.id === "india");
-  assert.ok(india);
+  const india = country("IN");
   // r-3 by tag ("curry"), r-4 by title ("dahl").
   assert.deepEqual(
     matchesFor(india, CATALOG).map((recipe) => recipe.id),
     ["r-3", "r-4"],
   );
-  const greece = COUNTRIES.find((country) => country.id === "greece");
-  assert.ok(greece);
+  const greece = country("GR");
   assert.deepEqual(
     matchesFor(greece, CATALOG).map((recipe) => recipe.id),
     ["r-5"],
   );
 });
 
-test("pickCountry is deterministic in the week and null without matches", () => {
-  const first = pickCountry(WEEK, CATALOG);
-  assert.ok(first);
-  assert.equal(pickCountry(WEEK, CATALOG)?.id, first.id);
-  // Another week may pick another country, but it is stable too.
-  const other = pickCountry("2026-09-14", CATALOG);
-  assert.equal(pickCountry("2026-09-14", CATALOG)?.id, other?.id);
-  // A catalog with no cuisine signal gets no country.
-  assert.equal(pickCountry(WEEK, [recipe("r-x", "Plain Porridge", ["breakfast"])]), null);
-  // Every catalog-matched country can be picked for some week.
-  const picked = new Set<string>();
-  for (let day = 0; day < 700; day++) {
-    const week = new Date(Date.parse(`${WEEK}T00:00:00Z`) + day * 7 * 86_400_000)
-      .toISOString()
-      .slice(0, 10);
-    const country = pickCountry(week, CATALOG);
-    if (country) {
-      picked.add(country.id);
-    }
-  }
-  assert.equal(picked.size, 6);
-});
-
-test("dayNumber is stable arithmetic", () => {
-  assert.equal(dayNumber("2026-09-07"), dayNumber("2026-09-07"));
-  assert.equal(dayNumber("2026-09-14") - dayNumber("2026-09-07"), 7);
-});
-
 test("buildCard fills unplanned dinner slots and never a taken one", () => {
-  const italy = COUNTRIES.find((country) => country.id === "italy");
-  assert.ok(italy);
+  const italy = country("IT");
   const taken: PlannedSlot[] = [
     { date: WEEK, mealType: "DINNER", servings: 2 },
     { date: "2026-09-08", mealType: "LUNCH", servings: 1 },
@@ -84,7 +58,7 @@ test("buildCard fills unplanned dinner slots and never a taken one", () => {
   const card = buildCard(italy, CATALOG, taken, WEEK);
   assert.ok(card);
   assert.equal(card.title, "Italy week");
-  assert.equal(card.icon, "IT");
+  assert.equal(card.icon, "\u{1F1EE}\u{1F1F9}");
   assert.ok(card.blurb?.startsWith("Lean into Italian cooking"));
   assert.deepEqual(
     card.entries.map((entry) => entry.date),
@@ -98,8 +72,7 @@ test("buildCard fills unplanned dinner slots and never a taken one", () => {
 });
 
 test("buildCard returns null when every dinner is planned or nothing matches", () => {
-  const italy = COUNTRIES.find((country) => country.id === "italy");
-  assert.ok(italy);
+  const italy = country("IT");
   const allDinnersTaken: PlannedSlot[] = Array.from({ length: 7 }, (_, i) => ({
     date: new Date(Date.parse(`${WEEK}T00:00:00Z`) + i * 86_400_000).toISOString().slice(0, 10),
     mealType: "DINNER",
@@ -109,14 +82,15 @@ test("buildCard returns null when every dinner is planned or nothing matches", (
   assert.equal(buildCard(italy, [recipe("r-x", "Plain Porridge", ["breakfast"])], [], WEEK), null);
 });
 
-test("suggest returns one card for a matchable catalog and none otherwise", () => {
-  const cards = suggest({
-    weekStartDate: WEEK,
-    plannedSlots: [],
-    libraryRecipes: CATALOG,
-  });
+test("suggest builds a card for the chosen country and none without one", () => {
+  const context = { weekStartDate: WEEK, plannedSlots: [], libraryRecipes: CATALOG };
+  const cards = suggest(country("IN"), context);
   assert.equal(cards.length, 1);
-  assert.ok(cards[0]);
-  assert.ok(cards[0].entries.length > 0);
-  assert.deepEqual(suggest({ weekStartDate: WEEK, plannedSlots: [], libraryRecipes: [] }), []);
+  assert.equal(cards[0]?.title, "India week");
+  assert.deepEqual(
+    cards[0]?.entries.map((entry) => entry.recipeId),
+    ["r-3", "r-4"],
+  );
+  assert.deepEqual(suggest(null, context), []);
+  assert.deepEqual(suggest(country("PE"), context), [], "Peru has nothing in this library");
 });
