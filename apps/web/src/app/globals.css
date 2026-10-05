@@ -876,13 +876,36 @@ select:focus {
   border-color: var(--accent);
 }
 
-input[type="checkbox"] {
+input[type="checkbox"],
+input[type="radio"] {
   display: inline-block;
   width: 16px;
   height: 16px;
   margin: 0 8px 0 0;
   vertical-align: -2px;
   accent-color: var(--accent);
+}
+
+/* A row of radio choices, read as sentences rather than field labels. */
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 24px;
+}
+
+.choices label {
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+/* Why an ingredient line does not count toward calculated nutrition, under its row. */
+.ingredient-hint {
+  flex-basis: 100%;
+  margin: -8px 0 8px;
 }
 
 /* Search fields are underlined and set in the serif, as in the library. */

@@ -19,6 +19,7 @@ test("creates a recipe, then edits it back to its view", async ({ loggedInPage: 
     await page.getByLabel("Title").fill(title);
     await page.getByLabel("Description").fill("Written by the harness's edit-recipe scenario.");
     await page.getByLabel("Tags (comma-separated)").fill("dinner, Dinner, harness");
+    await page.getByLabel("Enter it myself").check();
     await page.getByLabel("Carbs g").fill("40");
     await page.getByLabel("Fat g").fill("10");
     await page.getByLabel("Ingredient 1 amount").fill("1");

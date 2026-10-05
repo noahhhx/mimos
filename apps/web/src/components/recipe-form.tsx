@@ -1,20 +1,37 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { createRecipe, replaceRecipe, type RecipeDetail } from "@mimos/api-client";
+import {
+  createRecipe,
+  estimateRecipeNutrition,
+  listIngredients,
+  replaceRecipe,
+  type CatalogIngredient,
+  type IngredientLineStatus,
+  type Nutrition,
+  type RecipeDetail,
+} from "@mimos/api-client";
 
+import { PerServing } from "@/components/per-serving";
 import { apiClient } from "@/lib/api";
+import { lineHint, suggestCatalogSlug } from "@/lib/catalog-match";
 import {
   EMPTY_INGREDIENT,
   formValuesOf,
+  toEstimateInput,
   toRecipeInput,
   type IngredientRow,
   type RecipeFormValues,
 } from "@/lib/recipe-input";
 
-type TextField = Exclude<keyof RecipeFormValues, "ingredients" | "steps">;
+type TextField = Exclude<keyof RecipeFormValues, "ingredients" | "steps" | "nutritionSource">;
+
+/** The calculated nutrition for the form as it stands, with a status per form row that was sent. */
+type Estimate = { nutrition: Nutrition; statuses: Map<number, IngredientLineStatus> } | "failed";
+
+const METRIC_UNITS = ["g", "kg", "ml", "l", "tsp", "tbsp"];
 
 function problemDetail(result: { error?: { detail?: string } | unknown }): string {
   const error = result.error as { detail?: string } | undefined;
@@ -23,7 +40,9 @@ function problemDetail(result: { error?: { detail?: string } | unknown }): strin
 
 /**
  * Create/edit form for personal recipes. Same richness as the library:
- * ingredients, steps, times, tags, and per-serving nutrition. It is a real
+ * ingredients, steps, times, tags, and per-serving nutrition, either
+ * typed in or calculated from what each ingredient counts as in the
+ * shared catalog (ADR-0015), live as the author types. It is a real
  * form, so the browser checks each input's constraints and Enter submits.
  * Without `onSaved`, a save navigates to the recipe's page; an editor
  * already on that page passes `onSaved` instead, since navigating to the
@@ -42,6 +61,43 @@ export function RecipeForm({
   const [values, setValues] = useState<RecipeFormValues>(() => formValuesOf(initial));
   const [errors, setErrors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [catalog, setCatalog] = useState<CatalogIngredient[]>([]);
+  const [estimate, setEstimate] = useState<Estimate>();
+  const calculated = values.nutritionSource === "INGREDIENTS";
+  const bySlug = useMemo(() => new Map(catalog.map((entry) => [entry.slug, entry])), [catalog]);
+  const estimateRequest = useMemo(() => (calculated ? toEstimateInput(values) : undefined), [calculated, values]);
+  const estimateKey = estimateRequest ? JSON.stringify(estimateRequest.input) : undefined;
+
+  useEffect(() => {
+    void listIngredients({ client: apiClient }).then((result) => setCatalog(result.data ?? []));
+  }, []);
+
+  useEffect(() => {
+    if (!estimateRequest) {
+      setEstimate(undefined);
+      return;
+    }
+    let current = true;
+    const timer = setTimeout(() => {
+      void estimateRecipeNutrition({ client: apiClient, body: estimateRequest.input }).then((result) => {
+        if (!current) {
+          return;
+        }
+        if (!result.data) {
+          setEstimate("failed");
+          return;
+        }
+        const statuses = new Map<number, IngredientLineStatus>();
+        result.data.lines.forEach((status, line) => statuses.set(estimateRequest.rows[line], status));
+        setEstimate({ nutrition: result.data.nutrition, statuses });
+      });
+    }, 300);
+    return () => {
+      current = false;
+      clearTimeout(timer);
+    };
+    // estimateKey stands for estimateRequest: refetch when what is sent changes, not on every keystroke elsewhere.
+  }, [estimateKey]);
 
   const set = (patch: Partial<RecipeFormValues>) => setValues((current) => ({ ...current, ...patch }));
   const field = (name: TextField) => ({
@@ -115,28 +171,16 @@ export function RecipeForm({
         <input {...field("tags")} placeholder="dinner, vegetarian" />
       </label>
 
-      <h2>Nutrition per serving (optional)</h2>
-      <div className="field-row">
-        <label>
-          Calories
-          <input type="number" min={0} step="any" {...field("calories")} />
-        </label>
-        <label>
-          Protein g
-          <input type="number" min={0} step="any" {...field("proteinG")} />
-        </label>
-        <label>
-          Carbs g
-          <input type="number" min={0} step="any" {...field("carbsG")} />
-        </label>
-        <label>
-          Fat g
-          <input type="number" min={0} step="any" {...field("fatG")} />
-        </label>
-      </div>
-
       <h2>Ingredients</h2>
-      <p className="muted">Leave the amount blank for ingredients you don&apos;t measure, like salt to taste.</p>
+      <p className="muted">
+        Leave the amount blank for ingredients you don&apos;t measure, like salt to taste. To count an ingredient
+        toward nutrition, pick what it counts as and measure it in grams, millilitres, spoons, or pieces.
+      </p>
+      <datalist id="metric-units">
+        {METRIC_UNITS.map((unit) => (
+          <option key={unit} value={unit} />
+        ))}
+      </datalist>
       {values.ingredients.map((row, index) => (
         <div className="field-row ingredient-row" key={index}>
           <label>
@@ -156,7 +200,7 @@ export function RecipeForm({
             <input
               value={row.unit}
               onChange={(e) => updateIngredient(index, { unit: e.target.value })}
-              placeholder="cups"
+              list="metric-units"
               maxLength={30}
               aria-label={`Ingredient ${index + 1} unit`}
             />
@@ -165,15 +209,35 @@ export function RecipeForm({
             Name
             <input
               value={row.name}
-              onChange={(e) => updateIngredient(index, { name: e.target.value })}
+              onChange={(e) => renameIngredient(index, e.target.value)}
               placeholder="flour"
               maxLength={200}
               aria-label={`Ingredient ${index + 1} name`}
             />
           </label>
+          <label>
+            Counts as
+            <select
+              value={row.catalogSlug ?? ""}
+              onChange={(e) => updateIngredient(index, { catalogSlug: e.target.value })}
+              aria-label={`Ingredient ${index + 1} counts as`}
+            >
+              <option value="">Not counted</option>
+              {catalog.map((entry) => (
+                <option key={entry.slug} value={entry.slug}>
+                  {entry.name}
+                </option>
+              ))}
+            </select>
+          </label>
           <button type="button" className="button secondary" onClick={() => removeRow("ingredient", index)}>
             Remove
           </button>
+          {calculated && estimate !== "failed" && (
+            <IngredientHint
+              hint={lineHint(estimate?.statuses.get(index), row.catalogSlug ? bySlug.get(row.catalogSlug) : undefined)}
+            />
+          )}
         </div>
       ))}
       <button
@@ -183,6 +247,50 @@ export function RecipeForm({
       >
         + Ingredient
       </button>
+
+      <h2>Nutrition per serving</h2>
+      <div className="choices" role="radiogroup" aria-label="Nutrition">
+        <label>
+          <input
+            type="radio"
+            name="nutritionSource"
+            checked={calculated}
+            onChange={() => set({ nutritionSource: "INGREDIENTS" })}
+          />
+          Calculate from ingredients
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="nutritionSource"
+            checked={!calculated}
+            onChange={() => set({ nutritionSource: "MANUAL" })}
+          />
+          Enter it myself
+        </label>
+      </div>
+      {calculated ? (
+        <CalculatedNutrition estimate={estimate} sent={estimateRequest?.rows.length ?? 0} />
+      ) : (
+        <div className="field-row">
+          <label>
+            Calories
+            <input type="number" min={0} step="any" {...field("calories")} />
+          </label>
+          <label>
+            Protein g
+            <input type="number" min={0} step="any" {...field("proteinG")} />
+          </label>
+          <label>
+            Carbs g
+            <input type="number" min={0} step="any" {...field("carbsG")} />
+          </label>
+          <label>
+            Fat g
+            <input type="number" min={0} step="any" {...field("fatG")} />
+          </label>
+        </div>
+      )}
 
       <h2>Steps</h2>
       {values.steps.map((step, index) => (
@@ -222,6 +330,14 @@ export function RecipeForm({
     set({ ingredients: values.ingredients.map((row, i) => (i === index ? { ...row, ...patch } : row)) });
   }
 
+  /** A renamed line follows the catalog suggestion, unless its author picked what it counts as. */
+  function renameIngredient(index: number, name: string) {
+    const row = values.ingredients[index];
+    const followsSuggestion =
+      row.catalogSlug === undefined || row.catalogSlug === suggestCatalogSlug(row.name, catalog);
+    updateIngredient(index, followsSuggestion ? { name, catalogSlug: suggestCatalogSlug(name, catalog) } : { name });
+  }
+
   function removeRow(kind: "ingredient" | "step", index: number) {
     if (kind === "ingredient") {
       set({ ingredients: values.ingredients.filter((_, i) => i !== index) });
@@ -229,4 +345,25 @@ export function RecipeForm({
       set({ steps: values.steps.filter((_, i) => i !== index) });
     }
   }
+}
+
+function IngredientHint({ hint }: { hint: string | undefined }) {
+  return hint ? <p className="muted ingredient-hint">{hint}</p> : null;
+}
+
+function CalculatedNutrition({ estimate, sent }: { estimate: Estimate | undefined; sent: number }) {
+  if (estimate === "failed") {
+    return <p className="muted">Nutrition could not be calculated right now. It is calculated again when you save.</p>;
+  }
+  const counted = estimate ? [...estimate.statuses.values()].filter((status) => status === "COUNTED").length : 0;
+  return (
+    <>
+      <PerServing nutrition={estimate?.nutrition ?? {}} />
+      <p className="muted">
+        {counted === 0
+          ? "Nothing counts yet. Pick what each ingredient counts as."
+          : `Counting ${counted} of ${sent} ingredients.`}
+      </p>
+    </>
+  );
 }

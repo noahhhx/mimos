@@ -1,4 +1,4 @@
-import type { NutritionSource, RecipeDetail, RecipeInput } from "@mimos/api-client";
+import type { NutritionEstimateInput, NutritionSource, RecipeDetail, RecipeInput } from "@mimos/api-client";
 
 /**
  * The recipe form's values as typed (every field a string), and their
@@ -38,7 +38,7 @@ export function formValuesOf(recipe?: RecipeDetail): RecipeFormValues {
     prepMinutes: text(recipe?.prepMinutes),
     cookMinutes: text(recipe?.cookMinutes),
     tags: recipe?.tags.join(", ") ?? "",
-    nutritionSource: recipe?.nutritionSource ?? "MANUAL",
+    nutritionSource: recipe?.nutritionSource ?? "INGREDIENTS",
     calories: text(recipe?.nutrition?.calories),
     proteinG: text(recipe?.nutrition?.proteinG),
     carbsG: text(recipe?.nutrition?.carbsG),
@@ -129,6 +129,37 @@ export function toRecipeInput(values: RecipeFormValues): { input: RecipeInput } 
       steps,
     },
   };
+}
+
+/**
+ * What the nutrition estimate needs from the form, and which form row each
+ * line came from; nothing until servings is a whole number from 1 to 50.
+ * Rows without a name and amounts that are not positive numbers are left
+ * out, so a half-typed row never makes the estimate fail.
+ */
+export function toEstimateInput(values: RecipeFormValues): { input: NutritionEstimateInput; rows: number[] } | undefined {
+  const servings = Number(values.servings);
+  if (!Number.isInteger(servings) || servings < 1 || servings > 50) {
+    return undefined;
+  }
+  const rows: number[] = [];
+  const ingredients: NutritionEstimateInput["ingredients"] = [];
+  values.ingredients.forEach((row, index) => {
+    const name = row.name.trim();
+    const amount = row.quantity.trim();
+    const quantity = amount === "" ? undefined : Number(amount);
+    if (name === "" || (quantity !== undefined && !(Number.isFinite(quantity) && quantity > 0))) {
+      return;
+    }
+    rows.push(index);
+    ingredients.push({
+      quantity,
+      unit: row.unit.trim() === "" ? undefined : row.unit.trim(),
+      name,
+      ...(row.catalogSlug ? { catalogSlug: row.catalogSlug } : {}),
+    });
+  });
+  return { input: { servings, ingredients }, rows };
 }
 
 function optionalNumber(value: string): number | undefined {

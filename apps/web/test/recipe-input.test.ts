@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { formValuesOf, toRecipeInput, type RecipeFormValues } from "../src/lib/recipe-input.ts";
+import { formValuesOf, toEstimateInput, toRecipeInput, type RecipeFormValues } from "../src/lib/recipe-input.ts";
 
 function values(patch: Partial<RecipeFormValues> = {}): RecipeFormValues {
   return {
@@ -119,3 +119,29 @@ describe("toRecipeInput", () => {
   });
 });
 
+describe("toEstimateInput", () => {
+  it("sends the named, validly measured rows and remembers where each came from", () => {
+    const estimate = toEstimateInput(
+      values({
+        servings: "4",
+        ingredients: [
+          { quantity: "", unit: "", name: "" },
+          { quantity: "250", unit: " g ", name: "red lentils", catalogSlug: "red-lentils" },
+          { quantity: "-1", unit: "", name: "carrots" },
+          { quantity: "", unit: "", name: "salt", catalogSlug: "" },
+        ],
+      }),
+    );
+    assert.ok(estimate);
+    assert.deepEqual(estimate.rows, [1, 3]);
+    assert.equal(
+      JSON.stringify(estimate.input),
+      '{"servings":4,"ingredients":[{"quantity":250,"unit":"g","name":"red lentils","catalogSlug":"red-lentils"},{"name":"salt"}]}',
+    );
+  });
+
+  it("waits for a valid number of servings", () => {
+    assert.equal(toEstimateInput(values({ servings: "" })), undefined);
+    assert.equal(toEstimateInput(values({ servings: "2.5" })), undefined);
+  });
+});

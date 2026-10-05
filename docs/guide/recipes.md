@@ -29,15 +29,42 @@ clear when you leave it.
 1. In **Recipes**, choose **+ New recipe**.
 2. Give it a title, a short description, and how many servings it makes.
    Prep and cook minutes and tags are optional; separate tags with commas.
-3. Add the nutrition per serving if you know it. Mimos uses it for your
-   [food log](log.md); leave it blank if you don't.
-4. Add the ingredients, one per line, each with an amount, a unit, and a
+3. Add the ingredients, one per line, each with an amount, a unit, and a
    name. Leave the amount blank for things you don't measure, like
    "salt, to taste", and leave the unit blank for things you count, like
    "2 eggs".
-5. Add the steps in order, then choose **Create recipe**.
+4. Check what each ingredient **counts as**. Mimos fills it in from the
+   name when it recognises the ingredient; pick another one, or **Not
+   counted**, if it guessed wrong.
+5. Under **Nutrition per serving**, leave **Calculate from ingredients**
+   chosen to have Mimos work it out, or choose **Enter it myself** to type
+   it in. Mimos uses it for your [food log](log.md).
+6. Add the steps in order, then choose **Create recipe**.
 
 ![The new recipe form](../assets/screenshots/recipe-new.png)
+
+### How nutrition is calculated
+
+Mimos keeps a list of common ingredients with their calories, protein,
+carbs, and fat, shared by everyone on this Mimos. An ingredient adds to
+the recipe's nutrition when it counts as one of them and is measured in
+units that ingredient uses:
+
+| The ingredient is measured by | Use these units |
+| ----------------------------- | --------------- |
+| Weight                        | `g`, `kg`       |
+| Volume                        | `ml`, `l`, `tsp` (5 ml), `tbsp` (15 ml) |
+| Count                         | no unit, like "2 eggs" |
+
+Mimos uses metric units only, so "2 cups flour" does not count; write
+"250 g flour" instead. The form says when a line does not count and
+which units would, and it shows how many ingredients are counted.
+Ingredients without an amount, like salt to taste, add nothing.
+
+Nutrition is calculated each time the recipe is shown, so when the
+ingredient list improves, your recipes improve with it. Meals you have
+already logged keep the nutrition they were logged with. Library recipes
+are calculated the same way.
 
 Your recipes work everywhere library recipes do: you can plan them, they
 add to your shopping list, and they count in your food log.

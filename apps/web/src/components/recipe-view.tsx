@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import type { RecipeDetail } from "@mimos/api-client";
 
+import { PerServing } from "@/components/per-serving";
 import { Quantity } from "@/components/quantity";
 import { SplitPage } from "@/components/split-page";
 import { hasNutrition } from "@/lib/format";
@@ -70,24 +71,8 @@ export function RecipeView({ recipe, children }: { recipe: RecipeDetail; childre
       {hasNutrition(recipe.nutrition) && (
         <section className="nutrition">
           <h2>Per serving</h2>
-          <dl className="per-serving">
-            <div>
-              <dt>Calories</dt>
-              <dd>{recipe.nutrition.calories != null ? `${Math.round(recipe.nutrition.calories)} kcal` : "–"}</dd>
-            </div>
-            <div>
-              <dt>Protein</dt>
-              <dd>{recipe.nutrition.proteinG != null ? `${Math.round(recipe.nutrition.proteinG)} g` : "–"}</dd>
-            </div>
-            <div>
-              <dt>Carbs</dt>
-              <dd>{recipe.nutrition.carbsG != null ? `${Math.round(recipe.nutrition.carbsG)} g` : "–"}</dd>
-            </div>
-            <div>
-              <dt>Fat</dt>
-              <dd>{recipe.nutrition.fatG != null ? `${Math.round(recipe.nutrition.fatG)} g` : "–"}</dd>
-            </div>
-          </dl>
+          <PerServing nutrition={recipe.nutrition} />
+          {recipe.nutritionSource === "INGREDIENTS" && <p className="muted">Calculated from the ingredients.</p>}
         </section>
       )}
     </>
