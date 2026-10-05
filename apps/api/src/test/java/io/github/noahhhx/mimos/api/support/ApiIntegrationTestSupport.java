@@ -48,6 +48,11 @@ public abstract class ApiIntegrationTestSupport {
                 () -> keycloak.getAuthServerUrl() + "/realms/mimos");
     }
 
+    /** The Mimos realm's base URL, the issuer of every test token. */
+    protected static String realmUrl() {
+        return keycloak.getAuthServerUrl() + "/realms/mimos";
+    }
+
     /** Password grant against the real token endpoint (direct access grants are enabled on mimos-web). */
     protected static String accessToken() {
         return accessToken("test");

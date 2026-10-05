@@ -18,6 +18,29 @@
       "directAccessGrantsEnabled": true,
       "redirectUris": ["${MIMOS_WEB_ORIGIN:http://localhost:3000}/*"],
       "webOrigins": ["${MIMOS_WEB_ORIGIN:http://localhost:3000}"]
+    },
+    {
+      "clientId": "mimos-agent",
+      "name": "Mimos Agent",
+      "description": "Public client for AI agents that connect over MCP (ADR-0014). Loopback redirect URIs match any port.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost/callback",
+        "http://127.0.0.1/callback",
+        "http://[::1]/callback",
+        "https://claude.ai/api/mcp/auth_callback"
+      ],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "oauth2.device.authorization.grant.enabled": "false"
+      }
     }
   ],
   "users": [
