@@ -9,16 +9,19 @@ import {
   deleteMealPlanEntry,
   getMealPlan,
   getPlanSuggestions,
+  getWeekPanels,
   listLibraryRecipes,
   listMyRecipes,
   updateMealPlanEntry,
   type MealPlan,
   type PlanSuggestion,
   type RecipeSummary,
+  type WeekPanel,
 } from "@mimos/api-client";
 
 import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";
+import { WeekPanelSection } from "@/components/week-panel";
 import { apiClient } from "@/lib/api";
 import { MEAL_TYPES, addDays, dayLabel, formatServings, mealLabel, mondayOf, weekDays } from "@/lib/format";
 import { applySuggestionEntries } from "@/lib/suggestions";
@@ -33,6 +36,8 @@ export default function PlanPage() {
   const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()));
   const [plan, setPlan] = useState<MealPlan | null>(null);
   const [suggestions, setSuggestions] = useState<PlanSuggestion[] | null>(null);
+  // Tagged with their week, so a slow answer for a week left behind never shows.
+  const [panels, setPanels] = useState<{ week: string; list: WeekPanel[] } | null>(null);
   const [applying, setApplying] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,25 +55,34 @@ export default function PlanPage() {
     }
   }, []);
 
-  const reload = useCallback(async () => {
-    const [planResult, suggestionsResult] = await Promise.all([
-      getMealPlan({ client: apiClient, path: { startDate: weekStart } }),
-      getPlanSuggestions({ client: apiClient, path: { startDate: weekStart } }),
-    ]);
-    if (planResult.error) {
-      setError("Could not load the plan.");
-      return;
-    }
-    setError(null);
-    setPlan(planResult.data ?? null);
-    // Suggestions are an enhancement (ADR-0006): a failure here never
-    // hurts the plan itself.
-    setSuggestions(suggestionsResult.error ? [] : (suggestionsResult.data?.suggestions ?? []));
-  }, [weekStart]);
+  // Panels depend on the week, not on its meals, so only a new week loads them.
+  const reload = useCallback(
+    async (withPanels = false) => {
+      const [planResult, suggestionsResult, panelsResult] = await Promise.all([
+        getMealPlan({ client: apiClient, path: { startDate: weekStart } }),
+        getPlanSuggestions({ client: apiClient, path: { startDate: weekStart } }),
+        withPanels ? getWeekPanels({ client: apiClient, path: { startDate: weekStart } }) : undefined,
+      ]);
+      // Panels are an enhancement too (ADR-0017): one that fails to load is hidden.
+      if (panelsResult) {
+        setPanels({ week: weekStart, list: panelsResult.data?.panels ?? [] });
+      }
+      if (planResult.error) {
+        setError("Could not load the plan.");
+        return;
+      }
+      setError(null);
+      setPlan(planResult.data ?? null);
+      // Suggestions are an enhancement (ADR-0006): a failure here never
+      // hurts the plan itself.
+      setSuggestions(suggestionsResult.error ? [] : (suggestionsResult.data?.suggestions ?? []));
+    },
+    [weekStart],
+  );
 
   useEffect(() => {
     if (user) {
-      void reload();
+      void reload(true);
     }
   }, [user, reload]);
 
@@ -165,6 +179,20 @@ export default function PlanPage() {
     setLogged(`${entry.recipeTitle} logged.`);
   };
 
+  // A panel's button can change what its plugin suggests (Country of the
+  // Week suggests dishes from the chosen country), so suggestions follow.
+  const replacePanel = async (panel: WeekPanel) => {
+    setPanels(
+      (current) =>
+        current && {
+          ...current,
+          list: current.list.map((each) => (each.pluginId === panel.pluginId ? panel : each)),
+        },
+    );
+    const result = await getPlanSuggestions({ client: apiClient, path: { startDate: weekStart } });
+    setSuggestions(result.error ? [] : (result.data?.suggestions ?? []));
+  };
+
   const applySuggestion = async (suggestion: PlanSuggestion) => {
     setApplying(true);
     const added = await applySuggestionEntries(weekStart, suggestion.entries);
@@ -208,6 +236,19 @@ export default function PlanPage() {
       {notice && (
         <div className="card ok" role="status">
           <p>{notice}</p>
+        </div>
+      )}
+
+      {panels !== null && panels.week === weekStart && panels.list.length > 0 && (
+        <div className="week-panels" aria-label="Plugins for this week" role="group">
+          {panels.list.map((panel) => (
+            <WeekPanelSection
+              key={`${panels.week}:${panel.pluginId}`}
+              startDate={panels.week}
+              panel={panel}
+              onChange={(next) => void replacePanel(next)}
+            />
+          ))}
         </div>
       )}
 

@@ -79,7 +79,10 @@ export default function PluginsPage() {
           Plugins are add-ons that whoever runs this Mimos chose to install, bringing features beyond what Mimos does
           on its own. Country of the Week, for example, picks a cuisine for your week and suggests dishes from it.
         </p>
-        <p>Every plugin starts off. Turn on the ones you want below, and turn them off again at any time.</p>
+        <p>
+          Every plugin starts off. Turning one on lets it remember things about you, under a pseudonym rather than your
+          name or account. Turn on the ones you want below, and turn them off again at any time.
+        </p>
       </section>
 
       <section className="plugins" aria-labelledby="installed-heading">

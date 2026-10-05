@@ -1509,6 +1509,179 @@ input[type="search"]:focus {
   margin-left: auto;
 }
 
+/* ---------- Plugin week panels (ADR-0017): one line each until opened ---------- */
+
+.week-panels {
+  margin: 0 0 24px;
+  border-top: 1px solid var(--line);
+}
+
+.week-panel {
+  border-bottom: 1px solid var(--line);
+}
+
+.week-panel h2 {
+  margin: 0;
+  font: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--fg);
+}
+
+/* Name, then the summary taking the rest of the row, then the +/− sign. */
+.week-panel-toggle {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 4px 16px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.week-panel-name {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.week-panel-toggle:hover .week-panel-name,
+.week-panel-toggle[aria-expanded="true"] .week-panel-name {
+  color: var(--fg);
+}
+
+.week-panel-summary {
+  grid-column: 2;
+  font-family: var(--serif);
+  font-size: 19px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.week-panel-sign {
+  grid-column: 3;
+  font-size: 19px;
+  line-height: 1;
+  color: var(--muted);
+}
+
+.week-panel-toggle:hover .week-panel-sign {
+  color: var(--accent);
+}
+
+.week-panel-body {
+  padding: 4px 0 20px;
+}
+
+.week-panel-body > p {
+  max-width: 60ch;
+  margin: 0 0 12px;
+}
+
+.week-panel-body > .card.error {
+  margin: 16px 0 0;
+}
+
+.panel-highlight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0 0 16px;
+}
+
+.panel-highlight-icon {
+  font-size: 48px;
+  line-height: 1;
+}
+
+.panel-highlight h3 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 400;
+}
+
+.panel-highlight p {
+  margin: 0;
+}
+
+.panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+/* The wheel (components/wheel.tsx): fills from the palette's quiet tones,
+   the amber pointer fixed at the top. Its spin is the app's one animation
+   (ADR-0017 amends ADR-0008), and the component skips it under
+   prefers-reduced-motion. */
+.wheel {
+  position: relative;
+  width: min(100%, 300px);
+  margin: 12px 0 20px;
+  padding-top: 10px;
+}
+
+.wheel-disc svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.wheel-disc.turning {
+  transition: transform 3s cubic-bezier(0.15, 0.6, 0.2, 1);
+}
+
+.wheel-segment {
+  stroke: var(--bg);
+  stroke-width: 0.75;
+}
+
+.wheel-segment.tone-0 {
+  fill: var(--surface);
+}
+
+.wheel-segment.tone-1 {
+  fill: var(--line);
+}
+
+.wheel-segment.tone-2 {
+  fill: var(--hover);
+}
+
+.wheel-rim {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.5;
+}
+
+.wheel-hub {
+  fill: var(--bg);
+  stroke: var(--muted);
+  stroke-width: 1.5;
+}
+
+.wheel-pointer {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 20px;
+  height: 22px;
+  margin-left: -10px;
+}
+
+.wheel-pointer path {
+  fill: var(--accent);
+}
+
 /* ---------- Plugin suggestion cards (ADR-0006): plain text, attributed ---------- */
 
 .suggestions {
