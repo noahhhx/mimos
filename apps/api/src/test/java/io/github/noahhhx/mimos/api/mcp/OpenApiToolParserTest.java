@@ -160,7 +160,7 @@ class OpenApiToolParserTest {
     void hintsFollowTheHttpMethod() {
         assertThat(hints(tool("getThing"))).containsExactly(true, false, true);
         assertThat(hints(tool("createThing"))).containsExactly(false, false, false);
-        assertThat(hints(tool("replaceThing"))).containsExactly(false, false, true);
+        assertThat(hints(tool("replaceThing"))).containsExactly(false, true, true);
         assertThat(hints(tool("patchThing"))).containsExactly(false, false, false);
         assertThat(hints(tool("deleteThing"))).containsExactly(false, true, true);
     }

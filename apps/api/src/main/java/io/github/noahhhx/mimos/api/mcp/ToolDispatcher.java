@@ -6,6 +6,7 @@ import io.github.noahhhx.mimos.api.support.RequestLoggingFilter;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,15 +32,19 @@ public final class ToolDispatcher {
     /** Who is calling, taken from the authenticated {@code /mcp} request. */
     public record Caller(String bearerToken, @Nullable String requestId) {}
 
+    private static final Duration READ_TIMEOUT = Duration.ofSeconds(30);
+
     private final RestClient http;
     private final ObjectMapper objectMapper;
     private final Environment environment;
 
     public ToolDispatcher(ObjectMapper objectMapper, Environment environment) {
         // The JDK client: HttpURLConnection, the other built-in, cannot send PATCH.
-        this.http = RestClient.builder()
-                .requestFactory(new JdkClientHttpRequestFactory())
-                .build();
+        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory();
+        // The outer /mcp request holds a server thread while the inner one needs another;
+        // with the pool exhausted, a bounded wait fails the call instead of hanging it.
+        requestFactory.setReadTimeout(READ_TIMEOUT);
+        this.http = RestClient.builder().requestFactory(requestFactory).build();
         this.objectMapper = objectMapper;
         this.environment = environment;
     }

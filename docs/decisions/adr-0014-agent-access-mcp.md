@@ -43,8 +43,9 @@ The api jar carries `contracts/api/openapi.yaml`. At startup
   `body` property. Component schemas are copied into `$defs`, which works
   because OpenAPI 3.1 schemas are JSON Schema 2020-12. Unknown arguments
   are rejected, so a misplaced field comes back as an error.
-- Hints follow the HTTP method: `GET` is read-only, `DELETE` is
-  destructive, and `PUT` and `DELETE` are idempotent.
+- Hints follow the HTTP method: `GET` is read-only, `PUT` and `DELETE`
+  are destructive (a `PUT` replaces what was there), and `PUT` and
+  `DELETE` are idempotent.
 
 A new endpoint is a tool without further work. An operation opts out with
 the vendor extension `x-mcp: false`. The public library duplicates

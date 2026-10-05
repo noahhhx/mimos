@@ -33,7 +33,7 @@ public final class OpenApiToolParser {
     private enum Verb {
         GET(HttpMethod.GET, true, false, true),
         POST(HttpMethod.POST, false, false, false),
-        PUT(HttpMethod.PUT, false, false, true),
+        PUT(HttpMethod.PUT, false, true, true),
         PATCH(HttpMethod.PATCH, false, false, false),
         DELETE(HttpMethod.DELETE, false, true, true);
 
