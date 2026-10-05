@@ -49,6 +49,7 @@ change** — an out-of-date AGENTS.md is worse than none.
 | Public API | Unauthenticated read-only access to the curated library under `/api/v1/public/**` (SEO pages). Personal recipes never appear there; everything else requires a bearer token. |
 | Account data | Per-user export/import as one versioned JSON document (`GET /api/v1/account/export`, `POST /api/v1/account/import`): domain-shaped, never a table dump; library recipes by slug; import only into an empty account, atomically, through domain validation. Format changes bump the version, add an `ExportUpgrader` step and a frozen `export/v<N>.json` test fixture. See ADR-0011. |
 | Plugins    | HTTP sidecar plugins, pull-only in v1: config registry (`mimos.plugins.*`), manifest at `GET /manifest`, one capability (`plan-suggestions`), declarative cards, library-only context. See ADR-0006. Registered means available; each user opts in from the Plugins page (`/app/plugins`, linked from the profile menu; API `/api/v1/me/plugins`), and every plugin starts off. See ADR-0013. |
+| Agent access | MCP server inside `mimos-api` at `/mcp` (Spring AI 2.0.x MCP server starter, stateless Streamable HTTP; Spring AI's model layer excluded). Tools are derived from `contracts/api/openapi.yaml` at startup: every `/api/v1` operation is a tool unless it declares `x-mcp: false`, and a call loops back through the HTTP API with the caller's token. Agents sign in as the public Keycloak client `mimos-agent` (Authorization Code + PKCE), found through Protected Resource Metadata (RFC 9728). See ADR-0014. |
 | Agent harness | `tools/harness` (`@mimos/harness`, TypeScript on Node type stripping) behind a devenv `harness` script; all agent tooling from devenv/nixpkgs; Playwright pinned to nixpkgs' `playwright-driver`; `.mcp.json` committed; debug-only behavior in `deploy/docker/compose.debug.yml`; scenarios run in CI via devenv. Plan and decisions in `docs/harness/`. |
 
 ## Open decisions — resolve with the owner before building against them
@@ -80,6 +81,11 @@ wire-format contract:
   It never touches tables, so a migration that keeps the domain's meaning
   needs no export change; one that changes it needs a new format version
   (upgrade step + frozen fixture).
+- `apps/api` package `mcp` — agent access over MCP (ADR-0014): parses
+  the OpenAPI contract into tools at startup (`OpenApiToolParser`) and
+  runs each call as a request to the API's own port (`ToolDispatcher`).
+  It never calls the core modules, so it needs no change when an
+  endpoint is added; the spec is its only input.
 - `integrations/plugins` — the plugin runtime: registry, outbound
   extension-API client, suggestion-card validation (ADR-0006), and the
   per-user opt-ins it owns the table for (`plugin_opt_in`, ADR-0013).
@@ -216,8 +222,17 @@ is the contract:
   unmapped is a 500 problem, logged with its stack trace, its message never
   sent. Adding method security means leaving its exceptions to the security
   chain, not this catch-all.
-- `/actuator/health` and `/api/v1/public/**` are the only unauthenticated
-  endpoints (compose probes and SEO pages).
+- `/actuator/health`, `/api/v1/public/**`, and
+  `/.well-known/oauth-protected-resource/**` are the only unauthenticated
+  endpoints (compose probes, SEO pages, and where MCP clients learn to
+  sign in). A 401 names that metadata in `WWW-Authenticate`.
+- AI agents sign in as `mimos-agent`, a public client with PKCE S256
+  required and no password grant (ADR-0014). Its loopback redirect URIs
+  have no port, which Keycloak matches against any port; the claude.ai
+  connector callback is listed exactly. Tokens are not audience-checked,
+  so both clients' tokens work on every endpoint. The API reads
+  `X-Forwarded-*` from private-network proxies
+  (`server.forward-headers-strategy: native`) to name its public URL.
 - API integration tests use Testcontainers Postgres **and** Keycloak (the
   realm export from `deploy/keycloak` is on the test classpath); the Keycloak
   container module is `com.github.dasniko:testcontainers-keycloak` (the
@@ -242,7 +257,7 @@ mimos/
 │   ├── api/              # Spring Boot modular monolith (the only deployable backend)
 │   └── web/              # Next.js frontend (src/fonts/: committed web fonts, ADR-0008)
 ├── contracts/
-│   ├── api/              # OpenAPI spec — the source of truth for the HTTP API (ADR-0003)
+│   ├── api/              # OpenAPI spec — the source of truth for the HTTP API (ADR-0003) and its MCP tools (ADR-0014)
 │   └── plugins/          # versioned plugin extension-API specs (ADR-0006)
 ├── core/
 │   ├── core-recipes/     # recipe domain module
@@ -325,6 +340,13 @@ mimos/
 - **Migrations:** Flyway, forward-only. Never edit an applied migration;
   add a new one. Migrations run automatically on startup so self-hosters
   upgrade by pulling and restarting.
+- **Agent tools:** a new endpoint under `/api/v1` is an MCP tool
+  automatically, named by its `operationId`. Its `summary` and
+  `description` are all an agent reads, so state the rules a caller
+  would otherwise guess (a plan's `startDate` is a Monday). Opt an
+  operation out with `x-mcp: false` only when an agent should not call
+  it; `McpEndpointTests` pins the opt-out list. The server's
+  `instructions` live in `application.yml`.
 - **Error handling:** RFC 9457 problem-details responses from the API.
   Request bodies are read strictly: a fractional value for an integer
   field is a 400, never truncated (`spring.jackson.deserialization.accept-float-as-int: false`).
@@ -419,6 +441,12 @@ writes evidence to `.harness/runs/<run>/` (gitignored), and
   above).
 - `npm run typecheck -w @mimos/harness` and `npm test -w @mimos/harness` —
   the agent harness's types and unit tests (no Docker or browsers needed).
+- `./mvnw -B -pl apps/api test -Dtest='McpEndpointTests,AgentSignInTests,OpenApiToolParserTest'`
+  — the MCP server and agent sign-in on their own (part of `verify`).
+  Against a running stack, `curl
+  http://localhost:8080/.well-known/oauth-protected-resource/mcp` names
+  the realm, and `claude mcp add --transport http --client-id
+  mimos-agent mimos http://localhost:8080/mcp` connects Claude Code.
 - `devenv shell -- harness diag` — diagnostics snapshot of a running
   stack (full with `harness up --debug`); exit 1 means it found a problem
   (listed in `.harness/runs/latest/summary.md`).

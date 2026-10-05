@@ -54,7 +54,9 @@ devices you use trust that CA.
 
 Forward each URL to its port and send the usual `X-Forwarded-For`,
 `X-Forwarded-Proto` and `X-Forwarded-Host` headers. Keycloak builds its
-URLs from them. The defaults bind to `127.0.0.1`, which suits a proxy on the
+URLs from them, and so does the API when it tells AI agents where to sign
+in. The API trusts these headers only from private-network and loopback
+addresses, where a proxy in front of it runs. The defaults bind to `127.0.0.1`, which suits a proxy on the
 same host. If the proxy runs on another machine, set `BIND_ADDRESS=0.0.0.0`.
 A Caddy example:
 
@@ -129,3 +131,35 @@ never does: it logs a warning and contributes nothing until it's back.
 
 Delete the `country-week` service and the two `MIMOS_PLUGINS_0_*` lines
 from `compose.yml`.
+
+## AI agents
+
+Users can connect AI agents such as Claude Code to Mimos over MCP, at your
+API URL followed by `/mcp` (see [Use Mimos from an AI agent](guide/agents.md)).
+Agents sign in through Keycloak as the `mimos-agent` client, which the
+realm includes. Claude on claude.ai connects from Anthropic's servers, so
+it needs the API and Keycloak on public HTTPS URLs; Claude Code does not.
+
+### Add the agent client to an existing instance
+
+Keycloak imports the realm only on the first start, so an instance set up
+before agent support has no `mimos-agent` client. Add it in the admin
+console:
+
+1. Open `KEYCLOAK_PUBLIC_URL/admin`, sign in as an admin, and switch to the
+   `mimos` realm.
+2. Go to **Clients** and choose **Create client**.
+3. Set **Client ID** to `mimos-agent` and choose **Next**.
+4. Leave **Client authentication** off. Under **Authentication flow**,
+   tick only **Standard flow**, then choose **Next**.
+5. Add these four **Valid redirect URIs**, then choose **Save**:
+    - `http://localhost/callback`
+    - `http://127.0.0.1/callback`
+    - `http://[::1]/callback`
+    - `https://claude.ai/api/mcp/auth_callback`
+6. Open the client's **Advanced** tab. Under **Advanced settings**, set
+   **Proof Key for Code Exchange Code Challenge Method** to `S256` and
+   choose **Save**.
+
+The loopback redirect URIs have no port on purpose: Keycloak then accepts
+any port, which agents on your computer pick at random.

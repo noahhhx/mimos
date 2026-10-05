@@ -63,3 +63,6 @@ starts in light and remembers your choice in each browser.
 3. Open **Shopping** and choose **Generate from this week's plan**. Take
    the list to the store.
 4. On the night, open the **Kitchen** and choose **Start cooking**.
+
+You can also ask an AI agent to do any of this for you. See
+[Use Mimos from an AI agent](agents.md).

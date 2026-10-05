@@ -95,6 +95,7 @@ nav:
       - Shopping list: guide/shopping-list.md
       - Food log: guide/log.md
       - Plugins: guide/plugins.md
+      - AI agents: guide/agents.md
       - Your data: guide/your-data.md
   - Self-hosting: self-hosting.md
   - Writing a plugin:
