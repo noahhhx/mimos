@@ -102,6 +102,13 @@ docker compose exec -T postgres pg_dump -U mimos keycloak > keycloak.sql
 Each user can also export their own data from **Account** in the app
 ([ADR-0011](decisions/adr-0011-account-export-import.md)).
 
+## Plugins
+
+The stack registers the reference plugin, Country of the Week. A
+registered plugin is only *available*: each user turns it on in their
+Plugins page (profile menu, then **Plugins**) before it sees their week or suggests anything
+([ADR-0013](decisions/adr-0013-per-user-plugin-opt-in.md)).
+
 ## Without plugins
 
 Delete the `country-week` service and the two `MIMOS_PLUGINS_0_*` lines

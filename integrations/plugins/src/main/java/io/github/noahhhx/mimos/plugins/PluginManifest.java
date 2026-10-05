@@ -15,7 +15,9 @@ import java.util.regex.Pattern;
  * @param apiVersions extension API major versions this plugin speaks
  * @param capabilities capabilities the plugin provides; unknown ones are
  *     ignored with a warning so a newer plugin degrades, not fails
- * @param homepageUrl documentation or project page
+ * @param homepageUrl documentation or project page; an absolute http(s)
+ *     URL, or {@code null} (anything else is dropped at parse time, since
+ *     the web app renders it as a link)
  */
 public record PluginManifest(
         String schema,
@@ -31,6 +33,7 @@ public record PluginManifest(
 
     static final Pattern ID_PATTERN = Pattern.compile("^[a-z0-9][a-z0-9-]*$");
     static final int MAX_NAME_LENGTH = 100;
+    static final int MAX_HOMEPAGE_URL_LENGTH = 2048;
 
     /** Known capabilities this version of Mimos can call. */
     static final java.util.Set<String> KNOWN_CAPABILITIES = java.util.Set.of(CAPABILITY_PLAN_SUGGESTIONS);
@@ -63,6 +66,27 @@ public record PluginManifest(
         java.util.List<String> apiVersions = Json.stringArray(node, "apiVersions", true);
         java.util.List<String> capabilities = Json.stringArray(node, "capabilities", false);
         // schema equals SCHEMA (checked above), so pass the constant.
-        return new PluginManifest(SCHEMA, id, name, version, apiVersions, capabilities, Json.text(node, "homepageUrl"));
+        return new PluginManifest(
+                SCHEMA, id, name, version, apiVersions, capabilities, httpUrlOrNull(Json.text(node, "homepageUrl")));
+    }
+
+    /**
+     * The URL when it is an absolute http(s) URL with a host, else {@code
+     * null}. A bad homepage is dropped rather than failing the manifest: it
+     * is cosmetic, but it becomes a link in users' browsers, so a {@code
+     * javascript:} or other scheme must never get through.
+     */
+    static @org.jspecify.annotations.Nullable String httpUrlOrNull(@org.jspecify.annotations.Nullable String url) {
+        if (url == null || url.length() > MAX_HOMEPAGE_URL_LENGTH) {
+            return null;
+        }
+        try {
+            java.net.URI uri = new java.net.URI(url);
+            String scheme = uri.getScheme();
+            boolean http = "http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme);
+            return http && uri.getHost() != null ? url : null;
+        } catch (java.net.URISyntaxException exception) {
+            return null;
+        }
     }
 }

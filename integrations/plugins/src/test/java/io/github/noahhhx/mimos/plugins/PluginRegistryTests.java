@@ -14,7 +14,8 @@ import org.junit.jupiter.api.Timeout;
 /**
  * Registry semantics (ADR-0006): static misconfiguration fails startup,
  * unreachability never does, and manifests are retried lazily so a plugin
- * that starts after the API is still picked up.
+ * that starts after the API is still picked up. The plugins a user can
+ * turn on are the usable ones (ADR-0013).
  */
 class PluginRegistryTests {
 
@@ -88,6 +89,28 @@ class PluginRegistryTests {
             assertThat(capable)
                     .extracting(plugin -> requireNonNull(plugin.manifest()).id())
                     .containsExactly("other");
+        }
+    }
+
+    @Test
+    @Timeout(10)
+    void availablePluginsAreTheOnesAUserCanTurnOn() throws IOException {
+        String onlyUnknown = """
+                {"schema":"mimos.plugin.manifest/v1","id":"future","name":"Future",\
+                "version":"1.0.0","apiVersions":["1"],"capabilities":["far-future"]}\
+                """;
+        try (StubPluginServer stub = StubPluginServer.start(MANIFEST, "{\"suggestions\":[]}");
+                StubPluginServer future = StubPluginServer.start(onlyUnknown, "{\"suggestions\":[]}")) {
+            // Listed (ADR-0013): resolved, speaking v1, calling a capability
+            // this Mimos knows. Not listed: unreachable, or nothing to call.
+            PluginRegistry registry = new PluginRegistry(new PluginsProperties(List.of(
+                    new PluginRegistration(null, "http://localhost:1", null, Duration.ofMillis(500)),
+                    new PluginRegistration(null, future.url(), null, Duration.ofMillis(500)),
+                    new PluginRegistration(null, stub.url(), null, Duration.ofMillis(500)))));
+            registry.warmUp();
+            assertThat(registry.availablePlugins())
+                    .extracting(PluginManifest::id)
+                    .containsExactly("stub-plugin");
         }
     }
 

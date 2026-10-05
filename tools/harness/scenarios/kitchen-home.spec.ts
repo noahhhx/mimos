@@ -6,9 +6,11 @@ import { expect, test } from "./fixtures.ts";
 /**
  * The Kitchen home (docs/design/index.md, "Kitchen home"): with tonight open and
  * every earlier evening of the week planned, the Country of the Week card
- * (in the default compose stack) offers tonight; adding it puts the
- * recipe under Tonight and on today's row of the week. Whatever the
- * scenario planned is removed again, so reruns start from the same week.
+ * (in the default compose stack, turned on for the user first: plugins
+ * are opt-in, ADR-0013) offers tonight; adding it puts the recipe under
+ * Tonight and on today's row of the week. Whatever the scenario planned is
+ * removed again, and the plugin is left as it was found, so reruns start
+ * from the same state.
  */
 
 interface PlanEntry {
@@ -51,8 +53,14 @@ test("tonight, the week, and a plugin's thought for an open evening", async ({ l
   });
   const planPath = `/api/v1/plans/${monday}`;
   const before = new Set((await api<{ entries: PlanEntry[] }>("GET", planPath)).entries.map((entry) => entry.id));
+  const plugins = await api<{ id: string; enabled: boolean }[]>("GET", "/api/v1/me/plugins");
+  const wasEnabled = plugins.find((plugin) => plugin.id === "country-week")?.enabled ?? false;
 
   try {
+    await test.step("turn Country of the Week on", async () => {
+      await api("PUT", "/api/v1/me/plugins/country-week", { enabled: true });
+    });
+
     await test.step("plan every earlier open evening, leaving tonight open", async () => {
       const { entries } = await api<{ entries: PlanEntry[] }>("GET", planPath);
       const dinners = new Set(entries.filter((entry) => entry.mealType === "DINNER").map((entry) => entry.date));
@@ -106,6 +114,9 @@ test("tonight, the week, and a plugin's thought for an open evening", async ({ l
     const { entries } = await api<{ entries: PlanEntry[] }>("GET", planPath);
     for (const entry of entries.filter((planned) => !before.has(planned.id))) {
       await api("DELETE", `${planPath}/entries/${entry.id}`);
+    }
+    if (!wasEnabled) {
+      await api("PUT", "/api/v1/me/plugins/country-week", { enabled: false });
     }
   }
 });

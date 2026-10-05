@@ -5,13 +5,15 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jspecify.annotations.Nullable;
 
 /**
  * A real local HTTP server playing a registered plugin for the endpoint
  * tests (ADR-0006: fan-out runs against a real server). The suggestions
- * payload is mutable per test; the last context body is captured.
+ * payload is mutable per test; the last context body is captured and
+ * fan-out calls are counted.
  */
 final class StubPlugin implements AutoCloseable {
 
@@ -22,6 +24,7 @@ final class StubPlugin implements AutoCloseable {
 
     private final HttpServer server;
     private final AtomicReference<@Nullable String> lastContext = new AtomicReference<>();
+    private final AtomicInteger suggestionCalls = new AtomicInteger();
     volatile String suggestionsJson = "{\"suggestions\":[]}";
 
     private StubPlugin(HttpServer server) {
@@ -40,6 +43,7 @@ final class StubPlugin implements AutoCloseable {
             }
         });
         server.createContext("/v1/plan-suggestions", exchange -> {
+            stub.suggestionCalls.incrementAndGet();
             stub.lastContext.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
             byte[] body = stub.suggestionsJson.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().set("Content-Type", "application/json");
@@ -59,6 +63,10 @@ final class StubPlugin implements AutoCloseable {
     @Nullable
     String lastContext() {
         return lastContext.get();
+    }
+
+    int suggestionCalls() {
+        return suggestionCalls.get();
     }
 
     @Override

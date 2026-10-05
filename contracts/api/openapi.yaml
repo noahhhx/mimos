@@ -7,7 +7,7 @@
 openapi: 3.1.0
 info:
   title: Mimos API
-  version: 0.5.0
+  version: 0.6.0
   description: |
     The Mimos recipe companion API. Endpoints require a bearer token issued
     by the instance's Keycloak realm unless they live under `/api/v1/public`
@@ -36,6 +36,62 @@ paths:
         '401':
           $ref: '#/components/responses/Problem'
         '403':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/me/plugins:
+    get:
+      tags: [plugin-settings]
+      operationId: listMyPlugins
+      summary: The instance's plugins and whether the caller turned each on
+      description: >
+        Plugins are opt-in per user (ADR-0013): a plugin receives a user's
+        plan context, and contributes suggestions to it, only after that
+        user turns it on. Lists the instance's available plugins in
+        registration order; a plugin that is unreachable is left out until
+        it answers again.
+      responses:
+        '200':
+          description: The available plugins, each with the caller's choice.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserPlugin'
+        '401':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/me/plugins/{pluginId}:
+    parameters:
+      - name: pluginId
+        in: path
+        required: true
+        description: The plugin's manifest id.
+        schema:
+          type: string
+    put:
+      tags: [plugin-settings]
+      operationId: updateMyPlugin
+      summary: Turn a plugin on or off for the caller
+      description: >
+        Turning a plugin on needs it to be available on the instance (404
+        otherwise). Turning one off always succeeds, so a choice can be
+        withdrawn even while the plugin is unreachable or after it was
+        removed from the instance.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPluginSetting'
+      responses:
+        '204':
+          description: The choice is saved.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
           $ref: '#/components/responses/Problem'
 
   /api/v1/account/export:
@@ -364,11 +420,12 @@ paths:
       description: >
         Declarative suggestion cards from the instance's registered plugins
         (ADR-0006): validated, attributed, advisory only — applying a card is
-        done through the existing plan-entry endpoint. Returns an empty list
-        when no plugins are registered or all are unavailable.
+        done through the existing plan-entry endpoint. Only plugins the
+        caller turned on are asked (ADR-0013). Returns an empty list when
+        the caller turned none on, or all of theirs are unavailable.
       responses:
         '200':
-          description: Cards from all healthy plugins, in registration order.
+          description: Cards from the caller's healthy plugins, in registration order.
           content:
             application/json:
               schema:
@@ -620,6 +677,29 @@ components:
           type: string
           format: date-time
           description: When the profile was created.
+    UserPlugin:
+      type: object
+      description: A plugin available on the instance and whether the caller turned it on (ADR-0013).
+      required: [id, name, enabled]
+      properties:
+        id:
+          type: string
+          description: The plugin's manifest id.
+        name:
+          type: string
+          description: The plugin's manifest name.
+        homepageUrl:
+          type: string
+          description: The plugin's documentation or project page, from its manifest.
+        enabled:
+          type: boolean
+          description: Whether the caller turned the plugin on. Plugins start off.
+    UserPluginSetting:
+      type: object
+      required: [enabled]
+      properties:
+        enabled:
+          type: boolean
     Problem:
       type: object
       description: RFC 9457 problem details.

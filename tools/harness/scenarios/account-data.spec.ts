@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 
 import type { Page } from "@playwright/test";
 
-import { expect, test } from "./fixtures.ts";
+import { expect, register, test } from "./fixtures.ts";
 
 /**
  * Account export and import (ADR-0011) through the browser: one fresh
@@ -70,24 +70,6 @@ test("exports an account and imports it into a fresh one", async ({ page }, test
     await expect(page.getByRole("link", { name: title })).toBeVisible();
   });
 });
-
-/** Signs up a new realm user through Keycloak's registration form and lands on the Kitchen. */
-async function register(page: Page, username: string): Promise<void> {
-  await test.step(`register ${username}`, async () => {
-    await page.goto("/app");
-    await page.getByRole("button", { name: "Sign in" }).click();
-    await page.getByRole("link", { name: "Register" }).click();
-    await page.locator("#username").fill(username);
-    await page.locator("#email").fill(`${username}@example.com`);
-    await page.locator("#firstName").fill("Harness");
-    await page.locator("#lastName").fill("Cook");
-    await page.locator("#password").fill("mimos-test");
-    await page.locator("#password-confirm").fill("mimos-test");
-    await page.getByRole("button", { name: "Register" }).click();
-    await expect(page).toHaveURL(/\/app$/);
-    await expect(page.getByRole("heading", { name: "This week" })).toBeVisible();
-  });
-}
 
 async function openYourData(page: Page): Promise<void> {
   await page.getByRole("banner").getByRole("button", { name: "Profile" }).click();

@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddMealPlanEntryData, AddMealPlanEntryErrors, AddMealPlanEntryResponses, CreateMealLogData, CreateMealLogErrors, CreateMealLogResponses, CreateRecipeData, CreateRecipeErrors, CreateRecipeResponses, DeleteMealLogData, DeleteMealLogErrors, DeleteMealLogResponses, DeleteMealPlanEntryData, DeleteMealPlanEntryErrors, DeleteMealPlanEntryResponses, DeleteRecipeData, DeleteRecipeErrors, DeleteRecipeResponses, ExportAccountData, ExportAccountErrors, ExportAccountResponses, GenerateShoppingListData, GenerateShoppingListErrors, GenerateShoppingListResponses, GetMealPlanData, GetMealPlanErrors, GetMealPlanResponses, GetMeData, GetMeErrors, GetMeResponses, GetPlanSuggestionsData, GetPlanSuggestionsErrors, GetPlanSuggestionsResponses, GetPublicRecipeData, GetPublicRecipeErrors, GetPublicRecipeResponses, GetRecipeData, GetRecipeErrors, GetRecipeResponses, GetShoppingListData, GetShoppingListErrors, GetShoppingListResponses, ImportAccountData, ImportAccountErrors, ImportAccountResponses, ListLibraryRecipesData, ListLibraryRecipesErrors, ListLibraryRecipesResponses, ListMealLogsData, ListMealLogsErrors, ListMealLogsResponses, ListMyRecipesData, ListMyRecipesErrors, ListMyRecipesResponses, ListPublicRecipesData, ListPublicRecipesResponses, ReplaceRecipeData, ReplaceRecipeErrors, ReplaceRecipeResponses, SummarizeMealLogsData, SummarizeMealLogsErrors, SummarizeMealLogsResponses, UpdateMealPlanEntryData, UpdateMealPlanEntryErrors, UpdateMealPlanEntryResponses, UpdateShoppingListItemData, UpdateShoppingListItemErrors, UpdateShoppingListItemResponses } from './types.gen';
+import type { AddMealPlanEntryData, AddMealPlanEntryErrors, AddMealPlanEntryResponses, CreateMealLogData, CreateMealLogErrors, CreateMealLogResponses, CreateRecipeData, CreateRecipeErrors, CreateRecipeResponses, DeleteMealLogData, DeleteMealLogErrors, DeleteMealLogResponses, DeleteMealPlanEntryData, DeleteMealPlanEntryErrors, DeleteMealPlanEntryResponses, DeleteRecipeData, DeleteRecipeErrors, DeleteRecipeResponses, ExportAccountData, ExportAccountErrors, ExportAccountResponses, GenerateShoppingListData, GenerateShoppingListErrors, GenerateShoppingListResponses, GetMealPlanData, GetMealPlanErrors, GetMealPlanResponses, GetMeData, GetMeErrors, GetMeResponses, GetPlanSuggestionsData, GetPlanSuggestionsErrors, GetPlanSuggestionsResponses, GetPublicRecipeData, GetPublicRecipeErrors, GetPublicRecipeResponses, GetRecipeData, GetRecipeErrors, GetRecipeResponses, GetShoppingListData, GetShoppingListErrors, GetShoppingListResponses, ImportAccountData, ImportAccountErrors, ImportAccountResponses, ListLibraryRecipesData, ListLibraryRecipesErrors, ListLibraryRecipesResponses, ListMealLogsData, ListMealLogsErrors, ListMealLogsResponses, ListMyPluginsData, ListMyPluginsErrors, ListMyPluginsResponses, ListMyRecipesData, ListMyRecipesErrors, ListMyRecipesResponses, ListPublicRecipesData, ListPublicRecipesResponses, ReplaceRecipeData, ReplaceRecipeErrors, ReplaceRecipeResponses, SummarizeMealLogsData, SummarizeMealLogsErrors, SummarizeMealLogsResponses, UpdateMealPlanEntryData, UpdateMealPlanEntryErrors, UpdateMealPlanEntryResponses, UpdateMyPluginData, UpdateMyPluginErrors, UpdateMyPluginResponses, UpdateShoppingListItemData, UpdateShoppingListItemErrors, UpdateShoppingListItemResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -25,6 +25,29 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  *
  */
 export const getMe = <ThrowOnError extends boolean = false>(options?: Options<GetMeData, ThrowOnError>): RequestResult<GetMeResponses, GetMeErrors, ThrowOnError> => (options?.client ?? client).get<GetMeResponses, GetMeErrors, ThrowOnError>({ url: '/api/v1/me', ...options });
+
+/**
+ * The instance's plugins and whether the caller turned each on
+ *
+ * Plugins are opt-in per user (ADR-0013): a plugin receives a user's plan context, and contributes suggestions to it, only after that user turns it on. Lists the instance's available plugins in registration order; a plugin that is unreachable is left out until it answers again.
+ *
+ */
+export const listMyPlugins = <ThrowOnError extends boolean = false>(options?: Options<ListMyPluginsData, ThrowOnError>): RequestResult<ListMyPluginsResponses, ListMyPluginsErrors, ThrowOnError> => (options?.client ?? client).get<ListMyPluginsResponses, ListMyPluginsErrors, ThrowOnError>({ url: '/api/v1/me/plugins', ...options });
+
+/**
+ * Turn a plugin on or off for the caller
+ *
+ * Turning a plugin on needs it to be available on the instance (404 otherwise). Turning one off always succeeds, so a choice can be withdrawn even while the plugin is unreachable or after it was removed from the instance.
+ *
+ */
+export const updateMyPlugin = <ThrowOnError extends boolean = false>(options: Options<UpdateMyPluginData, ThrowOnError>): RequestResult<UpdateMyPluginResponses, UpdateMyPluginErrors, ThrowOnError> => (options.client ?? client).put<UpdateMyPluginResponses, UpdateMyPluginErrors, ThrowOnError>({
+    url: '/api/v1/me/plugins/{pluginId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * Export the caller's data
@@ -149,7 +172,7 @@ export const updateMealPlanEntry = <ThrowOnError extends boolean = false>(option
 /**
  * Suggestion cards for a planned week
  *
- * Declarative suggestion cards from the instance's registered plugins (ADR-0006): validated, attributed, advisory only — applying a card is done through the existing plan-entry endpoint. Returns an empty list when no plugins are registered or all are unavailable.
+ * Declarative suggestion cards from the instance's registered plugins (ADR-0006): validated, attributed, advisory only — applying a card is done through the existing plan-entry endpoint. Only plugins the caller turned on are asked (ADR-0013). Returns an empty list when the caller turned none on, or all of theirs are unavailable.
  *
  */
 export const getPlanSuggestions = <ThrowOnError extends boolean = false>(options: Options<GetPlanSuggestionsData, ThrowOnError>): RequestResult<GetPlanSuggestionsResponses, GetPlanSuggestionsErrors, ThrowOnError> => (options.client ?? client).get<GetPlanSuggestionsResponses, GetPlanSuggestionsErrors, ThrowOnError>({ url: '/api/v1/plans/{startDate}/suggestions', ...options });

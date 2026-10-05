@@ -48,7 +48,7 @@ change** — an out-of-date AGENTS.md is worse than none.
 | Library content | Seed file `core/core-recipes/src/main/resources/library/library-seed.json`, loaded by an idempotent startup seeder (`mimos.library.seed-enabled`, default on). Content fixes ship with a restart; never via Flyway migrations. See ADR-0005. |
 | Public API | Unauthenticated read-only access to the curated library under `/api/v1/public/**` (SEO pages). Personal recipes never appear there; everything else requires a bearer token. |
 | Account data | Per-user export/import as one versioned JSON document (`GET /api/v1/account/export`, `POST /api/v1/account/import`): domain-shaped, never a table dump; library recipes by slug; import only into an empty account, atomically, through domain validation. Format changes bump the version, add an `ExportUpgrader` step and a frozen `export/v<N>.json` test fixture. See ADR-0011. |
-| Plugins    | HTTP sidecar plugins, pull-only in v1: config registry (`mimos.plugins.*`), manifest at `GET /manifest`, one capability (`plan-suggestions`), declarative cards, library-only context. See ADR-0006. |
+| Plugins    | HTTP sidecar plugins, pull-only in v1: config registry (`mimos.plugins.*`), manifest at `GET /manifest`, one capability (`plan-suggestions`), declarative cards, library-only context. See ADR-0006. Registered means available; each user opts in from the Plugins page (`/app/plugins`, linked from the profile menu; API `/api/v1/me/plugins`), and every plugin starts off. See ADR-0013. |
 | Agent harness | `tools/harness` (`@mimos/harness`, TypeScript on Node type stripping) behind a devenv `harness` script; all agent tooling from devenv/nixpkgs; Playwright pinned to nixpkgs' `playwright-driver`; `.mcp.json` committed; debug-only behavior in `deploy/docker/compose.debug.yml`; scenarios run in CI via devenv. Plan and decisions in `docs/harness/`. |
 
 ## Open decisions — resolve with the owner before building against them
@@ -80,9 +80,11 @@ wire-format contract:
   needs no export change; one that changes it needs a new format version
   (upgrade step + frozen fixture).
 - `integrations/plugins` — the plugin runtime: registry, outbound
-  extension-API client, suggestion-card validation (ADR-0006). Depends on
-  the core modules' public interfaces only; external API types never cross
-  this boundary. Optional at runtime — no plugins registered, no behavior.
+  extension-API client, suggestion-card validation (ADR-0006), and the
+  per-user opt-ins it owns the table for (`plugin_opt_in`, ADR-0013).
+  Depends on the core modules' public interfaces only; external API types
+  never cross this boundary. Optional at runtime — no plugins registered,
+  no behavior.
 - `integrations/intervals-icu` — future. External API types never cross
   this boundary; translate to domain types at the edge. Feature-gated and
   optional at runtime (self-hosters must not need it).
@@ -101,9 +103,16 @@ week's meal plan leans into that cuisine.** The design is decided; ADR-0006
 is the contract:
 
 - Plugins are HTTP sidecar services (containers) registered via instance
-  config (`mimos.plugins.*`): enabled means registered, changes take effect
-  on restart. Static misconfiguration fails startup; an unreachable plugin
-  never does.
+  config (`mimos.plugins.*`): registered means available, changes take
+  effect on restart. Static misconfiguration fails startup; an unreachable
+  plugin never does.
+- Plugins are opt-in per user (ADR-0013): every plugin starts off, a user
+  turns it on in the Plugins page (`/app/plugins`, linked from the
+  profile menu), and `SuggestionService` never calls a plugin with the
+  context of a user who has not. Opt-ins are consent for this instance's
+  plugins, so the account export leaves them out. A manifest's
+  `homepageUrl` becomes a link there, so only http(s) URLs survive
+  parsing.
 - v1 is pull-only: Mimos calls `POST {base}/v1/plan-suggestions` with a
   context snapshot (week, planned slots, library catalog); plugins never
   call Mimos and cannot write anything. Applying a suggestion reuses the
@@ -125,7 +134,7 @@ is the contract:
   the `plugins/*` npm workspace, and its tests run on `node --test`.
 - Deferred (designed in ADR-0006, built only when a plugin needs them): the
   plugin→Mimos callback direction with service accounts, iframe UI slots,
-  per-user consent/opt-out, card persistence, a plugin directory.
+  card persistence, a plugin directory.
 
 ### Frontend specifics
 
@@ -420,8 +429,10 @@ writes evidence to `.harness/runs/<run>/` (gitignored), and
   password, for cross-user isolation), seeded library at
   `http://localhost:8080/api/v1/public/recipes` and
   `http://localhost:3000/recipes`, and a plugin suggestion card (after
-  login) from `http://localhost:8080/api/v1/plans/{monday}/suggestions`
-  or the plan page's Suggestions panel.
+  login, with Country of the Week turned on in the Plugins page or via
+  `PUT /api/v1/me/plugins/country-week`) from
+  `http://localhost:8080/api/v1/plans/{monday}/suggestions` or the plan
+  page's Suggestions panel.
 - `POSTGRES_PASSWORD=x KEYCLOAK_ADMIN_PASSWORD=x docker compose -f
   deploy/selfhost/compose.yml --env-file deploy/selfhost/.env.example
   config -q` — the self-host compose file resolves. To boot it against

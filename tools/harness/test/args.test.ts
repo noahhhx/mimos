@@ -129,7 +129,7 @@ test("ui: one known scenario, headless as the test user by default", () => {
 });
 
 test("ui: scenarios are the spec files in tools/harness/scenarios", () => {
-  assert.deepEqual(scenarioNames(), ["account-data", "app-nav", "app-pages", "create-recipe", "edit-recipe", "keycloak-theme", "kitchen-home", "login", "recipe-form-errors"]);
+  assert.deepEqual(scenarioNames(), ["account-data", "app-nav", "app-pages", "create-recipe", "edit-recipe", "keycloak-theme", "kitchen-home", "login", "plugin-opt-in", "recipe-form-errors"]);
 });
 
 test("displayCommand quotes only what needs quoting", () => {

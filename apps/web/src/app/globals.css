@@ -1308,6 +1308,44 @@ input[type="search"]:focus {
   background: var(--hover);
 }
 
+/* ---------- Plugins (app/app/plugins/page.tsx) ---------- */
+
+.plugins {
+  margin-top: 40px;
+}
+
+.plugin-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+/* One row per plugin: its checkbox and name, whether it is on, and its homepage. */
+.plugin-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.plugin-list label {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.plugin-list .muted {
+  font-size: 13px;
+}
+
 /* ---------- Shopping list & log ---------- */
 
 .shopping-items li {

@@ -70,8 +70,10 @@ through the form; the recipe 415's regression test), `edit-recipe`
 (repeated tags, partial nutrition, an unmeasured ingredient, cancelling
 and saving an edit), `recipe-form-errors` (browser-blocked input, per-row
 form errors, Enter submits), `kitchen-home` (Tonight, the week rail, and
-adding the plugin's thought; it plans the week's earlier evenings and
-removes what it planned), `app-pages` (every signed-in page loads
+adding the plugin's thought; it turns the plugin on, plans the week's
+earlier evenings, and puts both back as it found them), `plugin-opt-in`
+(a fresh account sees suggestions only after turning Country of the Week
+on from the Plugins page, ADR-0013), `app-pages` (every signed-in page loads
 without errors), `app-nav` (the app nav has no vertical overflow,
 which would show a scrollbar beside its links), `keycloak-theme`
 (Keycloak's sign-in, error, and register pages wear the Mimos theme;

@@ -41,8 +41,34 @@ public class PluginRegistry implements ApplicationRunner {
      * plugin contributes nothing this request).
      */
     public List<Plugin> pluginsWithCapability(String capability) {
+        return usablePlugins().stream()
+                .filter(usable -> usable.manifest().capabilities().contains(capability))
+                .map(Usable::plugin)
+                .toList();
+    }
+
+    /**
+     * Manifests of the plugins a user can turn on (ADR-0013): resolved,
+     * speaking the current extension API, and declaring at least one
+     * capability this version of Mimos calls. In registration order.
+     */
+    public List<PluginManifest> availablePlugins() {
+        return usablePlugins().stream()
+                .map(Usable::manifest)
+                .filter(manifest ->
+                        manifest.capabilities().stream().anyMatch(PluginManifest.KNOWN_CAPABILITIES::contains))
+                .toList();
+    }
+
+    /**
+     * Resolved plugins that speak the current extension API version, with
+     * the manifest they were judged by (a concurrent fan-out failure may
+     * invalidate the plugin's cached one meanwhile), resolving missing
+     * manifests.
+     */
+    private List<Usable> usablePlugins() {
         Map<String, Plugin> resolved = new HashMap<>();
-        List<Plugin> result = new ArrayList<>();
+        List<Usable> result = new ArrayList<>();
         for (Plugin plugin : plugins) {
             PluginManifest manifest = plugin.manifest();
             if (manifest == null) {
@@ -62,12 +88,12 @@ public class PluginRegistry implements ApplicationRunner {
                         PluginManifest.CURRENT_API_MAJOR_VERSION);
                 continue;
             }
-            if (manifest.capabilities().contains(capability)) {
-                result.add(plugin);
-            }
+            result.add(new Usable(plugin, manifest));
         }
         return List.copyOf(result);
     }
+
+    private record Usable(Plugin plugin, PluginManifest manifest) {}
 
     @Override
     public void run(ApplicationArguments args) {

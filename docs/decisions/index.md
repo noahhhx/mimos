@@ -18,6 +18,7 @@ right at the time.
 | [ADR-0010](adr-0010-keycloak-login-theme.md)                       | Keycloak login theme |
 | [ADR-0011](adr-0011-account-export-import.md)                      | Account export and import |
 | [ADR-0012](adr-0012-published-images.md)                           | Published images and runtime web config |
+| [ADR-0013](adr-0013-per-user-plugin-opt-in.md)                     | Plugins are opt-in per user |
 
 New ADRs are sequential: `adr-NNNN-title.md`, with the numbering in this
 index. Once accepted, an ADR is never rewritten — superseding decisions get

@@ -27,6 +27,32 @@ export type UserProfile = {
 };
 
 /**
+ * A plugin available on the instance and whether the caller turned it on (ADR-0013).
+ */
+export type UserPlugin = {
+    /**
+     * The plugin's manifest id.
+     */
+    id: string;
+    /**
+     * The plugin's manifest name.
+     */
+    name: string;
+    /**
+     * The plugin's documentation or project page, from its manifest.
+     */
+    homepageUrl?: string;
+    /**
+     * Whether the caller turned the plugin on. Plugins start off.
+     */
+    enabled: boolean;
+};
+
+export type UserPluginSetting = {
+    enabled: boolean;
+};
+
+/**
  * RFC 9457 problem details.
  */
 export type Problem = {
@@ -499,6 +525,69 @@ export type GetMeResponses = {
 };
 
 export type GetMeResponse = GetMeResponses[keyof GetMeResponses];
+
+export type ListMyPluginsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/plugins';
+};
+
+export type ListMyPluginsErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type ListMyPluginsError = ListMyPluginsErrors[keyof ListMyPluginsErrors];
+
+export type ListMyPluginsResponses = {
+    /**
+     * The available plugins, each with the caller's choice.
+     */
+    200: Array<UserPlugin>;
+};
+
+export type ListMyPluginsResponse = ListMyPluginsResponses[keyof ListMyPluginsResponses];
+
+export type UpdateMyPluginData = {
+    body: UserPluginSetting;
+    path: {
+        /**
+         * The plugin's manifest id.
+         */
+        pluginId: string;
+    };
+    query?: never;
+    url: '/api/v1/me/plugins/{pluginId}';
+};
+
+export type UpdateMyPluginErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type UpdateMyPluginError = UpdateMyPluginErrors[keyof UpdateMyPluginErrors];
+
+export type UpdateMyPluginResponses = {
+    /**
+     * The choice is saved.
+     */
+    204: void;
+};
+
+export type UpdateMyPluginResponse = UpdateMyPluginResponses[keyof UpdateMyPluginResponses];
 
 export type ExportAccountData = {
     body?: never;
@@ -983,7 +1072,7 @@ export type GetPlanSuggestionsError = GetPlanSuggestionsErrors[keyof GetPlanSugg
 
 export type GetPlanSuggestionsResponses = {
     /**
-     * Cards from all healthy plugins, in registration order.
+     * Cards from the caller's healthy plugins, in registration order.
      */
     200: PlanSuggestions;
 };

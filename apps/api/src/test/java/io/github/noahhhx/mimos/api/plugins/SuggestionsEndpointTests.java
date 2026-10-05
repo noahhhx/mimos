@@ -27,6 +27,8 @@ import tools.jackson.databind.node.ObjectNode;
  * contribute their slot shape only, never their identity. A second,
  * unreachable registration proves failure containment. Applying a card
  * reuses the existing plan-entry endpoint — there is no other write path.
+ * The shared `test` user turns the stub on first (ADR-0013: plugins are
+ * opt-in); {@link PluginSettingsEndpointTests} covers the opt-in itself.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class SuggestionsEndpointTests extends ApiIntegrationTestSupport {
@@ -69,8 +71,15 @@ class SuggestionsEndpointTests extends ApiIntegrationTestSupport {
     ObjectMapper objectMapper;
 
     @BeforeEach
-    void resetStub() {
+    void resetStubAndOptIn() {
         stub.suggestionsJson = "{\"suggestions\":[]}";
+        api().put()
+                .uri("/api/v1/me/plugins/{id}", "stub-plugin")
+                .headers(headers -> headers.setBearerAuth(accessToken()))
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .body("{\"enabled\":true}")
+                .retrieve()
+                .toBodilessEntity();
     }
 
     private RestClient api() {

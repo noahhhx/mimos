@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -19,8 +20,9 @@ import org.springframework.stereotype.Service;
 /**
  * The plan-suggestions capability (ADR-0006): assembles the context from
  * core's public interfaces, fans out to the registered plugins, and
- * validates every card before it reaches a user. One plugin's failure
- * never affects another's; a week with no healthy plugins simply has no
+ * validates every card before it reaches a user. Only the plugins the
+ * owner turned on are called (ADR-0013); one plugin's failure never
+ * affects another's; a week with no healthy plugins simply has no
  * suggestions.
  */
 @Service
@@ -37,16 +39,34 @@ public class SuggestionService {
     private final MealPlanService mealPlanService;
     private final RecipeService recipeService;
     private final PluginRegistry registry;
+    private final PluginOptInService optIns;
 
-    public SuggestionService(MealPlanService mealPlanService, RecipeService recipeService, PluginRegistry registry) {
+    public SuggestionService(
+            MealPlanService mealPlanService,
+            RecipeService recipeService,
+            PluginRegistry registry,
+            PluginOptInService optIns) {
         this.mealPlanService = mealPlanService;
         this.recipeService = recipeService;
         this.registry = registry;
+        this.optIns = optIns;
     }
 
     /** Validated, attributed suggestion cards for the owner's week, in registration order. */
     public List<PlanSuggestion> suggestions(UUID ownerProfileId, LocalDate startDate) {
         requireMonday(startDate);
+        // Opt-in is consent (ADR-0013): a plugin the owner has not turned on
+        // never receives their context.
+        Set<String> enabled = optIns.enabledPluginIds(ownerProfileId);
+        List<Plugin> plugins = registry.pluginsWithCapability(PluginManifest.CAPABILITY_PLAN_SUGGESTIONS).stream()
+                .filter(plugin -> {
+                    PluginManifest manifest = plugin.manifest();
+                    return manifest != null && enabled.contains(manifest.id());
+                })
+                .toList();
+        if (plugins.isEmpty()) {
+            return List.of();
+        }
 
         List<Recipe> library = recipeService.findLibrary(null);
         Map<UUID, Recipe> libraryById = new HashMap<>();
@@ -70,7 +90,7 @@ public class SuggestionService {
         SuggestionContext context = new SuggestionContext(startDate, plannedSlots, catalog);
 
         List<PlanSuggestion> result = new ArrayList<>();
-        for (Plugin plugin : registry.pluginsWithCapability(PluginManifest.CAPABILITY_PLAN_SUGGESTIONS)) {
+        for (Plugin plugin : plugins) {
             PluginManifest manifest = plugin.manifest();
             if (manifest == null) {
                 continue;

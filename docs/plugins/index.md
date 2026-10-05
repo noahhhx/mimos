@@ -27,7 +27,10 @@ Two endpoints:
 
 ## What data your plugin receives
 
-The context is the entire data surface in v1:
+Mimos calls your plugin only for users who turned it on in the app's
+Plugins page ([ADR-0013](../decisions/adr-0013-per-user-plugin-opt-in.md));
+every plugin starts off for every user. For those users, the context is
+the entire data surface in v1:
 
 - `weekStartDate` — the Monday of the week being planned.
 - `plannedSlots` — meals already in the plan: date, meal type, servings.
@@ -64,13 +67,16 @@ mimos:
       timeout: 2s
 ```
 
-Enabled means registered; changes take effect on restart. A misconfigured
+Registering makes the plugin available; each user then turns it on in
+the Plugins page, which lists it by its manifest name and links to its
+`homepageUrl` (an absolute http(s) URL; anything else is dropped).
+Changes to the registration take effect on restart. A misconfigured
 plugin (a duplicate id, an id that does not match the manifest) fails
 startup loudly; an unreachable or slow plugin only logs and contributes
 nothing — it can never take the instance down.
 
 ## Not yet available (designed in ADR-0006, built when a plugin needs it)
 
-Calling back into Mimos (service accounts), iframe UI slots, per-user
-consent, persisted or dismissible cards, a plugin directory. If your
+Calling back into Mimos (service accounts), iframe UI slots, persisted
+or dismissible cards, a plugin directory. If your
 plugin needs one of these, open an issue — that is the signal to build it.

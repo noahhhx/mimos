@@ -214,7 +214,9 @@ export default function PlanPage() {
       {suggestions !== null && suggestions.length > 0 && (
         <section className="card suggestions" aria-label="Suggestions from plugins">
           <h2>Suggestions</h2>
-          <p className="muted">From plugins enabled on this Mimos instance.</p>
+          <p className="muted">
+            From the <Link href="/app/plugins">plugins</Link> you turned on.
+          </p>
           <div className="suggestion-cards">
             {suggestions.map((suggestion) => (
               <article key={`${suggestion.pluginId}:${suggestion.title}`} className="suggestion-card">
