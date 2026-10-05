@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import type { RecipeSummary } from "@mimos/api-client";
 
+import { formatServings } from "@/lib/format";
+
 /**
  * Recipes as rows: title, description and tags, servings and calories on
  * the right. The whole row is the link.
@@ -33,7 +35,7 @@ export function RecipeList({
             )}
           </div>
           <p className="recipe-list-meta">
-            {recipe.servings} servings
+            {formatServings(recipe.servings)}
             {recipe.nutrition?.calories != null ? ` · ${Math.round(recipe.nutrition.calories)} kcal` : ""}
           </p>
         </li>

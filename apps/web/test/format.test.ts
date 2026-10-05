@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { formatQuantity, hasNutrition, todayIso } from "../src/lib/format.ts";
+import { formatQuantity, formatServings, hasNutrition, todayIso } from "../src/lib/format.ts";
 
 describe("formatQuantity", () => {
   it("formats an amount with its unit", () => {
@@ -50,5 +50,17 @@ describe("todayIso", () => {
     inZone("Asia/Tokyo", () => {
       assert.equal(todayIso(new Date("2026-10-01T15:30:00Z")), "2026-10-02"); // 00:30 local
     });
+  });
+});
+
+describe("formatServings", () => {
+  it("is singular for exactly one serving", () => {
+    assert.equal(formatServings(1), "1 serving");
+  });
+
+  it("is plural otherwise", () => {
+    assert.equal(formatServings(2), "2 servings");
+    assert.equal(formatServings(0.5), "0.5 servings");
+    assert.equal(formatServings(1.5), "1.5 servings");
   });
 });

@@ -14,7 +14,7 @@ import {
 import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";
 import { apiClient } from "@/lib/api";
-import { MEAL_TYPES, addDays, dayLabel, formatKcal, mealLabel, mondayOf, todayIso, weekDays } from "@/lib/format";
+import { MEAL_TYPES, addDays, dayLabel, formatKcal, formatServings, mealLabel, mondayOf, todayIso, weekDays } from "@/lib/format";
 
 /**
  * The food diary: per-day calorie and macro totals for the week, the
@@ -182,7 +182,7 @@ export default function LogPage() {
                     <span className="muted">{mealLabel(log.mealType)}</span>{" "}
                     <strong>{log.description}</strong>{" "}
                     <span className="muted">
-                      {log.recipeId ? `(${log.servings} servings) ` : ""}
+                      {log.recipeId ? `(${formatServings(log.servings)}) ` : ""}
                       {formatKcal(log.nutrition?.calories)}
                     </span>
                     <button className="button secondary small" onClick={() => void remove(log.id)}>

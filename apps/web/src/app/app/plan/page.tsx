@@ -20,7 +20,7 @@ import {
 import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";
 import { apiClient } from "@/lib/api";
-import { MEAL_TYPES, addDays, dayLabel, mealLabel, mondayOf, weekDays } from "@/lib/format";
+import { MEAL_TYPES, addDays, dayLabel, formatServings, mealLabel, mondayOf, weekDays } from "@/lib/format";
 import { applySuggestionEntries } from "@/lib/suggestions";
 
 /**
@@ -233,7 +233,7 @@ export default function PlanPage() {
                   {suggestion.entries.map((entry) => (
                     <li key={`${entry.date}:${entry.mealType}:${entry.recipeId}`}>
                       {entry.recipeTitle} · {dayLabel(entry.date)} {mealLabel(entry.mealType)} ·{" "}
-                      {entry.servings} servings
+                      {formatServings(entry.servings)}
                     </li>
                   ))}
                 </ul>
@@ -285,7 +285,7 @@ export default function PlanPage() {
                           >
                             −
                           </button>
-                          <span>{entry.servings} servings</span>
+                          <span>{formatServings(entry.servings)}</span>
                           <button
                             className="button secondary small"
                             onClick={() => void changeServings(entry.id, entry.servings + 0.5)}
@@ -343,7 +343,7 @@ export default function PlanPage() {
                     {recipe.title}
                     <span className="muted">
                       {" "}
-                      · {recipe.servings} servings
+                      · {formatServings(recipe.servings)}
                       {recipe.isLibrary ? " · library" : ""}
                     </span>
                   </button>

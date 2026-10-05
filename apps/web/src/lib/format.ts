@@ -77,6 +77,11 @@ export function formatQuantity(quantity: number | null | undefined, unit: string
   return unit ? `${number} ${unit}` : number;
 }
 
+/** "1 serving", "2 servings", "1.5 servings". */
+export function formatServings(servings: number): string {
+  return `${servings} ${servings === 1 ? "serving" : "servings"}`;
+}
+
 /** Whether any per-serving value is known (absent values are unknown, not zero). */
 export function hasNutrition<T extends { calories?: number; proteinG?: number; carbsG?: number; fatG?: number }>(
   nutrition: T | null | undefined,
