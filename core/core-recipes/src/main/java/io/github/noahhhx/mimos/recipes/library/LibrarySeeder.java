@@ -1,6 +1,8 @@
 package io.github.noahhhx.mimos.recipes.library;
 
 import io.github.noahhhx.mimos.recipes.recipe.Ingredient;
+import io.github.noahhhx.mimos.recipes.recipe.Nutrition;
+import io.github.noahhhx.mimos.recipes.recipe.NutritionSource;
 import io.github.noahhhx.mimos.recipes.recipe.Recipe;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeRepository;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeStep;
@@ -14,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
@@ -28,6 +31,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 @Component
 @ConditionalOnProperty(name = "mimos.library.seed-enabled", havingValue = "true", matchIfMissing = true)
+@Order(1)
 public class LibrarySeeder implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(LibrarySeeder.class);
@@ -92,10 +96,12 @@ public class LibrarySeeder implements ApplicationRunner {
                 seed.servings(),
                 seed.prepMinutes(),
                 seed.cookMinutes(),
-                seed.nutrition(),
+                Nutrition.UNKNOWN,
+                NutritionSource.INGREDIENTS,
                 seed.tags(),
                 seed.ingredients().stream()
-                        .map(ingredient -> new Ingredient(ingredient.quantity(), ingredient.unit(), ingredient.name()))
+                        .map(ingredient -> new Ingredient(
+                                ingredient.quantity(), ingredient.unit(), ingredient.name(), ingredient.catalogSlug()))
                         .toList(),
                 seed.steps().stream().map(RecipeStep::new).toList(),
                 createdAt,

@@ -21,7 +21,7 @@ public final class ExportUpgrader {
     public static final String FORMAT = "mimos.export";
 
     /** {@code STEPS.get(i)} upgrades version {@code i + 1} to {@code i + 2}. */
-    private static final List<UnaryOperator<ObjectNode>> STEPS = List.of();
+    private static final List<UnaryOperator<ObjectNode>> STEPS = List.of(ExportUpgrader::markNutritionManual);
 
     /** The version this instance exports. */
     public static final int CURRENT_VERSION = STEPS.size() + 1;
@@ -64,6 +64,16 @@ public final class ExportUpgrader {
             upgraded.put("version", from + 1);
         }
         return new Upgraded(version, upgraded);
+    }
+
+    /** Version 2 (ADR-0015): every recipe says where its nutrition comes from; all version 1 nutrition was typed. */
+    private static ObjectNode markNutritionManual(ObjectNode document) {
+        document.path("recipes").forEach(recipe -> {
+            if (recipe instanceof ObjectNode exported) {
+                exported.put("nutritionSource", "MANUAL");
+            }
+        });
+        return document;
     }
 
     /** A document at the current version, and the version it was exported in. */

@@ -13,7 +13,7 @@
 openapi: 3.1.0
 info:
   title: Mimos API
-  version: 0.6.0
+  version: 0.7.0
   description: |
     The Mimos recipe companion API. Endpoints require a bearer token issued
     by the instance's Keycloak realm unless they live under `/api/v1/public`
@@ -194,8 +194,13 @@ paths:
       summary: Create a personal recipe
       description: >
         Creates a recipe owned by the caller and returns it with its id.
-        Nutrition is per serving; leave out values you do not know rather
-        than guessing zero. Steps are in cooking order.
+        Steps are in cooking order. Prefer calculated nutrition: set
+        nutritionSource to INGREDIENTS and give each ingredient line the
+        catalogSlug of what it is (find slugs with listIngredients), with
+        its amount in g, kg, ml, l, tsp, or tbsp, or no unit for a count of
+        pieces, matching the entry's basis. Check the result first with
+        estimateRecipeNutrition. With MANUAL, send per-serving nutrition and
+        leave out values you do not know rather than guessing zero.
       requestBody:
         required: true
         content:
@@ -273,6 +278,64 @@ paths:
         '403':
           $ref: '#/components/responses/Problem'
         '404':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/recipes/nutrition-estimate:
+    post:
+      tags: [recipes]
+      operationId: estimateRecipeNutrition
+      summary: Calculate nutrition for ingredient lines without saving
+      description: >
+        Runs the calculation a recipe with nutritionSource INGREDIENTS gets:
+        each line counts when it has a catalogSlug, an amount, and a unit
+        its catalog entry's basis covers (PER_100_G: g, kg; PER_100_ML: ml,
+        l, tsp = 5 ml, tbsp = 15 ml; PER_PIECE: no unit). Returns the
+        per-serving nutrition of the lines that counted and each line's
+        status, in order. Nothing is saved.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NutritionEstimateInput'
+      responses:
+        '200':
+          description: The calculated nutrition and each line's status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NutritionEstimate'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/ingredients:
+    get:
+      tags: [recipes]
+      operationId: listIngredients
+      summary: The shared ingredient catalog
+      description: >
+        Ingredients with known nutrition, shared by everyone on this
+        instance. Link an ingredient line to one with its slug
+        (catalogSlug) so a recipe's nutrition can be calculated. Each
+        entry's nutrition is for its basis: 100 g, 100 ml, or one piece.
+      parameters:
+        - name: q
+          in: query
+          description: Case-insensitive filter on name and slug.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Catalog ingredients, sorted by name.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CatalogIngredient'
+        '401':
           $ref: '#/components/responses/Problem'
 
   /api/v1/recipes/library:
@@ -783,6 +846,72 @@ components:
         name:
           type: string
           description: Ingredient name as written in the recipe.
+        catalogSlug:
+          type: string
+          description: >
+            Slug of the catalog ingredient this line counts as for
+            calculated nutrition (see listIngredients); omitted when the
+            line is not linked.
+    NutritionSource:
+      type: string
+      description: >
+        Where a recipe's nutrition comes from. MANUAL: the per-serving
+        values its author typed. INGREDIENTS: calculated from the linked
+        ingredient lines whenever the recipe is read; nutrition sent with
+        the recipe is ignored.
+      enum: [MANUAL, INGREDIENTS]
+    NutritionBasis:
+      type: string
+      description: >
+        The amount a catalog ingredient's nutrition is for: 100 grams, 100
+        millilitres, or one piece.
+      enum: [PER_100_G, PER_100_ML, PER_PIECE]
+    CatalogIngredient:
+      type: object
+      description: An ingredient in the shared catalog, with its nutrition for its basis.
+      required: [slug, name, basis, nutrition]
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+        basis:
+          $ref: '#/components/schemas/NutritionBasis'
+        nutrition:
+          allOf:
+            - $ref: '#/components/schemas/Nutrition'
+    NutritionEstimateInput:
+      type: object
+      description: The parts of a recipe its calculated nutrition depends on.
+      required: [servings, ingredients]
+      properties:
+        servings:
+          type: integer
+        ingredients:
+          type: array
+          items:
+            $ref: '#/components/schemas/IngredientQuantity'
+    IngredientLineStatus:
+      type: string
+      description: >
+        Whether an ingredient line counted toward calculated nutrition.
+        UNMEASURED: linked but has no amount. NOT_LINKED: no catalogSlug.
+        UNIT_NOT_SUPPORTED: linked, but its unit does not fit the catalog
+        entry's basis.
+      enum: [COUNTED, UNMEASURED, NOT_LINKED, UNIT_NOT_SUPPORTED]
+    NutritionEstimate:
+      type: object
+      description: Calculated per-serving nutrition, unknown when no line counted.
+      required: [nutrition, lines]
+      properties:
+        nutrition:
+          allOf:
+            - $ref: '#/components/schemas/Nutrition'
+        lines:
+          type: array
+          description: One status per ingredient line, in the order sent.
+          items:
+            $ref: '#/components/schemas/IngredientLineStatus'
     RecipeStep:
       type: object
       description: One instruction step; order is significant.
@@ -822,7 +951,7 @@ components:
       type: object
       description: Everything needed to cook a recipe.
       required:
-        [id, title, description, servings, isLibrary, tags, nutrition, ingredients, steps]
+        [id, title, description, servings, isLibrary, tags, nutrition, nutritionSource, ingredients, steps]
       properties:
         id:
           type: string
@@ -851,6 +980,8 @@ components:
         nutrition:
           allOf:
             - $ref: '#/components/schemas/Nutrition'
+        nutritionSource:
+          $ref: '#/components/schemas/NutritionSource'
         ingredients:
           type: array
           items:
@@ -862,7 +993,7 @@ components:
     RecipeInput:
       type: object
       description: A personal recipe as submitted by its author.
-      required: [title, description, servings, ingredients, steps, tags, nutrition]
+      required: [title, description, servings, ingredients, steps, tags, nutrition, nutritionSource]
       properties:
         title:
           type: string
@@ -881,6 +1012,8 @@ components:
         nutrition:
           allOf:
             - $ref: '#/components/schemas/Nutrition'
+        nutritionSource:
+          $ref: '#/components/schemas/NutritionSource'
         ingredients:
           type: array
           items:
@@ -1109,7 +1242,7 @@ components:
     AccountExport:
       type: object
       description: >
-        One user's data, in export format version 1 (ADR-0011). Any change
+        One user's data, in export format version 2 (ADR-0011). Any change
         to this schema bumps the version and adds an upgrade step from the
         previous one.
       required: [format, version, exportedAt, recipes, mealPlans, shoppingLists, mealLogs]
@@ -1119,7 +1252,7 @@ components:
           enum: [mimos.export]
         version:
           type: integer
-          description: The format version. This instance exports version 1.
+          description: The format version. This instance exports version 2.
         exportedAt:
           type: string
           format: date-time
@@ -1143,7 +1276,7 @@ components:
       type: object
       description: A personal recipe. `id` is a key within the document; import assigns a new one.
       required:
-        [id, title, description, servings, tags, nutrition, ingredients, steps, createdAt, updatedAt]
+        [id, title, description, servings, tags, nutrition, nutritionSource, ingredients, steps, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -1165,6 +1298,8 @@ components:
         nutrition:
           allOf:
             - $ref: '#/components/schemas/Nutrition'
+        nutritionSource:
+          $ref: '#/components/schemas/NutritionSource'
         ingredients:
           type: array
           items:

@@ -1,5 +1,6 @@
 package io.github.noahhhx.mimos.api.account;
 
+import io.github.noahhhx.mimos.api.recipes.RecipeApiMapper;
 import io.github.noahhhx.mimos.planning.logging.MealLog;
 import io.github.noahhhx.mimos.planning.logging.MealLogService;
 import io.github.noahhhx.mimos.planning.plan.MealPlan;
@@ -30,7 +31,6 @@ import org.openapitools.model.ExportedPlanEntry;
 import org.openapitools.model.ExportedRecipe;
 import org.openapitools.model.ExportedShoppingList;
 import org.openapitools.model.ExportedShoppingListItem;
-import org.openapitools.model.IngredientQuantity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -113,12 +113,8 @@ public class AccountExporter {
                 .cookMinutes(recipe.cookMinutes())
                 .tags(recipe.tags())
                 .nutrition(toApiNutrition(recipe.nutrition()))
-                .ingredients(recipe.ingredients().stream()
-                        .map(ingredient -> new IngredientQuantity()
-                                .quantity(toBigDecimal(ingredient.quantity()))
-                                .unit(ingredient.unit())
-                                .name(ingredient.name()))
-                        .toList())
+                .nutritionSource(RecipeApiMapper.toApiSource(recipe.nutritionSource()))
+                .ingredients(RecipeApiMapper.toApiIngredients(recipe.ingredients()))
                 .steps(recipe.steps().stream()
                         .map(step -> new org.openapitools.model.RecipeStep().instruction(step.instruction()))
                         .toList())

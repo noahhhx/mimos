@@ -1,6 +1,7 @@
 package io.github.noahhhx.mimos.api.recipes;
 
 import io.github.noahhhx.mimos.api.identity.CurrentUserService;
+import io.github.noahhhx.mimos.recipes.recipe.IngredientCatalog;
 import io.github.noahhhx.mimos.recipes.recipe.Recipe;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeService;
 import java.util.List;
@@ -8,6 +9,9 @@ import java.util.NoSuchElementException;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.openapitools.api.RecipesApi;
+import org.openapitools.model.CatalogIngredient;
+import org.openapitools.model.NutritionEstimate;
+import org.openapitools.model.NutritionEstimateInput;
 import org.openapitools.model.RecipeDetail;
 import org.openapitools.model.RecipeInput;
 import org.openapitools.model.RecipeSummary;
@@ -24,10 +28,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class RecipesController implements RecipesApi {
 
     private final RecipeService recipeService;
+    private final IngredientCatalog catalog;
     private final CurrentUserService currentUser;
 
-    public RecipesController(RecipeService recipeService, CurrentUserService currentUser) {
+    public RecipesController(RecipeService recipeService, IngredientCatalog catalog, CurrentUserService currentUser) {
         this.recipeService = recipeService;
+        this.catalog = catalog;
         this.currentUser = currentUser;
     }
 
@@ -68,6 +74,19 @@ public class RecipesController implements RecipesApi {
         UUID profileId = currentUser.requireProfile().id();
         recipeService.delete(profileId, recipeId);
         return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    public ResponseEntity<NutritionEstimate> estimateRecipeNutrition(NutritionEstimateInput input) {
+        return ResponseEntity.ok(RecipeApiMapper.toApiEstimate(recipeService.estimateNutrition(
+                RecipeApiMapper.fromApiIngredients(input.getIngredients()), input.getServings())));
+    }
+
+    @Override
+    public ResponseEntity<List<CatalogIngredient>> listIngredients(@Nullable String q) {
+        return ResponseEntity.ok(catalog.list(q).stream()
+                .map(RecipeApiMapper::toApiCatalogIngredient)
+                .toList());
     }
 
     @Override

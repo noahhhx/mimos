@@ -79,6 +79,8 @@ class ExportFixturesTests extends ApiIntegrationTestSupport {
         assertThat(soup.get("ingredients")).hasSize(3);
         assertThat(soup.get("ingredients").get(2).has("quantity")).isFalse(); // salt, unmeasured
         assertThat(soup.get("tags").toString()).isEqualTo("[\"soup\",\"vegan\"]");
+        assertThat(soup.get("nutritionSource").asText()).isEqualTo("MANUAL");
+        assertThat(soup.get("nutrition").get("calories").asDouble()).isEqualTo(320);
 
         JsonNode plan = get(api, token, "/api/v1/plans/2026-09-28");
         assertThat(plan.get("entries")).hasSize(2);
@@ -107,6 +109,26 @@ class ExportFixturesTests extends ApiIntegrationTestSupport {
         assertThat(exportedSoup.get("createdAt").asText()).isEqualTo("2026-09-01T18:30:00Z");
         assertThat(exportedSoup.get("updatedAt").asText()).isEqualTo("2026-09-05T12:00:00Z");
         assertThat(exported.get("mealLogs").get(0).get("loggedAt").asText()).isEqualTo("2026-09-28T19:45:00Z");
+    }
+
+    @Test
+    void version2RestoresCalculatedNutrition() {
+        RestClient api = api();
+        String token = accessToken(createUser());
+
+        importFixture(api, token, 2);
+
+        JsonNode recipes = get(api, token, "/api/v1/recipes");
+        JsonNode soup =
+                get(api, token, "/api/v1/recipes/" + recipes.get(1).get("id").asText());
+        assertThat(soup.get("nutritionSource").asText()).isEqualTo("INGREDIENTS");
+        assertThat(soup.get("ingredients").get(0).get("catalogSlug").asText()).isEqualTo("red-lentils");
+        // 250 g red lentils and 2 carrots over 4 servings, from today's catalog.
+        assertThat(soup.get("nutrition").get("calories").asDouble()).isEqualTo(236);
+        JsonNode toast =
+                get(api, token, "/api/v1/recipes/" + recipes.get(0).get("id").asText());
+        assertThat(toast.get("nutritionSource").asText()).isEqualTo("MANUAL");
+        assertThat(toast.get("nutrition").get("calories").asDouble()).isEqualTo(150);
     }
 
     private JsonNode importFixture(RestClient api, String token, int version) {

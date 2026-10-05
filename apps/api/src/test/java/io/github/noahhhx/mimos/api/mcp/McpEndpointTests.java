@@ -304,6 +304,8 @@ class McpEndpointTests extends ApiIntegrationTestSupport {
                 List.of("dinner"),
                 "nutrition",
                 Map.of("calories", 550),
+                "nutritionSource",
+                "MANUAL",
                 "ingredients",
                 List.of(
                         Map.of("quantity", 500, "unit", "g", "name", "beef chuck"),

@@ -46,6 +46,7 @@ change** — an out-of-date AGENTS.md is worse than none.
 | Images     | CI publishes `ghcr.io/noahhhx/mimos-{api,web,keycloak,country-week}` (amd64) after every other job passes: `main` + `sha-*` from main, semver + `latest` from `v*` tags. Images carry no deployment-specific config. See ADR-0012. |
 | Sync       | intervals.icu is the activity data source (future). Design for it, don't build it yet. |
 | Library content | Seed file `core/core-recipes/src/main/resources/library/library-seed.json`, loaded by an idempotent startup seeder (`mimos.library.seed-enabled`, default on). Content fixes ship with a restart; never via Flyway migrations. See ADR-0005. |
+| Ingredient catalog | One shared catalog seeded read-only from `core/core-recipes/src/main/resources/library/ingredient-seed.json` (always on, by slug, never deleted). Recipe lines link to it by `catalogSlug`. A recipe's `nutritionSource` is `MANUAL` (typed) or `INGREDIENTS` (calculated when read, so catalog fixes reach every recipe on restart). Metric units only: `g`, `kg`, `ml`, `l`, `tsp` (5 ml), `tbsp` (15 ml), or none for pieces. Library recipes are calculated. See ADR-0015. |
 | Public API | Unauthenticated read-only access to the curated library under `/api/v1/public/**` (SEO pages). Personal recipes never appear there; everything else requires a bearer token. |
 | Account data | Per-user export/import as one versioned JSON document (`GET /api/v1/account/export`, `POST /api/v1/account/import`): domain-shaped, never a table dump; library recipes by slug; import only into an empty account, atomically, through domain validation. Format changes bump the version, add an `ExportUpgrader` step and a frozen `export/v<N>.json` test fixture. See ADR-0011. |
 | Plugins    | HTTP sidecar plugins, pull-only in v1: config registry (`mimos.plugins.*`), manifest at `GET /manifest`, one capability (`plan-suggestions`), declarative cards, library-only context. See ADR-0006. Registered means available; each user opts in from the Plugins page (`/app/plugins`, linked from the profile menu; API `/api/v1/me/plugins`), and every plugin starts off. See ADR-0013. |
@@ -71,8 +72,8 @@ wire-format contract:
 
 - `core-recipes` — recipes, ingredients, nutrition. Pure domain; no
   knowledge of integrations, plugins, or HTTP clients. Owns its tables'
-  JDBC persistence; the curated library is seeded read-only content
-  (ADR-0005).
+  JDBC persistence; the curated library and the ingredient catalog are
+  seeded read-only content (ADR-0005, ADR-0015).
 - `core-planning` — meal plans, shopping lists, logging. Depends on
   recipes (through `RecipeService`'s public interface only — never its
   tables), nothing else. Owns its tables' JDBC persistence.

@@ -1,14 +1,19 @@
 package io.github.noahhhx.mimos.api.recipes;
 
+import io.github.noahhhx.mimos.recipes.recipe.CatalogIngredient;
 import io.github.noahhhx.mimos.recipes.recipe.Ingredient;
 import io.github.noahhhx.mimos.recipes.recipe.Nutrition;
+import io.github.noahhhx.mimos.recipes.recipe.NutritionEstimate;
+import io.github.noahhhx.mimos.recipes.recipe.NutritionSource;
 import io.github.noahhhx.mimos.recipes.recipe.Recipe;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeDraft;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeStep;
 import java.math.BigDecimal;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import org.openapitools.model.IngredientLineStatus;
 import org.openapitools.model.IngredientQuantity;
+import org.openapitools.model.NutritionBasis;
 import org.openapitools.model.RecipeDetail;
 import org.openapitools.model.RecipeInput;
 import org.openapitools.model.RecipeSummary;
@@ -42,12 +47,8 @@ public final class RecipeApiMapper {
                 .isLibrary(recipe.isLibrary())
                 .tags(recipe.tags())
                 .nutrition(toApiNutrition(recipe.nutrition()))
-                .ingredients(recipe.ingredients().stream()
-                        .map(ingredient -> new IngredientQuantity()
-                                .quantity(toBigDecimal(ingredient.quantity()))
-                                .unit(ingredient.unit())
-                                .name(ingredient.name()))
-                        .toList())
+                .nutritionSource(toApiSource(recipe.nutritionSource()))
+                .ingredients(toApiIngredients(recipe.ingredients()))
                 .steps(recipe.steps().stream()
                         .map(step -> new org.openapitools.model.RecipeStep().instruction(step.instruction()))
                         .toList());
@@ -62,14 +63,48 @@ public final class RecipeApiMapper {
                 input.getCookMinutes(),
                 input.getTags(),
                 fromApiNutrition(input.getNutrition()),
-                fromApiIngredients(input),
+                NutritionSource.valueOf(input.getNutritionSource().name()),
+                fromApiIngredients(input.getIngredients()),
                 fromApiSteps(input));
     }
 
-    private static List<Ingredient> fromApiIngredients(RecipeInput input) {
-        return input.getIngredients().stream()
+    public static org.openapitools.model.CatalogIngredient toApiCatalogIngredient(CatalogIngredient entry) {
+        return new org.openapitools.model.CatalogIngredient()
+                .slug(entry.slug())
+                .name(entry.name())
+                .basis(NutritionBasis.valueOf(entry.basis().name()))
+                .nutrition(toApiNutrition(entry.nutrition()));
+    }
+
+    public static org.openapitools.model.NutritionEstimate toApiEstimate(NutritionEstimate estimate) {
+        return new org.openapitools.model.NutritionEstimate()
+                .nutrition(toApiNutrition(estimate.perServing()))
+                .lines(estimate.lines().stream()
+                        .map(status -> IngredientLineStatus.valueOf(status.name()))
+                        .toList());
+    }
+
+    public static org.openapitools.model.NutritionSource toApiSource(NutritionSource source) {
+        return org.openapitools.model.NutritionSource.valueOf(source.name());
+    }
+
+    public static List<IngredientQuantity> toApiIngredients(List<Ingredient> ingredients) {
+        return ingredients.stream()
+                .map(ingredient -> new IngredientQuantity()
+                        .quantity(toBigDecimal(ingredient.quantity()))
+                        .unit(ingredient.unit())
+                        .name(ingredient.name())
+                        .catalogSlug(ingredient.catalogSlug()))
+                .toList();
+    }
+
+    public static List<Ingredient> fromApiIngredients(List<IngredientQuantity> ingredients) {
+        return ingredients.stream()
                 .map(ingredient -> new Ingredient(
-                        fromBigDecimal(ingredient.getQuantity()), ingredient.getUnit(), ingredient.getName()))
+                        fromBigDecimal(ingredient.getQuantity()),
+                        ingredient.getUnit(),
+                        ingredient.getName(),
+                        ingredient.getCatalogSlug()))
                 .toList();
     }
 

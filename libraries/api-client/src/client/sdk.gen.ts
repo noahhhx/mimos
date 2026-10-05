@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddMealPlanEntryData, AddMealPlanEntryErrors, AddMealPlanEntryResponses, CreateMealLogData, CreateMealLogErrors, CreateMealLogResponses, CreateRecipeData, CreateRecipeErrors, CreateRecipeResponses, DeleteMealLogData, DeleteMealLogErrors, DeleteMealLogResponses, DeleteMealPlanEntryData, DeleteMealPlanEntryErrors, DeleteMealPlanEntryResponses, DeleteRecipeData, DeleteRecipeErrors, DeleteRecipeResponses, ExportAccountData, ExportAccountErrors, ExportAccountResponses, GenerateShoppingListData, GenerateShoppingListErrors, GenerateShoppingListResponses, GetMealPlanData, GetMealPlanErrors, GetMealPlanResponses, GetMeData, GetMeErrors, GetMeResponses, GetPlanSuggestionsData, GetPlanSuggestionsErrors, GetPlanSuggestionsResponses, GetPublicRecipeData, GetPublicRecipeErrors, GetPublicRecipeResponses, GetRecipeData, GetRecipeErrors, GetRecipeResponses, GetShoppingListData, GetShoppingListErrors, GetShoppingListResponses, ImportAccountData, ImportAccountErrors, ImportAccountResponses, ListLibraryRecipesData, ListLibraryRecipesErrors, ListLibraryRecipesResponses, ListMealLogsData, ListMealLogsErrors, ListMealLogsResponses, ListMyPluginsData, ListMyPluginsErrors, ListMyPluginsResponses, ListMyRecipesData, ListMyRecipesErrors, ListMyRecipesResponses, ListPublicRecipesData, ListPublicRecipesResponses, ReplaceRecipeData, ReplaceRecipeErrors, ReplaceRecipeResponses, SummarizeMealLogsData, SummarizeMealLogsErrors, SummarizeMealLogsResponses, UpdateMealPlanEntryData, UpdateMealPlanEntryErrors, UpdateMealPlanEntryResponses, UpdateMyPluginData, UpdateMyPluginErrors, UpdateMyPluginResponses, UpdateShoppingListItemData, UpdateShoppingListItemErrors, UpdateShoppingListItemResponses } from './types.gen';
+import type { AddMealPlanEntryData, AddMealPlanEntryErrors, AddMealPlanEntryResponses, CreateMealLogData, CreateMealLogErrors, CreateMealLogResponses, CreateRecipeData, CreateRecipeErrors, CreateRecipeResponses, DeleteMealLogData, DeleteMealLogErrors, DeleteMealLogResponses, DeleteMealPlanEntryData, DeleteMealPlanEntryErrors, DeleteMealPlanEntryResponses, DeleteRecipeData, DeleteRecipeErrors, DeleteRecipeResponses, EstimateRecipeNutritionData, EstimateRecipeNutritionErrors, EstimateRecipeNutritionResponses, ExportAccountData, ExportAccountErrors, ExportAccountResponses, GenerateShoppingListData, GenerateShoppingListErrors, GenerateShoppingListResponses, GetMealPlanData, GetMealPlanErrors, GetMealPlanResponses, GetMeData, GetMeErrors, GetMeResponses, GetPlanSuggestionsData, GetPlanSuggestionsErrors, GetPlanSuggestionsResponses, GetPublicRecipeData, GetPublicRecipeErrors, GetPublicRecipeResponses, GetRecipeData, GetRecipeErrors, GetRecipeResponses, GetShoppingListData, GetShoppingListErrors, GetShoppingListResponses, ImportAccountData, ImportAccountErrors, ImportAccountResponses, ListIngredientsData, ListIngredientsErrors, ListIngredientsResponses, ListLibraryRecipesData, ListLibraryRecipesErrors, ListLibraryRecipesResponses, ListMealLogsData, ListMealLogsErrors, ListMealLogsResponses, ListMyPluginsData, ListMyPluginsErrors, ListMyPluginsResponses, ListMyRecipesData, ListMyRecipesErrors, ListMyRecipesResponses, ListPublicRecipesData, ListPublicRecipesResponses, ReplaceRecipeData, ReplaceRecipeErrors, ReplaceRecipeResponses, SummarizeMealLogsData, SummarizeMealLogsErrors, SummarizeMealLogsResponses, UpdateMealPlanEntryData, UpdateMealPlanEntryErrors, UpdateMealPlanEntryResponses, UpdateMyPluginData, UpdateMyPluginErrors, UpdateMyPluginResponses, UpdateShoppingListItemData, UpdateShoppingListItemErrors, UpdateShoppingListItemResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -83,7 +83,7 @@ export const listMyRecipes = <ThrowOnError extends boolean = false>(options?: Op
 /**
  * Create a personal recipe
  *
- * Creates a recipe owned by the caller and returns it with its id. Nutrition is per serving; leave out values you do not know rather than guessing zero. Steps are in cooking order.
+ * Creates a recipe owned by the caller and returns it with its id. Steps are in cooking order. Prefer calculated nutrition: set nutritionSource to INGREDIENTS and give each ingredient line the catalogSlug of what it is (find slugs with listIngredients), with its amount in g, kg, ml, l, tsp, or tbsp, or no unit for a count of pieces, matching the entry's basis. Check the result first with estimateRecipeNutrition. With MANUAL, send per-serving nutrition and leave out values you do not know rather than guessing zero.
  *
  */
 export const createRecipe = <ThrowOnError extends boolean = false>(options: Options<CreateRecipeData, ThrowOnError>): RequestResult<CreateRecipeResponses, CreateRecipeErrors, ThrowOnError> => (options.client ?? client).post<CreateRecipeResponses, CreateRecipeErrors, ThrowOnError>({
@@ -119,6 +119,29 @@ export const replaceRecipe = <ThrowOnError extends boolean = false>(options: Opt
         ...options.headers
     }
 });
+
+/**
+ * Calculate nutrition for ingredient lines without saving
+ *
+ * Runs the calculation a recipe with nutritionSource INGREDIENTS gets: each line counts when it has a catalogSlug, an amount, and a unit its catalog entry's basis covers (PER_100_G: g, kg; PER_100_ML: ml, l, tsp = 5 ml, tbsp = 15 ml; PER_PIECE: no unit). Returns the per-serving nutrition of the lines that counted and each line's status, in order. Nothing is saved.
+ *
+ */
+export const estimateRecipeNutrition = <ThrowOnError extends boolean = false>(options: Options<EstimateRecipeNutritionData, ThrowOnError>): RequestResult<EstimateRecipeNutritionResponses, EstimateRecipeNutritionErrors, ThrowOnError> => (options.client ?? client).post<EstimateRecipeNutritionResponses, EstimateRecipeNutritionErrors, ThrowOnError>({
+    url: '/api/v1/recipes/nutrition-estimate',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * The shared ingredient catalog
+ *
+ * Ingredients with known nutrition, shared by everyone on this instance. Link an ingredient line to one with its slug (catalogSlug) so a recipe's nutrition can be calculated. Each entry's nutrition is for its basis: 100 g, 100 ml, or one piece.
+ *
+ */
+export const listIngredients = <ThrowOnError extends boolean = false>(options?: Options<ListIngredientsData, ThrowOnError>): RequestResult<ListIngredientsResponses, ListIngredientsErrors, ThrowOnError> => (options?.client ?? client).get<ListIngredientsResponses, ListIngredientsErrors, ThrowOnError>({ url: '/api/v1/ingredients', ...options });
 
 /**
  * The curated recipe library

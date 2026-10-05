@@ -7,23 +7,22 @@
     "prepMinutes": 10,
     "cookMinutes": 15,
     "tags": ["breakfast", "vegetarian", "weekend"],
-    "nutrition": { "calories": 340, "proteinG": 10, "carbsG": 52, "fatG": 9 },
     "ingredients": [
-      { "quantity": 2, "unit": "cups", "name": "flour" },
-      { "quantity": 2, "unit": "tbsp", "name": "sugar" },
-      { "quantity": 2, "unit": "tsp", "name": "baking powder" },
-      { "quantity": 0.5, "unit": "tsp", "name": "salt" },
-      { "quantity": 0.5, "unit": "tsp", "name": "baking soda" },
-      { "quantity": 2, "unit": "cups", "name": "buttermilk" },
-      { "quantity": 2, "name": "eggs" },
-      { "quantity": 3, "unit": "tbsp", "name": "butter, melted" },
-      { "quantity": 1, "unit": "tsp", "name": "vanilla extract" }
+      { "quantity": 250, "unit": "g", "name": "flour", "catalogSlug": "all-purpose-flour" },
+      { "quantity": 25, "unit": "g", "name": "sugar", "catalogSlug": "sugar" },
+      { "quantity": 2, "unit": "tsp", "name": "baking powder", "catalogSlug": "baking-powder" },
+      { "quantity": 0.5, "unit": "tsp", "name": "salt", "catalogSlug": "salt" },
+      { "quantity": 0.5, "unit": "tsp", "name": "baking soda", "catalogSlug": "baking-soda" },
+      { "quantity": 500, "unit": "ml", "name": "buttermilk", "catalogSlug": "buttermilk" },
+      { "quantity": 2, "name": "eggs", "catalogSlug": "egg" },
+      { "quantity": 45, "unit": "g", "name": "butter, melted", "catalogSlug": "butter" },
+      { "quantity": 1, "unit": "tsp", "name": "vanilla extract", "catalogSlug": "vanilla-extract" }
     ],
     "steps": [
       "Whisk the flour, sugar, baking powder, salt, and baking soda in a large bowl.",
       "In a separate bowl, whisk the buttermilk, eggs, melted butter, and vanilla.",
       "Pour the wet ingredients into the dry and stir until just combined. Lumps are good; overmixing is not.",
-      "Heat a lightly buttered pan over medium heat. Pour 1/3-cup rounds of batter.",
+      "Heat a lightly buttered pan over medium heat. Pour 80 ml rounds of batter.",
       "Cook until bubbles pop on the surface, 2-3 minutes, then flip and cook until golden, another 1-2 minutes.",
       "Keep warm in a low oven while you cook the rest. Serve with maple syrup."
     ]
@@ -36,18 +35,17 @@
     "prepMinutes": 10,
     "cookMinutes": 25,
     "tags": ["breakfast", "vegetarian", "one-pan"],
-    "nutrition": { "calories": 310, "proteinG": 15, "carbsG": 22, "fatG": 18 },
     "ingredients": [
-      { "quantity": 2, "unit": "tbsp", "name": "olive oil" },
-      { "quantity": 1, "name": "onion, thinly sliced" },
-      { "quantity": 1, "name": "bell pepper, sliced" },
-      { "quantity": 3, "name": "garlic cloves, minced" },
-      { "quantity": 1, "unit": "tsp", "name": "cumin" },
-      { "quantity": 1, "unit": "tsp", "name": "paprika" },
-      { "quantity": 0.25, "unit": "tsp", "name": "cayenne" },
-      { "quantity": 400, "unit": "g", "name": "canned tomatoes" },
-      { "quantity": 4, "name": "eggs" },
-      { "quantity": 1, "unit": "tbsp", "name": "parsley, chopped" }
+      { "quantity": 2, "unit": "tbsp", "name": "olive oil", "catalogSlug": "olive-oil" },
+      { "quantity": 1, "name": "onion, thinly sliced", "catalogSlug": "onion" },
+      { "quantity": 1, "name": "bell pepper, sliced", "catalogSlug": "bell-pepper" },
+      { "quantity": 3, "name": "garlic cloves, minced", "catalogSlug": "garlic-clove" },
+      { "quantity": 1, "unit": "tsp", "name": "cumin", "catalogSlug": "cumin" },
+      { "quantity": 1, "unit": "tsp", "name": "paprika", "catalogSlug": "paprika" },
+      { "quantity": 0.25, "unit": "tsp", "name": "cayenne", "catalogSlug": "cayenne" },
+      { "quantity": 400, "unit": "g", "name": "canned tomatoes", "catalogSlug": "canned-tomatoes" },
+      { "quantity": 4, "name": "eggs", "catalogSlug": "egg" },
+      { "quantity": 1, "unit": "tbsp", "name": "parsley, chopped", "catalogSlug": "parsley" }
     ],
     "steps": [
       "Warm the oil in a skillet over medium heat and soften the onion and pepper, 8-10 minutes.",
@@ -66,14 +64,13 @@
     "prepMinutes": 5,
     "cookMinutes": 0,
     "tags": ["breakfast", "vegetarian", "make-ahead"],
-    "nutrition": { "calories": 420, "proteinG": 17, "carbsG": 56, "fatG": 13 },
     "ingredients": [
-      { "quantity": 0.5, "unit": "cup", "name": "oats" },
-      { "quantity": 0.5, "unit": "cup", "name": "milk" },
-      { "quantity": 0.5, "unit": "cup", "name": "yogurt" },
-      { "quantity": 1, "unit": "tbsp", "name": "honey" },
-      { "quantity": 1, "unit": "tbsp", "name": "almonds, flaked" },
-      { "quantity": 0.5, "unit": "cup", "name": "berries" }
+      { "quantity": 40, "unit": "g", "name": "oats", "catalogSlug": "oats" },
+      { "quantity": 125, "unit": "ml", "name": "milk", "catalogSlug": "milk" },
+      { "quantity": 125, "unit": "g", "name": "yogurt", "catalogSlug": "yogurt" },
+      { "quantity": 1, "unit": "tbsp", "name": "honey", "catalogSlug": "honey" },
+      { "quantity": 10, "unit": "g", "name": "almonds, flaked", "catalogSlug": "almonds" },
+      { "quantity": 75, "unit": "g", "name": "berries", "catalogSlug": "berries" }
     ],
     "steps": [
       "Stir the oats, milk, yogurt, and honey together in a jar.",
@@ -89,17 +86,16 @@
     "prepMinutes": 5,
     "cookMinutes": 15,
     "tags": ["dinner", "vegetarian", "italian", "quick"],
-    "nutrition": { "calories": 520, "proteinG": 12, "carbsG": 78, "fatG": 17 },
     "ingredients": [
-      { "quantity": 200, "unit": "g", "name": "spaghetti" },
-      { "quantity": 4, "unit": "tbsp", "name": "olive oil" },
-      { "quantity": 4, "name": "garlic cloves, thinly sliced" },
-      { "quantity": 0.5, "unit": "tsp", "name": "pepper flakes" },
-      { "quantity": 1, "unit": "tsp", "name": "salt" },
-      { "quantity": 2, "unit": "tbsp", "name": "parsley, chopped" }
+      { "quantity": 200, "unit": "g", "name": "spaghetti", "catalogSlug": "pasta" },
+      { "quantity": 4, "unit": "tbsp", "name": "olive oil", "catalogSlug": "olive-oil" },
+      { "quantity": 4, "name": "garlic cloves, thinly sliced", "catalogSlug": "garlic-clove" },
+      { "quantity": 0.5, "unit": "tsp", "name": "pepper flakes", "catalogSlug": "chili-flakes" },
+      { "quantity": 1, "unit": "tsp", "name": "salt", "catalogSlug": "salt" },
+      { "quantity": 2, "unit": "tbsp", "name": "parsley, chopped", "catalogSlug": "parsley" }
     ],
     "steps": [
-      "Boil the spaghetti in well-salted water until al dente. Reserve a cup of pasta water.",
+      "Boil the spaghetti in well-salted water until al dente. Reserve 250 ml of pasta water.",
       "Meanwhile, warm the oil with the garlic over low heat until the slices turn pale gold. Never brown them fast.",
       "Add the pepper flakes off the heat and let them bloom in the warm oil.",
       "Toss the drained pasta with the oil, a splash of pasta water, and the parsley until glossy.",
@@ -114,18 +110,17 @@
     "prepMinutes": 15,
     "cookMinutes": 30,
     "tags": ["dinner", "curry"],
-    "nutrition": { "calories": 560, "proteinG": 38, "carbsG": 45, "fatG": 26 },
     "ingredients": [
-      { "quantity": 600, "unit": "g", "name": "chicken thighs, cut in chunks" },
-      { "quantity": 2, "unit": "tbsp", "name": "oil" },
-      { "quantity": 1, "name": "onion, diced" },
-      { "quantity": 3, "name": "garlic cloves, minced" },
-      { "quantity": 1, "unit": "tbsp", "name": "ginger, grated" },
-      { "quantity": 2, "unit": "tbsp", "name": "curry powder" },
-      { "quantity": 400, "unit": "ml", "name": "canned coconut milk" },
-      { "quantity": 400, "unit": "g", "name": "canned tomatoes" },
-      { "quantity": 2, "unit": "cups", "name": "rice" },
-      { "quantity": 1, "name": "lime" }
+      { "quantity": 600, "unit": "g", "name": "chicken thighs, cut in chunks", "catalogSlug": "chicken-thigh-boneless" },
+      { "quantity": 2, "unit": "tbsp", "name": "oil", "catalogSlug": "vegetable-oil" },
+      { "quantity": 1, "name": "onion, diced", "catalogSlug": "onion" },
+      { "quantity": 3, "name": "garlic cloves, minced", "catalogSlug": "garlic-clove" },
+      { "quantity": 1, "unit": "tbsp", "name": "ginger, grated", "catalogSlug": "ginger" },
+      { "quantity": 2, "unit": "tbsp", "name": "curry powder", "catalogSlug": "curry-powder" },
+      { "quantity": 400, "unit": "ml", "name": "canned coconut milk", "catalogSlug": "coconut-milk" },
+      { "quantity": 400, "unit": "g", "name": "canned tomatoes", "catalogSlug": "canned-tomatoes" },
+      { "quantity": 370, "unit": "g", "name": "rice", "catalogSlug": "white-rice" },
+      { "quantity": 1, "name": "lime", "catalogSlug": "lime" }
     ],
     "steps": [
       "Brown the chicken in the oil over high heat, then set aside.",
@@ -143,23 +138,22 @@
     "prepMinutes": 10,
     "cookMinutes": 30,
     "tags": ["dinner", "vegetarian", "vegan", "budget"],
-    "nutrition": { "calories": 430, "proteinG": 21, "carbsG": 62, "fatG": 9 },
     "ingredients": [
-      { "quantity": 2, "unit": "cups", "name": "red lentils" },
-      { "quantity": 2, "unit": "tbsp", "name": "oil" },
-      { "quantity": 1, "name": "onion, diced" },
-      { "quantity": 3, "name": "garlic cloves, minced" },
-      { "quantity": 1, "unit": "tbsp", "name": "ginger, grated" },
-      { "quantity": 2, "unit": "tsp", "name": "cumin" },
-      { "quantity": 1, "unit": "tsp", "name": "coriander" },
-      { "quantity": 0.5, "unit": "tsp", "name": "cayenne" },
-      { "quantity": 400, "unit": "g", "name": "canned tomatoes" },
-      { "quantity": 1, "unit": "tbsp", "name": "butter" }
+      { "quantity": 400, "unit": "g", "name": "red lentils", "catalogSlug": "red-lentils" },
+      { "quantity": 2, "unit": "tbsp", "name": "oil", "catalogSlug": "vegetable-oil" },
+      { "quantity": 1, "name": "onion, diced", "catalogSlug": "onion" },
+      { "quantity": 3, "name": "garlic cloves, minced", "catalogSlug": "garlic-clove" },
+      { "quantity": 1, "unit": "tbsp", "name": "ginger, grated", "catalogSlug": "ginger" },
+      { "quantity": 2, "unit": "tsp", "name": "cumin", "catalogSlug": "cumin" },
+      { "quantity": 1, "unit": "tsp", "name": "coriander", "catalogSlug": "coriander" },
+      { "quantity": 0.5, "unit": "tsp", "name": "cayenne", "catalogSlug": "cayenne" },
+      { "quantity": 400, "unit": "g", "name": "canned tomatoes", "catalogSlug": "canned-tomatoes" },
+      { "quantity": 15, "unit": "g", "name": "butter", "catalogSlug": "butter" }
     ],
     "steps": [
       "Rinse the lentils until the water runs clear.",
       "Fry the onion in the oil until golden, then add the garlic, ginger, and spices for a minute.",
-      "Add the lentils, tomatoes, and 4 cups of water. Simmer until the lentils have collapsed, 20-25 minutes.",
+      "Add the lentils, tomatoes, and 1 litre of water. Simmer until the lentils have collapsed, 20-25 minutes.",
       "Swirl in the butter and season generously with salt.",
       "Serve with rice or bread and a dollop of yogurt."
     ]
@@ -172,18 +166,17 @@
     "prepMinutes": 15,
     "cookMinutes": 45,
     "tags": ["dinner", "one-pot", "batch"],
-    "nutrition": { "calories": 480, "proteinG": 34, "carbsG": 32, "fatG": 24 },
     "ingredients": [
-      { "quantity": 700, "unit": "g", "name": "beef mince" },
-      { "quantity": 2, "unit": "tbsp", "name": "oil" },
-      { "quantity": 1, "name": "onion, diced" },
-      { "quantity": 1, "name": "bell pepper, diced" },
-      { "quantity": 3, "name": "garlic cloves, minced" },
-      { "quantity": 2, "unit": "tbsp", "name": "paprika" },
-      { "quantity": 1, "unit": "tbsp", "name": "cumin" },
-      { "quantity": 1, "unit": "tsp", "name": "cayenne" },
-      { "quantity": 800, "unit": "g", "name": "canned tomatoes" },
-      { "quantity": 400, "unit": "g", "name": "canned beans" }
+      { "quantity": 700, "unit": "g", "name": "beef mince", "catalogSlug": "beef-mince" },
+      { "quantity": 2, "unit": "tbsp", "name": "oil", "catalogSlug": "vegetable-oil" },
+      { "quantity": 1, "name": "onion, diced", "catalogSlug": "onion" },
+      { "quantity": 1, "name": "bell pepper, diced", "catalogSlug": "bell-pepper" },
+      { "quantity": 3, "name": "garlic cloves, minced", "catalogSlug": "garlic-clove" },
+      { "quantity": 2, "unit": "tbsp", "name": "paprika", "catalogSlug": "paprika" },
+      { "quantity": 1, "unit": "tbsp", "name": "cumin", "catalogSlug": "cumin" },
+      { "quantity": 1, "unit": "tsp", "name": "cayenne", "catalogSlug": "cayenne" },
+      { "quantity": 800, "unit": "g", "name": "canned tomatoes", "catalogSlug": "canned-tomatoes" },
+      { "quantity": 400, "unit": "g", "name": "canned beans", "catalogSlug": "canned-beans" }
     ],
     "steps": [
       "Brown the beef in the oil in a heavy pot, breaking it up; pour off excess fat.",
@@ -201,20 +194,19 @@
     "prepMinutes": 15,
     "cookMinutes": 40,
     "tags": ["dinner", "vegetarian", "vegan", "budget"],
-    "nutrition": { "calories": 470, "proteinG": 17, "carbsG": 72, "fatG": 12 },
     "ingredients": [
-      { "quantity": 1, "unit": "cup", "name": "brown lentils" },
-      { "quantity": 1, "unit": "cup", "name": "rice" },
-      { "quantity": 3, "name": "onions, thinly sliced" },
-      { "quantity": 4, "unit": "tbsp", "name": "olive oil" },
-      { "quantity": 1, "unit": "tsp", "name": "cumin" },
-      { "quantity": 2, "unit": "tsp", "name": "salt" }
+      { "quantity": 200, "unit": "g", "name": "brown lentils", "catalogSlug": "brown-lentils" },
+      { "quantity": 185, "unit": "g", "name": "rice", "catalogSlug": "white-rice" },
+      { "quantity": 3, "name": "onions, thinly sliced", "catalogSlug": "onion" },
+      { "quantity": 4, "unit": "tbsp", "name": "olive oil", "catalogSlug": "olive-oil" },
+      { "quantity": 1, "unit": "tsp", "name": "cumin", "catalogSlug": "cumin" },
+      { "quantity": 2, "unit": "tsp", "name": "salt", "catalogSlug": "salt" }
     ],
     "steps": [
       "Simmer the lentils in plenty of water until just tender, 15-20 minutes, then drain.",
       "Fry the onions in the oil over medium heat, stirring rarely, until deeply browned and crisp, at least 20 minutes. Set half aside.",
       "Add the rice, cumin, and salt to the pan with the remaining onions and stir to coat.",
-      "Add the lentils and 2 cups of water; cover and cook on low for 15 minutes.",
+      "Add the lentils and 500 ml of water; cover and cook on low for 15 minutes.",
       "Rest 5 minutes off the heat, then top with the reserved crispy onions."
     ]
   },
@@ -226,18 +218,17 @@
     "prepMinutes": 20,
     "cookMinutes": 40,
     "tags": ["dinner", "vegetarian", "soup", "batch"],
-    "nutrition": { "calories": 320, "proteinG": 13, "carbsG": 46, "fatG": 9 },
     "ingredients": [
-      { "quantity": 2, "unit": "tbsp", "name": "olive oil" },
-      { "quantity": 1, "name": "onion, diced" },
-      { "quantity": 2, "name": "carrots, diced" },
-      { "quantity": 2, "name": "celery stalks, diced" },
-      { "quantity": 3, "name": "garlic cloves, minced" },
-      { "quantity": 400, "unit": "g", "name": "canned tomatoes" },
-      { "quantity": 1, "unit": "cup", "name": "beans" },
-      { "quantity": 100, "unit": "g", "name": "pasta, small shapes" },
-      { "quantity": 2, "unit": "cups", "name": "cabbage, shredded" },
-      { "quantity": 50, "unit": "g", "name": "parmesan" }
+      { "quantity": 2, "unit": "tbsp", "name": "olive oil", "catalogSlug": "olive-oil" },
+      { "quantity": 1, "name": "onion, diced", "catalogSlug": "onion" },
+      { "quantity": 2, "name": "carrots, diced", "catalogSlug": "carrot" },
+      { "quantity": 2, "name": "celery stalks, diced", "catalogSlug": "celery-stalk" },
+      { "quantity": 3, "name": "garlic cloves, minced", "catalogSlug": "garlic-clove" },
+      { "quantity": 400, "unit": "g", "name": "canned tomatoes", "catalogSlug": "canned-tomatoes" },
+      { "quantity": 250, "unit": "g", "name": "canned beans, drained", "catalogSlug": "canned-beans" },
+      { "quantity": 100, "unit": "g", "name": "pasta, small shapes", "catalogSlug": "pasta" },
+      { "quantity": 180, "unit": "g", "name": "cabbage, shredded", "catalogSlug": "cabbage" },
+      { "quantity": 50, "unit": "g", "name": "parmesan", "catalogSlug": "parmesan" }
     ],
     "steps": [
       "Sweat the onion, carrots, and celery in the oil until soft, 10 minutes.",
@@ -255,18 +246,17 @@
     "prepMinutes": 15,
     "cookMinutes": 50,
     "tags": ["dinner", "one-pan", "roast"],
-    "nutrition": { "calories": 610, "proteinG": 42, "carbsG": 48, "fatG": 25 },
     "ingredients": [
-      { "quantity": 8, "name": "chicken thighs, bone-in" },
-      { "quantity": 800, "unit": "g", "name": "potatoes, quartered" },
-      { "quantity": 1, "name": "lemon, cut in wedges" },
-      { "quantity": 6, "name": "garlic cloves, smashed" },
-      { "quantity": 3, "unit": "tbsp", "name": "olive oil" },
-      { "quantity": 1, "unit": "tbsp", "name": "paprika" },
-      { "quantity": 2, "unit": "tsp", "name": "salt" }
+      { "quantity": 8, "name": "chicken thighs, bone-in", "catalogSlug": "chicken-thigh-bone-in" },
+      { "quantity": 800, "unit": "g", "name": "potatoes, quartered", "catalogSlug": "potato" },
+      { "quantity": 1, "name": "lemon, cut in wedges", "catalogSlug": "lemon" },
+      { "quantity": 6, "name": "garlic cloves, smashed", "catalogSlug": "garlic-clove" },
+      { "quantity": 3, "unit": "tbsp", "name": "olive oil", "catalogSlug": "olive-oil" },
+      { "quantity": 1, "unit": "tbsp", "name": "paprika", "catalogSlug": "paprika" },
+      { "quantity": 2, "unit": "tsp", "name": "salt", "catalogSlug": "salt" }
     ],
     "steps": [
-      "Heat the oven to 220°C / 425°F.",
+      "Heat the oven to 220°C.",
       "Toss the chicken, potatoes, lemon, and garlic with the oil, paprika, and salt on a large tray.",
       "Roast for 45-50 minutes, turning the potatoes once, until the chicken skin is crisp.",
       "Rest 5 minutes before serving straight from the tray."
@@ -280,15 +270,14 @@
     "prepMinutes": 15,
     "cookMinutes": 0,
     "tags": ["lunch", "vegetarian", "salad", "quick"],
-    "nutrition": { "calories": 260, "proteinG": 9, "carbsG": 12, "fatG": 20 },
     "ingredients": [
-      { "quantity": 4, "name": "tomatoes, cut in wedges" },
-      { "quantity": 1, "name": "cucumber, thickly sliced" },
-      { "quantity": 0.5, "name": "onion, thinly sliced" },
-      { "quantity": 100, "unit": "g", "name": "feta" },
-      { "quantity": 80, "unit": "g", "name": "olives" },
-      { "quantity": 4, "unit": "tbsp", "name": "olive oil" },
-      { "quantity": 1, "unit": "tsp", "name": "oregano" }
+      { "quantity": 4, "name": "tomatoes, cut in wedges", "catalogSlug": "tomato" },
+      { "quantity": 1, "name": "cucumber, thickly sliced", "catalogSlug": "cucumber" },
+      { "quantity": 0.5, "name": "onion, thinly sliced", "catalogSlug": "onion" },
+      { "quantity": 100, "unit": "g", "name": "feta", "catalogSlug": "feta" },
+      { "quantity": 80, "unit": "g", "name": "olives", "catalogSlug": "olives" },
+      { "quantity": 4, "unit": "tbsp", "name": "olive oil", "catalogSlug": "olive-oil" },
+      { "quantity": 1, "unit": "tsp", "name": "oregano", "catalogSlug": "oregano" }
     ],
     "steps": [
       "Combine the tomatoes, cucumber, and onion in a broad bowl.",
@@ -305,19 +294,18 @@
     "prepMinutes": 15,
     "cookMinutes": 55,
     "tags": ["baking", "vegetarian", "snack"],
-    "nutrition": { "calories": 290, "proteinG": 5, "carbsG": 45, "fatG": 11 },
     "ingredients": [
-      { "quantity": 3, "name": "bananas, very ripe" },
-      { "quantity": 8, "unit": "tbsp", "name": "butter" },
-      { "quantity": 0.75, "unit": "cup", "name": "sugar" },
-      { "quantity": 2, "name": "eggs" },
-      { "quantity": 1.5, "unit": "cups", "name": "flour" },
-      { "quantity": 1, "unit": "tsp", "name": "baking powder" },
-      { "quantity": 0.5, "unit": "tsp", "name": "salt" },
-      { "quantity": 1, "unit": "tsp", "name": "cinnamon" }
+      { "quantity": 3, "name": "bananas, very ripe", "catalogSlug": "banana" },
+      { "quantity": 115, "unit": "g", "name": "butter", "catalogSlug": "butter" },
+      { "quantity": 150, "unit": "g", "name": "sugar", "catalogSlug": "sugar" },
+      { "quantity": 2, "name": "eggs", "catalogSlug": "egg" },
+      { "quantity": 190, "unit": "g", "name": "flour", "catalogSlug": "all-purpose-flour" },
+      { "quantity": 1, "unit": "tsp", "name": "baking powder", "catalogSlug": "baking-powder" },
+      { "quantity": 0.5, "unit": "tsp", "name": "salt", "catalogSlug": "salt" },
+      { "quantity": 1, "unit": "tsp", "name": "cinnamon", "catalogSlug": "cinnamon" }
     ],
     "steps": [
-      "Heat the oven to 175°C / 350°F and line a loaf tin.",
+      "Heat the oven to 175°C and line a loaf tin.",
       "Brown the butter in a pan until it smells nutty, then cool slightly.",
       "Mash the bananas and whisk in the butter, sugar, and eggs.",
       "Fold in the flour, baking powder, salt, and cinnamon until just mixed.",
@@ -332,16 +320,15 @@
     "prepMinutes": 15,
     "cookMinutes": 15,
     "tags": ["dinner", "fish", "quick"],
-    "nutrition": { "calories": 650, "proteinG": 40, "carbsG": 72, "fatG": 19 },
     "ingredients": [
-      { "quantity": 2, "name": "salmon fillets" },
-      { "quantity": 2, "unit": "tbsp", "name": "soy sauce" },
-      { "quantity": 1, "unit": "tbsp", "name": "honey" },
-      { "quantity": 1, "unit": "tbsp", "name": "sesame seeds" },
-      { "quantity": 1, "unit": "cup", "name": "rice" },
-      { "quantity": 1, "name": "cucumber, thinly sliced" },
-      { "quantity": 2, "unit": "tbsp", "name": "rice vinegar" },
-      { "quantity": 1, "name": "scallion, sliced" }
+      { "quantity": 2, "name": "salmon fillets", "catalogSlug": "salmon-fillet" },
+      { "quantity": 2, "unit": "tbsp", "name": "soy sauce", "catalogSlug": "soy-sauce" },
+      { "quantity": 1, "unit": "tbsp", "name": "honey", "catalogSlug": "honey" },
+      { "quantity": 10, "unit": "g", "name": "sesame seeds", "catalogSlug": "sesame-seeds" },
+      { "quantity": 185, "unit": "g", "name": "rice", "catalogSlug": "white-rice" },
+      { "quantity": 1, "name": "cucumber, thinly sliced", "catalogSlug": "cucumber" },
+      { "quantity": 2, "unit": "tbsp", "name": "rice vinegar", "catalogSlug": "rice-vinegar" },
+      { "quantity": 1, "name": "scallion, sliced", "catalogSlug": "scallion" }
     ],
     "steps": [
       "Cook the rice. Meanwhile, toss the cucumber with the vinegar and a pinch of salt.",

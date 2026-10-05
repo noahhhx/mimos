@@ -9,8 +9,10 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -20,32 +22,37 @@ import org.springframework.stereotype.Repository;
  * JDBC persistence for recipes and their ingredient/step/tag children. The
  * module owns these tables (ADR-0001); nothing outside core-recipes touches
  * them. Child rows are loaded in batches to avoid per-recipe queries.
+ * Calculated nutrition is worked out here, as recipes are read, so every
+ * reader sees the catalog's current values (ADR-0015).
  */
 @Repository
 public class RecipeRepository {
 
     private static final String SELECT_BASE = """
             select id, owner_profile_id, slug, title, description, servings, prep_minutes, cook_minutes,
-                   calories, protein_g, carbs_g, fat_g, created_at, updated_at
+                   calories, protein_g, carbs_g, fat_g, nutrition_source, created_at, updated_at
             from recipe
             """;
 
     private static final String INSERT_RECIPE = """
             insert into recipe (id, owner_profile_id, slug, title, description, servings, prep_minutes, cook_minutes,
-                                calories, protein_g, carbs_g, fat_g, created_at, updated_at)
-            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                calories, protein_g, carbs_g, fat_g, nutrition_source, created_at, updated_at)
+            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
     private static final String UPDATE_RECIPE = """
             update recipe set title = ?, description = ?, servings = ?, prep_minutes = ?, cook_minutes = ?,
-                              calories = ?, protein_g = ?, carbs_g = ?, fat_g = ?, updated_at = ?
+                              calories = ?, protein_g = ?, carbs_g = ?, fat_g = ?, nutrition_source = ?,
+                              updated_at = ?
             where id = ?
             """;
 
     private final JdbcTemplate jdbc;
+    private final IngredientCatalog catalog;
 
-    public RecipeRepository(JdbcTemplate jdbc) {
+    public RecipeRepository(JdbcTemplate jdbc, IngredientCatalog catalog) {
         this.jdbc = jdbc;
+        this.catalog = catalog;
     }
 
     /** Inserts a fully-formed recipe (id and timestamps supplied by the caller). */
@@ -64,6 +71,7 @@ public class RecipeRepository {
                 recipe.nutrition().proteinG(),
                 recipe.nutrition().carbsG(),
                 recipe.nutrition().fatG(),
+                recipe.nutritionSource().name(),
                 Timestamp.from(recipe.createdAt()),
                 Timestamp.from(recipe.updatedAt()));
         insertChildren(recipe);
@@ -82,6 +90,7 @@ public class RecipeRepository {
                 recipe.nutrition().proteinG(),
                 recipe.nutrition().carbsG(),
                 recipe.nutrition().fatG(),
+                recipe.nutritionSource().name(),
                 Timestamp.from(recipe.updatedAt()),
                 recipe.id());
         jdbc.update("delete from recipe_ingredient where recipe_id = ?", recipe.id());
@@ -141,11 +150,13 @@ public class RecipeRepository {
         List<Object[]> ingredientRows = new ArrayList<>();
         for (int i = 0; i < recipe.ingredients().size(); i++) {
             Ingredient ingredient = recipe.ingredients().get(i);
-            ingredientRows.add(
-                    new Object[] {recipe.id(), i, ingredient.quantity(), ingredient.unit(), ingredient.name()});
+            ingredientRows.add(new Object[] {
+                recipe.id(), i, ingredient.quantity(), ingredient.unit(), ingredient.name(), ingredient.catalogSlug()
+            });
         }
         jdbc.batchUpdate(
-                "insert into recipe_ingredient (recipe_id, position, quantity, unit, name) values (?, ?, ?, ?, ?)",
+                "insert into recipe_ingredient (recipe_id, position, quantity, unit, name, catalog_slug)"
+                        + " values (?, ?, ?, ?, ?, ?)",
                 ingredientRows);
         List<Object[]> stepRows = new ArrayList<>();
         for (int i = 0; i < recipe.steps().size(); i++) {
@@ -189,6 +200,12 @@ public class RecipeRepository {
         Map<UUID, List<Ingredient>> ingredients = loadIngredients(rows);
         Map<UUID, List<RecipeStep>> steps = loadSteps(rows);
         Map<UUID, List<String>> tags = loadTags(rows);
+        Map<String, CatalogIngredient> linked = catalog.findBySlugs(rows.stream()
+                .filter(row -> row.nutritionSource() == NutritionSource.INGREDIENTS)
+                .flatMap(row -> ingredients.getOrDefault(row.id(), List.of()).stream())
+                .map(Ingredient::catalogSlug)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet()));
         return rows.stream()
                 .map(row -> new Recipe(
                         row.id(),
@@ -199,7 +216,12 @@ public class RecipeRepository {
                         row.servings(),
                         row.prepMinutes(),
                         row.cookMinutes(),
-                        row.nutrition(),
+                        row.nutritionSource() == NutritionSource.INGREDIENTS
+                                ? NutritionCalculator.estimate(
+                                                ingredients.getOrDefault(row.id(), List.of()), row.servings(), linked)
+                                        .perServing()
+                                : row.nutrition(),
+                        row.nutritionSource(),
                         tags.getOrDefault(row.id(), List.of()),
                         ingredients.getOrDefault(row.id(), List.of()),
                         steps.getOrDefault(row.id(), List.of()),
@@ -211,12 +233,16 @@ public class RecipeRepository {
     private Map<UUID, List<Ingredient>> loadIngredients(List<RecipeRow> rows) {
         return jdbc
                 .query(
-                        "select recipe_id, position, quantity, unit, name from recipe_ingredient where recipe_id in ("
+                        "select recipe_id, position, quantity, unit, name, catalog_slug from recipe_ingredient"
+                                + " where recipe_id in ("
                                 + placeholders(rows.size()) + ") order by recipe_id, position",
                         (rs, i) -> Map.entry(
                                 rs.getObject("recipe_id", UUID.class),
                                 new Ingredient(
-                                        nullableDouble(rs, "quantity"), rs.getString("unit"), rs.getString("name"))),
+                                        nullableDouble(rs, "quantity"),
+                                        rs.getString("unit"),
+                                        rs.getString("name"),
+                                        rs.getString("catalog_slug"))),
                         rowIds(rows))
                 .stream()
                 .collect(
@@ -275,6 +301,7 @@ public class RecipeRepository {
             @Nullable Integer prepMinutes,
             @Nullable Integer cookMinutes,
             Nutrition nutrition,
+            NutritionSource nutritionSource,
             java.time.Instant createdAt,
             java.time.Instant updatedAt) {}
 
@@ -298,6 +325,7 @@ public class RecipeRepository {
                             nullableDouble(rs, "protein_g"),
                             nullableDouble(rs, "carbs_g"),
                             nullableDouble(rs, "fat_g")),
+                    NutritionSource.valueOf(rs.getString("nutrition_source")),
                     rs.getTimestamp("created_at").toInstant(),
                     rs.getTimestamp("updated_at").toInstant());
         }

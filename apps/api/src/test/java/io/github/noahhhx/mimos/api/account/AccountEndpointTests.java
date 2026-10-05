@@ -76,7 +76,7 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
 
         JsonNode exported = exportFrom(api, source);
         assertThat(exported.get("format").asText()).isEqualTo("mimos.export");
-        assertThat(exported.get("version").asInt()).isEqualTo(1);
+        assertThat(exported.get("version").asInt()).isEqualTo(ExportUpgrader.CURRENT_VERSION);
         assertThat(exported.get("recipes")).hasSize(2);
         JsonNode entries = exported.get("mealPlans").get(0).get("entries");
         assertThat(entries).hasSize(3);
@@ -94,7 +94,7 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
 
         String target = accessToken(createUser());
         JsonNode report = importInto(api, target, exported, 200);
-        assertThat(report.get("sourceVersion").asInt()).isEqualTo(1);
+        assertThat(report.get("sourceVersion").asInt()).isEqualTo(ExportUpgrader.CURRENT_VERSION);
         assertThat(report.get("recipes").asInt()).isEqualTo(2);
         assertThat(report.get("plannedMeals").asInt()).isEqualTo(3);
         assertThat(report.get("shoppingLists").asInt()).isEqualTo(1);

@@ -36,6 +36,7 @@ public final class TestRecipes {
                         .put("proteinG", 20)
                         .put("carbsG", 40)
                         .put("fatG", 10));
+        input.put("nutritionSource", "MANUAL");
         input.set("ingredients", ingredients(input));
         input.set(
                 "steps", MAPPER.createArrayNode().add(MAPPER.createObjectNode().put("instruction", "Cook it.")));

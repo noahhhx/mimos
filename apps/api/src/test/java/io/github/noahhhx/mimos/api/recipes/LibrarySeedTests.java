@@ -5,13 +5,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.noahhhx.mimos.api.support.ApiIntegrationTestSupport;
 import io.github.noahhhx.mimos.recipes.library.LibrarySeeder;
+import io.github.noahhhx.mimos.recipes.recipe.NutritionEstimate;
+import io.github.noahhhx.mimos.recipes.recipe.NutritionSource;
+import io.github.noahhhx.mimos.recipes.recipe.Recipe;
+import io.github.noahhhx.mimos.recipes.recipe.RecipeService;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The curated library is seeded at startup (idempotently), publicly
@@ -29,6 +38,12 @@ class LibrarySeedTests extends ApiIntegrationTestSupport {
 
     @Autowired
     JdbcTemplate jdbc;
+
+    @Autowired
+    RecipeService recipeService;
+
+    @Autowired
+    ObjectMapper objectMapper;
 
     @Test
     void libraryIsSeededAndPubliclyReadable() {
@@ -64,6 +79,31 @@ class LibrarySeedTests extends ApiIntegrationTestSupport {
             found = found || recipe.get("slug").asText().equals("fluffy-buttermilk-pancakes");
         }
         assertThat(found).isTrue();
+    }
+
+    /** ADR-0015: library nutrition is calculated, and no library line is left out of it by accident. */
+    @Test
+    void everyLibraryLineCountsTowardCalculatedNutrition() {
+        JsonNode seeds;
+        try (InputStream in = new ClassPathResource("library/library-seed.json").getInputStream()) {
+            seeds = objectMapper.readTree(in);
+        } catch (IOException exception) {
+            throw new UncheckedIOException(exception);
+        }
+        assertThat(seeds.size()).isPositive();
+        for (JsonNode seed : seeds) {
+            Recipe recipe = recipeService.findBySlug(seed.get("slug").asText()).orElseThrow();
+            assertThat(recipe.nutritionSource()).as(recipe.slug()).isEqualTo(NutritionSource.INGREDIENTS);
+            assertThat(recipe.nutrition().calories()).as(recipe.slug()).isPositive();
+            NutritionEstimate estimate = recipeService.estimateNutrition(recipe.ingredients(), recipe.servings());
+            for (int line = 0; line < estimate.lines().size(); line++) {
+                assertThat(estimate.lines().get(line))
+                        .as(
+                                "%s: %s",
+                                recipe.slug(), recipe.ingredients().get(line).name())
+                        .isIn(NutritionEstimate.LineStatus.COUNTED, NutritionEstimate.LineStatus.UNMEASURED);
+            }
+        }
     }
 
     @Test

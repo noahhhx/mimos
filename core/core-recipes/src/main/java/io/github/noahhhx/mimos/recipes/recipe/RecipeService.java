@@ -3,9 +3,13 @@ package io.github.noahhhx.mimos.recipes.recipe;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,35 +35,20 @@ public class RecipeService {
     static final int MAX_TAG_LENGTH = 30;
 
     private final RecipeRepository repository;
+    private final IngredientCatalog catalog;
     private final Clock clock;
 
-    public RecipeService(RecipeRepository repository, Clock clock) {
+    public RecipeService(RecipeRepository repository, IngredientCatalog catalog, Clock clock) {
         this.repository = repository;
+        this.catalog = catalog;
         this.clock = clock;
     }
 
     /** Creates a personal recipe for the given owner. */
     @Transactional
     public Recipe create(UUID ownerProfileId, RecipeDraft submitted) {
-        RecipeDraft draft = withDistinctTags(submitted);
-        validate(draft);
-        Recipe recipe = new Recipe(
-                UUID.randomUUID(),
-                ownerProfileId,
-                null,
-                draft.title(),
-                draft.description(),
-                draft.servings(),
-                draft.prepMinutes(),
-                draft.cookMinutes(),
-                draft.nutrition(),
-                draft.tags(),
-                draft.ingredients(),
-                draft.steps(),
-                clock.instant(),
-                clock.instant());
-        repository.insert(recipe);
-        return recipe;
+        Instant now = clock.instant();
+        return save(UUID.randomUUID(), ownerProfileId, null, submitted, now, now, true);
     }
 
     /**
@@ -68,50 +57,85 @@ public class RecipeService {
      */
     @Transactional
     public Recipe restore(UUID ownerProfileId, RecipeDraft submitted, Instant createdAt, Instant updatedAt) {
-        RecipeDraft draft = withDistinctTags(submitted);
-        validate(draft);
-        Recipe recipe = new Recipe(
-                UUID.randomUUID(),
-                ownerProfileId,
-                null,
-                draft.title(),
-                draft.description(),
-                draft.servings(),
-                draft.prepMinutes(),
-                draft.cookMinutes(),
-                draft.nutrition(),
-                draft.tags(),
-                draft.ingredients(),
-                draft.steps(),
-                createdAt,
-                updatedAt);
-        repository.insert(recipe);
-        return recipe;
+        return save(UUID.randomUUID(), ownerProfileId, null, submitted, createdAt, updatedAt, true);
     }
 
     /** Replaces a personal recipe; library recipes are read-only. */
     @Transactional
     public Recipe replace(UUID ownerProfileId, UUID recipeId, RecipeDraft submitted) {
         Recipe existing = requireOwned(ownerProfileId, recipeId);
+        return save(
+                existing.id(),
+                ownerProfileId,
+                existing.slug(),
+                submitted,
+                existing.createdAt(),
+                clock.instant(),
+                false);
+    }
+
+    /**
+     * Calculates per-serving nutrition for ingredient lines that are not
+     * saved yet, and reports which lines counted (ADR-0015).
+     */
+    public NutritionEstimate estimateNutrition(List<Ingredient> ingredients, int servings) {
+        requireServings(servings);
+        if (ingredients.size() > MAX_INGREDIENTS) {
+            throw new IllegalArgumentException("a recipe can have at most " + MAX_INGREDIENTS + " ingredients");
+        }
+        ingredients.forEach(RecipeService::validateIngredient);
+        return NutritionCalculator.estimate(ingredients, servings, requireCatalogEntries(ingredients));
+    }
+
+    private Recipe save(
+            UUID id,
+            UUID ownerProfileId,
+            @Nullable String slug,
+            RecipeDraft submitted,
+            Instant createdAt,
+            Instant updatedAt,
+            boolean isNew) {
         RecipeDraft draft = withDistinctTags(submitted);
         validate(draft);
-        Recipe replaced = new Recipe(
-                existing.id(),
-                existing.ownerProfileId(),
-                existing.slug(),
+        requireCatalogEntries(draft.ingredients());
+        Recipe recipe = new Recipe(
+                id,
+                ownerProfileId,
+                slug,
                 draft.title(),
                 draft.description(),
                 draft.servings(),
                 draft.prepMinutes(),
                 draft.cookMinutes(),
-                draft.nutrition(),
+                draft.nutritionSource() == NutritionSource.MANUAL ? draft.nutrition() : Nutrition.UNKNOWN,
+                draft.nutritionSource(),
                 draft.tags(),
                 draft.ingredients(),
                 draft.steps(),
-                existing.createdAt(),
-                clock.instant());
-        repository.replace(replaced);
-        return replaced;
+                createdAt,
+                updatedAt);
+        if (isNew) {
+            repository.insert(recipe);
+        } else {
+            repository.replace(recipe);
+        }
+        // Read back so calculated nutrition comes from the one place that calculates it.
+        return repository.findById(id).orElseThrow();
+    }
+
+    /** The catalog entries the lines link to; a slug not in the catalog is a 400. */
+    private Map<String, CatalogIngredient> requireCatalogEntries(List<Ingredient> ingredients) {
+        Set<String> slugs = ingredients.stream()
+                .map(Ingredient::catalogSlug)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, CatalogIngredient> found = catalog.findBySlugs(slugs);
+        for (String slug : slugs) {
+            if (!found.containsKey(slug)) {
+                throw new IllegalArgumentException("ingredient catalog has no entry \"" + slug + "\"");
+            }
+        }
+        return found;
     }
 
     /** Deletes a personal recipe; library recipes are read-only. */
@@ -181,6 +205,7 @@ public class RecipeService {
                 draft.cookMinutes(),
                 draft.tags().stream().distinct().toList(),
                 draft.nutrition(),
+                draft.nutritionSource(),
                 draft.ingredients(),
                 draft.steps());
     }
@@ -188,24 +213,13 @@ public class RecipeService {
     private static void validate(RecipeDraft draft) {
         requireText("title", draft.title(), MAX_TITLE_LENGTH);
         requireText("description", draft.description(), MAX_DESCRIPTION_LENGTH);
-        if (draft.servings() < 1 || draft.servings() > MAX_SERVINGS) {
-            throw new IllegalArgumentException("servings must be between 1 and " + MAX_SERVINGS);
-        }
+        requireServings(draft.servings());
         requireBounded("prepMinutes", draft.prepMinutes(), 0, 24 * 60);
         requireBounded("cookMinutes", draft.cookMinutes(), 0, 24 * 60);
         if (draft.ingredients().isEmpty() || draft.ingredients().size() > MAX_INGREDIENTS) {
             throw new IllegalArgumentException("a recipe needs between 1 and " + MAX_INGREDIENTS + " ingredients");
         }
-        for (Ingredient ingredient : draft.ingredients()) {
-            requireText("ingredient name", ingredient.name(), MAX_TITLE_LENGTH);
-            Double quantity = ingredient.quantity();
-            if (quantity != null && (quantity.isNaN() || quantity <= 0)) {
-                throw new IllegalArgumentException("ingredient quantity must be positive: " + ingredient.name());
-            }
-            if (ingredient.unit() != null && ingredient.unit().length() > 30) {
-                throw new IllegalArgumentException("ingredient unit must be at most 30 characters");
-            }
-        }
+        draft.ingredients().forEach(RecipeService::validateIngredient);
         if (draft.steps().isEmpty() || draft.steps().size() > MAX_STEPS) {
             throw new IllegalArgumentException("a recipe needs between 1 and " + MAX_STEPS + " steps");
         }
@@ -221,11 +235,28 @@ public class RecipeService {
         validateNutrition(draft.nutrition());
     }
 
+    private static void validateIngredient(Ingredient ingredient) {
+        requireText("ingredient name", ingredient.name(), MAX_TITLE_LENGTH);
+        Double quantity = ingredient.quantity();
+        if (quantity != null && (quantity.isNaN() || quantity <= 0)) {
+            throw new IllegalArgumentException("ingredient quantity must be positive: " + ingredient.name());
+        }
+        if (ingredient.unit() != null && ingredient.unit().length() > 30) {
+            throw new IllegalArgumentException("ingredient unit must be at most 30 characters");
+        }
+    }
+
     private static void validateNutrition(Nutrition nutrition) {
         requireNonNegative("calories", nutrition.calories());
         requireNonNegative("proteinG", nutrition.proteinG());
         requireNonNegative("carbsG", nutrition.carbsG());
         requireNonNegative("fatG", nutrition.fatG());
+    }
+
+    private static void requireServings(int servings) {
+        if (servings < 1 || servings > MAX_SERVINGS) {
+            throw new IllegalArgumentException("servings must be between 1 and " + MAX_SERVINGS);
+        }
     }
 
     private static void requireText(String field, String value, int maxLength) {

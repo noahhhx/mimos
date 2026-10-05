@@ -8,7 +8,9 @@ import io.github.noahhhx.mimos.planning.plan.MealType;
 import io.github.noahhhx.mimos.planning.shopping.ShoppingListRepository;
 import io.github.noahhhx.mimos.planning.shopping.ShoppingListService;
 import io.github.noahhhx.mimos.recipes.recipe.Ingredient;
+import io.github.noahhhx.mimos.recipes.recipe.IngredientCatalog;
 import io.github.noahhhx.mimos.recipes.recipe.Nutrition;
+import io.github.noahhhx.mimos.recipes.recipe.NutritionSource;
 import io.github.noahhhx.mimos.recipes.recipe.Recipe;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeDraft;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeService;
@@ -19,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -58,6 +61,7 @@ public class AccountImporter {
     private final ObjectMapper objectMapper;
     private final IdentityService identity;
     private final RecipeService recipes;
+    private final IngredientCatalog catalog;
     private final MealPlanService mealPlans;
     private final ShoppingListService shoppingLists;
     private final MealLogService mealLogs;
@@ -67,12 +71,14 @@ public class AccountImporter {
             ObjectMapper objectMapper,
             IdentityService identity,
             RecipeService recipes,
+            IngredientCatalog catalog,
             MealPlanService mealPlans,
             ShoppingListService shoppingLists,
             MealLogService mealLogs) {
         this.objectMapper = objectMapper;
         this.identity = identity;
         this.recipes = recipes;
+        this.catalog = catalog;
         this.mealPlans = mealPlans;
         this.shoppingLists = shoppingLists;
         this.mealLogs = mealLogs;
@@ -140,6 +146,8 @@ public class AccountImporter {
         private final Map<String, Optional<UUID>> librarySlugs = new HashMap<>();
         /** Per missing library slug: planned meals skipped and logged meals unlinked. */
         private final Map<String, int[]> missingSlugs = new LinkedHashMap<>();
+        /** Catalog slugs not in this instance's catalog, and the recipes that linked them. */
+        private final Map<String, Set<String>> missingCatalogSlugs = new LinkedHashMap<>();
 
         private int plannedMeals;
         private int lists;
@@ -155,6 +163,20 @@ public class AccountImporter {
                 if (recipeIds.containsKey(exportedId)) {
                     throw new IllegalArgumentException("id " + exportedId + " is used by another recipe");
                 }
+                List<Ingredient> lines = present(recipe.getIngredients(), "ingredients").stream()
+                        .map(ingredient -> new Ingredient(
+                                fromBigDecimal(present(ingredient, "ingredient").getQuantity()),
+                                ingredient.getUnit(),
+                                ingredient.getName(),
+                                ingredient.getCatalogSlug()))
+                        .toList();
+                List<Ingredient> linkable = withoutUnknownCatalogSlugs(recipe.getTitle(), lines);
+                NutritionSource source = NutritionSource.valueOf(
+                        present(recipe.getNutritionSource(), "nutritionSource").name());
+                // A calculated recipe that lost a link keeps the nutrition it was exported with.
+                if (!linkable.equals(lines)) {
+                    source = NutritionSource.MANUAL;
+                }
                 Recipe restored = recipes.restore(
                         owner,
                         new RecipeDraft(
@@ -165,13 +187,8 @@ public class AccountImporter {
                                 recipe.getCookMinutes(),
                                 present(recipe.getTags(), "tags"),
                                 fromApiNutrition(present(recipe.getNutrition(), "nutrition")),
-                                present(recipe.getIngredients(), "ingredients").stream()
-                                        .map(ingredient -> new Ingredient(
-                                                fromBigDecimal(present(ingredient, "ingredient")
-                                                        .getQuantity()),
-                                                ingredient.getUnit(),
-                                                ingredient.getName()))
-                                        .toList(),
+                                source,
+                                linkable,
                                 present(recipe.getSteps(), "steps").stream()
                                         .map(step -> new RecipeStep(
                                                 present(step, "step").getInstruction()))
@@ -283,6 +300,28 @@ public class AccountImporter {
             return id;
         }
 
+        private List<Ingredient> withoutUnknownCatalogSlugs(String recipeTitle, List<Ingredient> lines) {
+            Set<String> linked = new HashSet<>();
+            lines.forEach(line -> {
+                if (line.catalogSlug() != null) {
+                    linked.add(line.catalogSlug());
+                }
+            });
+            Set<String> known = catalog.findBySlugs(linked).keySet();
+            return lines.stream()
+                    .map(line -> {
+                        String slug = line.catalogSlug();
+                        if (slug == null || known.contains(slug)) {
+                            return line;
+                        }
+                        missingCatalogSlugs
+                                .computeIfAbsent(slug, key -> new LinkedHashSet<>())
+                                .add(recipeTitle);
+                        return new Ingredient(line.quantity(), line.unit(), line.name(), null);
+                    })
+                    .toList();
+        }
+
         private Optional<UUID> library(String slug) {
             return librarySlugs.computeIfAbsent(
                     slug, key -> recipes.findBySlug(key).map(Recipe::id));
@@ -305,6 +344,14 @@ public class AccountImporter {
                 warnings.add("Library recipe \"" + slug + "\" is not in this instance's library: "
                         + String.join(", ", effects) + ".");
             });
+            missingCatalogSlugs.forEach((slug, recipeTitles) -> warnings.add("Ingredient \"" + slug
+                    + "\" is not in this instance's catalog, so it no longer counts toward nutrition in "
+                    + String.join(
+                            ", ",
+                            recipeTitles.stream()
+                                    .map(title -> "\"" + title + "\"")
+                                    .toList())
+                    + ", which keep the nutrition they were exported with."));
             return warnings;
         }
     }

@@ -50,6 +50,7 @@ class RecipesEndpointTests extends ApiIntegrationTestSupport {
         input.put("cookMinutes", 15);
         input.set("tags", objectMapper.createArrayNode().add("breakfast").add("vegetarian"));
         input.set("nutrition", nutritionNode(320, 9, 48, 9));
+        input.put("nutritionSource", "MANUAL");
         input.set(
                 "ingredients",
                 objectMapper
@@ -154,6 +155,7 @@ class RecipesEndpointTests extends ApiIntegrationTestSupport {
         input.put("servings", 0);
         input.set("tags", objectMapper.createArrayNode());
         input.set("nutrition", objectMapper.createObjectNode());
+        input.put("nutritionSource", "MANUAL");
         input.set("ingredients", objectMapper.createArrayNode());
         input.set("steps", objectMapper.createArrayNode());
 
@@ -184,6 +186,7 @@ class RecipesEndpointTests extends ApiIntegrationTestSupport {
         input.set(
                 "tags", objectMapper.createArrayNode().add("dinner").add("soup").add("dinner"));
         input.set("nutrition", objectMapper.createObjectNode());
+        input.put("nutritionSource", "MANUAL");
         input.set("ingredients", objectMapper.createArrayNode().add(ingredient(1, "l", "stock")));
         input.set("steps", objectMapper.createArrayNode().add(step("Simmer.")));
 
@@ -349,6 +352,7 @@ class RecipesEndpointTests extends ApiIntegrationTestSupport {
         input.put("servings", 1);
         input.set("tags", objectMapper.createArrayNode());
         input.set("nutrition", objectMapper.createObjectNode());
+        input.put("nutritionSource", "MANUAL");
         input.set("ingredients", objectMapper.createArrayNode().add(ingredient(1, null, "anything")));
         input.set("steps", objectMapper.createArrayNode().add(step("Do nothing.")));
         api.put()
@@ -424,6 +428,7 @@ class RecipesEndpointTests extends ApiIntegrationTestSupport {
         input.put("servings", 2);
         input.set("tags", objectMapper.createArrayNode());
         input.set("nutrition", objectMapper.createObjectNode());
+        input.put("nutritionSource", "MANUAL");
         input.set("ingredients", objectMapper.createArrayNode().add(ingredient(1, "l", "stock")));
         input.set("steps", objectMapper.createArrayNode().add(step("Simmer.")));
         return input;

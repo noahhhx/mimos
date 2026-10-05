@@ -271,6 +271,7 @@ class ShoppingListsEndpointTests extends ApiIntegrationTestSupport {
                         .put("proteinG", 12)
                         .put("carbsG", 30)
                         .put("fatG", 10));
+        input.put("nutritionSource", "MANUAL");
         input.set("ingredients", ingredients);
         input.set(
                 "steps",

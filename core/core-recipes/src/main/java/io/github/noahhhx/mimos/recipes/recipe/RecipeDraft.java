@@ -12,5 +12,6 @@ public record RecipeDraft(
         @Nullable Integer cookMinutes,
         List<String> tags,
         Nutrition nutrition,
+        NutritionSource nutritionSource,
         List<Ingredient> ingredients,
         List<RecipeStep> steps) {}

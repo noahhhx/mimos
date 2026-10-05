@@ -1,0 +1,515 @@
+[
+  {
+    "slug": "all-purpose-flour",
+    "name": "All-purpose flour",
+    "basis": "PER_100_G",
+    "calories": 364,
+    "proteinG": 10.3,
+    "carbsG": 76.3,
+    "fatG": 1.0
+  },
+  {
+    "slug": "almonds",
+    "name": "Almonds",
+    "basis": "PER_100_G",
+    "calories": 579,
+    "proteinG": 21.2,
+    "carbsG": 21.6,
+    "fatG": 49.9
+  },
+  {
+    "slug": "baking-powder",
+    "name": "Baking powder",
+    "basis": "PER_100_ML",
+    "calories": 49,
+    "proteinG": 0,
+    "carbsG": 25.5,
+    "fatG": 0
+  },
+  {
+    "slug": "baking-soda",
+    "name": "Baking soda",
+    "basis": "PER_100_ML",
+    "calories": 0,
+    "proteinG": 0,
+    "carbsG": 0,
+    "fatG": 0
+  },
+  {
+    "slug": "banana",
+    "name": "Banana",
+    "basis": "PER_PIECE",
+    "calories": 105,
+    "proteinG": 1.3,
+    "carbsG": 27.0,
+    "fatG": 0.4
+  },
+  {
+    "slug": "beef-mince",
+    "name": "Beef mince (20% fat)",
+    "basis": "PER_100_G",
+    "calories": 254,
+    "proteinG": 17.2,
+    "carbsG": 0,
+    "fatG": 20.0
+  },
+  {
+    "slug": "bell-pepper",
+    "name": "Bell pepper",
+    "basis": "PER_PIECE",
+    "calories": 31,
+    "proteinG": 1.2,
+    "carbsG": 7.2,
+    "fatG": 0.4
+  },
+  {
+    "slug": "berries",
+    "name": "Mixed berries",
+    "basis": "PER_100_G",
+    "calories": 45,
+    "proteinG": 0.8,
+    "carbsG": 10.5,
+    "fatG": 0.4
+  },
+  {
+    "slug": "brown-lentils",
+    "name": "Brown lentils, dry",
+    "basis": "PER_100_G",
+    "calories": 352,
+    "proteinG": 24.6,
+    "carbsG": 63.4,
+    "fatG": 1.1
+  },
+  {
+    "slug": "butter",
+    "name": "Butter",
+    "basis": "PER_100_G",
+    "calories": 717,
+    "proteinG": 0.9,
+    "carbsG": 0.1,
+    "fatG": 81.1
+  },
+  {
+    "slug": "buttermilk",
+    "name": "Buttermilk",
+    "basis": "PER_100_ML",
+    "calories": 41,
+    "proteinG": 3.4,
+    "carbsG": 4.9,
+    "fatG": 0.9
+  },
+  {
+    "slug": "cabbage",
+    "name": "Cabbage",
+    "basis": "PER_100_G",
+    "calories": 25,
+    "proteinG": 1.3,
+    "carbsG": 5.8,
+    "fatG": 0.1
+  },
+  {
+    "slug": "canned-beans",
+    "name": "Canned beans",
+    "basis": "PER_100_G",
+    "calories": 84,
+    "proteinG": 5.2,
+    "carbsG": 15.0,
+    "fatG": 0.4
+  },
+  {
+    "slug": "canned-tomatoes",
+    "name": "Canned tomatoes",
+    "basis": "PER_100_G",
+    "calories": 21,
+    "proteinG": 0.9,
+    "carbsG": 4.0,
+    "fatG": 0.3
+  },
+  {
+    "slug": "carrot",
+    "name": "Carrot",
+    "basis": "PER_PIECE",
+    "calories": 25,
+    "proteinG": 0.6,
+    "carbsG": 5.8,
+    "fatG": 0.1
+  },
+  {
+    "slug": "cayenne",
+    "name": "Cayenne pepper",
+    "basis": "PER_100_ML",
+    "calories": 127,
+    "proteinG": 4.8,
+    "carbsG": 22.6,
+    "fatG": 6.9
+  },
+  {
+    "slug": "celery-stalk",
+    "name": "Celery stalk",
+    "basis": "PER_PIECE",
+    "calories": 6,
+    "proteinG": 0.3,
+    "carbsG": 1.2,
+    "fatG": 0.1
+  },
+  {
+    "slug": "chicken-thigh-bone-in",
+    "name": "Chicken thigh, bone-in, skin-on",
+    "basis": "PER_PIECE",
+    "calories": 245,
+    "proteinG": 17.5,
+    "carbsG": 0,
+    "fatG": 19.0
+  },
+  {
+    "slug": "chicken-thigh-boneless",
+    "name": "Chicken thigh, boneless, skinless",
+    "basis": "PER_100_G",
+    "calories": 121,
+    "proteinG": 19.7,
+    "carbsG": 0,
+    "fatG": 4.1
+  },
+  {
+    "slug": "chili-flakes",
+    "name": "Chili flakes",
+    "basis": "PER_100_ML",
+    "calories": 127,
+    "proteinG": 4.8,
+    "carbsG": 22.6,
+    "fatG": 6.9
+  },
+  {
+    "slug": "cinnamon",
+    "name": "Ground cinnamon",
+    "basis": "PER_100_ML",
+    "calories": 128,
+    "proteinG": 2.1,
+    "carbsG": 42.0,
+    "fatG": 0.6
+  },
+  {
+    "slug": "coconut-milk",
+    "name": "Coconut milk, canned",
+    "basis": "PER_100_ML",
+    "calories": 197,
+    "proteinG": 2.0,
+    "carbsG": 2.8,
+    "fatG": 21.3
+  },
+  {
+    "slug": "coriander",
+    "name": "Ground coriander",
+    "basis": "PER_100_ML",
+    "calories": 107,
+    "proteinG": 4.5,
+    "carbsG": 19.8,
+    "fatG": 6.4
+  },
+  {
+    "slug": "cucumber",
+    "name": "Cucumber",
+    "basis": "PER_PIECE",
+    "calories": 45,
+    "proteinG": 2.0,
+    "carbsG": 10.9,
+    "fatG": 0.3
+  },
+  {
+    "slug": "cumin",
+    "name": "Ground cumin",
+    "basis": "PER_100_ML",
+    "calories": 169,
+    "proteinG": 8.0,
+    "carbsG": 19.8,
+    "fatG": 10.0
+  },
+  {
+    "slug": "curry-powder",
+    "name": "Curry powder",
+    "basis": "PER_100_ML",
+    "calories": 137,
+    "proteinG": 6.0,
+    "carbsG": 23.4,
+    "fatG": 5.9
+  },
+  {
+    "slug": "egg",
+    "name": "Egg",
+    "basis": "PER_PIECE",
+    "calories": 72,
+    "proteinG": 6.3,
+    "carbsG": 0.4,
+    "fatG": 4.8
+  },
+  {
+    "slug": "feta",
+    "name": "Feta",
+    "basis": "PER_100_G",
+    "calories": 264,
+    "proteinG": 14.2,
+    "carbsG": 4.1,
+    "fatG": 21.3
+  },
+  {
+    "slug": "garlic-clove",
+    "name": "Garlic clove",
+    "basis": "PER_PIECE",
+    "calories": 4,
+    "proteinG": 0.2,
+    "carbsG": 1.0,
+    "fatG": 0
+  },
+  {
+    "slug": "ginger",
+    "name": "Fresh ginger",
+    "basis": "PER_100_ML",
+    "calories": 32,
+    "proteinG": 0.7,
+    "carbsG": 7.1,
+    "fatG": 0.3
+  },
+  {
+    "slug": "honey",
+    "name": "Honey",
+    "basis": "PER_100_ML",
+    "calories": 432,
+    "proteinG": 0.4,
+    "carbsG": 117.0,
+    "fatG": 0
+  },
+  {
+    "slug": "lemon",
+    "name": "Lemon",
+    "basis": "PER_PIECE",
+    "calories": 24,
+    "proteinG": 0.9,
+    "carbsG": 7.8,
+    "fatG": 0.3
+  },
+  {
+    "slug": "lime",
+    "name": "Lime",
+    "basis": "PER_PIECE",
+    "calories": 20,
+    "proteinG": 0.5,
+    "carbsG": 7.1,
+    "fatG": 0.1
+  },
+  {
+    "slug": "milk",
+    "name": "Whole milk",
+    "basis": "PER_100_ML",
+    "calories": 63,
+    "proteinG": 3.2,
+    "carbsG": 4.9,
+    "fatG": 3.4
+  },
+  {
+    "slug": "oats",
+    "name": "Rolled oats",
+    "basis": "PER_100_G",
+    "calories": 379,
+    "proteinG": 13.2,
+    "carbsG": 67.7,
+    "fatG": 6.5
+  },
+  {
+    "slug": "olive-oil",
+    "name": "Olive oil",
+    "basis": "PER_100_ML",
+    "calories": 813,
+    "proteinG": 0,
+    "carbsG": 0,
+    "fatG": 92.0
+  },
+  {
+    "slug": "olives",
+    "name": "Olives",
+    "basis": "PER_100_G",
+    "calories": 145,
+    "proteinG": 1.0,
+    "carbsG": 3.8,
+    "fatG": 15.3
+  },
+  {
+    "slug": "onion",
+    "name": "Onion",
+    "basis": "PER_PIECE",
+    "calories": 44,
+    "proteinG": 1.2,
+    "carbsG": 10.3,
+    "fatG": 0.1
+  },
+  {
+    "slug": "oregano",
+    "name": "Dried oregano",
+    "basis": "PER_100_ML",
+    "calories": 53,
+    "proteinG": 1.8,
+    "carbsG": 13.8,
+    "fatG": 0.8
+  },
+  {
+    "slug": "paprika",
+    "name": "Paprika",
+    "basis": "PER_100_ML",
+    "calories": 127,
+    "proteinG": 6.3,
+    "carbsG": 24.3,
+    "fatG": 5.8
+  },
+  {
+    "slug": "parmesan",
+    "name": "Parmesan",
+    "basis": "PER_100_G",
+    "calories": 392,
+    "proteinG": 35.8,
+    "carbsG": 3.2,
+    "fatG": 25.8
+  },
+  {
+    "slug": "parsley",
+    "name": "Fresh parsley",
+    "basis": "PER_100_ML",
+    "calories": 9,
+    "proteinG": 0.8,
+    "carbsG": 1.6,
+    "fatG": 0.2
+  },
+  {
+    "slug": "pasta",
+    "name": "Dried pasta",
+    "basis": "PER_100_G",
+    "calories": 371,
+    "proteinG": 13.0,
+    "carbsG": 74.7,
+    "fatG": 1.5
+  },
+  {
+    "slug": "potato",
+    "name": "Potatoes",
+    "basis": "PER_100_G",
+    "calories": 77,
+    "proteinG": 2.0,
+    "carbsG": 17.5,
+    "fatG": 0.1
+  },
+  {
+    "slug": "red-lentils",
+    "name": "Red lentils, dry",
+    "basis": "PER_100_G",
+    "calories": 358,
+    "proteinG": 24.0,
+    "carbsG": 63.0,
+    "fatG": 2.2
+  },
+  {
+    "slug": "rice-vinegar",
+    "name": "Rice vinegar",
+    "basis": "PER_100_ML",
+    "calories": 0,
+    "proteinG": 0,
+    "carbsG": 0,
+    "fatG": 0
+  },
+  {
+    "slug": "salmon-fillet",
+    "name": "Salmon fillet",
+    "basis": "PER_PIECE",
+    "calories": 312,
+    "proteinG": 30.6,
+    "carbsG": 0,
+    "fatG": 20.1
+  },
+  {
+    "slug": "salt",
+    "name": "Salt",
+    "basis": "PER_100_ML",
+    "calories": 0,
+    "proteinG": 0,
+    "carbsG": 0,
+    "fatG": 0
+  },
+  {
+    "slug": "scallion",
+    "name": "Scallion",
+    "basis": "PER_PIECE",
+    "calories": 5,
+    "proteinG": 0.3,
+    "carbsG": 1.1,
+    "fatG": 0
+  },
+  {
+    "slug": "sesame-seeds",
+    "name": "Sesame seeds",
+    "basis": "PER_100_G",
+    "calories": 573,
+    "proteinG": 17.7,
+    "carbsG": 23.4,
+    "fatG": 49.7
+  },
+  {
+    "slug": "soy-sauce",
+    "name": "Soy sauce",
+    "basis": "PER_100_ML",
+    "calories": 61,
+    "proteinG": 9.3,
+    "carbsG": 5.6,
+    "fatG": 0.7
+  },
+  {
+    "slug": "sugar",
+    "name": "Sugar",
+    "basis": "PER_100_G",
+    "calories": 387,
+    "proteinG": 0,
+    "carbsG": 100.0,
+    "fatG": 0
+  },
+  {
+    "slug": "tomato",
+    "name": "Tomato",
+    "basis": "PER_PIECE",
+    "calories": 22,
+    "proteinG": 1.1,
+    "carbsG": 4.8,
+    "fatG": 0.2
+  },
+  {
+    "slug": "vanilla-extract",
+    "name": "Vanilla extract",
+    "basis": "PER_100_ML",
+    "calories": 255,
+    "proteinG": 0.1,
+    "carbsG": 11.0,
+    "fatG": 0.1
+  },
+  {
+    "slug": "vegetable-oil",
+    "name": "Vegetable oil",
+    "basis": "PER_100_ML",
+    "calories": 813,
+    "proteinG": 0,
+    "carbsG": 0,
+    "fatG": 92.0
+  },
+  {
+    "slug": "white-rice",
+    "name": "White rice, uncooked",
+    "basis": "PER_100_G",
+    "calories": 365,
+    "proteinG": 7.1,
+    "carbsG": 80.0,
+    "fatG": 0.7
+  },
+  {
+    "slug": "yogurt",
+    "name": "Plain yogurt",
+    "basis": "PER_100_G",
+    "calories": 61,
+    "proteinG": 3.5,
+    "carbsG": 4.7,
+    "fatG": 3.3
+  }
+]

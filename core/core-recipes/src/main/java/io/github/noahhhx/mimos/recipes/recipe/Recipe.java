@@ -7,7 +7,9 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * A recipe: curated library recipe (no owner, public slug) or personal
- * recipe (owned by a profile). Nutrition is per serving.
+ * recipe (owned by a profile). Nutrition is per serving: typed in, or
+ * calculated from the ingredient lines when the source is
+ * {@link NutritionSource#INGREDIENTS} (ADR-0015).
  */
 public record Recipe(
         UUID id,
@@ -19,6 +21,7 @@ public record Recipe(
         @Nullable Integer prepMinutes,
         @Nullable Integer cookMinutes,
         Nutrition nutrition,
+        NutritionSource nutritionSource,
         List<String> tags,
         List<Ingredient> ingredients,
         List<RecipeStep> steps,

@@ -1,4 +1,4 @@
-import type { RecipeDetail, RecipeInput } from "@mimos/api-client";
+import type { NutritionSource, RecipeDetail, RecipeInput } from "@mimos/api-client";
 
 /**
  * The recipe form's values as typed (every field a string), and their
@@ -8,7 +8,8 @@ import type { RecipeDetail, RecipeInput } from "@mimos/api-client";
  * row at fault instead of passing on the API's whole-recipe message.
  */
 
-export type IngredientRow = { quantity: string; unit: string; name: string };
+/** `catalogSlug` is the catalog entry the line counts as for calculated nutrition (ADR-0015). */
+export type IngredientRow = { quantity: string; unit: string; name: string; catalogSlug?: string };
 
 export type RecipeFormValues = {
   title: string;
@@ -17,6 +18,7 @@ export type RecipeFormValues = {
   prepMinutes: string;
   cookMinutes: string;
   tags: string;
+  nutritionSource: NutritionSource;
   calories: string;
   proteinG: string;
   carbsG: string;
@@ -36,12 +38,18 @@ export function formValuesOf(recipe?: RecipeDetail): RecipeFormValues {
     prepMinutes: text(recipe?.prepMinutes),
     cookMinutes: text(recipe?.cookMinutes),
     tags: recipe?.tags.join(", ") ?? "",
+    nutritionSource: recipe?.nutritionSource ?? "MANUAL",
     calories: text(recipe?.nutrition?.calories),
     proteinG: text(recipe?.nutrition?.proteinG),
     carbsG: text(recipe?.nutrition?.carbsG),
     fatG: text(recipe?.nutrition?.fatG),
     ingredients: recipe?.ingredients.length
-      ? recipe.ingredients.map((i) => ({ quantity: text(i.quantity), unit: i.unit ?? "", name: i.name }))
+      ? recipe.ingredients.map((i) => ({
+          quantity: text(i.quantity),
+          unit: i.unit ?? "",
+          name: i.name,
+          ...(i.catalogSlug ? { catalogSlug: i.catalogSlug } : {}),
+        }))
       : [{ ...EMPTY_INGREDIENT }],
     steps: recipe?.steps.length ? recipe.steps.map((s) => s.instruction) : [""],
   };
@@ -73,7 +81,12 @@ export function toRecipeInput(values: RecipeFormValues): { input: RecipeInput } 
     if (quantity !== undefined && !(Number.isFinite(quantity) && quantity > 0)) {
       errors.push(`${label}'s amount must be more than 0, or leave it blank for "to taste".`);
     }
-    ingredients.push({ quantity, unit: unit === "" ? undefined : unit, name });
+    ingredients.push({
+      quantity,
+      unit: unit === "" ? undefined : unit,
+      name,
+      ...(row.catalogSlug ? { catalogSlug: row.catalogSlug } : {}),
+    });
   });
   if (ingredients.length === 0) {
     errors.push("Add at least one ingredient.");
@@ -111,6 +124,7 @@ export function toRecipeInput(values: RecipeFormValues): { input: RecipeInput } 
         carbsG: optionalNumber(values.carbsG),
         fatG: optionalNumber(values.fatG),
       },
+      nutritionSource: values.nutritionSource,
       ingredients,
       steps,
     },

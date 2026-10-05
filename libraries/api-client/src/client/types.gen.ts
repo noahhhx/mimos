@@ -101,6 +101,58 @@ export type IngredientQuantity = {
      * Ingredient name as written in the recipe.
      */
     name: string;
+    /**
+     * Slug of the catalog ingredient this line counts as for calculated nutrition (see listIngredients); omitted when the line is not linked.
+     *
+     */
+    catalogSlug?: string;
+};
+
+/**
+ * Where a recipe's nutrition comes from. MANUAL: the per-serving values its author typed. INGREDIENTS: calculated from the linked ingredient lines whenever the recipe is read; nutrition sent with the recipe is ignored.
+ *
+ */
+export type NutritionSource = 'MANUAL' | 'INGREDIENTS';
+
+/**
+ * The amount a catalog ingredient's nutrition is for: 100 grams, 100 millilitres, or one piece.
+ *
+ */
+export type NutritionBasis = 'PER_100_G' | 'PER_100_ML' | 'PER_PIECE';
+
+/**
+ * An ingredient in the shared catalog, with its nutrition for its basis.
+ */
+export type CatalogIngredient = {
+    slug: string;
+    name: string;
+    basis: NutritionBasis;
+    nutrition: Nutrition;
+};
+
+/**
+ * The parts of a recipe its calculated nutrition depends on.
+ */
+export type NutritionEstimateInput = {
+    servings: number;
+    ingredients: Array<IngredientQuantity>;
+};
+
+/**
+ * Whether an ingredient line counted toward calculated nutrition. UNMEASURED: linked but has no amount. NOT_LINKED: no catalogSlug. UNIT_NOT_SUPPORTED: linked, but its unit does not fit the catalog entry's basis.
+ *
+ */
+export type IngredientLineStatus = 'COUNTED' | 'UNMEASURED' | 'NOT_LINKED' | 'UNIT_NOT_SUPPORTED';
+
+/**
+ * Calculated per-serving nutrition, unknown when no line counted.
+ */
+export type NutritionEstimate = {
+    nutrition: Nutrition;
+    /**
+     * One status per ingredient line, in the order sent.
+     */
+    lines: Array<IngredientLineStatus>;
 };
 
 /**
@@ -156,6 +208,7 @@ export type RecipeDetail = {
     isLibrary: boolean;
     tags: Array<string>;
     nutrition: Nutrition;
+    nutritionSource: NutritionSource;
     ingredients: Array<IngredientQuantity>;
     steps: Array<RecipeStep>;
 };
@@ -171,6 +224,7 @@ export type RecipeInput = {
     cookMinutes?: number;
     tags: Array<string>;
     nutrition: Nutrition;
+    nutritionSource: NutritionSource;
     ingredients: Array<IngredientQuantity>;
     steps: Array<RecipeStep>;
 };
@@ -352,13 +406,13 @@ export type DailyLogSummary = {
 };
 
 /**
- * One user's data, in export format version 1 (ADR-0011). Any change to this schema bumps the version and adds an upgrade step from the previous one.
+ * One user's data, in export format version 2 (ADR-0011). Any change to this schema bumps the version and adds an upgrade step from the previous one.
  *
  */
 export type AccountExport = {
     format: 'mimos.export';
     /**
-     * The format version. This instance exports version 1.
+     * The format version. This instance exports version 2.
      */
     version: number;
     exportedAt: string;
@@ -380,6 +434,7 @@ export type ExportedRecipe = {
     cookMinutes?: number;
     tags: Array<string>;
     nutrition: Nutrition;
+    nutritionSource: NutritionSource;
     ingredients: Array<IngredientQuantity>;
     steps: Array<RecipeStep>;
     createdAt: string;
@@ -817,6 +872,65 @@ export type ReplaceRecipeResponses = {
 };
 
 export type ReplaceRecipeResponse = ReplaceRecipeResponses[keyof ReplaceRecipeResponses];
+
+export type EstimateRecipeNutritionData = {
+    body: NutritionEstimateInput;
+    path?: never;
+    query?: never;
+    url: '/api/v1/recipes/nutrition-estimate';
+};
+
+export type EstimateRecipeNutritionErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type EstimateRecipeNutritionError = EstimateRecipeNutritionErrors[keyof EstimateRecipeNutritionErrors];
+
+export type EstimateRecipeNutritionResponses = {
+    /**
+     * The calculated nutrition and each line's status.
+     */
+    200: NutritionEstimate;
+};
+
+export type EstimateRecipeNutritionResponse = EstimateRecipeNutritionResponses[keyof EstimateRecipeNutritionResponses];
+
+export type ListIngredientsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Case-insensitive filter on name and slug.
+         */
+        q?: string;
+    };
+    url: '/api/v1/ingredients';
+};
+
+export type ListIngredientsErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type ListIngredientsError = ListIngredientsErrors[keyof ListIngredientsErrors];
+
+export type ListIngredientsResponses = {
+    /**
+     * Catalog ingredients, sorted by name.
+     */
+    200: Array<CatalogIngredient>;
+};
+
+export type ListIngredientsResponse = ListIngredientsResponses[keyof ListIngredientsResponses];
 
 export type ListLibraryRecipesData = {
     body?: never;
