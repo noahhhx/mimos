@@ -80,11 +80,14 @@ export default function PlanPage() {
     [weekStart],
   );
 
+  // Keyed on the subject, not the User: a silent token renewal replaces the
+  // User object, and reloading panels then would drop a wheel's landed spin.
+  const subject = user?.profile.sub;
   useEffect(() => {
-    if (user) {
+    if (subject) {
       void reload(true);
     }
-  }, [user, reload]);
+  }, [subject, reload]);
 
   useEffect(() => {
     if (!picker) {
