@@ -47,6 +47,7 @@
     {
       "username": "test",
       "enabled": true,
+      "realmRoles": ["default-roles-mimos"],
       "email": "test@example.com",
       "emailVerified": true,
       "firstName": "Test",
@@ -62,6 +63,7 @@
     {
       "username": "test2",
       "enabled": true,
+      "realmRoles": ["default-roles-mimos"],
       "email": "test2@example.com",
       "emailVerified": true,
       "firstName": "Second",

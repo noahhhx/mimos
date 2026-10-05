@@ -103,6 +103,13 @@ the metadata names the public URL.
 
 ## Consequences
 
+- MCP clients ask for `offline_access` (Claude Code does), so their
+  refresh tokens outlive the user's browser session and signing out does
+  not end them; users revoke them from the account console's
+  Applications page. A user needs the realm's default roles for this,
+  which Keycloak grants on registration; the dev export's `test` and
+  `test2` list `default-roles-mimos` explicitly because an imported user
+  gets only the roles it names.
 - Spec descriptions are now agent prompts. Write them for a reader with
   nothing else to go on: say what a parameter must be (a plan's
   `startDate` is a Monday), and how operations relate (generating a

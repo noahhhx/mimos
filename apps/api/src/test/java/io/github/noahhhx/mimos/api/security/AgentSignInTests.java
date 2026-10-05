@@ -167,7 +167,8 @@ class AgentSignInTests extends ApiIntegrationTestSupport {
         return UriComponentsBuilder.fromUriString(realmUrl() + "/protocol/openid-connect/auth")
                 .queryParam("client_id", CLIENT_ID)
                 .queryParam("response_type", "code")
-                .queryParam("scope", "openid")
+                // What Claude Code asks for: a refresh token that outlives the browser session.
+                .queryParam("scope", "openid offline_access")
                 .queryParam("redirect_uri", redirectUri)
                 .queryParam("state", "agent-state")
                 .queryParam("code_challenge", challenge)

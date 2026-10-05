@@ -82,6 +82,9 @@ you let it delete things.
 ## Stop an agent
 
 Remove the Mimos server from the agent: `claude mcp remove mimos` in Claude
-Code, or remove the connector in claude.ai's settings. To end its sign-in
-everywhere, sign out of all devices from your account page at your
-sign-in address followed by `/realms/mimos/account`.
+Code, or remove the connector in claude.ai's settings.
+
+Agents usually ask to stay signed in after you close the browser, so
+signing out of Mimos does not end their access. To end it, open your
+account page (your sign-in address followed by `/realms/mimos/account`),
+go to **Applications**, and remove access for **Mimos Agent**.
