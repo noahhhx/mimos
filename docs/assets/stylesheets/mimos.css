@@ -1,0 +1,735 @@
+/* Mimos docs: Evening Kitchen (docs/design/index.md, "Documentation site")
+   over Material for MkDocs. The palette maps Material's --md-* variables
+   onto the app's tokens; the rest restyles Material's components. Token
+   values mirror apps/web/src/app/globals.css: change them there and here
+   together. Only CSS: no template overrides, so the site also builds under
+   Zensical's classic variant. */
+
+/* The app's committed fonts (docs/assets/fonts links to apps/web/src/fonts). */
+@font-face {
+  font-family: "Newsreader";
+  src: url("../fonts/newsreader/Newsreader.woff2") format("woff2");
+  font-weight: 400 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Public Sans";
+  src: url("../fonts/public-sans/PublicSans.woff2") format("woff2");
+  font-weight: 400 600;
+  font-display: swap;
+}
+
+/* ---------- Tokens ---------- */
+
+:root {
+  --serif: "Newsreader", Georgia, serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --md-text-font: "Public Sans";
+  --md-code-font: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas;
+}
+
+[data-md-color-scheme="default"] {
+  --bg: #f4eee5;
+  --surface: #fbf7f1;
+  --hover: #efe6da;
+  --fg: #2b221c;
+  --muted: #76685c;
+  --line: #ddd2c3;
+  --accent: #94560f;
+  --on-accent: #fbf7f1;
+  --danger: #a84a25;
+  /* Docs-only: syntax highlighting. 5:1 or better on --surface. */
+  --code-string: #556b2f;
+  --code-number: #8b3a62;
+  color-scheme: light;
+}
+
+[data-md-color-scheme="slate"] {
+  --bg: #191512;
+  --surface: #221c18;
+  --hover: #2b241f;
+  --fg: #f1e7d9;
+  --muted: #a8998b;
+  --line: #3a312a;
+  --accent: #e9aa50;
+  --on-accent: #191512;
+  --danger: #d97a4f;
+  --code-string: #b4c27f;
+  --code-number: #d99bb9;
+  color-scheme: dark;
+}
+
+/* Material's palette, in both schemes, from the tokens above. */
+[data-md-color-scheme] {
+  --md-default-bg-color: var(--bg);
+  --md-default-bg-color--light: color-mix(in srgb, var(--bg) 54%, transparent);
+  --md-default-bg-color--lighter: color-mix(in srgb, var(--bg) 26%, transparent);
+  --md-default-bg-color--lightest: color-mix(in srgb, var(--bg) 7%, transparent);
+  --md-default-fg-color: var(--fg);
+  --md-default-fg-color--light: var(--muted);
+  --md-default-fg-color--lighter: var(--muted);
+  --md-default-fg-color--lightest: var(--line);
+
+  /* The header and tabs sit on the page ground, like the app's header. */
+  --md-primary-fg-color: var(--bg);
+  --md-primary-fg-color--light: var(--bg);
+  --md-primary-fg-color--dark: var(--bg);
+  --md-primary-bg-color: var(--fg);
+  --md-primary-bg-color--light: var(--muted);
+  --md-accent-fg-color: var(--accent);
+  --md-accent-fg-color--transparent: color-mix(in srgb, var(--accent) 12%, transparent);
+  --md-accent-bg-color: var(--on-accent);
+  --md-accent-bg-color--light: color-mix(in srgb, var(--on-accent) 70%, transparent);
+
+  --md-typeset-color: var(--fg);
+  --md-typeset-a-color: var(--fg);
+  --md-typeset-mark-color: color-mix(in srgb, var(--accent) 24%, transparent);
+  --md-typeset-table-color: var(--line);
+  --md-typeset-table-color--light: var(--hover);
+  --md-typeset-kbd-color: var(--surface);
+  --md-typeset-kbd-accent-color: var(--surface);
+  --md-typeset-kbd-border-color: var(--line);
+  --md-typeset-del-color: color-mix(in srgb, var(--danger) 18%, transparent);
+  --md-typeset-ins-color: color-mix(in srgb, var(--accent) 18%, transparent);
+
+  --md-code-fg-color: var(--fg);
+  --md-code-bg-color: var(--surface);
+  --md-code-bg-color--light: var(--surface);
+  --md-code-bg-color--lighter: var(--surface);
+  --md-code-hl-color: var(--accent);
+  --md-code-hl-color--light: color-mix(in srgb, var(--accent) 12%, transparent);
+  --md-code-hl-keyword-color: var(--accent);
+  --md-code-hl-string-color: var(--code-string);
+  --md-code-hl-number-color: var(--code-number);
+  --md-code-hl-constant-color: var(--code-number);
+  --md-code-hl-special-color: var(--code-number);
+  --md-code-hl-function-color: var(--fg);
+  --md-code-hl-name-color: var(--fg);
+  --md-code-hl-operator-color: var(--muted);
+  --md-code-hl-punctuation-color: var(--muted);
+  --md-code-hl-comment-color: var(--muted);
+  --md-code-hl-generic-color: var(--muted);
+  --md-code-hl-variable-color: var(--fg);
+
+  --md-admonition-fg-color: var(--fg);
+  --md-admonition-bg-color: var(--surface);
+  --md-footer-fg-color: var(--fg);
+  --md-footer-fg-color--light: var(--muted);
+  --md-footer-fg-color--lighter: var(--muted);
+  --md-footer-bg-color: var(--bg);
+  --md-footer-bg-color--dark: var(--bg);
+
+  /* No soft shadows (ADR-0008); components that need an edge get a rule. */
+  --md-shadow-z1: none;
+  --md-shadow-z2: none;
+  --md-shadow-z3: none;
+}
+
+/* ---------- Straight edges, no motion, no italics ---------- */
+
+/* Material rounds and animates nearly everything; the design does neither. */
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+em,
+i,
+cite {
+  font-style: normal;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+body {
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Header and tabs ---------- */
+
+.md-header,
+.md-header--shadow {
+  border-bottom: 1px solid var(--line);
+  box-shadow: none;
+}
+
+.md-source {
+  color: var(--muted);
+}
+
+.md-source:hover {
+  color: var(--fg);
+}
+
+/* The app's brand: "Mimos" in the serif after a short amber dash. */
+.md-header__button.md-logo :is(img, svg) {
+  display: none;
+}
+
+.md-header__button.md-logo::before {
+  content: "";
+  display: block;
+  width: 0.9rem;
+  height: 0.1rem;
+  margin-top: 0.35rem;
+  background: var(--accent);
+}
+
+.md-header__title {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+
+.md-header__topic:first-child {
+  font-weight: 500;
+}
+
+.md-header__topic:first-child .md-ellipsis::after {
+  content: "Docs";
+  margin-left: 0.5rem;
+  font-family: var(--md-text-font-family);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.md-header__button:hover,
+.md-header__source:hover {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.md-tabs {
+  border-bottom: 1px solid var(--line);
+}
+
+.md-tabs__link {
+  margin-top: 0.7rem;
+  padding-bottom: 0.55rem;
+  font-size: 0.75rem;
+  opacity: 1;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+}
+
+.md-tabs__link:hover {
+  color: var(--fg);
+}
+
+.md-tabs__item--active .md-tabs__link {
+  color: var(--fg);
+  border-bottom-color: var(--accent);
+}
+
+/* Search sits in the header as a plain bordered field. */
+.md-search__form {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.md-search__form:hover {
+  background: var(--surface);
+  border-color: var(--accent);
+}
+
+.md-search__input {
+  color: var(--fg);
+}
+
+.md-search__input::placeholder,
+.md-search__icon {
+  color: var(--muted);
+}
+
+[data-md-toggle="search"]:checked ~ .md-header .md-search__form {
+  background: var(--surface);
+}
+
+.md-search__output {
+  border: 1px solid var(--line);
+  border-top: 0;
+}
+
+.md-search__scrollwrap,
+.md-search-result__meta {
+  background: var(--surface);
+}
+
+.md-search-result__meta {
+  color: var(--muted);
+}
+
+.md-search-result__link:hover,
+.md-search-result__link:focus,
+.md-search-result__more > summary:hover > div,
+.md-search-result__more > summary:focus > div {
+  background: var(--hover);
+}
+
+.md-search-result mark {
+  color: var(--accent);
+}
+
+/* ---------- Navigation ---------- */
+
+/* Material colors the current page and section with the link color; in
+   navigation that is the amber accent. */
+.md-nav {
+  --md-typeset-a-color: var(--accent);
+  font-size: 0.75rem;
+}
+
+.md-nav__link {
+  color: var(--muted);
+}
+
+.md-nav__link:hover,
+.md-nav__link:focus {
+  color: var(--fg);
+}
+
+.md-nav__link--active,
+.md-nav__item .md-nav__link--active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Section titles and "On this page" are the app's small uppercase labels. */
+.md-nav--primary .md-nav__item--section > .md-nav__link,
+.md-nav__title {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.md-nav--primary .md-nav__item--section > .md-nav__link[href]:hover {
+  color: var(--fg);
+}
+
+.md-nav--secondary .md-nav__title,
+.md-nav--lifted > .md-nav__list > .md-nav__item--active > .md-nav__link {
+  background: var(--bg);
+  box-shadow: none;
+}
+
+/* The mobile drawer. */
+@media screen and (max-width: 76.2344em) {
+  .md-sidebar--primary {
+    background: var(--bg);
+    border-right: 1px solid var(--line);
+  }
+
+  .md-nav--primary .md-nav__title {
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    color: var(--fg);
+  }
+
+  .md-nav--primary .md-nav__title[for="__drawer"] {
+    background: var(--bg);
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .md-nav--primary .md-nav__item {
+    border-top-color: var(--line);
+  }
+}
+
+.md-top {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--fg);
+}
+
+.md-top:hover,
+.md-top:focus {
+  background: var(--surface);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---------- Content ---------- */
+
+.md-typeset {
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.md-typeset h1 {
+  margin: 0 0 1.6rem;
+  font-family: var(--serif);
+  font-size: clamp(1.7rem, 4vw, 2.2rem);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+  text-wrap: balance;
+}
+
+/* PageHeader's short amber rule under the title (not in search results). */
+.md-content .md-typeset h1::after {
+  content: "";
+  display: block;
+  width: 3.2rem;
+  height: 0.1rem;
+  margin-top: 0.8rem;
+  background: var(--accent);
+}
+
+.md-typeset h2 {
+  margin: 2.4rem 0 0.8rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--line);
+  font-family: var(--serif);
+  font-size: 1.4rem;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.005em;
+}
+
+.md-typeset h3 {
+  margin: 1.8rem 0 0.4rem;
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.md-typeset h4,
+.md-typeset h5,
+.md-typeset h6 {
+  margin: 1.6rem 0 0.4rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.md-typeset .headerlink {
+  color: var(--line);
+}
+
+.md-typeset .headerlink:hover,
+.md-typeset .headerlink:focus,
+.md-typeset :target > .headerlink {
+  color: var(--accent);
+}
+
+.md-typeset a {
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 45%, var(--bg));
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.md-typeset a:hover,
+.md-typeset a:focus {
+  color: var(--fg);
+  text-decoration-color: var(--accent);
+}
+
+.md-typeset strong {
+  font-weight: 600;
+}
+
+.md-typeset hr {
+  border-bottom-color: var(--line);
+}
+
+.md-typeset blockquote {
+  border-left: 3px solid var(--accent);
+  color: var(--muted);
+}
+
+.md-content__button {
+  color: var(--muted);
+}
+
+.md-content__button:hover {
+  color: var(--accent);
+}
+
+/* ---------- Code ---------- */
+
+.md-typeset code,
+.md-typeset kbd,
+.md-typeset pre {
+  font-family: var(--md-code-font-family);
+}
+
+.md-typeset :not(pre) > code {
+  padding: 0.1em 0.35em;
+  background: var(--hover);
+  color: var(--fg);
+  font-size: 0.82em;
+}
+
+.md-typeset pre > code {
+  border: 1px solid var(--line);
+  font-size: 0.7rem;
+  /* Tighter than prose so box-drawing diagrams stay joined. */
+  line-height: 1.45;
+}
+
+.md-typeset .highlight .gd {
+  background: var(--md-typeset-del-color);
+}
+
+.md-typeset .highlight .gi {
+  background: var(--md-typeset-ins-color);
+}
+
+.md-typeset .highlight .k,
+.md-typeset .highlight .kd,
+.md-typeset .highlight .kn {
+  font-weight: 500;
+}
+
+.md-clipboard {
+  color: var(--muted);
+}
+
+.md-clipboard:hover,
+.md-clipboard:focus {
+  color: var(--accent);
+}
+
+.md-typeset kbd {
+  border: 1px solid var(--line);
+  box-shadow: none;
+  color: var(--fg);
+}
+
+/* ---------- Tables ---------- */
+
+.md-typeset table:not([class]) {
+  border: 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.75rem;
+  background: transparent;
+}
+
+.md-typeset table:not([class]) th {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+}
+
+.md-typeset table:not([class]) td {
+  border-top: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.md-typeset table:not([class]) tbody tr:hover {
+  background: var(--hover);
+  box-shadow: none;
+}
+
+/* ---------- Admonitions, details, content tabs ---------- */
+
+/* Like the app's notices: a surface panel with a 3px left rule, amber for
+   information and --danger for anything that warns. */
+.md-typeset .admonition[class],
+.md-typeset details[class] {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  background: var(--surface);
+  font-size: 0.8rem;
+}
+
+.md-typeset .admonition[class] > .admonition-title,
+.md-typeset details[class] > summary {
+  background: transparent;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.md-typeset .admonition[class] > .admonition-title::before,
+.md-typeset details[class] > summary::before,
+.md-typeset details[class] > summary::after {
+  background-color: var(--accent);
+}
+
+.md-typeset :is(.admonition, details):is(.warning, .caution, .attention, .failure, .fail, .missing, .danger, .error, .bug) {
+  border-left-color: var(--danger);
+}
+
+.md-typeset :is(.admonition, details):is(.warning, .caution, .attention, .failure, .fail, .missing, .danger, .error, .bug)
+  > :is(.admonition-title, summary)::before {
+  background-color: var(--danger);
+}
+
+.md-typeset .tabbed-labels > label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.md-typeset .tabbed-labels > label:hover {
+  color: var(--fg);
+}
+
+.md-typeset .tabbed-set > input:checked + label,
+.md-typeset .tabbed-set > input:is(:checked) ~ .tabbed-labels > label[for] {
+  color: inherit;
+}
+
+.md-typeset .tabbed-labels::before {
+  background: var(--accent);
+}
+
+/* ---------- Buttons and cards ---------- */
+
+.md-typeset .md-button {
+  padding: 0.55em 1.3em;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--fg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.md-typeset .md-button:hover,
+.md-typeset .md-button:focus {
+  border-color: var(--accent);
+  background: transparent;
+  color: var(--fg);
+}
+
+.md-typeset .md-button--primary,
+.md-typeset .md-button--primary:hover,
+.md-typeset .md-button--primary:focus {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.md-typeset .md-button--primary:hover,
+.md-typeset .md-button--primary:focus {
+  background: color-mix(in srgb, var(--accent) 82%, var(--fg));
+  border-color: color-mix(in srgb, var(--accent) 82%, var(--fg));
+}
+
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid > .card {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 1rem 1.1rem;
+}
+
+.md-typeset .grid.cards > ul > li:hover,
+.md-typeset .grid > .card:hover {
+  border-color: var(--accent);
+  box-shadow: none;
+}
+
+.md-typeset .grid.cards > ul > li > hr {
+  margin: 0.6rem 0;
+}
+
+.md-typeset .grid.cards .twemoji {
+  color: var(--accent);
+}
+
+/* ---------- Home ---------- */
+
+.mimos-hero {
+  padding: 1.6rem 0 0.8rem;
+}
+
+.md-typeset .mimos-eyebrow {
+  margin: 0 0 0.4rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.md-typeset .mimos-hero h1 {
+  margin-bottom: 1.2rem;
+  font-size: clamp(2rem, 7vw, 3.4rem);
+  line-height: 1.02;
+}
+
+.md-typeset .mimos-lede {
+  max-width: 34em;
+  margin: 0 0 1.6rem;
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  line-height: 1.45;
+}
+
+.md-typeset .mimos-hero .md-button {
+  margin: 0 0.4rem 0.6rem 0;
+}
+
+/* ---------- Footer ---------- */
+
+.md-footer {
+  border-top: 1px solid var(--line);
+}
+
+.md-footer__link {
+  color: var(--fg);
+}
+
+.md-footer__link:hover,
+.md-footer__link:focus {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.md-footer__direction {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 1;
+}
+
+.md-footer__title {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+}
+
+.md-footer-meta {
+  border-top: 1px solid var(--line);
+}
+
+.md-footer-meta,
+.md-footer-meta.md-typeset a,
+.md-copyright {
+  color: var(--muted);
+}
+
+.md-footer-meta.md-typeset a:hover {
+  color: var(--accent);
+}

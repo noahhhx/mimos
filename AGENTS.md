@@ -41,7 +41,7 @@ change** — an out-of-date AGENTS.md is worse than none.
 | API style  | HTTP JSON APIs, contract-first: the OpenAPI spec in `contracts/api/openapi.yaml` is the source of truth; server stubs generate at build time and the TypeScript client in `libraries/api-client` is committed. See ADR-0003. |
 | Config     | 12-factor: environment variables + Spring profiles. `local` profile is the default and must always work. |
 | Runtime    | Docker. Every deployable (API, web, plugins) ships a Dockerfile that is built in CI; no bare-metal assumptions in app code. |
-| Docs       | MkDocs; `mkdocs.yml` at repo root, source in `docs/`. ADRs live in `docs/decisions/`. |
+| Docs       | MkDocs with Material; `mkdocs.yml` at repo root, source in `docs/`. ADRs live in `docs/decisions/`. Styled as Evening Kitchen by `docs/assets/stylesheets/mimos.css` only: no template overrides or hooks (see "Documentation site" in `docs/design/index.md`). |
 | Deploy     | Build-from-source and CI parity via `deploy/docker` (compose); servers run the published images via `deploy/selfhost` (compose, production-mode Keycloak, operator's TLS proxy); AWS via IaC in `deploy/aws`. No click-ops. |
 | Images     | CI publishes `ghcr.io/noahhhx/mimos-{api,web,keycloak,country-week}` (amd64) after every other job passes: `main` + `sha-*` from main, semver + `latest` from `v*` tags. Images carry no deployment-specific config. See ADR-0012. |
 | Sync       | intervals.icu is the activity data source (future). Design for it, don't build it yet. |
@@ -59,6 +59,7 @@ change** — an out-of-date AGENTS.md is worse than none.
 | IaC tool (CDK vs Terraform) | Deferred | Decide with the AWS deploy work. |
 | Object storage        | Deferred | When needed (recipe images): S3-compatible API only, MinIO in local compose. Treat as decided-in-principle, decided-in-detail-later. |
 | Mobile                | Out of scope | Web must be responsive and mobile-usable so this stays cheap later. |
+| Docs generator        | Open | MkDocs has had no release since 1.6.1 (2024) and its 2.0 drops plugins and themes; Material for MkDocs is in maintenance mode (security fixes end around 2026-11). Its authors' successor, Zensical, reads `mkdocs.yml` and keeps Material's look as its `classic` variant. Decide whether and when to move; keep the docs theme CSS-only so the move stays cheap. |
 
 ## Architecture guidance
 
@@ -172,8 +173,11 @@ is the contract:
   in `src/fonts/` loaded with `next/font/local`; never a font host or a
   font npm package. Rebuild them as `src/fonts/README.md` says (its tools
   come from devenv). Keycloak's login theme mirrors the light tokens and
-  reuses these fonts (`deploy/keycloak`, ADR-0010); change both together. Pages start with `PageHeader` (eyebrow, serif h1,
-  amber rule, actions) or, for a rail layout, `SplitPage`.
+  reuses these fonts (`deploy/keycloak`, ADR-0010), and the docs site
+  mirrors both themes' tokens and links to the same fonts
+  (`docs/assets/`); change them all together. Pages start with
+  `PageHeader` (eyebrow, serif h1, amber rule, actions) or, for a rail
+  layout, `SplitPage`.
 - Unit tests live in `apps/web/test/` and run on `node --test` (native type
   stripping, no test framework). A module they import must not touch the
   browser or Next, and imports its siblings with a `.ts` extension (Node
@@ -233,7 +237,7 @@ mimos/
 ├── mkdocs.yml            # documentation config
 ├── .mcp.json             # MCP servers for agent sessions (Playwright browser, via devenv)
 ├── .claude/skills/       # Claude Code skills — thin pointers into AGENTS.md and docs (mimos-harness)
-├── docs/                 # MkDocs source: guides, plugin authoring, harness plan, decisions/ADRs
+├── docs/                 # MkDocs source: guides, plugin authoring, harness plan, decisions/ADRs; assets/ holds the site theme
 ├── apps/
 │   ├── api/              # Spring Boot modular monolith (the only deployable backend)
 │   └── web/              # Next.js frontend (src/fonts/: committed web fonts, ADR-0008)

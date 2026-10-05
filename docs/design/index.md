@@ -100,6 +100,35 @@ restyles Keycloak's `keycloak.v2` templates with CSS only, light only.
   `harness ui keycloak-theme`; its screenshots show each page at phone
   and desktop width.
 
+## Documentation site
+
+This site wears Evening Kitchen too: `docs/assets/stylesheets/mimos.css`
+over Material for MkDocs' stock templates (`extra_css` in `mkdocs.yml`).
+
+- **Tokens mirror `globals.css`**, light and dark, mapped onto Material's
+  `--md-*` variables. Change them with the app's. Two docs-only tokens,
+  `--code-string` and `--code-number`, color syntax highlighting beside the
+  amber keywords (5:1 or better on `--surface`).
+- **Fonts** are the app's files: `docs/assets/fonts/` holds symlinks into
+  `apps/web/src/fonts/` (with the OFL texts), and `theme.font: false`
+  keeps Material from loading Google Fonts.
+- **Same rules:** light by default (the palette toggle has no `media`
+  query, so the OS setting is not followed), straight edges, no shadows or
+  motion, no italics, errors and warnings in `--danger`.
+- **Type:** `h1` is the serif with `PageHeader`'s amber rule; `h2` is a
+  serif section heading over a `--line` rule (long-form pages need the
+  hierarchy the app's small `h2` labels don't give); `h3` is the serif at
+  22px; `h4` and smaller, table headers, nav sections and "Table of
+  contents" are the uppercase labels.
+- **Components:** admonitions are notices (a `--surface` panel with a 3px
+  left rule), `.md-button--primary` is the amber button, and
+  `<div class="grid cards" markdown>` gives the home page's bordered cards.
+- **CSS only**, no `custom_dir` template overrides or hooks, so the site
+  builds the same under Zensical's classic variant if we move to it.
+
+Preview with `mkdocs serve` in the devenv shell; check a change in both
+themes and at phone width.
+
 ## Kitchen home
 
 The signed-in home (`app/app/page.tsx`) answers "what am I cooking

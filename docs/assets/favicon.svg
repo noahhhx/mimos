@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Evening Kitchen light tokens: --bg, --fg, --accent (docs/design/index.md). -->
+  <rect width="32" height="32" fill="#f4eee5"/>
+  <text x="16" y="24" text-anchor="middle" font-family="Newsreader, Georgia, serif" font-size="22" fill="#2b221c">M</text>
+  <rect x="6" y="27" width="20" height="2" fill="#94560f"/>
+</svg>

@@ -4,22 +4,87 @@ site_description: >-
   shopping lists, and calorie/macro logging. Self-hostable by design.
 repo_url: https://github.com/noahhhx/mimos
 repo_name: noahhhx/mimos
+edit_uri: edit/main/docs/
+copyright: Mimos is free software under the GNU GPL v3.
 
+# The site wears the app's Evening Kitchen design (docs/design/index.md,
+# "Documentation site"): the styling is extra_css over Material's stock
+# templates, with no template overrides or hooks, so it builds the same
+# under Zensical's classic variant.
 theme:
   name: material
+  # Fonts are the app's committed files (docs/assets/fonts links to them);
+  # no request goes to Google Fonts.
+  font: false
+  favicon: assets/favicon.svg
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil-outline
+  # Light by default; dark only when chosen with the toggle. No `media`
+  # queries, so the OS setting is not followed (ADR-0008).
+  palette:
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/circle-half-full
+        name: Switch to dark mode
+    - scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/circle-half-full
+        name: Switch to light mode
   features:
+    - navigation.tabs
     - navigation.sections
+    - navigation.indexes
+    - navigation.footer
+    - navigation.top
+    - toc.follow
+    - search.suggest
+    - search.highlight
     - content.code.copy
+    - content.action.edit
+    - content.tabs.link
+
+extra_css:
+  - assets/stylesheets/mimos.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
 
 nav:
   - Home: index.md
   - Self-hosting: self-hosting.md
   - Plugins:
-      - Authoring: plugins/index.md
+      - plugins/index.md
   - Design:
-      - 'Visual design': design/index.md
+      - design/index.md
   - Agent harness:
-      - Plan: harness/index.md
+      - harness/index.md
       - Using the harness: harness/usage.md
       - '1. Stack control and API driving': harness/step-1-stack-and-api.md
       - '2. Browser driving': harness/step-2-browser.md
@@ -29,7 +94,7 @@ nav:
       - '6. Agent skill, docs, and CI': harness/step-6-skill-docs-ci.md
       - '7. First use: the recipe 415': harness/step-7-recipe-415.md
   - Decisions:
-      - Index: decisions/index.md
+      - decisions/index.md
       - 'ADR-0001: Backend module layout': decisions/adr-0001-backend-module-layout.md
       - 'ADR-0002: Formatting and null-safety toolchain': decisions/adr-0002-formatting-null-safety-toolchain.md
       - 'ADR-0003: OpenAPI contract pipeline': decisions/adr-0003-openapi-contract-pipeline.md

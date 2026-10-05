@@ -2,7 +2,9 @@
 
 The two typefaces of the Evening Kitchen design (`docs/design/index.md`),
 committed so the product never fetches fonts from a font host at build or
-run time. `src/app/layout.tsx` loads them with `next/font/local`.
+run time. `src/app/layout.tsx` loads them with `next/font/local`; the
+Keycloak theme copies them in (`deploy/keycloak/Dockerfile`) and the docs
+site links to them (`docs/assets/fonts/`).
 
 | File | Family | Axes kept |
 | ---- | ------ | --------- |
