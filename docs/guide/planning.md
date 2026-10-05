@@ -44,6 +44,29 @@ Choose **Add to plan** to add those meals to the slots listed on the card,
 or ignore the card. Nothing is added until you choose. The Kitchen may also
 offer one suggested dinner for an open evening this week.
 
+## Country of the Week
+
+With the [Country of the Week](plugins.md#country-of-the-week) plugin
+turned on, a **Country of the Week** line sits above the week. It stays
+closed until you open it, so weeks you don't want a country for look the
+same as before.
+
+![Country of the Week after a spin, offering to choose the country](../assets/screenshots/plan-country-wheel.png){ width="640" }
+
+1. Open the **Country of the Week** line and choose **Spin**.
+2. When the wheel stops, choose one:
+    - **Choose** locks the country to this week. Nothing is added to your
+      plan.
+    - **Skip** spins again. The country stays on the wheel for later.
+    - **Remove from wheel** takes the country off the wheel for good,
+      then spins again.
+
+A week with a country shows its flag and name on the closed line. To pick
+again, open it and choose **Change country**; the country goes back on the
+wheel. Suggested dinners from the country's cuisine appear under
+[Suggestions](#suggestions) when the library has any, and you add them
+only if you want them.
+
 ## Your plan on every device
 
 Plans are saved as you go, so the week you plan on your laptop is the week

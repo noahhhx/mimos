@@ -24,7 +24,9 @@ the app wins.
 - **Errors use `--danger`**, never `--accent`, so an error never looks like
   a highlight.
 - **Straight edges and no motion.** No `border-radius`, no soft shadows, no
-  transitions or animations. Hover changes color only.
+  transitions or animations. Hover changes color only. The one exception
+  is a week panel's wheel, which spins to where it lands, and lands at once
+  under `prefers-reduced-motion` (ADR-0017).
 - **No italics** anywhere.
 - **Fonts are committed files** in `apps/web/src/fonts/`, loaded with
   `next/font/local`. Never a font host or a font npm package. Its README

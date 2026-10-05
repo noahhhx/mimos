@@ -100,6 +100,14 @@ docker compose exec -T postgres pg_dump -U mimos mimos > mimos.sql
 docker compose exec -T postgres pg_dump -U mimos keycloak > keycloak.sql
 ```
 
+Country of the Week keeps each user's wheel (chosen and removed
+countries) in an SQLite file on the `country-week-data` volume. Copy it
+out while the plugin runs:
+
+```bash
+docker compose cp country-week:/data/country-week.db country-week.db
+```
+
 Each user can also export their own data from **Your data** in the app's
 profile menu (see [Your data](guide/your-data.md)).
 
@@ -129,8 +137,8 @@ never does: it logs a warning and contributes nothing until it's back.
 
 ### Without plugins
 
-Delete the `country-week` service and the two `MIMOS_PLUGINS_0_*` lines
-from `compose.yml`.
+Delete the `country-week` service, its `country-week-data` volume, and
+the two `MIMOS_PLUGINS_0_*` lines from `compose.yml`.
 
 ## AI agents
 

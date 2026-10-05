@@ -49,7 +49,7 @@ change** — an out-of-date AGENTS.md is worse than none.
 | Ingredient catalog | One shared catalog seeded read-only from `core/core-recipes/src/main/resources/library/ingredient-seed.json` (always on, by slug, never deleted), plus each user's own ingredients, private to them and editable (`/api/v1/ingredients`, ADR-0016). Recipe lines link to either by `catalogSlug` and carry prep in an optional `note`; the form's ingredient name is a search over both. A recipe's `nutritionSource` is `MANUAL` (typed) or `INGREDIENTS` (calculated when read, so catalog fixes reach every recipe on restart). Metric units only: `g`, `kg`, `ml`, `l`, `tsp` (5 ml), `tbsp` (15 ml), or none for pieces. Library recipes are calculated. See ADR-0015, ADR-0016. |
 | Public API | Unauthenticated read-only access to the curated library under `/api/v1/public/**` (SEO pages). Personal recipes never appear there; everything else requires a bearer token. |
 | Account data | Per-user export/import as one versioned JSON document (`GET /api/v1/account/export`, `POST /api/v1/account/import`): domain-shaped, never a table dump; library recipes by slug; import only into an empty account, atomically, through domain validation. Format changes bump the version, add an `ExportUpgrader` step and a frozen `export/v<N>.json` test fixture. See ADR-0011. |
-| Plugins    | HTTP sidecar plugins, pull-only in v1: config registry (`mimos.plugins.*`), manifest at `GET /manifest`, one capability (`plan-suggestions`), declarative cards, library-only context. See ADR-0006. Registered means available; each user opts in from the Plugins page (`/app/plugins`, linked from the profile menu; API `/api/v1/me/plugins`), and every plugin starts off. See ADR-0013. |
+| Plugins    | HTTP sidecar plugins, pull-only in v1: config registry (`mimos.plugins.*`), manifest at `GET /manifest`, two capabilities (`plan-suggestions` cards, `week-panel` declarative panels with buttons), library-only context, users named by a per-plugin pseudonym (`subject`) the plugin may keep its own data against. See ADR-0006, ADR-0017. Registered means available; each user opts in from the Plugins page (`/app/plugins`, linked from the profile menu; API `/api/v1/me/plugins`), and every plugin starts off. See ADR-0013. |
 | Agent access | MCP server inside `mimos-api` at `/mcp` (Spring AI 2.0.x MCP server starter, stateless Streamable HTTP; Spring AI's model layer excluded). Tools are derived from `contracts/api/openapi.yaml` at startup: every `/api/v1` operation is a tool unless it declares `x-mcp: false`, and a call loops back through the HTTP API with the caller's token. Agents sign in as the public Keycloak client `mimos-agent` (Authorization Code + PKCE), found through Protected Resource Metadata (RFC 9728). See ADR-0014. |
 | Agent harness | `tools/harness` (`@mimos/harness`, TypeScript on Node type stripping) behind a devenv `harness` script; all agent tooling from devenv/nixpkgs; Playwright pinned to nixpkgs' `playwright-driver`; `.mcp.json` committed; debug-only behavior in `deploy/docker/compose.debug.yml`; scenarios run in CI via devenv. Plan and decisions in `docs/harness/`. |
 
@@ -88,8 +88,10 @@ wire-format contract:
   It never calls the core modules, so it needs no change when an
   endpoint is added; the spec is its only input.
 - `integrations/plugins` — the plugin runtime: registry, outbound
-  extension-API client, suggestion-card validation (ADR-0006), and the
-  per-user opt-ins it owns the table for (`plugin_opt_in`, ADR-0013).
+  extension-API client, suggestion-card and week-panel validation
+  (ADR-0006, ADR-0017), and the tables it owns: per-user opt-ins
+  (`plugin_opt_in`, ADR-0013) and per-user, per-plugin pseudonyms
+  (`plugin_subject`, ADR-0017).
   Depends on the core modules' public interfaces only; external API types
   never cross this boundary. Optional at runtime — no plugins registered,
   no behavior.
@@ -122,24 +124,35 @@ is the contract:
   `homepageUrl` becomes a link there, so only http(s) URLs survive
   parsing.
 - v1 is pull-only: Mimos calls `POST {base}/v1/plan-suggestions` with a
-  context snapshot (week, planned slots, library catalog); plugins never
-  call Mimos and cannot write anything. Applying a suggestion reuses the
-  existing plan-entry endpoint — no new mutation path.
+  context snapshot (week, planned slots, library catalog) and `POST
+  {base}/v1/week-panel` with a week and an optional button press;
+  plugins never call Mimos and cannot change Mimos data. Applying a
+  suggestion reuses the existing plan-entry endpoint — no new mutation
+  path.
 - Plugins see curated library recipes only. Personal recipes, profiles,
-  identities, and logs never cross the plugin boundary.
-- UI is declarative suggestion cards (title/blurb/icon/entries), rendered
-  by web as plain text and attributed to the plugin. No plugin code in the
-  browser, no iframes in v1.
+  identities, and logs never cross the plugin boundary. Each request
+  names the user by `subject`, a random UUID per user and plugin
+  (ADR-0017), so a plugin can keep its own data about a user without
+  learning who they are. That data lives in the plugin's storage; the
+  account export does not include it.
+- UI is declarative: suggestion cards (title/blurb/icon/entries) and week
+  panels (a collapsed summary, then `text`, `highlight`, `wheel`, and
+  `actions` blocks; ADR-0017), validated by core, rendered by web as
+  plain text and attributed to the plugin. No plugin code in the browser,
+  no iframes in v1. A panel rendered without an action must not change
+  the plugin's state.
 - The extension API is versioned from day one (`mimos.plugin.manifest/v1`,
-  `/v1/plan-suggestions`), specified as OpenAPI under `contracts/plugins/`,
-  and treated as a public contract: additive changes only, deprecation with
-  notice.
+  `/v1/plan-suggestions`, `/v1/week-panel`), specified as OpenAPI in
+  `contracts/plugins/v1/`, and treated as a public contract: additive
+  changes only, deprecation with notice.
 - Plugins never get raw database access; the runtime lives in
   `integrations/plugins` and talks to core through public interfaces only.
 - The reference plugin `plugins/country-week` is a zero-dependency
   TypeScript service on `node:http`, run straight from source via Node's
   native type stripping (engines node >= 22.18); plugin packages live in
-  the `plugins/*` npm workspace, and its tests run on `node --test`.
+  the `plugins/*` npm workspace, and its tests run on `node --test`. It
+  keeps each user's wheel in SQLite through the built-in `node:sqlite`,
+  on the `country-week-data` compose volume.
 - Deferred (designed in ADR-0006, built only when a plugin needs them): the
   plugin→Mimos callback direction with service accounts, iframe UI slots,
   card persistence, a plugin directory.
@@ -176,13 +189,17 @@ is the contract:
   in `:root` (the default) and dark in `:root[data-theme="dark"]` (only
   when chosen with the toggle) — no literal colors in components. Errors
   use `--danger`, never `--accent`. Straight edges (no radius, no soft
-  shadows) and no transitions or animations. Fonts are committed files
+  shadows) and no transitions or animations, except the week panel's
+  wheel, which spins (and lands at once under `prefers-reduced-motion`;
+  ADR-0017). Fonts are committed files
   in `src/fonts/` loaded with `next/font/local`; never a font host or a
   font npm package. Rebuild them as `src/fonts/README.md` says (its tools
   come from devenv). Keycloak's login theme mirrors the light tokens and
   reuses these fonts (`deploy/keycloak`, ADR-0010), and the docs site
   mirrors both themes' tokens and links to the same fonts
-  (`docs/assets/`); change them all together. Pages start with
+  (`docs/assets/`); change them all together. The exception is the
+  Twemoji flag subset (`src/fonts/twemoji-flags/`, ADR-0017), which is
+  web only and draws nothing but flags. Pages start with
   `PageHeader` (eyebrow, serif h1, amber rule, actions) or, for a rail
   layout, `SplitPage`.
 - Unit tests live in `apps/web/test/` and run on `node --test` (native type
@@ -468,9 +485,13 @@ writes evidence to `.harness/runs/<run>/` (gitignored), and
   (log in with `test` / `mimos-test`; the realm also ships `test2`, same
   password, for cross-user isolation), seeded library at
   `http://localhost:8080/api/v1/public/recipes` and
-  `http://localhost:3000/recipes`, and a plugin suggestion card (after
-  login, with Country of the Week turned on in the Plugins page or via
-  `PUT /api/v1/me/plugins/country-week`) from
+  `http://localhost:3000/recipes`, the Country of the Week panel on the
+  plan page (after login, with the plugin turned on in the Plugins page
+  or via `PUT /api/v1/me/plugins/country-week`; API
+  `/api/v1/plans/{monday}/panels`), and, once a country with library
+  recipes is chosen for the week (`POST
+  /api/v1/plans/{monday}/panels/country-week/actions` with
+  `{"id":"choose","value":"IT"}`), a suggestion card from
   `http://localhost:8080/api/v1/plans/{monday}/suggestions` or the plan
   page's Suggestions panel.
 - `POSTGRES_PASSWORD=x KEYCLOAK_ADMIN_PASSWORD=x docker compose -f
