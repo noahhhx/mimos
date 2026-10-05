@@ -25,6 +25,7 @@ import {
   formValuesOf,
   toEstimateInput,
   toRecipeInput,
+  unitChoices,
   type IngredientRow,
   type RecipeFormValues,
 } from "@/lib/recipe-input";
@@ -34,7 +35,6 @@ type TextField = Exclude<keyof RecipeFormValues, "ingredients" | "steps" | "nutr
 /** The calculated nutrition for the form as it stands, with a status per form row that was sent. */
 type Estimate = { nutrition: Nutrition; statuses: Map<number, IngredientLineStatus> } | "failed";
 
-const METRIC_UNITS = ["g", "kg", "ml", "l", "tsp", "tbsp"];
 
 function problemDetail(result: { error?: { detail?: string } | unknown }): string {
   const error = result.error as { detail?: string } | undefined;
@@ -180,11 +180,6 @@ export function RecipeForm({
         Search for each ingredient, or add your own when it isn&apos;t there. Measure it in grams, millilitres,
         spoons, or pieces to count it toward nutrition, and leave the amount blank for things like salt to taste.
       </p>
-      <datalist id="metric-units">
-        {METRIC_UNITS.map((unit) => (
-          <option key={unit} value={unit} />
-        ))}
-      </datalist>
       {values.ingredients.map((row, index) => (
         <div className="field-row ingredient-row" key={index}>
           <label className="narrow">
@@ -201,13 +196,17 @@ export function RecipeForm({
           </label>
           <label className="narrow">
             Unit
-            <input
+            <select
               value={row.unit}
               onChange={(e) => updateIngredient(index, { unit: e.target.value })}
-              list="metric-units"
-              maxLength={30}
               aria-label={`Ingredient ${index + 1} unit`}
-            />
+            >
+              {unitChoices(row.unit).map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit === "" ? "none" : unit}
+                </option>
+              ))}
+            </select>
           </label>
           <IngredientPicker
             label={`Ingredient ${index + 1} name`}

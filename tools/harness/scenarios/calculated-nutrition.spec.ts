@@ -27,14 +27,14 @@ test("calculates a recipe's nutrition from its ingredients", async ({ loggedInPa
 
   await test.step("a typed name links itself; a search finds the rest", async () => {
     await page.getByLabel("Ingredient 1 amount").fill("200");
-    await page.getByLabel("Ingredient 1 unit").fill("g");
+    await page.getByLabel("Ingredient 1 unit").selectOption("g");
     await page.getByLabel("Ingredient 1 name").fill("dried pasta");
     await page.getByLabel("Ingredient 1 note").fill("spaghetti");
     await expect(row(1)).toContainText("Matched to Dried pasta (371 kcal per 100 g).");
 
     await page.getByRole("button", { name: "+ Ingredient" }).click();
     await page.getByLabel("Ingredient 2 amount").fill("2");
-    await page.getByLabel("Ingredient 2 unit").fill("tbsp");
+    await page.getByLabel("Ingredient 2 unit").selectOption("tbsp");
     await page.getByLabel("Ingredient 2 name").fill("oli");
     await page.getByRole("option", { name: /^Olive oil/ }).click();
     await expect(page.getByLabel("Ingredient 2 name")).toHaveValue("olive oil");
@@ -47,8 +47,8 @@ test("calculates a recipe's nutrition from its ingredients", async ({ loggedInPa
     await expect(row(3)).toContainText("Matched to Garlic clove");
 
     await page.getByRole("button", { name: "+ Ingredient" }).click();
-    await page.getByLabel("Ingredient 4 amount").fill("1");
-    await page.getByLabel("Ingredient 4 unit").fill("cup");
+    await page.getByLabel("Ingredient 4 amount").fill("30");
+    await page.getByLabel("Ingredient 4 unit").selectOption("g");
     await page.getByLabel("Ingredient 4 name").fill("olive oil");
     await page.getByLabel("Ingredient 4 note").fill("for frying");
     await expect(page.getByText("Not counted. Olive oil counts in ml, l, tsp or tbsp.")).toBeVisible();

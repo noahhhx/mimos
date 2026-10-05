@@ -48,7 +48,7 @@ test("blocks invalid input and names the row at fault", async ({ loggedInPage: p
   await test.step("the form names a nameless ingredient and a zero amount", async () => {
     await page.getByRole("button", { name: "+ Ingredient" }).click();
     await page.getByLabel("Ingredient 2 amount").fill("2");
-    await page.getByLabel("Ingredient 2 unit").fill("cups");
+    await page.getByLabel("Ingredient 2 unit").selectOption("g");
     await page.getByRole("button", { name: "+ Ingredient" }).click();
     await page.getByLabel("Ingredient 3 amount").fill("0");
     await page.getByLabel("Ingredient 3 name").fill("salt");

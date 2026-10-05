@@ -907,6 +907,12 @@ input[type="radio"] {
   flex: 0 1 6rem;
 }
 
+/* A select draws 2px taller than an input; trimmed so the row's fields line up. */
+.ingredient-row select {
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
 .ingredient-picker {
   position: relative;
   flex: 3 1 14rem;

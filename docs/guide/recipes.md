@@ -31,9 +31,9 @@ clear when you leave it.
    Prep and cook minutes and tags are optional; separate tags with commas.
 3. Add the ingredients, one per line. Type each one's name and pick it
    from the list that appears; put how it's prepared, like "minced", in
-   **Note**. Give it an amount and a unit, leave the amount blank for
-   things you don't measure, like "salt, to taste", and leave the unit
-   blank for things you count, like "2 eggs".
+   **Note**. Give it an amount and pick a unit from the list. Leave the
+   amount blank for things you don't measure, like "salt, to taste", and
+   choose **none** as the unit for things you count, like "2 eggs".
 4. If an ingredient isn't in the list, choose **+ Add "…" as a new
    ingredient** and copy its calories, protein, carbs, and fat from the
    label. It's saved as your own: only you see it, and you can use it in
@@ -59,8 +59,10 @@ matches one of them and is measured in units that ingredient uses:
 | Volume                        | `ml`, `l`, `tsp` (5 ml), `tbsp` (15 ml) |
 | Count                         | no unit, like "2 eggs" |
 
-Mimos uses metric units only, so "2 cups flour" does not count; write
-"250 g flour" instead. The form says when a line does not count and
+Mimos uses metric units only, so the unit list has no cups or ounces;
+write "250 g flour" instead of "2 cups flour". A recipe written before
+then keeps its old unit, and that line doesn't count until you change
+it. The form says when a line does not count and
 which units would, and it shows how many ingredients are counted.
 Ingredients without an amount, like salt to taste, add nothing.
 

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { formValuesOf, toEstimateInput, toRecipeInput, type RecipeFormValues } from "../src/lib/recipe-input.ts";
+import { formValuesOf, toEstimateInput, toRecipeInput, unitChoices, type RecipeFormValues } from "../src/lib/recipe-input.ts";
 
 function values(patch: Partial<RecipeFormValues> = {}): RecipeFormValues {
   return {
@@ -143,5 +143,31 @@ describe("toEstimateInput", () => {
   it("waits for a valid number of servings", () => {
     assert.equal(toEstimateInput(values({ servings: "" })), undefined);
     assert.equal(toEstimateInput(values({ servings: "2.5" })), undefined);
+  });
+});
+
+describe("unit choices", () => {
+  it("offers the metric units and a count, and keeps an older recipe's own unit", () => {
+    assert.deepEqual(unitChoices("g"), ["", "g", "kg", "ml", "l", "tsp", "tbsp"]);
+    assert.deepEqual(unitChoices("cups"), ["", "g", "kg", "ml", "l", "tsp", "tbsp", "cups"]);
+  });
+
+  it("reads a loosely written metric unit as that unit", () => {
+    const form = formValuesOf({
+      id: "00000000-0000-0000-0000-000000000000",
+      title: "Soup",
+      description: "Warm.",
+      servings: 2,
+      isLibrary: false,
+      tags: [],
+      nutrition: {},
+      nutritionSource: "MANUAL",
+      ingredients: [{ quantity: 2, unit: " TBSP", name: "oil" }, { quantity: 2, unit: "cups", name: "stock" }],
+      steps: [{ instruction: "Simmer." }],
+    });
+    assert.deepEqual(
+      form.ingredients.map((row) => row.unit),
+      ["tbsp", "cups"],
+    );
   });
 });

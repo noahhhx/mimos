@@ -31,6 +31,17 @@ export type RecipeFormValues = {
   steps: string[];
 };
 
+/** The units the form offers: metric only (ADR-0015), with "" for a count of pieces ("2 eggs"). */
+export const UNITS = ["", "g", "kg", "ml", "l", "tsp", "tbsp"];
+
+/**
+ * The unit choices for a row: the metric units, plus the unit an older
+ * recipe was written in ("cups"), so editing the recipe keeps it.
+ */
+export function unitChoices(current: string): string[] {
+  return UNITS.includes(current) ? UNITS : [...UNITS, current];
+}
+
 export const EMPTY_INGREDIENT: IngredientRow = { quantity: "", unit: "", name: "" };
 
 export function formValuesOf(recipe?: RecipeDetail): RecipeFormValues {
@@ -50,7 +61,7 @@ export function formValuesOf(recipe?: RecipeDetail): RecipeFormValues {
     ingredients: recipe?.ingredients.length
       ? recipe.ingredients.map((i) => ({
           quantity: text(i.quantity),
-          unit: i.unit ?? "",
+          unit: metricOrAsWritten(i.unit ?? ""),
           name: i.name,
           ...(i.note ? { note: i.note } : {}),
           ...(i.catalogSlug ? { catalogSlug: i.catalogSlug } : {}),
@@ -167,6 +178,12 @@ export function toEstimateInput(values: RecipeFormValues): { input: NutritionEst
     });
   });
   return { input: { servings, ingredients }, rows };
+}
+
+/** "G" and " tbsp" are metric units written loosely; anything else stays as written. */
+function metricOrAsWritten(unit: string): string {
+  const normalized = unit.trim().toLowerCase();
+  return UNITS.includes(normalized) ? normalized : unit;
 }
 
 function optionalNumber(value: string): number | undefined {

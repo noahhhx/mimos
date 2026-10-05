@@ -22,7 +22,7 @@ test("creates a personal recipe from the form", async ({ loggedInPage: page }) =
     await page.getByLabel("Cook minutes").fill("20");
     await page.getByLabel("Tags (comma-separated)").fill("dinner, harness");
     await page.getByLabel("Ingredient 1 amount").fill("500");
-    await page.getByLabel("Ingredient 1 unit").fill("g");
+    await page.getByLabel("Ingredient 1 unit").selectOption("g");
     await page.getByLabel("Ingredient 1 name").fill("tomatoes");
     await page.getByLabel("Step 1").fill("Simmer the tomatoes.");
   });
