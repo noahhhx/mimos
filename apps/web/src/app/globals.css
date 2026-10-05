@@ -13,9 +13,11 @@
   --on-accent: #fbf7f1;
   --danger: #a84a25;
 
-  /* --font-serif / --font-sans come from next/font/local (app/layout.tsx). */
-  --serif: var(--font-serif), Georgia, serif;
-  --sans: var(--font-sans), system-ui, sans-serif;
+  /* --font-flags / --font-serif / --font-sans come from next/font/local
+     (app/layout.tsx). The flag font covers only the regional indicators, so
+     every other character falls through to the text face. */
+  --serif: var(--font-flags), var(--font-serif), Georgia, serif;
+  --sans: var(--font-flags), var(--font-sans), system-ui, sans-serif;
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
 
   color-scheme: light;

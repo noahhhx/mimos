@@ -12,7 +12,7 @@ site links to them (`docs/assets/fonts/`).
 | `public-sans/PublicSans.woff2` | Public Sans, upright | `wght` 400–600 |
 
 Both are SIL Open Font License 1.1; each family's `OFL.txt` sits next to
-its file.
+its file. A third font, for flags only, is described under "Flags" below.
 
 ## Source
 
@@ -42,3 +42,32 @@ woff2_compress PublicSans.ttf
 
 Copy `Newsreader.woff2` and `PublicSans.woff2` here. Characters outside
 the subset (arrows, "✕") fall back to the next font in the stack.
+
+## Flags
+
+`twemoji-flags/TwemojiFlags.woff2` draws country flags, so a plugin's flag
+icon (ADR-0017) is a flag on every system; Windows otherwise shows two
+letters. It is the flag subset of Mozilla's Twemoji COLR font: the 26
+regional indicator symbols (U+1F1E6–1F1FF) and the 258 flags they form
+through the font's `ccmp` ligatures. The graphics are Twemoji's, CC BY
+4.0; `twemoji-flags/ATTRIBUTION.md` gives the credit and
+`twemoji-flags/LICENSE.md` both licenses.
+
+`src/app/layout.tsx` loads it first in both font stacks with a
+`unicode-range` of U+1F1E6-1F1FF, so it draws flags and nothing else, and
+without a preload, so a page downloads it only when it shows a flag.
+
+Source, release v0.7.0 of `mozilla/twemoji-colr` (SHA-256
+`6d90152ee0d29e82fe2a87793af5aa4b7ad13e6538360889e141e81ed299ee8e`):
+
+- `https://github.com/mozilla/twemoji-colr/releases/download/v0.7.0/Twemoji.Mozilla.ttf`
+- `https://raw.githubusercontent.com/mozilla/twemoji-colr/v0.7.0/LICENSE.md`
+
+Rebuild it in the devenv shell, in a directory holding that TTF:
+
+```sh
+pyftsubset Twemoji.Mozilla.ttf --unicodes="U+1F1E6-1F1FF" --layout-features="*" --output-file=TwemojiFlags.ttf
+woff2_compress TwemojiFlags.ttf
+```
+
+Copy `TwemojiFlags.woff2` into `twemoji-flags/`.

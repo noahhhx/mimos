@@ -25,6 +25,17 @@ const publicSans = localFont({
   variable: "--font-sans",
 });
 
+// Country flags only (ADR-0017): the unicode-range keeps it off every other
+// character, and without a preload a page fetches it only to draw a flag.
+const twemojiFlags = localFont({
+  src: "../fonts/twemoji-flags/TwemojiFlags.woff2",
+  display: "swap",
+  preload: false,
+  adjustFontFallback: false,
+  declarations: [{ prop: "unicode-range", value: "U+1F1E6-1F1FF" }],
+  variable: "--font-flags",
+});
+
 export const metadata: Metadata = {
   title: "Mimos",
   description:
@@ -50,7 +61,7 @@ const THEME_SCRIPT = `(function () {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     // The theme script sets data-theme before hydration.
-    <html lang="en" className={`${newsreader.variable} ${publicSans.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${newsreader.variable} ${publicSans.variable} ${twemojiFlags.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         {/* Public URLs from the container's env (ADR-0012), set before any app code runs. */}
