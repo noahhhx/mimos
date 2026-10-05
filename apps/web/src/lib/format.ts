@@ -88,5 +88,5 @@ export function hasNutrition<T extends { calories?: number; proteinG?: number; c
 }
 
 export function formatKcal(value: number | null | undefined): string {
-  return value != null ? `${Math.round(value)} kcal` : "—";
+  return value != null ? `${Math.round(value)} kcal` : "–";
 }

@@ -61,7 +61,7 @@ describe("toRecipeInput", () => {
           { quantity: "0", unit: "", name: "salt" },
         ],
       }),
-      ['Ingredient 2\'s amount must be more than 0 — or leave it blank for "to taste".'],
+      ['Ingredient 2\'s amount must be more than 0, or leave it blank for "to taste".'],
     );
   });
 

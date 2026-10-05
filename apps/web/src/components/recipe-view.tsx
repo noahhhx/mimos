@@ -73,19 +73,19 @@ export function RecipeView({ recipe, children }: { recipe: RecipeDetail; childre
           <dl className="per-serving">
             <div>
               <dt>Calories</dt>
-              <dd>{recipe.nutrition.calories != null ? `${Math.round(recipe.nutrition.calories)} kcal` : "—"}</dd>
+              <dd>{recipe.nutrition.calories != null ? `${Math.round(recipe.nutrition.calories)} kcal` : "–"}</dd>
             </div>
             <div>
               <dt>Protein</dt>
-              <dd>{recipe.nutrition.proteinG != null ? `${Math.round(recipe.nutrition.proteinG)} g` : "—"}</dd>
+              <dd>{recipe.nutrition.proteinG != null ? `${Math.round(recipe.nutrition.proteinG)} g` : "–"}</dd>
             </div>
             <div>
               <dt>Carbs</dt>
-              <dd>{recipe.nutrition.carbsG != null ? `${Math.round(recipe.nutrition.carbsG)} g` : "—"}</dd>
+              <dd>{recipe.nutrition.carbsG != null ? `${Math.round(recipe.nutrition.carbsG)} g` : "–"}</dd>
             </div>
             <div>
               <dt>Fat</dt>
-              <dd>{recipe.nutrition.fatG != null ? `${Math.round(recipe.nutrition.fatG)} g` : "—"}</dd>
+              <dd>{recipe.nutrition.fatG != null ? `${Math.round(recipe.nutrition.fatG)} g` : "–"}</dd>
             </div>
           </dl>
         </section>

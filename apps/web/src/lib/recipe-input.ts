@@ -71,7 +71,7 @@ export function toRecipeInput(values: RecipeFormValues): { input: RecipeInput } 
     }
     const quantity = amount === "" ? undefined : Number(amount);
     if (quantity !== undefined && !(Number.isFinite(quantity) && quantity > 0)) {
-      errors.push(`${label}'s amount must be more than 0 — or leave it blank for "to taste".`);
+      errors.push(`${label}'s amount must be more than 0, or leave it blank for "to taste".`);
     }
     ingredients.push({ quantity, unit: unit === "" ? undefined : unit, name });
   });

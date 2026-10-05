@@ -76,7 +76,7 @@ export function buildCard(
   }
   return {
     title: `${country.name} week`,
-    blurb: `Lean into ${country.cuisine} cooking — ${entries.length} dinner${entries.length === 1 ? "" : "s"} from the library this week.`,
+    blurb: `Lean into ${country.cuisine} cooking with ${entries.length} dinner${entries.length === 1 ? "" : "s"} from the library this week.`,
     icon: country.icon,
     entries,
   };

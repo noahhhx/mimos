@@ -22,7 +22,7 @@
     "steps": [
       "Whisk the flour, sugar, baking powder, salt, and baking soda in a large bowl.",
       "In a separate bowl, whisk the buttermilk, eggs, melted butter, and vanilla.",
-      "Pour the wet ingredients into the dry and stir until just combined — lumps are good, overmixing is not.",
+      "Pour the wet ingredients into the dry and stir until just combined. Lumps are good; overmixing is not.",
       "Heat a lightly buttered pan over medium heat. Pour 1/3-cup rounds of batter.",
       "Cook until bubbles pop on the surface, 2-3 minutes, then flip and cook until golden, another 1-2 minutes.",
       "Keep warm in a low oven while you cook the rest. Serve with maple syrup."
@@ -31,7 +31,7 @@
   {
     "slug": "shakshuka",
     "title": "Shakshuka",
-    "description": "Eggs poached in a smoky spiced tomato sauce — a one-pan breakfast or easy dinner. Good bread for scooping is non-negotiable.",
+    "description": "Eggs poached in a smoky spiced tomato sauce, a one-pan breakfast or easy dinner. Good bread for scooping is non-negotiable.",
     "servings": 2,
     "prepMinutes": 10,
     "cookMinutes": 25,
@@ -61,7 +61,7 @@
   {
     "slug": "overnight-oats",
     "title": "Overnight Oats",
-    "description": "Five minutes of work tonight, breakfast waiting tomorrow. The ratio is the whole recipe — everything else is riffing.",
+    "description": "Five minutes of work tonight, breakfast waiting tomorrow. The ratio is the whole recipe; everything else is riffing.",
     "servings": 1,
     "prepMinutes": 5,
     "cookMinutes": 0,
@@ -84,7 +84,7 @@
   {
     "slug": "spaghetti-aglio-e-olio",
     "title": "Spaghetti Aglio e Olio",
-    "description": "The original pantry pasta: garlic, oil, chili, and parsley. It succeeds or fails on patience — take the garlic slowly.",
+    "description": "The original pantry pasta: garlic, oil, chili, and parsley. It succeeds or fails on patience, so take the garlic slowly.",
     "servings": 2,
     "prepMinutes": 5,
     "cookMinutes": 15,
@@ -100,7 +100,7 @@
     ],
     "steps": [
       "Boil the spaghetti in well-salted water until al dente. Reserve a cup of pasta water.",
-      "Meanwhile, warm the oil with the garlic over low heat until the slices turn pale gold — never brown fast.",
+      "Meanwhile, warm the oil with the garlic over low heat until the slices turn pale gold. Never brown them fast.",
       "Add the pepper flakes off the heat and let them bloom in the warm oil.",
       "Toss the drained pasta with the oil, a splash of pasta water, and the parsley until glossy.",
       "Serve immediately; there is no second act for this one."
@@ -167,7 +167,7 @@
   {
     "slug": "beef-chili",
     "title": "Beef Chili",
-    "description": "A slow-flavored, fast-cooking chili — one pot, done in under an hour, and the leftovers are the point.",
+    "description": "A slow-flavored, fast-cooking chili: one pot, done in under an hour, and the leftovers are the point.",
     "servings": 6,
     "prepMinutes": 15,
     "cookMinutes": 45,
@@ -190,7 +190,7 @@
       "Add the onion and pepper and cook until soft, about 5 minutes.",
       "Stir in the garlic and spices for a minute, then the tomatoes.",
       "Simmer uncovered for 30 minutes, stirring now and then.",
-      "Add the beans and cook 5 more minutes. Season and serve — better the next day."
+      "Add the beans and cook 5 more minutes. Season and serve. It is better the next day."
     ]
   },
   {
@@ -212,7 +212,7 @@
     ],
     "steps": [
       "Simmer the lentils in plenty of water until just tender, 15-20 minutes, then drain.",
-      "Fry the onions in the oil over medium heat, stirring rarely, until deeply browned and crisp — 20 minutes at least. Set half aside.",
+      "Fry the onions in the oil over medium heat, stirring rarely, until deeply browned and crisp, at least 20 minutes. Set half aside.",
       "Add the rice, cumin, and salt to the pan with the remaining onions and stir to coat.",
       "Add the lentils and 2 cups of water; cover and cook on low for 15 minutes.",
       "Rest 5 minutes off the heat, then top with the reserved crispy onions."
@@ -250,7 +250,7 @@
   {
     "slug": "sheet-pan-chicken-potatoes",
     "title": "Sheet-Pan Chicken and Potatoes",
-    "description": "Lemon, garlic, and a hot oven do all the work. Everything cooks on one tray — the potatoes soak up the chicken juices.",
+    "description": "Lemon, garlic, and a hot oven do all the work. Everything cooks on one tray, and the potatoes soak up the chicken juices.",
     "servings": 4,
     "prepMinutes": 15,
     "cookMinutes": 50,
@@ -321,7 +321,7 @@
       "Brown the butter in a pan until it smells nutty, then cool slightly.",
       "Mash the bananas and whisk in the butter, sugar, and eggs.",
       "Fold in the flour, baking powder, salt, and cinnamon until just mixed.",
-      "Bake 50-60 minutes until a skewer comes out clean. Cool before slicing — if you can."
+      "Bake 50-60 minutes until a skewer comes out clean. Cool before slicing, if you can."
     ]
   },
   {

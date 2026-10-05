@@ -318,6 +318,13 @@ mimos/
   Clients send their own ID per call (`apps/web/src/lib/request-id.ts`),
   except cached server-side fetches: Next's fetch cache keys on headers.
   Text logs by default; `LOGGING_STRUCTURED_FORMAT_CONSOLE=ecs` for JSON.
+- **User-facing copy:** no em-dashes (U+2014) in anything a user reads:
+  web UI strings and page titles, library seed content, plugin card text
+  (the reference plugin included), the Keycloak theme, and API error
+  messages. Rewrite the sentence with a period, comma, colon, or
+  semicolon; don't just swap in another dash. En dashes are fine for
+  ranges (`20–25 minutes`) and for an unknown value (`–`). Code comments
+  and docs are not covered.
 - **Time/money-free:** no wall-clock dependence in domain logic; clocks and
   randomness are injected.
 - **Commit style:** conventional commits, present tense, scoped when it

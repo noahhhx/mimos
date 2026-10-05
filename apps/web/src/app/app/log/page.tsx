@@ -160,9 +160,9 @@ export default function LogPage() {
                     >
                       <td>{dayLabel(day)}</td>
                       <td>{formatKcal(totals?.calories)}</td>
-                      <td>{totals?.proteinG != null ? `${Math.round(totals.proteinG)} g` : "—"}</td>
-                      <td>{totals?.carbsG != null ? `${Math.round(totals.carbsG)} g` : "—"}</td>
-                      <td>{totals?.fatG != null ? `${Math.round(totals.fatG)} g` : "—"}</td>
+                      <td>{totals?.proteinG != null ? `${Math.round(totals.proteinG)} g` : "–"}</td>
+                      <td>{totals?.carbsG != null ? `${Math.round(totals.carbsG)} g` : "–"}</td>
+                      <td>{totals?.fatG != null ? `${Math.round(totals.fatG)} g` : "–"}</td>
                     </tr>
                   );
                 })}

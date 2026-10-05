@@ -101,7 +101,7 @@ export default function ShoppingListPage() {
       body: { checked },
     });
     if (result.error) {
-      setError("Could not update the item — refreshing.");
+      setError("Could not update the item. Refreshing.");
       await reload();
     }
   };
@@ -135,7 +135,7 @@ export default function ShoppingListPage() {
       </p>
       <p className="muted">
         {neverGenerated
-          ? "No list for this week yet — generate one from the plan."
+          ? "No list for this week yet. Generate one from the plan."
           : list
             ? `Generated ${new Date(list.generatedAt).toLocaleString()} · regenerating keeps checked-off items.`
             : ""}
@@ -149,7 +149,7 @@ export default function ShoppingListPage() {
 
       {list && list.items.length === 0 && (
         <div className="card">
-          <p>Nothing to buy — plan some meals first.</p>
+          <p>Nothing to buy. Plan some meals first.</p>
         </div>
       )}
 

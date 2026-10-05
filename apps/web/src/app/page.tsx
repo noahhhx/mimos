@@ -35,7 +35,7 @@ export default function HomePage() {
       <div className="card">
         <h2>Self-hosting</h2>
         <p>
-          Mimos runs the same everywhere — our cloud or your own hardware. Bring the whole stack up
+          Mimos runs the same everywhere: our cloud or your own hardware. Bring the whole stack up
           with Docker:
         </p>
         <pre>

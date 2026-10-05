@@ -14,10 +14,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const result = await getPublicRecipe({ client: publicApi, path: { slug } });
   if (result.error || !result.data) {
-    return { title: "Recipe not found — Mimos" };
+    return { title: "Recipe not found | Mimos" };
   }
   return {
-    title: `${result.data.title} — Mimos`,
+    title: `${result.data.title} | Mimos`,
     description: result.data.description,
   };
 }
@@ -37,7 +37,7 @@ export default async function RecipePage({ params }: { params: Promise<{ slug: s
       </p>
       <RecipeView recipe={recipe}>
         <p className="muted recipe-cta">
-          Cook this every week? <Link href="/app">Plan it in Mimos</Link> — the shopping list builds itself.
+          Cook this every week? <Link href="/app">Plan it in Mimos</Link> and the shopping list builds itself.
         </p>
       </RecipeView>
     </>
