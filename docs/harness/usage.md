@@ -73,10 +73,13 @@ ingredients by name or by searching, a missing one is added as the
 user's own, nutrition updates as you type, and the saved recipe shows
 the same figures, ADR-0015 and ADR-0016), `recipe-form-errors` (browser-blocked input, per-row
 form errors, Enter submits), `kitchen-home` (Tonight, the week rail, and
-adding the plugin's thought; it turns the plugin on, plans the week's
-earlier evenings, and puts both back as it found them), `plugin-opt-in`
-(a fresh account sees suggestions only after turning Country of the Week
-on from the Plugins page, ADR-0013), `app-pages` (every signed-in page loads
+adding the plugin's thought; it turns the plugin on, chooses Italy for
+the week, plans the week's earlier evenings, and puts all three back as
+it found them), `plugin-opt-in` (a fresh account sees the plugin's week
+panel only after turning Country of the Week on from the Plugins page,
+ADR-0013), `country-wheel` (a fresh account spins, removes, chooses, and
+changes a week's country, and the next week's wheel leaves both out,
+ADR-0017), `app-pages` (every signed-in page loads
 without errors), `app-nav` (the app nav has no vertical overflow,
 which would show a scrollbar beside its links), `keycloak-theme`
 (Keycloak's sign-in, error, and register pages wear the Mimos theme;

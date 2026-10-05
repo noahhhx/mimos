@@ -177,7 +177,7 @@ jobs:
           curl -sS http://localhost:8080/api/v1/me -o /dev/null -w '%{http_code} %{content_type}' \
             | grep -qF '401 application/problem+json'
 
-      - name: Smoke test - plugin suggestion appears end to end
+      - name: Smoke test - plugin panel and suggestion end to end
         run: |
           token=$(curl -fsS -X POST http://localhost:8081/realms/mimos/protocol/openid-connect/token \
             -d 'grant_type=password&client_id=mimos-web&username=test&password=mimos-test' \
@@ -186,9 +186,17 @@ jobs:
           # Plugins are opt-in per user (ADR-0013): turn it on first.
           curl -fsS -X PUT -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
             -d '{"enabled":true}' http://localhost:8080/api/v1/me/plugins/country-week
+          # Its card follows the week's country (ADR-0017): choose Italy through
+          # the week panel, API -> plugin -> SQLite on its volume.
+          actions="http://localhost:8080/api/v1/plans/$monday/panels/country-week/actions"
+          curl -fsS -X POST -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+            -d '{"id":"choose","value":"IT"}' "$actions" | grep -q '"label":"Italy"'
           # API -> country-week plugin -> validated, attributed card (ADR-0006).
           curl -fsS -H "Authorization: Bearer $token" \
             "http://localhost:8080/api/v1/plans/$monday/suggestions" | grep -q '"pluginId":"country-week"'
+          # Leave the week unchosen for the harness scenarios that follow.
+          curl -fsS -X POST -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+            -d '{"id":"change"}' "$actions" -o /dev/null
 
       # Browser scenarios (docs/harness/step-6-skill-docs-ci.md). The steps above
       # are the devenv-free self-host parity check; from here on the agent

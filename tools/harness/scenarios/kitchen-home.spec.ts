@@ -7,9 +7,10 @@ import { expect, test } from "./fixtures.ts";
  * The Kitchen home (docs/design/index.md, "Kitchen home"): with tonight open and
  * every earlier evening of the week planned, the Country of the Week card
  * (in the default compose stack, turned on for the user first: plugins
- * are opt-in, ADR-0013) offers tonight; adding it puts the recipe under
+ * are opt-in, ADR-0013; and with Italy chosen for the week, since its card
+ * follows the week's country, ADR-0017) offers tonight; adding it puts the recipe under
  * Tonight and on today's row of the week. Whatever the scenario planned is
- * removed again, and the plugin is left as it was found, so reruns start
+ * removed again, and the plugin and the week's country are left as they were found, so reruns start
  * from the same state.
  */
 
@@ -55,10 +56,26 @@ test("tonight, the week, and a plugin's thought for an open evening", async ({ l
   const before = new Set((await api<{ entries: PlanEntry[] }>("GET", planPath)).entries.map((entry) => entry.id));
   const plugins = await api<{ id: string; enabled: boolean }[]>("GET", "/api/v1/me/plugins");
   const wasEnabled = plugins.find((plugin) => plugin.id === "country-week")?.enabled ?? false;
+  const panelActions = `${planPath}/panels/country-week/actions`;
+  let choseItaly = false;
 
   try {
     await test.step("turn Country of the Week on", async () => {
       await api("PUT", "/api/v1/me/plugins/country-week", { enabled: true });
+    });
+
+    await test.step("give the week a country", async () => {
+      const { panels } = await api<{ panels: { pluginId: string; summary?: { label: string } }[] }>(
+        "GET",
+        `${planPath}/panels`,
+      );
+      const panel = panels.find((candidate) => candidate.pluginId === "country-week");
+      expect(panel, "Country of the Week renders a panel").toBeTruthy();
+      if (panel?.summary === undefined) {
+        const chosen = await api<{ summary?: { label: string } }>("POST", panelActions, { id: "choose", value: "IT" });
+        expect(chosen.summary?.label, "Italy can be chosen for this user's week").toBe("Italy");
+        choseItaly = true;
+      }
     });
 
     await test.step("plan every earlier open evening, leaving tonight open", async () => {
@@ -114,6 +131,9 @@ test("tonight, the week, and a plugin's thought for an open evening", async ({ l
     const { entries } = await api<{ entries: PlanEntry[] }>("GET", planPath);
     for (const entry of entries.filter((planned) => !before.has(planned.id))) {
       await api("DELETE", `${planPath}/entries/${entry.id}`);
+    }
+    if (choseItaly) {
+      await api("POST", panelActions, { id: "change" });
     }
     if (!wasEnabled) {
       await api("PUT", "/api/v1/me/plugins/country-week", { enabled: false });
