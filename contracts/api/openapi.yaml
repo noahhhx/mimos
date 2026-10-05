@@ -163,7 +163,7 @@ paths:
       parameters:
         - name: q
           in: query
-          description: Case-insensitive filter on title, description, and tags.
+          description: Case-insensitive filter on title, description, tags, and ingredient names.
           schema:
             type: string
       responses:
@@ -267,7 +267,7 @@ paths:
       parameters:
         - name: q
           in: query
-          description: Case-insensitive filter on title, description, and tags.
+          description: Case-insensitive filter on title, description, tags, and ingredient names.
           schema:
             type: string
       responses:
@@ -293,7 +293,7 @@ paths:
       parameters:
         - name: q
           in: query
-          description: Case-insensitive filter on title, description, and tags.
+          description: Case-insensitive filter on title, description, tags, and ingredient names.
           schema:
             type: string
       responses:

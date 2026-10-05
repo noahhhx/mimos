@@ -266,6 +266,44 @@ class RecipesEndpointTests extends ApiIntegrationTestSupport {
     }
 
     @Test
+    void searchMatchesIngredientNames() {
+        RestClient api = api();
+        ObjectNode input = minimalRecipe("Ingredient Search Supper");
+        input.set("ingredients", objectMapper.createArrayNode().add(ingredient(500, "g", "beef shin")));
+        api.post()
+                .uri("/api/v1/recipes")
+                .headers(headers -> headers.setBearerAuth(accessToken()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(input)
+                .exchange((req, res) -> assertThat(res.getStatusCode().value()).isEqualTo(201));
+
+        assertThat(titles(search(api, "/api/v1/recipes", "BEEF SHIN", accessToken())))
+                .containsExactly("Ingredient Search Supper");
+        assertThat(titles(search(api, "/api/v1/recipes", "beef shin", accessToken("test2"))))
+                .doesNotContain("Ingredient Search Supper");
+        // "cayenne" appears only in the seeded Beef Chili's ingredient list.
+        assertThat(titles(search(api, "/api/v1/recipes/library", "cayenne", accessToken())))
+                .contains("Beef Chili");
+        assertThat(titles(search(api, "/api/v1/public/recipes", "cayenne", null)))
+                .contains("Beef Chili");
+    }
+
+    private static JsonNode search(RestClient api, String path, String query, @Nullable String token) {
+        return requireNonNull(
+                api.get()
+                        .uri(builder ->
+                                builder.path(path).queryParam("q", query).build())
+                        .headers(headers -> {
+                            if (token != null) {
+                                headers.setBearerAuth(token);
+                            }
+                        })
+                        .retrieve()
+                        .body(JsonNode.class),
+                "search returned no body");
+    }
+
+    @Test
     void unauthenticatedAccessIsRejected() {
         api().get().uri("/api/v1/recipes").exchange((req, res) -> {
             assertThat(res.getStatusCode().value()).isEqualTo(401);

@@ -6,8 +6,9 @@ Open **Recipes** to see your recipe book. It has two tabs:
 - **Library**: free recipes curated for everyone on this Mimos. Anyone can
   read them, signed in or not.
 
-The search box looks through titles, descriptions, and tags in the tab
-you're on.
+The search box looks through titles, descriptions, tags, and ingredient
+names in the tab you're on, so "beef" also finds a chili made with beef
+mince.
 
 ![The recipe book, showing the Library tab](../assets/screenshots/recipes.png)
 

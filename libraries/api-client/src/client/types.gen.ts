@@ -658,7 +658,7 @@ export type ListMyRecipesData = {
     path?: never;
     query?: {
         /**
-         * Case-insensitive filter on title, description, and tags.
+         * Case-insensitive filter on title, description, tags, and ingredient names.
          */
         q?: string;
     };
@@ -822,7 +822,7 @@ export type ListLibraryRecipesData = {
     path?: never;
     query?: {
         /**
-         * Case-insensitive filter on title, description, and tags.
+         * Case-insensitive filter on title, description, tags, and ingredient names.
          */
         q?: string;
     };
@@ -852,7 +852,7 @@ export type ListPublicRecipesData = {
     path?: never;
     query?: {
         /**
-         * Case-insensitive filter on title, description, and tags.
+         * Case-insensitive filter on title, description, tags, and ingredient names.
          */
         q?: string;
     };

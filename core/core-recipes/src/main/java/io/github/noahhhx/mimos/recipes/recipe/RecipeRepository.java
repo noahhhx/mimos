@@ -158,7 +158,7 @@ public class RecipeRepository {
         jdbc.batchUpdate("insert into recipe_tag (recipe_id, tag) values (?, ?)", tagRows);
     }
 
-    /** Builds the search fragment (title/description/tag, case-insensitive) when a term is given. */
+    /** Builds the search fragment (title/description/tag/ingredient name, case-insensitive) when a term is given. */
     private static Sql searchSql(String visibility, List<Object> args, @Nullable String query) {
         if (query == null || query.isBlank()) {
             return new Sql(SELECT_BASE + visibility, args);
@@ -166,8 +166,10 @@ public class RecipeRepository {
         String pattern = "%" + query.strip() + "%";
         return new Sql(SELECT_BASE + visibility + """
                          and (title ilike ? or description ilike ?
-                              or exists (select 1 from recipe_tag t where t.recipe_id = recipe.id and t.tag ilike ?))
-                        """, concat(args, List.of(pattern, pattern, pattern)));
+                              or exists (select 1 from recipe_tag t where t.recipe_id = recipe.id and t.tag ilike ?)
+                              or exists (select 1 from recipe_ingredient i
+                                         where i.recipe_id = recipe.id and i.name ilike ?))
+                        """, concat(args, List.of(pattern, pattern, pattern, pattern)));
     }
 
     private static List<Object> concat(List<Object> first, List<Object> second) {
