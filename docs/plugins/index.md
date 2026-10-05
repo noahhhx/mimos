@@ -2,11 +2,13 @@
 
 A Mimos plugin is an HTTP sidecar service the instance owner runs next to
 `mimos-api`. Mimos calls out; the plugin never calls back, holds no
-tokens, and cannot write anything. The design contract is
-[ADR-0006](../decisions/adr-0006-plugin-system.md); the wire format is
-specified as OpenAPI in `contracts/plugins/plan-suggestions/v1/` and the
-TypeScript types plugins compile against are generated into
-`libraries/plugin-sdk` (`@mimos/plugin-sdk`).
+tokens, and cannot write anything. The wire format is specified as
+OpenAPI in
+[`contracts/plugins/plan-suggestions/v1/`](https://github.com/noahhhx/mimos/tree/main/contracts/plugins/plan-suggestions/v1),
+and TypeScript plugins can compile against the generated types in
+[`@mimos/plugin-sdk`](https://github.com/noahhhx/mimos/tree/main/libraries/plugin-sdk).
+The design behind it, with the reasoning, is
+[ADR-0006](https://github.com/noahhhx/mimos/blob/main/docs/decisions/adr-0006-plugin-system.md).
 
 Any language that can serve JSON over HTTP works. The reference plugin,
 [Country of the Week](https://github.com/noahhhx/mimos/tree/main/plugins/country-week),
@@ -28,8 +30,8 @@ Two endpoints:
 ## What data your plugin receives
 
 Mimos calls your plugin only for users who turned it on in the app's
-Plugins page ([ADR-0013](../decisions/adr-0013-per-user-plugin-opt-in.md));
-every plugin starts off for every user. For those users, the context is
+Plugins page (see [Plugins](../guide/plugins.md)); every plugin starts off
+for every user. For those users, the context is
 the entire data surface in v1:
 
 - `weekStartDate` — the Monday of the week being planned.
@@ -56,7 +58,10 @@ kind, and its cards are always attributed with your manifest name.
 
 ## How an instance enables your plugin
 
-The owner registers it in configuration (compose env or Spring config):
+The owner runs your plugin next to Mimos and registers it with
+environment variables on the API (see
+[Adding a plugin](../self-hosting.md#adding-a-plugin)), or the equivalent
+Spring configuration:
 
 ```yaml
 mimos:
@@ -67,6 +72,9 @@ mimos:
       timeout: 2s
 ```
 
+With a shared secret set, Mimos sends it as a bearer token on every call,
+so your plugin can refuse anyone else.
+
 Registering makes the plugin available; each user then turns it on in
 the Plugins page, which lists it by its manifest name and links to its
 `homepageUrl` (an absolute http(s) URL; anything else is dropped).
@@ -75,8 +83,9 @@ plugin (a duplicate id, an id that does not match the manifest) fails
 startup loudly; an unreachable or slow plugin only logs and contributes
 nothing — it can never take the instance down.
 
-## Not yet available (designed in ADR-0006, built when a plugin needs it)
+## Not yet available
 
-Calling back into Mimos (service accounts), iframe UI slots, persisted
-or dismissible cards, a plugin directory. If your
+These are designed but not built until a plugin needs them: calling back
+into Mimos (service accounts), iframe UI slots, persisted or dismissible
+cards, and a plugin directory. If your
 plugin needs one of these, open an issue — that is the signal to build it.

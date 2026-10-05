@@ -102,8 +102,9 @@ restyles Keycloak's `keycloak.v2` templates with CSS only, light only.
 
 ## Documentation site
 
-This site wears Evening Kitchen too: `docs/assets/stylesheets/mimos.css`
-over Material for MkDocs' stock templates (`extra_css` in `mkdocs.yml`).
+The docs site (the user guide; this page is repo-only) wears Evening
+Kitchen too: `docs/assets/stylesheets/mimos.css` over Material for MkDocs'
+stock templates (`extra_css` in `mkdocs.yml`).
 
 - **Tokens mirror `globals.css`**, light and dark, mapped onto Material's
   `--md-*` variables. Change them with the app's. Two docs-only tokens,
@@ -123,6 +124,8 @@ over Material for MkDocs' stock templates (`extra_css` in `mkdocs.yml`).
 - **Components:** admonitions are notices (a `--surface` panel with a 3px
   left rule), `.md-button--primary` is the amber button, and
   `<div class="grid cards" markdown>` gives the home page's bordered cards.
+  Content images get a 1px `--line` frame, since the app screenshots in
+  `docs/assets/screenshots/` share the page's background.
 - **CSS only**, no `custom_dir` template overrides or hooks, so the site
   builds the same under Zensical's classic variant if we move to it.
 

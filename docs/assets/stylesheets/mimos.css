@@ -459,6 +459,12 @@ body {
   color: var(--muted);
 }
 
+/* Screenshots (docs/assets/screenshots) share the page's background, so a
+   hairline frames them. */
+.md-typeset img {
+  border: 1px solid var(--line);
+}
+
 .md-content__button {
   color: var(--muted);
 }

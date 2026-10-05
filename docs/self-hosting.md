@@ -2,8 +2,7 @@
 
 Run Mimos on your own server from the published images. You need Docker
 with Compose 2.23.1 or later, and a reverse proxy that serves HTTPS. No
-checkout or build is needed;
-[ADR-0012](decisions/adr-0012-published-images.md) explains the design.
+checkout or build is needed.
 
 ## What runs
 
@@ -99,17 +98,34 @@ docker compose exec -T postgres pg_dump -U mimos mimos > mimos.sql
 docker compose exec -T postgres pg_dump -U mimos keycloak > keycloak.sql
 ```
 
-Each user can also export their own data from **Account** in the app
-([ADR-0011](decisions/adr-0011-account-export-import.md)).
+Each user can also export their own data from **Your data** in the app's
+profile menu (see [Your data](guide/your-data.md)).
 
 ## Plugins
 
 The stack registers the reference plugin, Country of the Week. A
 registered plugin is only *available*: each user turns it on in their
-Plugins page (profile menu, then **Plugins**) before it sees their week or suggests anything
-([ADR-0013](decisions/adr-0013-per-user-plugin-opt-in.md)).
+Plugins page before it sees their week or suggests anything (see
+[Plugins](guide/plugins.md)).
 
-## Without plugins
+### Adding a plugin
+
+Run the plugin as another service in `compose.yml`, then register it on
+the `api` service with the next free index:
+
+```yaml
+      MIMOS_PLUGINS_1_ID: my-plugin              # optional; must match its manifest
+      MIMOS_PLUGINS_1_URL: http://my-plugin:8080
+      MIMOS_PLUGINS_1_TIMEOUT: 2s                # optional, default 2s
+      MIMOS_PLUGINS_1_SHAREDSECRET: ...          # optional, for plugins off this host
+```
+
+Registrations take effect on `docker compose up -d`. A misconfigured
+registration, such as two plugins with the same id, stops the API from
+starting, so you notice it straight away. A plugin that is down or slow
+never does: it logs a warning and contributes nothing until it's back.
+
+### Without plugins
 
 Delete the `country-week` service and the two `MIMOS_PLUGINS_0_*` lines
 from `compose.yml`.

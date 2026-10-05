@@ -1,7 +1,7 @@
 site_name: Mimos
 site_description: >-
-  Recipe companion — a free recipe library, personal recipes, meal planning,
-  shopping lists, and calorie/macro logging. Self-hostable by design.
+  The Mimos user guide: a free recipe library, your own recipes, meal
+  planning, shopping lists, and a food log. Use it, or host it yourself.
 repo_url: https://github.com/noahhhx/mimos
 repo_name: noahhhx/mimos
 edit_uri: edit/main/docs/
@@ -76,35 +76,25 @@ markdown_extensions:
   - pymdownx.tasklist:
       custom_checkbox: true
 
+# The site is the user guide: using Mimos, self-hosting it, and writing
+# plugins. Contributor docs (design, agent harness, ADRs) stay in docs/ for
+# the repo but are not published; link to them on GitHub from site pages.
+exclude_docs: |
+  /design/
+  /harness/
+  /decisions/
+  /requirements.txt
+
 nav:
   - Home: index.md
+  - Using Mimos:
+      - guide/index.md
+      - Recipes: guide/recipes.md
+      - Planning a week: guide/planning.md
+      - Shopping list: guide/shopping-list.md
+      - Food log: guide/log.md
+      - Plugins: guide/plugins.md
+      - Your data: guide/your-data.md
   - Self-hosting: self-hosting.md
-  - Plugins:
+  - Writing a plugin:
       - plugins/index.md
-  - Design:
-      - design/index.md
-  - Agent harness:
-      - harness/index.md
-      - Using the harness: harness/usage.md
-      - '1. Stack control and API driving': harness/step-1-stack-and-api.md
-      - '2. Browser driving': harness/step-2-browser.md
-      - '3. Logs and request correlation': harness/step-3-logs.md
-      - '4. Diagnostics': harness/step-4-diagnostics.md
-      - '5. Debugger': harness/step-5-debugger.md
-      - '6. Agent skill, docs, and CI': harness/step-6-skill-docs-ci.md
-      - '7. First use: the recipe 415': harness/step-7-recipe-415.md
-  - Decisions:
-      - decisions/index.md
-      - 'ADR-0001: Backend module layout': decisions/adr-0001-backend-module-layout.md
-      - 'ADR-0002: Formatting and null-safety toolchain': decisions/adr-0002-formatting-null-safety-toolchain.md
-      - 'ADR-0003: OpenAPI contract pipeline': decisions/adr-0003-openapi-contract-pipeline.md
-      - 'ADR-0004: Frontend auth in the browser': decisions/adr-0004-frontend-auth-in-the-browser.md
-      - 'ADR-0005: Core product domain': decisions/adr-0005-core-product-domain.md
-      - 'ADR-0006: Plugin system': decisions/adr-0006-plugin-system.md
-      - 'ADR-0007: Unmeasured ingredients': decisions/adr-0007-unmeasured-ingredients.md
-      - 'ADR-0008: Visual direction': decisions/adr-0008-visual-direction.md
-      - 'ADR-0009: Tell plugins which day it is (proposed)': decisions/adr-0009-plugin-context-today.md
-      - 'ADR-0010: Keycloak login theme': decisions/adr-0010-keycloak-login-theme.md
-      - 'ADR-0011: Account export and import': decisions/adr-0011-account-export-import.md
-      - 'ADR-0012: Published images and runtime web config': decisions/adr-0012-published-images.md
-      - 'ADR-0013: Plugins are opt-in per user': decisions/adr-0013-per-user-plugin-opt-in.md
