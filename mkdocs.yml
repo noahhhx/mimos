@@ -2,6 +2,7 @@ site_name: Mimos
 site_description: >-
   The Mimos user guide: a free recipe library, your own recipes, meal
   planning, shopping lists, and a food log. Use it, or host it yourself.
+site_url: https://noahhhx.github.io/mimos/
 repo_url: https://github.com/noahhhx/mimos
 repo_name: noahhhx/mimos
 edit_uri: edit/main/docs/

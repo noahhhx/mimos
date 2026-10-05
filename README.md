@@ -15,6 +15,9 @@ a plugin system proven by the Country of the Week reference plugin (plan
 suggestions). See [ROADMAP.md](ROADMAP.md) (phases 0–3 done) and
 [NORTHSTAR.md](NORTHSTAR.md) for the product vision.
 
+The user guide (using Mimos, self-hosting it, writing plugins) is at
+<https://noahhhx.github.io/mimos/>.
+
 ## Quickstart (self-hosted)
 
 Requires Docker.

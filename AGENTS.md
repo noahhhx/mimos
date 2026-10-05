@@ -41,7 +41,7 @@ change** — an out-of-date AGENTS.md is worse than none.
 | API style  | HTTP JSON APIs, contract-first: the OpenAPI spec in `contracts/api/openapi.yaml` is the source of truth; server stubs generate at build time and the TypeScript client in `libraries/api-client` is committed. See ADR-0003. |
 | Config     | 12-factor: environment variables + Spring profiles. `local` profile is the default and must always work. |
 | Runtime    | Docker. Every deployable (API, web, plugins) ships a Dockerfile that is built in CI; no bare-metal assumptions in app code. |
-| Docs       | MkDocs with Material; `mkdocs.yml` at repo root, source in `docs/`. The published site is the user guide only (using the app, self-hosting, writing plugins); contributor docs (`docs/design/`, `docs/harness/`, `docs/decisions/`) stay in the repo and are kept off the site by `exclude_docs`. ADRs live in `docs/decisions/`. Styled as Evening Kitchen by `docs/assets/stylesheets/mimos.css` only: no template overrides or hooks (see "Documentation site" in `docs/design/index.md`). |
+| Docs       | MkDocs with Material; `mkdocs.yml` at repo root, source in `docs/`. The published site is the user guide only (using the app, self-hosting, writing plugins); contributor docs (`docs/design/`, `docs/harness/`, `docs/decisions/`) stay in the repo and are kept off the site by `exclude_docs`. ADRs live in `docs/decisions/`. CI publishes the site from `main` to GitHub Pages (`https://noahhhx.github.io/mimos/`, the `site_url`), and the web home page links to it. Styled as Evening Kitchen by `docs/assets/stylesheets/mimos.css` only: no template overrides or hooks (see "Documentation site" in `docs/design/index.md`). |
 | Deploy     | Build-from-source and CI parity via `deploy/docker` (compose); servers run the published images via `deploy/selfhost` (compose, production-mode Keycloak, operator's TLS proxy); AWS via IaC in `deploy/aws`. No click-ops. |
 | Images     | CI publishes `ghcr.io/noahhhx/mimos-{api,web,keycloak,country-week}` (amd64) after every other job passes: `main` + `sha-*` from main, semver + `latest` from `v*` tags. Images carry no deployment-specific config. See ADR-0012. |
 | Sync       | intervals.icu is the activity data source (future). Design for it, don't build it yet. |
@@ -452,9 +452,11 @@ writes evidence to `.harness/runs/<run>/` (gitignored), and
   different project name (`-p`) from the dev stack.
 - CI (`.github/workflows/ci.yml`) runs all of the above on every PR; the
   compose job is the self-host parity check. On a push to main or a `v*`
-  tag, the `publish` job then pushes the images (ADR-0012). Its last steps run every
-  harness scenario through devenv against the booted stack and upload
-  `.harness/runs/` as the `harness-runs` artifact when one fails.
+  tag, the `publish` job then pushes the images (ADR-0012). The compose
+  job's last steps run every harness scenario through devenv against the
+  booted stack and upload `.harness/runs/` as the `harness-runs` artifact
+  when one fails. On a push to main, the `pages` job publishes the docs
+  site to GitHub Pages once `docs` passes.
 
 ## Decision log
 

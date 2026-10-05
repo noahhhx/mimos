@@ -48,6 +48,31 @@ jobs:
       - name: Build docs
         run: mkdocs build --strict
 
+      - name: Upload the site for GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  # The user guide at https://noahhhx.github.io/mimos/, published from main
+  # once it builds strictly. Needs the repo's Pages source set to "GitHub
+  # Actions" (Settings > Pages).
+  pages:
+    name: Publish docs
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [docs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
   clients:
     name: Generated clients and plugins (TypeScript)
     runs-on: ubuntu-latest
