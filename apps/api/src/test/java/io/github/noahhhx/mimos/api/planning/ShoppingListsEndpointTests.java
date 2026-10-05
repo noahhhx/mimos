@@ -123,6 +123,39 @@ class ShoppingListsEndpointTests extends ApiIntegrationTestSupport {
     }
 
     @Test
+    void countedIngredientsRoundUpToWholeItems() {
+        RestClient api = api();
+        String token = accessToken();
+        LocalDate monday = LocalDate.of(2026, 5, 4); // a Monday
+
+        // An 8-serving soup with 1 onion and 2 cups stock, planned twice at 1 serving.
+        JsonNode soup = createRecipe(
+                api,
+                token,
+                "Counted Soup",
+                8,
+                objectMapper
+                        .createArrayNode()
+                        .add(objectMapper.createObjectNode().put("quantity", 1).put("name", "onion"))
+                        .add(objectMapper
+                                .createObjectNode()
+                                .put("quantity", 2)
+                                .put("unit", "cups")
+                                .put("name", "stock")));
+        plan(api, token, monday, monday, "LUNCH", soup.get("id").asText(), 1);
+        plan(api, token, monday, monday.plusDays(1), "LUNCH", soup.get("id").asText(), 1);
+
+        JsonNode list = generate(api, token, monday);
+
+        // 1/8 + 1/8 = 0.25 onion: totaled first, then one whole onion (not 0.25, and not 2).
+        JsonNode onion = requireNonNull(findItem(list, "onion"), "onion must be on the list");
+        assertThat(onion.get("quantity").asDouble()).isEqualTo(1);
+        // Measured amounts are not rounded: 2/8 + 2/8 cups.
+        JsonNode stock = requireNonNull(findItem(list, "stock"), "stock must be on the list");
+        assertThat(stock.get("quantity").asDouble()).isEqualTo(0.5);
+    }
+
+    @Test
     void checkedStateSurvivesRegeneration() {
         RestClient api = api();
         String token = accessToken();

@@ -279,7 +279,7 @@ export type ShoppingListItem = {
     name: string;
     unit?: string;
     /**
-     * Total measured amount across the week's recipes; omitted when every recipe leaves the ingredient unmeasured (ADR-0007).
+     * Total measured amount across the week's recipes, rounded up to whole items for a line without a unit; omitted when every recipe leaves the ingredient unmeasured (ADR-0007).
      */
     quantity?: number;
     /**

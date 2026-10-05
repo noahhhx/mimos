@@ -23,7 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Shopping list generation: aggregates ingredient quantities across the
  * week's planned recipes, scaled by planned servings, keyed by normalized
- * ingredient name + unit. Regeneration replaces the list but preserves
+ * ingredient name + unit. A counted line (no unit: "1 onion") rounds up to
+ * whole items once totaled, since nobody buys 0.13 of an onion; measured
+ * lines keep their amount. Regeneration replaces the list but preserves
  * checked-off state for lines that survive (same name and unit) — ticking
  * things off in the store then replanning shouldn't lose your progress.
  */
@@ -93,7 +95,7 @@ public class ShoppingListService {
                     return new ShoppingListRepository.ItemRow(
                             name,
                             unit,
-                            total == null ? null : round(total),
+                            total == null ? null : unit == null ? wholeItems(total) : round(total),
                             Aisles.categorize(name),
                             previouslyChecked.getOrDefault(key, false));
                 })
@@ -195,5 +197,10 @@ public class ShoppingListService {
 
     private static double round(double value) {
         return Math.round(value * 100.0) / 100.0;
+    }
+
+    /** Rounded first, so floating-point noise (1.0000001 eggs) does not buy an extra one. */
+    private static double wholeItems(double value) {
+        return Math.ceil(round(value));
     }
 }

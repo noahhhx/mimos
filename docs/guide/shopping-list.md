@@ -3,7 +3,9 @@
 Open **Shopping** to see the list for a week. Mimos builds it from that
 week's [plan](planning.md): every ingredient of every planned meal, scaled
 to the servings you planned, with the same ingredient added up across
-recipes.
+recipes. Things you buy by the piece, like onions or lemons, are rounded
+up to whole ones: half a recipe that needs one onion still puts one onion
+on the list.
 
 ![The week's shopping list, grouped by aisle](../assets/screenshots/shopping-list.png)
 

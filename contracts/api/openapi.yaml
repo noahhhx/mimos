@@ -977,7 +977,7 @@ components:
           type: string
         quantity:
           type: number
-          description: Total measured amount across the week's recipes; omitted when every recipe leaves the ingredient unmeasured (ADR-0007).
+          description: Total measured amount across the week's recipes, rounded up to whole items for a line without a unit; omitted when every recipe leaves the ingredient unmeasured (ADR-0007).
         category:
           type: string
           description: Aisle grouping (Produce, Meat & Seafood, Dairy & Eggs, ...).
