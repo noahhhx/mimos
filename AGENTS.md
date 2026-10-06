@@ -46,11 +46,11 @@ change** — an out-of-date AGENTS.md is worse than none.
 | Images     | CI publishes `ghcr.io/noahhhx/mimos-{api,web,keycloak,country-week}` (amd64) after every other job passes: `main` + `sha-*` from main, semver + `latest` from `v*` tags. Images carry no deployment-specific config. See ADR-0012. |
 | Sync       | intervals.icu is the activity data source (future). Design for it, don't build it yet. |
 | Library content | Seed file `core/core-recipes/src/main/resources/library/library-seed.json`, loaded by an idempotent startup seeder (`mimos.library.seed-enabled`, default on). Content fixes ship with a restart; never via Flyway migrations. See ADR-0005. |
-| Ingredient catalog | One shared catalog seeded read-only from `core/core-recipes/src/main/resources/library/ingredient-seed.json` (always on, by slug, never deleted), plus each user's own ingredients, private to them and editable (`/api/v1/ingredients`, ADR-0016). Recipe lines link to either by `catalogSlug` and carry prep in an optional `note`; the form's ingredient name is a search over both and the user's own recipes. A line may instead link one of its owner's own recipes (`recipeId`, never both, never itself or a cycle), counted in `servings` of it (ADR-0018). A recipe's `nutritionSource` is `MANUAL` (typed) or `INGREDIENTS` (calculated when read, so catalog fixes and edits to a linked recipe reach every recipe that uses them). Metric units only: `g`, `kg`, `ml`, `l`, `tsp` (5 ml), `tbsp` (15 ml), or none for pieces, plus `servings` for a recipe link. Library recipes are calculated and link no recipes. See ADR-0015, ADR-0016, ADR-0018. |
-| Households | Every user belongs to exactly one household; a user on their own is a household of one. The household owns recipes, personal ingredients, plans, shopping lists, and plugin opt-ins and pseudonyms; meal logs stay per person. Plan entries name their diners. Membership is Mimos domain data, not Keycloak groups. Being delivered in four steps (ROADMAP step 17). See ADR-0019. |
+| Ingredient catalog | One shared catalog seeded read-only from `core/core-recipes/src/main/resources/library/ingredient-seed.json` (always on, by slug, never deleted), plus each household's own ingredients, private to it and editable (`/api/v1/ingredients`, ADR-0016, ADR-0019). Recipe lines link to either by `catalogSlug` and carry prep in an optional `note`; the form's ingredient name is a search over both and the user's own recipes. A line may instead link one of its owner's own recipes (`recipeId`, never both, never itself or a cycle), counted in `servings` of it (ADR-0018). A recipe's `nutritionSource` is `MANUAL` (typed) or `INGREDIENTS` (calculated when read, so catalog fixes and edits to a linked recipe reach every recipe that uses them). Metric units only: `g`, `kg`, `ml`, `l`, `tsp` (5 ml), `tbsp` (15 ml), or none for pieces, plus `servings` for a recipe link. Library recipes are calculated and link no recipes. See ADR-0015, ADR-0016, ADR-0018. |
+| Households | Every user belongs to exactly one household; a user on their own is a household of one. The household owns recipes, personal ingredients, plans, shopping lists, and plugin opt-ins and pseudonyms; meal logs stay per person. Plan entries name their diners. Membership is Mimos domain data, not Keycloak groups. Being delivered in four steps (ROADMAP step 17); step 1 is in: every profile has a household (`household`, `user_profile.household_id`; a new user gets a household of one with their profile), household-owned tables carry `household_id`, recipes record `created_by_profile_id`, and every plan entry has diners (`meal_plan_entry_diner`; the API adds the caller as the only one). Invites, joining and leaving, diners in the API, and export version 4 are not built yet. See ADR-0019. |
 | Public API | Unauthenticated read-only access to the curated library under `/api/v1/public/**` (SEO pages). Personal recipes never appear there; everything else requires a bearer token. |
 | Account data | Per-user export/import as one versioned JSON document (`GET /api/v1/account/export`, `POST /api/v1/account/import`): domain-shaped, never a table dump; library recipes by slug; recipe links by the linked recipe's id within the document, restored linked-first; import only into an empty account, atomically, through domain validation. Current format: version 3. Format changes bump the version, add an `ExportUpgrader` step and a frozen `export/v<N>.json` test fixture. See ADR-0011, ADR-0018. |
-| Plugins    | HTTP sidecar plugins, pull-only in v1: config registry (`mimos.plugins.*`), manifest at `GET /manifest`, two capabilities (`plan-suggestions` cards, `week-panel` declarative panels with buttons), library-only context, users named by a per-plugin pseudonym (`subject`) the plugin may keep its own data against. See ADR-0006, ADR-0017. Registered means available; each user opts in from the Plugins page (`/app/plugins`, linked from the profile menu; API `/api/v1/me/plugins`), and every plugin starts off. See ADR-0013. |
+| Plugins    | HTTP sidecar plugins, pull-only in v1: config registry (`mimos.plugins.*`), manifest at `GET /manifest`, two capabilities (`plan-suggestions` cards, `week-panel` declarative panels with buttons), library-only context, households named by a per-plugin pseudonym (`subject`) the plugin may keep its own data against. See ADR-0006, ADR-0017. Registered means available; each household opts in from the Plugins page (`/app/plugins`, linked from the profile menu; API `/api/v1/me/plugins`), and every plugin starts off. See ADR-0013. |
 | Agent access | MCP server inside `mimos-api` at `/mcp` (Spring AI 2.0.x MCP server starter, stateless Streamable HTTP; Spring AI's model layer excluded). Tools are derived from `contracts/api/openapi.yaml` at startup: every `/api/v1` operation is a tool unless it declares `x-mcp: false`, and a call loops back through the HTTP API with the caller's token. Agents sign in as the public Keycloak client `mimos-agent` (Authorization Code + PKCE), found through Protected Resource Metadata (RFC 9728). See ADR-0014. |
 | Agent harness | `tools/harness` (`@mimos/harness`, TypeScript on Node type stripping) behind a devenv `harness` script; all agent tooling from devenv/nixpkgs; Playwright pinned to nixpkgs' `playwright-driver`; `.mcp.json` committed; debug-only behavior in `deploy/docker/compose.debug.yml`; scenarios run in CI via devenv. Plan and decisions in `docs/harness/`. |
 
@@ -78,6 +78,10 @@ wire-format contract:
 - `core-planning` — meal plans, shopping lists, logging. Depends on
   recipes (through `RecipeService`'s public interface only — never its
   tables), nothing else. Owns its tables' JDBC persistence.
+- Neither core module knows about households (ADR-0019). Recipes,
+  ingredients, plans, and shopping lists take an opaque `ownerId`, which
+  the API sets to the caller's household id; meal logs, recipe creators,
+  and plan-entry diners take profile ids.
 - `apps/api` package `account` — account export/import (ADR-0011): an
   adapter over the core modules' public services, like the controllers.
   It never touches tables, so a migration that keeps the domain's meaning
@@ -90,9 +94,9 @@ wire-format contract:
   endpoint is added; the spec is its only input.
 - `integrations/plugins` — the plugin runtime: registry, outbound
   extension-API client, suggestion-card and week-panel validation
-  (ADR-0006, ADR-0017), and the tables it owns: per-user opt-ins
-  (`plugin_opt_in`, ADR-0013) and per-user, per-plugin pseudonyms
-  (`plugin_subject`, ADR-0017).
+  (ADR-0006, ADR-0017), and the tables it owns: per-household opt-ins
+  (`plugin_opt_in`, ADR-0013) and per-household, per-plugin pseudonyms
+  (`plugin_subject`, ADR-0017), keyed by `household_id` (ADR-0019).
   Depends on the core modules' public interfaces only; external API types
   never cross this boundary. Optional at runtime — no plugins registered,
   no behavior.
@@ -117,10 +121,10 @@ is the contract:
   config (`mimos.plugins.*`): registered means available, changes take
   effect on restart. Static misconfiguration fails startup; an unreachable
   plugin never does.
-- Plugins are opt-in per user (ADR-0013): every plugin starts off, a user
-  turns it on in the Plugins page (`/app/plugins`, linked from the
-  profile menu), and `SuggestionService` never calls a plugin with the
-  context of a user who has not. Opt-ins are consent for this instance's
+- Plugins are opt-in per household (ADR-0013, ADR-0019): every plugin
+  starts off, a member turns it on in the Plugins page (`/app/plugins`,
+  linked from the profile menu), and `SuggestionService` never calls a
+  plugin with the context of a household that has not. Opt-ins are consent for this instance's
   plugins, so the account export leaves them out. A manifest's
   `homepageUrl` becomes a link there, so only http(s) URLs survive
   parsing.
@@ -132,9 +136,9 @@ is the contract:
   path.
 - Plugins see curated library recipes only. Personal recipes, profiles,
   identities, and logs never cross the plugin boundary. Each request
-  names the user by `subject`, a random UUID per user and plugin
-  (ADR-0017), so a plugin can keep its own data about a user without
-  learning who they are. That data lives in the plugin's storage; the
+  names the household by `subject`, a random UUID per household and
+  plugin (ADR-0017, ADR-0019), so a plugin can keep its own data about a
+  household without learning who is in it. That data lives in the plugin's storage; the
   account export does not include it.
 - UI is declarative: suggestion cards (title/blurb/icon/entries) and week
   panels (a collapsed summary, then `text`, `highlight`, `wheel`, and
