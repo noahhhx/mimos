@@ -13,7 +13,7 @@ type Load<T> = { state: "loading" } | { state: "error" } | { state: "ok"; data: 
 
 /**
  * Plugins (ADR-0013): what they are, then the instance's plugins, each off
- * until the user turns it on here.
+ * until someone in the household turns it on here (ADR-0019).
  */
 export default function PluginsPage() {
   const { user, signIn } = useAuth();
@@ -82,6 +82,10 @@ export default function PluginsPage() {
         <p>
           Every plugin starts off. Turning one on lets it remember things about you, under a pseudonym rather than your
           name or account. Turn on the ones you want below, and turn them off again at any time.
+        </p>
+        <p>
+          If you share a household, a plugin is on or off for everyone in it, whoever turned it on, and it knows the
+          household by one pseudonym.
         </p>
       </section>
 

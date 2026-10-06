@@ -27,17 +27,17 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 export const getMe = <ThrowOnError extends boolean = false>(options?: Options<GetMeData, ThrowOnError>): RequestResult<GetMeResponses, GetMeErrors, ThrowOnError> => (options?.client ?? client).get<GetMeResponses, GetMeErrors, ThrowOnError>({ url: '/api/v1/me', ...options });
 
 /**
- * The instance's plugins and whether the caller turned each on
+ * The instance's plugins and whether the caller's household turned each on
  *
- * Plugins are opt-in per user (ADR-0013): a plugin receives a user's plan context, and contributes suggestions to it, only after that user turns it on. Lists the instance's available plugins in registration order; a plugin that is unreachable is left out until it answers again.
+ * Plugins are opt-in per household (ADR-0013, ADR-0019): a plugin receives a household's plan context, and contributes suggestions to it, only after a member turns it on, which turns it on for everyone in the household. Lists the instance's available plugins in registration order; a plugin that is unreachable is left out until it answers again.
  *
  */
 export const listMyPlugins = <ThrowOnError extends boolean = false>(options?: Options<ListMyPluginsData, ThrowOnError>): RequestResult<ListMyPluginsResponses, ListMyPluginsErrors, ThrowOnError> => (options?.client ?? client).get<ListMyPluginsResponses, ListMyPluginsErrors, ThrowOnError>({ url: '/api/v1/me/plugins', ...options });
 
 /**
- * Turn a plugin on or off for the caller
+ * Turn a plugin on or off for the caller's household
  *
- * Turning a plugin on needs it to be available on the instance (404 otherwise). Turning one off always succeeds, so a choice can be withdrawn even while the plugin is unreachable or after it was removed from the instance.
+ * The choice applies to everyone in the caller's household. Turning a plugin on needs it to be available on the instance (404 otherwise). Turning one off always succeeds, so a choice can be withdrawn even while the plugin is unreachable or after it was removed from the instance.
  *
  */
 export const updateMyPlugin = <ThrowOnError extends boolean = false>(options: Options<UpdateMyPluginData, ThrowOnError>): RequestResult<UpdateMyPluginResponses, UpdateMyPluginErrors, ThrowOnError> => (options.client ?? client).put<UpdateMyPluginResponses, UpdateMyPluginErrors, ThrowOnError>({

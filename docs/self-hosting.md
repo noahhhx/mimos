@@ -100,7 +100,7 @@ docker compose exec -T postgres pg_dump -U mimos mimos > mimos.sql
 docker compose exec -T postgres pg_dump -U mimos keycloak > keycloak.sql
 ```
 
-Country of the Week keeps each user's wheel (chosen and removed
+Country of the Week keeps each household's wheel (chosen and removed
 countries) in an SQLite file on the `country-week-data` volume. Copy it
 out while the plugin runs:
 
@@ -114,9 +114,9 @@ profile menu (see [Your data](guide/your-data.md)).
 ## Plugins
 
 The stack registers the reference plugin, Country of the Week. A
-registered plugin is only *available*: each user turns it on in their
-Plugins page before it sees their week or suggests anything (see
-[Plugins](guide/plugins.md)).
+registered plugin is only *available*: someone in each household turns it
+on in the Plugins page, for everyone in the household, before it sees
+their week or suggests anything (see [Plugins](guide/plugins.md)).
 
 ### Adding a plugin
 

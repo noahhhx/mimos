@@ -98,7 +98,7 @@ export type SuggestedEntry = {
 };
 
 /**
- * The user, as a pseudonym: stable for one user and one plugin, different for every plugin, unrelated to any identity Mimos or its identity provider holds. Sent with every request Mimos makes on a user's behalf (optional on plan-suggestions only for older cores).
+ * The user's household, as a pseudonym: stable for one household and one plugin, different for every plugin, unrelated to any identity Mimos or its identity provider holds. A user on their own is a household of one, so for them it identifies that user; in a shared household every member is sent the same subject. Sent with every request Mimos makes on a user's behalf (optional on plan-suggestions only for older cores).
  *
  */
 export type Subject = string;

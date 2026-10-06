@@ -16,24 +16,29 @@ Every plugin starts off. Tick a plugin to turn it on, and untick it to turn
 it off again. The change takes effect straight away. **About** links to the
 plugin's own page, where it has one.
 
+If you share a [household](household.md), a plugin is on or off for
+everyone in it. Anyone in the household can turn it on or off, and the
+change applies to all of you.
+
 If the page says no plugins are installed, your Mimos doesn't have any yet.
 
 ## What a plugin can see
 
 A plugin you turn on sees the week you're planning: which slots are filled,
 with how many servings, and which library recipes are in them. It also sees
-the library itself. It never sees your own recipes, your food log, or who
-you are, and it can't change anything in Mimos. Its suggestions only reach
+the library itself. It never sees your own recipes, anyone's food log, who
+eats each meal, or who you are, and it can't change anything in Mimos. Its suggestions only reach
 your plan when you choose **Add to plan**. See
 [Suggestions](planning.md#suggestions).
 
 A plugin can remember things about you, such as which countries you've
 already had. Mimos gives each plugin a made-up ID for you instead of your
-name or account, and a different one for every plugin. What a plugin
-remembers stays with that plugin; it isn't part of your
-[account export](your-data.md).
+name or account, and a different one for every plugin. In a shared
+household, that ID stands for the whole household, so the plugin remembers
+things about all of you together. What a plugin remembers stays with that
+plugin; it isn't part of your [account export](your-data.md).
 
-A plugin you leave off sees nothing about you.
+A plugin that is off sees nothing about you.
 
 ## Country of the Week
 
@@ -41,7 +46,8 @@ Country of the Week gives each week a country to cook from, picked by
 spinning a wheel. You use it in the week's plan; see
 [Country of the Week](planning.md#country-of-the-week) for how.
 
-The wheel holds every country in the world, and it's yours alone:
+The wheel holds every country in the world. It's yours alone, or your
+household's if you share one:
 
 - A country you choose for a week never comes up again.
 - A country you remove never comes up again.

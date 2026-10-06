@@ -27,8 +27,9 @@ info:
     only — personal recipes contribute their slot shape, never their
     identity or content. Mimos calls a plugin only for users who turned it
     on, and names each user by a `subject`: a pseudonym that is stable per
-    user and plugin, different for every plugin, and unrelated to any
-    identity Mimos holds. A plugin may keep its own data against it.
+    household and plugin, different for every plugin, and unrelated to any
+    identity Mimos holds. A user on their own is a household of one. A
+    plugin may keep its own data against it.
 paths:
   /manifest:
     get:
@@ -226,10 +227,13 @@ components:
       type: string
       format: uuid
       description: >
-        The user, as a pseudonym: stable for one user and one plugin,
-        different for every plugin, unrelated to any identity Mimos or its
-        identity provider holds. Sent with every request Mimos makes on a
-        user's behalf (optional on plan-suggestions only for older cores).
+        The user's household, as a pseudonym: stable for one household and
+        one plugin, different for every plugin, unrelated to any identity
+        Mimos or its identity provider holds. A user on their own is a
+        household of one, so for them it identifies that user; in a shared
+        household every member is sent the same subject. Sent with every
+        request Mimos makes on a user's behalf (optional on plan-suggestions
+        only for older cores).
     WeekPanelRequest:
       type: object
       required: [subject, weekStartDate]

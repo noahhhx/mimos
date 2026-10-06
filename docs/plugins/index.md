@@ -3,7 +3,8 @@
 A Mimos plugin is an HTTP sidecar service the instance owner runs next to
 `mimos-api`. Mimos calls out; the plugin never calls back, holds no
 tokens, and cannot change anything in Mimos. It may keep its own data
-about a user, under a pseudonym Mimos gives it. The wire format is specified as
+about a household, under a pseudonym Mimos gives it. A user on their own
+is a household of one. The wire format is specified as
 OpenAPI in
 [`contracts/plugins/v1/`](https://github.com/noahhhx/mimos/tree/main/contracts/plugins/v1),
 and TypeScript plugins can compile against the generated types in
@@ -38,18 +39,23 @@ A manifest, and one endpoint per capability you declare:
 
 ## What data your plugin receives
 
-Mimos calls your plugin only for users who turned it on in the app's
-Plugins page (see [Plugins](../guide/plugins.md)); every plugin starts off
-for every user. For those users, these fields are
-the entire data surface in v1:
+Mimos calls your plugin only for households that turned it on in the
+app's Plugins page (see [Plugins](../guide/plugins.md)). Every plugin
+starts off, and any member turns it on or off for the whole household.
+For those households, these fields are the entire data surface in v1:
 
-- `subject` — the user, as a pseudonym: a UUID that stays the same for
-  one user and your plugin, is different for every other plugin, and is
-  unrelated to the user's account or name. Keep whatever your plugin
-  needs to remember against it, in your own storage. Mimos never shares
-  or exports that data, and losing it only makes your plugin forget.
+- `subject` — the household, as a pseudonym: a UUID that stays the same
+  for one household and your plugin, is different for every other
+  plugin, and is unrelated to any member's account or name. A user on
+  their own is a household of one, so for them it stands for that user.
+  Members come and go: someone who joins a household is sent its
+  `subject`, and someone who leaves gets a new one, so treat it as the
+  household, never as a person. Keep whatever your plugin needs to
+  remember against it, in your own storage. Mimos never shares or exports
+  that data, and losing it only makes your plugin forget.
 - `weekStartDate` — the Monday of the week being planned.
 - `plannedSlots` — meals already in the plan: date, meal type, servings.
+  Not who in the household eats them.
   A `recipeId` appears only where the planned recipe is a curated
   **library** recipe — personal recipes contribute their shape, never
   their identity or content.
@@ -97,7 +103,7 @@ You answer with a panel:
 Mimos drops a block it doesn't know or that breaks a limit, and keeps the
 rest. A button's `id` and `value` come back through the user's browser,
 so check them before acting; the only data a forged press can reach is
-that user's own. If your plugin fails while rendering, the panel is
+that household's own. If your plugin fails while rendering, the panel is
 hidden; if it fails on a press, the user is told it did nothing.
 
 ## How an instance enables your plugin
@@ -119,8 +125,8 @@ mimos:
 With a shared secret set, Mimos sends it as a bearer token on every call,
 so your plugin can refuse anyone else.
 
-Registering makes the plugin available; each user then turns it on in
-the Plugins page, which lists it by its manifest name and links to its
+Registering makes the plugin available; each household then turns it on
+in the Plugins page, which lists it by its manifest name and links to its
 `homepageUrl` (an absolute http(s) URL; anything else is dropped).
 Changes to the registration take effect on restart. A misconfigured
 plugin (a duplicate id, an id that does not match the manifest) fails

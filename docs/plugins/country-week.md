@@ -2,7 +2,7 @@
 
 Country of the Week is the reference plugin. It ships with Mimos, and the
 Docker stacks register it. It uses both plugin capabilities and keeps its
-own data about each user, so it shows every part of the contract. Its
+own data about each household, so it shows every part of the contract. Its
 source is in
 [`plugins/country-week`](https://github.com/noahhhx/mimos/tree/main/plugins/country-week).
 
@@ -41,8 +41,8 @@ built-in type stripping (Node 22.18 or later), so there is no build step.
 | File                  | What it holds                                                          |
 | --------------------- | ---------------------------------------------------------------------- |
 | `src/server.ts`       | The HTTP server: the manifest, routing, input checks, and the random source. |
-| `src/wheel.ts`        | The wheel, as pure functions of one user's saved choices.              |
-| `src/store.ts`        | The SQLite store that keeps each user's choices and removals.          |
+| `src/wheel.ts`        | The wheel, as pure functions of one household's saved choices.         |
+| `src/store.ts`        | The SQLite store that keeps each household's choices and removals.     |
 | `src/country-week.ts` | The suggestion card for a week's chosen country.                       |
 | `src/countries.ts`    | The 197 countries, their continents, and the tags that match them.     |
 | `src/*.test.ts`       | Tests for each file above.                                             |
@@ -79,25 +79,27 @@ starts:
 the Plugins page, on the panel, and on every card. The `homepageUrl`
 becomes the Plugins page's **About** link.
 
-## Remembering each user
+## Remembering each household
 
-The wheel needs memory. The plugin must know which countries a user has
-chosen and removed. Mimos never tells a plugin who the user is. It sends
-a `subject` instead: a random UUID for this user and this plugin. Each
-plugin gets a different `subject` for the same user, and it does not
-change when the user turns the plugin off and on again. See
-[Writing a plugin](index.md) for what the `subject` is and is not.
+The wheel needs memory. The plugin must know which countries a household
+has chosen and removed. Mimos never tells a plugin who anyone is. It
+sends a `subject` instead: a random UUID for this household and this
+plugin. A user on their own is a household of one, and a family that
+shares a household shares one wheel. Each plugin gets a different
+`subject` for the same household, and it does not change when the
+plugin is turned off and on again. See [Writing a plugin](index.md) for
+what the `subject` is and is not.
 
 Country of the Week keys all its data on the `subject`. `store.ts` keeps
 two tables in SQLite:
 
-- `choices` holds one row for each week a user locked to a country. A
-  user can lock a week to one country, and a country to one week. Rows
-  keep the order the user made them in, because the continent rule needs
-  the latest choice.
-- `removed` holds the countries a user took off the wheel.
+- `choices` holds one row for each week a household locked to a country.
+  A household can lock a week to one country, and a country to one week.
+  Rows keep the order they were made in, because the continent rule
+  needs the latest choice.
+- `removed` holds the countries a household took off the wheel.
 
-The store has two operations. `ledger(subject)` reads one user's choices
+The store has two operations. `ledger(subject)` reads one household's choices
 and removals. `apply(subject, week, effect)` makes one write. Every write
 uses `ON CONFLICT DO NOTHING` or a `DELETE`, so a repeated write changes
 nothing. A country code in the database that the plugin no longer knows
@@ -323,7 +325,7 @@ PORT=18080 COUNTRY_WEEK_DB=/tmp/country-week.db npm start -w @mimos/country-week
 curl -s localhost:18080/manifest
 ```
 
-To render a week as a user would see it, send any UUID as the `subject`:
+To render a week as a household would see it, send any UUID as the `subject`:
 
 ```bash
 curl -s localhost:18080/v1/week-panel \

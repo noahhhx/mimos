@@ -27,7 +27,7 @@ export type UserProfile = {
 };
 
 /**
- * A plugin available on the instance and whether the caller turned it on (ADR-0013).
+ * A plugin available on the instance and whether the caller's household turned it on (ADR-0013, ADR-0019).
  */
 export type UserPlugin = {
     /**
@@ -43,7 +43,7 @@ export type UserPlugin = {
      */
     homepageUrl?: string;
     /**
-     * Whether the caller turned the plugin on. Plugins start off.
+     * Whether the caller's household turned the plugin on. Plugins start off.
      */
     enabled: boolean;
 };
@@ -841,7 +841,7 @@ export type ListMyPluginsError = ListMyPluginsErrors[keyof ListMyPluginsErrors];
 
 export type ListMyPluginsResponses = {
     /**
-     * The available plugins, each with the caller's choice.
+     * The available plugins, each with the household's choice.
      */
     200: Array<UserPlugin>;
 };

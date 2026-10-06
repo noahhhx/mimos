@@ -48,16 +48,17 @@ paths:
     get:
       tags: [plugin-settings]
       operationId: listMyPlugins
-      summary: The instance's plugins and whether the caller turned each on
+      summary: The instance's plugins and whether the caller's household turned each on
       description: >
-        Plugins are opt-in per user (ADR-0013): a plugin receives a user's
-        plan context, and contributes suggestions to it, only after that
-        user turns it on. Lists the instance's available plugins in
+        Plugins are opt-in per household (ADR-0013, ADR-0019): a plugin
+        receives a household's plan context, and contributes suggestions to
+        it, only after a member turns it on, which turns it on for everyone
+        in the household. Lists the instance's available plugins in
         registration order; a plugin that is unreachable is left out until
         it answers again.
       responses:
         '200':
-          description: The available plugins, each with the caller's choice.
+          description: The available plugins, each with the household's choice.
           content:
             application/json:
               schema:
@@ -78,9 +79,10 @@ paths:
     put:
       tags: [plugin-settings]
       operationId: updateMyPlugin
-      summary: Turn a plugin on or off for the caller
+      summary: Turn a plugin on or off for the caller's household
       description: >
-        Turning a plugin on needs it to be available on the instance (404
+        The choice applies to everyone in the caller's household. Turning a
+        plugin on needs it to be available on the instance (404
         otherwise). Turning one off always succeeds, so a choice can be
         withdrawn even while the plugin is unreachable or after it was
         removed from the instance.
@@ -1108,7 +1110,7 @@ components:
           description: When the profile was created.
     UserPlugin:
       type: object
-      description: A plugin available on the instance and whether the caller turned it on (ADR-0013).
+      description: A plugin available on the instance and whether the caller's household turned it on (ADR-0013, ADR-0019).
       required: [id, name, enabled]
       properties:
         id:
@@ -1122,7 +1124,7 @@ components:
           description: The plugin's documentation or project page, from its manifest.
         enabled:
           type: boolean
-          description: Whether the caller turned the plugin on. Plugins start off.
+          description: Whether the caller's household turned the plugin on. Plugins start off.
     UserPluginSetting:
       type: object
       required: [enabled]
