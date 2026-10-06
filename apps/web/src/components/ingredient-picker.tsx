@@ -43,8 +43,9 @@ export function IngredientPicker({
     matches.some((entry) => entry.name.toLowerCase() === typed.toLowerCase()) ||
     recipeMatches.some((recipe) => recipe.title.toLowerCase() === typed.toLowerCase());
   const options: Option[] = [
-    ...matches.map((entry) => ({ kind: "entry" as const, entry })),
+    // The user's own recipe is the likelier meaning: "pesto" is their pesto before the shared one.
     ...recipeMatches.map((recipe) => ({ kind: "recipe" as const, recipe })),
+    ...matches.map((entry) => ({ kind: "entry" as const, entry })),
     ...(typed !== "" && !exact ? [{ kind: "add" as const }] : []),
   ];
   const showing = open && options.length > 0;
