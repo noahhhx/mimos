@@ -7,19 +7,31 @@ import {
   createRecipe,
   estimateRecipeNutrition,
   listIngredients,
+  listMyRecipes,
   replaceRecipe,
   type CatalogIngredient,
   type IngredientLineStatus,
   type Nutrition,
   type NutritionBasis,
   type RecipeDetail,
+  type RecipeSummary,
 } from "@mimos/api-client";
 
 import { IngredientPicker } from "@/components/ingredient-picker";
 import { NewIngredient } from "@/components/new-ingredient";
 import { PerServing } from "@/components/per-serving";
 import { apiClient } from "@/lib/api";
-import { basisForUnit, describeEntry, lineHint, lineNameOf, mentions, suggestCatalogSlug } from "@/lib/catalog-match";
+import { basisForUnit } from "@/lib/catalog-match";
+import {
+  describeLink,
+  dontCount,
+  lineHint,
+  linkOf,
+  pickEntry,
+  pickRecipe,
+  retype,
+  type LineLink,
+} from "@/lib/ingredient-links";
 import {
   EMPTY_INGREDIENT,
   formValuesOf,
@@ -65,16 +77,22 @@ export function RecipeForm({
   const [errors, setErrors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [catalog, setCatalog] = useState<CatalogIngredient[]>([]);
+  const [recipes, setRecipes] = useState<RecipeSummary[]>([]);
   const [estimate, setEstimate] = useState<Estimate>();
   const [adding, setAdding] = useState<{ index: number; name: string; basis: NutritionBasis }>();
   const calculated = values.nutritionSource === "INGREDIENTS";
   const bySlug = useMemo(() => new Map(catalog.map((entry) => [entry.slug, entry])), [catalog]);
+  const byRecipeId = useMemo(() => new Map(recipes.map((recipe) => [recipe.id, recipe])), [recipes]);
   const estimateRequest = useMemo(() => (calculated ? toEstimateInput(values) : undefined), [calculated, values]);
   const estimateKey = estimateRequest ? JSON.stringify(estimateRequest.input) : undefined;
 
   useEffect(() => {
     void listIngredients({ client: apiClient }).then((result) => setCatalog(result.data ?? []));
-  }, []);
+    // A recipe never offers itself as something it can use.
+    void listMyRecipes({ client: apiClient }).then((result) =>
+      setRecipes((result.data ?? []).filter((recipe) => recipe.id !== initial?.id)),
+    );
+  }, [initial?.id]);
 
   useEffect(() => {
     if (!estimateRequest) {
@@ -177,8 +195,9 @@ export function RecipeForm({
 
       <h2>Ingredients</h2>
       <p className="muted">
-        Search for each ingredient, or add your own when it isn&apos;t there. Measure it in grams, millilitres,
-        spoons, or pieces to count it toward nutrition, and leave the amount blank for things like salt to taste.
+        Search for each ingredient or one of your recipes, or add your own ingredient when it isn&apos;t there.
+        Measure it in grams, millilitres, spoons, or pieces (a recipe in servings) to count it toward nutrition, and
+        leave the amount blank for things like salt to taste.
       </p>
       {values.ingredients.map((row, index) => (
         <div className="field-row ingredient-row" key={index}>
@@ -201,7 +220,7 @@ export function RecipeForm({
               onChange={(e) => updateIngredient(index, { unit: e.target.value })}
               aria-label={`Ingredient ${index + 1} unit`}
             >
-              {unitChoices(row.unit).map((unit) => (
+              {unitChoices(row.unit, Boolean(row.recipeId)).map((unit) => (
                 <option key={unit} value={unit}>
                   {unit === "" ? "pieces" : unit}
                 </option>
@@ -212,8 +231,10 @@ export function RecipeForm({
             label={`Ingredient ${index + 1} name`}
             name={row.name}
             catalog={catalog}
-            onType={(name) => typeIngredient(index, name)}
-            onPick={(entry) => linkIngredient(index, entry)}
+            recipes={recipes}
+            onType={(name) => replaceRow(index, retype(row, name, catalog, bySlug, byRecipeId))}
+            onPick={(entry) => replaceRow(index, pickEntry(row, entry))}
+            onPickRecipe={(recipe) => replaceRow(index, pickRecipe(row, recipe))}
             onAdd={(name) => setAdding({ index, name, basis: basisForUnit(row.unit) })}
           />
           <label>
@@ -229,14 +250,9 @@ export function RecipeForm({
           <button type="button" className="button secondary" onClick={() => removeRow("ingredient", index)}>
             Remove
           </button>
-          <MatchedTo
-            entry={row.catalogSlug ? bySlug.get(row.catalogSlug) : undefined}
-            onUnlink={() => updateIngredient(index, { catalogSlug: "" })}
-          />
+          <MatchedTo link={linkOf(row, bySlug, byRecipeId)} onUnlink={() => replaceRow(index, dontCount(row))} />
           {calculated && estimate !== "failed" && (
-            <IngredientHint
-              hint={lineHint(estimate?.statuses.get(index), row.catalogSlug ? bySlug.get(row.catalogSlug) : undefined)}
-            />
+            <IngredientHint hint={lineHint(estimate?.statuses.get(index), linkOf(row, bySlug, byRecipeId))} />
           )}
           {adding?.index === index && (
             <NewIngredient
@@ -244,7 +260,7 @@ export function RecipeForm({
               initialBasis={adding.basis}
               onCreated={(entry) => {
                 setCatalog((current) => [...current, entry].sort((a, b) => a.name.localeCompare(b.name)));
-                linkIngredient(index, entry);
+                replaceRow(index, pickEntry(row, entry));
                 setAdding(undefined);
               }}
               onCancel={() => setAdding(undefined)}
@@ -339,25 +355,11 @@ export function RecipeForm({
   );
 
   function updateIngredient(index: number, patch: Partial<IngredientRow>) {
-    set({ ingredients: values.ingredients.map((row, i) => (i === index ? { ...row, ...patch } : row)) });
+    replaceRow(index, { ...values.ingredients[index], ...patch });
   }
 
-  /**
-   * Typing keeps a line's link while the name still names its entry
-   * ("garlic clove" to "garlic cloves"); otherwise the line links to the
-   * ingredient its name names, unless its author chose not to count it.
-   */
-  function typeIngredient(index: number, name: string) {
-    const slug = values.ingredients[index].catalogSlug;
-    const linked = bySlug.get(slug ?? "");
-    const keep = slug === "" || (linked !== undefined && mentions(name, linked));
-    updateIngredient(index, keep ? { name } : { name, catalogSlug: suggestCatalogSlug(name, catalog) });
-  }
-
-  /** Links a line to an entry, keeping what was typed when it already names the entry. */
-  function linkIngredient(index: number, entry: CatalogIngredient) {
-    const typed = values.ingredients[index].name;
-    updateIngredient(index, { name: mentions(typed, entry) ? typed : lineNameOf(entry), catalogSlug: entry.slug });
+  function replaceRow(index: number, next: IngredientRow) {
+    set({ ingredients: values.ingredients.map((row, i) => (i === index ? next : row)) });
   }
 
   function removeRow(kind: "ingredient" | "step", index: number) {
@@ -370,13 +372,13 @@ export function RecipeForm({
 }
 
 /** What a linked line counts as, with a way to stop counting it. */
-function MatchedTo({ entry, onUnlink }: { entry: CatalogIngredient | undefined; onUnlink: () => void }) {
-  if (!entry) {
+function MatchedTo({ link, onUnlink }: { link: LineLink | undefined; onUnlink: () => void }) {
+  if (!link) {
     return null;
   }
   return (
     <p className="ingredient-hint muted">
-      Matched to {entry.name} ({describeEntry(entry)}).{" "}
+      {describeLink(link)}{" "}
       <button type="button" className="button secondary small" onClick={onUnlink}>
         Don&apos;t count it
       </button>

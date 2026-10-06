@@ -117,6 +117,38 @@ describe("toRecipeInput", () => {
       '[{"quantity":250,"unit":"g","name":"red lentils","note":"rinsed","catalogSlug":"red-lentils"},{"name":"salt"}]',
     );
   });
+
+  it("round-trips a line that is one of the user's recipes, in servings", () => {
+    const form = formValuesOf({
+      id: "00000000-0000-0000-0000-000000000000",
+      title: "Focaccia sandwich",
+      description: "Lunch.",
+      servings: 2,
+      isLibrary: false,
+      tags: [],
+      nutrition: { calories: 300 },
+      nutritionSource: "INGREDIENTS",
+      ingredients: [{ quantity: 2, unit: "Servings", name: "focaccia", recipeId: "11111111-1111-1111-1111-111111111111" }],
+      steps: [{ instruction: "Fill it." }],
+    });
+    assert.deepEqual(form.ingredients, [
+      { quantity: "2", unit: "servings", name: "focaccia", recipeId: "11111111-1111-1111-1111-111111111111" },
+    ]);
+    const result = toRecipeInput(form);
+    assert.ok("input" in result);
+    assert.equal(
+      JSON.stringify(result.input.ingredients),
+      '[{"quantity":2,"unit":"servings","name":"focaccia","recipeId":"11111111-1111-1111-1111-111111111111"}]',
+    );
+  });
+
+  it("never sends both links for a line", () => {
+    const result = toRecipeInput(
+      values({ ingredients: [{ quantity: "1", unit: "servings", name: "focaccia", catalogSlug: "bread", recipeId: "r-1" }] }),
+    );
+    assert.ok("input" in result);
+    assert.deepEqual(result.input.ingredients, [{ quantity: 1, unit: "servings", name: "focaccia", recipeId: "r-1" }]);
+  });
 });
 
 describe("toEstimateInput", () => {
@@ -129,14 +161,16 @@ describe("toEstimateInput", () => {
           { quantity: "250", unit: " g ", name: "red lentils", catalogSlug: "red-lentils" },
           { quantity: "-1", unit: "", name: "carrots" },
           { quantity: "", unit: "", name: "salt", catalogSlug: "" },
+          { quantity: "2", unit: "servings", name: "focaccia", recipeId: "r-1" },
         ],
       }),
     );
     assert.ok(estimate);
-    assert.deepEqual(estimate.rows, [1, 3]);
+    assert.deepEqual(estimate.rows, [1, 3, 4]);
     assert.equal(
       JSON.stringify(estimate.input),
-      '{"servings":4,"ingredients":[{"quantity":250,"unit":"g","name":"red lentils","catalogSlug":"red-lentils"},{"name":"salt"}]}',
+      '{"servings":4,"ingredients":[{"quantity":250,"unit":"g","name":"red lentils","catalogSlug":"red-lentils"},' +
+        '{"name":"salt"},{"quantity":2,"unit":"servings","name":"focaccia","recipeId":"r-1"}]}',
     );
   });
 
@@ -150,6 +184,12 @@ describe("unit choices", () => {
   it("offers the metric units and a count, and keeps an older recipe's own unit", () => {
     assert.deepEqual(unitChoices("g"), ["", "g", "kg", "ml", "l", "tsp", "tbsp"]);
     assert.deepEqual(unitChoices("cups"), ["", "g", "kg", "ml", "l", "tsp", "tbsp", "cups"]);
+  });
+
+  it("offers servings only for a row that is one of the user's recipes, or is already in servings", () => {
+    assert.deepEqual(unitChoices("", true), ["", "g", "kg", "ml", "l", "tsp", "tbsp", "servings"]);
+    assert.deepEqual(unitChoices("servings"), ["", "g", "kg", "ml", "l", "tsp", "tbsp", "servings"]);
+    assert.equal(unitChoices("g").includes("servings"), false);
   });
 
   it("reads a loosely written metric unit as that unit", () => {

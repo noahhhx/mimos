@@ -74,7 +74,11 @@ export function formatQuantity(quantity: number | null | undefined, unit: string
   }
   const rounded = Math.round(quantity * 100) / 100;
   const number = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2).replace(/0$/, "");
-  return unit ? `${number} ${unit}` : number;
+  if (!unit) {
+    return number;
+  }
+  // A line that is one of your recipes counts in servings of it (ADR-0018): "1 serving", "2 servings".
+  return `${number} ${rounded === 1 && unit.trim().toLowerCase() === "servings" ? "serving" : unit}`;
 }
 
 /** "1 serving", "2 servings", "1.5 servings". */

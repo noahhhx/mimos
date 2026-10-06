@@ -9,11 +9,20 @@ import type { NutritionEstimateInput, NutritionSource, RecipeDetail, RecipeInput
  */
 
 /**
- * `catalogSlug` is the ingredient the line counts as for calculated
- * nutrition (ADR-0015): absent until linked or decided, and "" once its
- * author chose not to count it, so it is not linked again by name.
+ * What a line counts as for calculated nutrition: `catalogSlug`, the
+ * catalog ingredient it is (ADR-0015), or `recipeId`, one of the user's
+ * own recipes, in servings (ADR-0018); never both. Both are absent until
+ * linked or decided, and `catalogSlug` is "" once its author chose not to
+ * count the line, so it is not linked again by name.
  */
-export type IngredientRow = { quantity: string; unit: string; name: string; note?: string; catalogSlug?: string };
+export type IngredientRow = {
+  quantity: string;
+  unit: string;
+  name: string;
+  note?: string;
+  catalogSlug?: string;
+  recipeId?: string;
+};
 
 export type RecipeFormValues = {
   title: string;
@@ -34,12 +43,17 @@ export type RecipeFormValues = {
 /** The units the form offers: metric only (ADR-0015), with "" for a count of pieces ("2 eggs"), shown as "pieces". */
 export const UNITS = ["", "g", "kg", "ml", "l", "tsp", "tbsp"];
 
+/** The unit a line that is one of the user's recipes counts in (ADR-0018). */
+export const SERVINGS = "servings";
+
 /**
- * The unit choices for a row: the metric units, plus the unit an older
- * recipe was written in ("cups"), so editing the recipe keeps it.
+ * The unit choices for a row: the metric units, servings for a row that
+ * is one of the user's recipes, plus the unit an older recipe was written
+ * in ("cups"), so editing the recipe keeps it.
  */
-export function unitChoices(current: string): string[] {
-  return UNITS.includes(current) ? UNITS : [...UNITS, current];
+export function unitChoices(current: string, isRecipe = false): string[] {
+  const units = isRecipe || current === SERVINGS ? [...UNITS, SERVINGS] : UNITS;
+  return units.includes(current) ? units : [...units, current];
 }
 
 export const EMPTY_INGREDIENT: IngredientRow = { quantity: "", unit: "", name: "" };
@@ -64,7 +78,7 @@ export function formValuesOf(recipe?: RecipeDetail): RecipeFormValues {
           unit: metricOrAsWritten(i.unit ?? ""),
           name: i.name,
           ...(i.note ? { note: i.note } : {}),
-          ...(i.catalogSlug ? { catalogSlug: i.catalogSlug } : {}),
+          ...linkFieldsOf(i),
         }))
       : [{ ...EMPTY_INGREDIENT }],
     steps: recipe?.steps.length ? recipe.steps.map((s) => s.instruction) : [""],
@@ -103,7 +117,7 @@ export function toRecipeInput(values: RecipeFormValues): { input: RecipeInput } 
       unit: unit === "" ? undefined : unit,
       name,
       ...(note !== "" ? { note } : {}),
-      ...(row.catalogSlug ? { catalogSlug: row.catalogSlug } : {}),
+      ...linkFieldsOf(row),
     });
   });
   if (ingredients.length === 0) {
@@ -174,16 +188,24 @@ export function toEstimateInput(values: RecipeFormValues): { input: NutritionEst
       quantity,
       unit: row.unit.trim() === "" ? undefined : row.unit.trim(),
       name,
-      ...(row.catalogSlug ? { catalogSlug: row.catalogSlug } : {}),
+      ...linkFieldsOf(row),
     });
   });
   return { input: { servings, ingredients }, rows };
 }
 
-/** "G" and " tbsp" are metric units written loosely; anything else stays as written. */
+/** A line's one link, if any: a recipe link wins, though a row never holds both. */
+function linkFieldsOf(line: Pick<IngredientRow, "catalogSlug" | "recipeId">): Pick<IngredientRow, "catalogSlug" | "recipeId"> {
+  if (line.recipeId) {
+    return { recipeId: line.recipeId };
+  }
+  return line.catalogSlug ? { catalogSlug: line.catalogSlug } : {};
+}
+
+/** "G", " tbsp", and "Servings" are units the form offers, written loosely; anything else stays as written. */
 function metricOrAsWritten(unit: string): string {
   const normalized = unit.trim().toLowerCase();
-  return UNITS.includes(normalized) ? normalized : unit;
+  return UNITS.includes(normalized) || normalized === SERVINGS ? normalized : unit;
 }
 
 function optionalNumber(value: string): number | undefined {

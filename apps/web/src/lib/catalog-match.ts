@@ -1,13 +1,12 @@
-import type { CatalogIngredient, IngredientLineStatus, NutritionBasis } from "@mimos/api-client";
+import type { CatalogIngredient, NutritionBasis } from "@mimos/api-client";
 
 /**
  * Helpers for linking recipe lines to the ingredient catalog (ADR-0015,
  * ADR-0016): searching it as the author types, keeping a link while the
- * line's name still names its entry, and describing an entry or a line
- * that does not count.
+ * line's name still names its entry, and describing an entry.
  */
 
-const UNITS_BY_BASIS: Record<NutritionBasis, string> = {
+export const UNITS_BY_BASIS: Record<NutritionBasis, string> = {
   PER_100_G: "g or kg",
   PER_100_ML: "ml, l, tsp or tbsp",
   PER_PIECE: "pieces",
@@ -19,28 +18,39 @@ const PER_BASIS: Record<NutritionBasis, string> = {
   PER_PIECE: "each",
 };
 
-/**
- * Entries with a word in their name that starts with what the author
- * typed, best first: names that start with it, then the rest.
- */
+/** Entries with a word in their name that starts with what the author typed, best first. */
 export function searchCatalog(query: string, catalog: CatalogIngredient[], limit = 8): CatalogIngredient[] {
+  return searchByName(query, catalog, (entry) => entry.name, limit);
+}
+
+/**
+ * Items with a word in their name that starts with what the author typed,
+ * best first: names that start with it, then the rest.
+ */
+export function searchByName<T>(query: string, items: T[], nameOf: (item: T) => string, limit: number): T[] {
   const text = normalize(query);
   if (text === "") {
     return [];
   }
-  const rank = (entry: CatalogIngredient) => {
-    const name = normalize(entry.name);
+  const rank = (item: T) => {
+    const name = normalize(nameOf(item));
     if (name.startsWith(text)) {
       return 0;
     }
     return startsAWord(name, text) ? 1 : -1;
   };
-  return catalog
-    .map((entry) => ({ entry, rank: rank(entry) }))
+  return items
+    .map((item) => ({ item, rank: rank(item) }))
     .filter(({ rank }) => rank >= 0)
-    .sort((a, b) => a.rank - b.rank || a.entry.name.localeCompare(b.entry.name))
+    .sort((a, b) => a.rank - b.rank || nameOf(a.item).localeCompare(nameOf(b.item)))
     .slice(0, limit)
-    .map(({ entry }) => entry);
+    .map(({ item }) => item);
+}
+
+/** Whether `phrase` appears in `text` at the start of a word, ignoring case and spacing. */
+export function containsAtWordStart(text: string, phrase: string): boolean {
+  const wanted = normalize(phrase);
+  return wanted !== "" && startsAWord(normalize(text), wanted);
 }
 
 /**
@@ -85,21 +95,6 @@ export function basisForUnit(unit: string): NutritionBasis {
     return "PER_PIECE";
   }
   return ["ml", "l", "tsp", "tbsp"].includes(normalized) ? "PER_100_ML" : "PER_100_G";
-}
-
-/** Why a linked line adds nothing, in words for the form; nothing for a line that counted or is not linked. */
-export function lineHint(status: IngredientLineStatus | undefined, entry: CatalogIngredient | undefined): string | undefined {
-  if (!entry) {
-    return undefined;
-  }
-  switch (status) {
-    case "UNMEASURED":
-      return "No amount, so it adds nothing.";
-    case "UNIT_NOT_SUPPORTED":
-      return `Not counted. ${entry.name} counts in ${UNITS_BY_BASIS[entry.basis]}.`;
-    default:
-      return undefined;
-  }
 }
 
 function phrasesOf(entry: CatalogIngredient): string[] {

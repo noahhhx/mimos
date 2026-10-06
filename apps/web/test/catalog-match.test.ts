@@ -6,7 +6,6 @@ import type { CatalogIngredient, NutritionBasis } from "@mimos/api-client";
 import {
   basisForUnit,
   describeEntry,
-  lineHint,
   lineNameOf,
   mentions,
   searchCatalog,
@@ -93,15 +92,5 @@ describe("describeEntry and basisForUnit", () => {
     assert.equal(basisForUnit(""), "PER_PIECE");
     assert.equal(basisForUnit("tbsp"), "PER_100_ML");
     assert.equal(basisForUnit("kg"), "PER_100_G");
-  });
-});
-
-describe("lineHint", () => {
-  it("names the units a linked line must use", () => {
-    assert.equal(lineHint("UNIT_NOT_SUPPORTED", CATALOG[1]), "Not counted. Olive oil counts in ml, l, tsp or tbsp.");
-    assert.equal(lineHint("UNIT_NOT_SUPPORTED", CATALOG[0]), "Not counted. Garlic clove counts in pieces.");
-    assert.equal(lineHint("UNMEASURED", CATALOG[0]), "No amount, so it adds nothing.");
-    assert.equal(lineHint("COUNTED", CATALOG[0]), undefined);
-    assert.equal(lineHint("NOT_LINKED", undefined), undefined);
   });
 });

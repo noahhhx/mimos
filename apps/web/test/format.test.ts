@@ -10,6 +10,12 @@ describe("formatQuantity", () => {
     assert.equal(formatQuantity(3, undefined), "3");
   });
 
+  it("counts servings of a recipe in words that agree with the amount", () => {
+    assert.equal(formatQuantity(2, "servings"), "2 servings");
+    assert.equal(formatQuantity(1, "servings"), "1 serving");
+    assert.equal(formatQuantity(0.5, "servings"), "0.5 servings");
+  });
+
   it("formats an unmeasured ingredient as its unit or nothing", () => {
     assert.equal(formatQuantity(undefined, "pinch"), "pinch");
     assert.equal(formatQuantity(undefined, undefined), "");

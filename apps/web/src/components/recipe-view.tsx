@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import type { RecipeDetail } from "@mimos/api-client";
@@ -14,6 +15,7 @@ import { hasNutrition } from "@/lib/format";
  * rail holds what you gather (tickable ingredients, nutrition per serving);
  * the main column holds the method, whose steps are ticked off by tapping
  * them. Ticks are local state only — the flour-on-your-hands view.
+ * An ingredient that is one of your recipes links to it (ADR-0018).
  * `children` go under the method.
  */
 export function RecipeView({ recipe, children }: { recipe: RecipeDetail; children?: React.ReactNode }) {
@@ -61,7 +63,12 @@ export function RecipeView({ recipe, children }: { recipe: RecipeDetail; childre
                   checked={doneIngredients.has(index)}
                   onChange={() => toggle(doneIngredients, index, setDoneIngredients)}
                 />{" "}
-                <Quantity quantity={ingredient.quantity} unit={ingredient.unit} /> {ingredient.name}
+                <Quantity quantity={ingredient.quantity} unit={ingredient.unit} />{" "}
+                {ingredient.recipeId ? (
+                  <Link href={`/app/recipes/${ingredient.recipeId}`}>{ingredient.name}</Link>
+                ) : (
+                  ingredient.name
+                )}
                 {ingredient.note ? `, ${ingredient.note}` : ""}
               </label>
             </li>

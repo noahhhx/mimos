@@ -138,7 +138,8 @@ export default function RecipeDetailPage() {
               )}
             </div>
           </div>
-          <RecipeView recipe={recipe} />
+          {/* Keyed so following an ingredient link to another recipe starts its ticks afresh. */}
+          <RecipeView key={recipe.id} recipe={recipe} />
         </>
       )}
     </>
