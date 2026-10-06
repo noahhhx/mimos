@@ -1,20 +1,26 @@
 package io.github.noahhhx.mimos.api.recipes;
 
 import io.github.noahhhx.mimos.api.identity.CurrentUserService;
+import io.github.noahhhx.mimos.api.identity.IdentityService;
 import io.github.noahhhx.mimos.api.identity.UserProfileRecord;
 import io.github.noahhhx.mimos.recipes.recipe.IngredientService;
 import io.github.noahhhx.mimos.recipes.recipe.Recipe;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeService;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.openapitools.api.RecipesApi;
 import org.openapitools.model.CatalogIngredient;
 import org.openapitools.model.IngredientInput;
 import org.openapitools.model.NutritionEstimate;
 import org.openapitools.model.NutritionEstimateInput;
+import org.openapitools.model.Person;
 import org.openapitools.model.RecipeDetail;
 import org.openapitools.model.RecipeInput;
 import org.openapitools.model.RecipeSummary;
@@ -22,10 +28,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Personal recipe CRUD and library browsing. Implements the
+ * The household's recipe CRUD and library browsing. Implements the
  * contract-generated {@link RecipesApi} (ADR-0003); status semantics
  * (404 invisible, 403 read-only library) come from the domain exceptions
- * mapped in {@code ApiExceptionHandler}.
+ * mapped in {@code ApiExceptionHandler}. Household recipes name who added
+ * them (ADR-0019).
  */
 @RestController
 public class RecipesController implements RecipesApi {
@@ -33,21 +40,30 @@ public class RecipesController implements RecipesApi {
     private final RecipeService recipeService;
     private final IngredientService ingredients;
     private final CurrentUserService currentUser;
+    private final IdentityService identity;
 
     public RecipesController(
-            RecipeService recipeService, IngredientService ingredients, CurrentUserService currentUser) {
+            RecipeService recipeService,
+            IngredientService ingredients,
+            CurrentUserService currentUser,
+            IdentityService identity) {
         this.recipeService = recipeService;
         this.ingredients = ingredients;
         this.currentUser = currentUser;
+        this.identity = identity;
     }
 
     @Override
     public ResponseEntity<List<RecipeSummary>> listMyRecipes(@Nullable String q) {
-        UUID householdId = currentUser.requireProfile().householdId();
-        List<RecipeSummary> recipes = recipeService.findOwned(householdId, q).stream()
-                .map(RecipeApiMapper::toSummary)
-                .toList();
-        return ResponseEntity.ok(recipes);
+        UserProfileRecord profile = currentUser.requireProfile();
+        List<Recipe> recipes = recipeService.findOwned(profile.householdId(), q);
+        Map<UUID, String> names = identity.displayNames(recipes.stream()
+                .map(Recipe::createdByProfileId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet()));
+        return ResponseEntity.ok(recipes.stream()
+                .map(recipe -> RecipeApiMapper.toSummary(recipe).createdBy(creator(recipe, names, profile.id())))
+                .toList());
     }
 
     @Override
@@ -55,23 +71,39 @@ public class RecipesController implements RecipesApi {
         UserProfileRecord profile = currentUser.requireProfile();
         Recipe created =
                 recipeService.create(profile.householdId(), profile.id(), RecipeApiMapper.toDraft(recipeInput));
-        return ResponseEntity.status(201).body(RecipeApiMapper.toDetail(created));
+        return ResponseEntity.status(201).body(detail(created, profile.id()));
     }
 
     @Override
     public ResponseEntity<RecipeDetail> getRecipe(UUID recipeId) {
-        UUID householdId = currentUser.requireProfile().householdId();
+        UserProfileRecord profile = currentUser.requireProfile();
         Recipe recipe = recipeService
-                .findVisible(recipeId, householdId)
+                .findVisible(recipeId, profile.householdId())
                 .orElseThrow(() -> new NoSuchElementException("recipe not found: " + recipeId));
-        return ResponseEntity.ok(RecipeApiMapper.toDetail(recipe));
+        return ResponseEntity.ok(detail(recipe, profile.id()));
     }
 
     @Override
     public ResponseEntity<RecipeDetail> replaceRecipe(UUID recipeId, RecipeInput recipeInput) {
-        UUID householdId = currentUser.requireProfile().householdId();
-        Recipe replaced = recipeService.replace(householdId, recipeId, RecipeApiMapper.toDraft(recipeInput));
-        return ResponseEntity.ok(RecipeApiMapper.toDetail(replaced));
+        UserProfileRecord profile = currentUser.requireProfile();
+        Recipe replaced = recipeService.replace(profile.householdId(), recipeId, RecipeApiMapper.toDraft(recipeInput));
+        return ResponseEntity.ok(detail(replaced, profile.id()));
+    }
+
+    private RecipeDetail detail(Recipe recipe, UUID callerId) {
+        UUID creatorId = recipe.createdByProfileId();
+        Map<UUID, String> names = creatorId == null ? Map.of() : identity.displayNames(Set.of(creatorId));
+        return RecipeApiMapper.toDetail(recipe).createdBy(creator(recipe, names, callerId));
+    }
+
+    /** Who added a household recipe; null for library recipes and when the creator's profile is gone. */
+    private static @Nullable Person creator(Recipe recipe, Map<UUID, String> names, UUID callerId) {
+        UUID creatorId = recipe.createdByProfileId();
+        String name = creatorId == null ? null : names.get(creatorId);
+        if (creatorId == null || name == null) {
+            return null;
+        }
+        return new Person().id(creatorId).displayName(name).you(creatorId.equals(callerId));
     }
 
     @Override

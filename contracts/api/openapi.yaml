@@ -308,10 +308,11 @@ paths:
     get:
       tags: [recipes]
       operationId: listMyRecipes
-      summary: The caller's personal recipes
+      summary: The personal recipes of the caller's household
       description: >
-        Recipes the caller wrote. Curated library recipes are listed by
-        listLibraryRecipes instead.
+        Recipes the caller or anyone in their household added (see
+        getHousehold); each names who added it in createdBy. Curated
+        library recipes are listed by listLibraryRecipes instead.
       parameters:
         - name: q
           in: query
@@ -334,7 +335,8 @@ paths:
       operationId: createRecipe
       summary: Create a personal recipe
       description: >
-        Creates a recipe owned by the caller and returns it with its id.
+        Creates a recipe owned by the caller's household, which everyone
+        in it can see and change, and returns it with its id.
         Steps are in cooking order. Prefer calculated nutrition: set
         nutritionSource to INGREDIENTS and give each ingredient line the
         catalogSlug of what it is (find slugs with listIngredients, or add
@@ -370,7 +372,7 @@ paths:
     get:
       tags: [recipes]
       operationId: getRecipe
-      summary: A recipe the caller may see (own or library)
+      summary: A recipe the caller may see (their household's or library)
       responses:
         '200':
           description: The recipe.
@@ -388,8 +390,9 @@ paths:
       summary: Replace a personal recipe
       description: >
         Replaces every field, so send the whole recipe (read it first with
-        getRecipe and change what you need). Only the recipe's owner may
-        replace it; curated library recipes are read-only. A line may not
+        getRecipe and change what you need). Anyone in the household that
+        owns the recipe may replace it; curated library recipes are
+        read-only. A line may not
         link the recipe itself, or a recipe that already uses it (directly
         or through other recipes): that is a 400.
       requestBody:
@@ -418,7 +421,7 @@ paths:
       operationId: deleteRecipe
       summary: Delete a personal recipe
       description: >
-        Deletes one of the caller's recipes. Lines of other recipes that
+        Deletes one of the household's recipes. Lines of other recipes that
         used it as an ingredient stay, no longer linked, and stop counting
         toward their nutrition.
       responses:
@@ -1232,11 +1235,11 @@ components:
           type: string
           format: uuid
           description: >
-            Id of one of your own recipes this line is (see listMyRecipes),
+            Id of one of your household's recipes this line is (see listMyRecipes),
             counted in servings of it (unit `servings`) for calculated
             nutrition, using that recipe's current per-serving nutrition;
             omitted when not linked to a recipe. A line links at most one
-            of catalogSlug and recipeId. Library recipes, other users'
+            of catalogSlug and recipeId. Library recipes, other households'
             recipes, the recipe itself, and a recipe that already uses this
             one cannot be linked. In an account export it is the `id` of
             another recipe in the same document.
@@ -1346,6 +1349,12 @@ components:
         isLibrary:
           type: boolean
           description: True for curated library recipes, false for personal ones.
+        createdBy:
+          allOf:
+            - $ref: '#/components/schemas/Person'
+          description: >
+            Who added this personal recipe; they may since have left the
+            household. Absent for library recipes.
         tags:
           type: array
           items:
@@ -1379,6 +1388,12 @@ components:
           description: Cooking time, when known.
         isLibrary:
           type: boolean
+        createdBy:
+          allOf:
+            - $ref: '#/components/schemas/Person'
+          description: >
+            Who added this personal recipe; they may since have left the
+            household. Absent for library recipes.
         tags:
           type: array
           items:

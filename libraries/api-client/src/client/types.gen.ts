@@ -171,7 +171,7 @@ export type IngredientQuantity = {
      */
     catalogSlug?: string;
     /**
-     * Id of one of your own recipes this line is (see listMyRecipes), counted in servings of it (unit `servings`) for calculated nutrition, using that recipe's current per-serving nutrition; omitted when not linked to a recipe. A line links at most one of catalogSlug and recipeId. Library recipes, other users' recipes, the recipe itself, and a recipe that already uses this one cannot be linked. In an account export it is the `id` of another recipe in the same document.
+     * Id of one of your household's recipes this line is (see listMyRecipes), counted in servings of it (unit `servings`) for calculated nutrition, using that recipe's current per-serving nutrition; omitted when not linked to a recipe. A line links at most one of catalogSlug and recipeId. Library recipes, other households' recipes, the recipe itself, and a recipe that already uses this one cannot be linked. In an account export it is the `id` of another recipe in the same document.
      *
      */
     recipeId?: string;
@@ -263,6 +263,11 @@ export type RecipeSummary = {
      * True for curated library recipes, false for personal ones.
      */
     isLibrary: boolean;
+    /**
+     * Who added this personal recipe; they may since have left the household. Absent for library recipes.
+     *
+     */
+    createdBy?: Person;
     tags: Array<string>;
     nutrition: Nutrition;
 };
@@ -288,6 +293,11 @@ export type RecipeDetail = {
      */
     cookMinutes?: number;
     isLibrary: boolean;
+    /**
+     * Who added this personal recipe; they may since have left the household. Absent for library recipes.
+     *
+     */
+    createdBy?: Person;
     tags: Array<string>;
     nutrition: Nutrition;
     nutritionSource: NutritionSource;

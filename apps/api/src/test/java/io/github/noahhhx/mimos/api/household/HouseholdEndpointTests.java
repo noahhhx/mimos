@@ -294,6 +294,38 @@ class HouseholdEndpointTests extends ApiIntegrationTestSupport {
     }
 
     @Test
+    void aHouseholdRecipeNamesWhoAddedIt() {
+        User host = new User();
+        User member = new User();
+        member.join(host);
+        UUID recipe = host.recipe("Host's Curry");
+
+        JsonNode seenByMember = member.ok(HttpMethod.GET, "/api/v1/recipes/" + recipe, null);
+        assertThat(seenByMember.get("createdBy").get("displayName").asText()).isEqualTo(host.username);
+        assertThat(seenByMember.get("createdBy").get("you").asBoolean()).isFalse();
+        JsonNode listedForHost =
+                host.ok(HttpMethod.GET, "/api/v1/recipes", null).get(0);
+        assertThat(listedForHost.get("createdBy").get("id").asText()).isEqualTo(host.profileId.toString());
+        assertThat(listedForHost.get("createdBy").get("you").asBoolean()).isTrue();
+        JsonNode library =
+                host.ok(HttpMethod.GET, "/api/v1/recipes/library", null).get(0);
+        assertThat(host.ok(
+                                HttpMethod.GET,
+                                "/api/v1/recipes/" + library.get("id").asText(),
+                                null)
+                        .hasNonNull("createdBy"))
+                .isFalse();
+
+        host.ok(HttpMethod.POST, "/api/v1/household/leave", null);
+        assertThat(member.ok(HttpMethod.GET, "/api/v1/recipes/" + recipe, null)
+                        .get("createdBy")
+                        .get("displayName")
+                        .asText())
+                .as("a recipe still names who added it after they leave")
+                .isEqualTo(host.username);
+    }
+
+    @Test
     void outsidersCannotSeeAHouseholdsRecipes() {
         User host = new User();
         User member = new User();

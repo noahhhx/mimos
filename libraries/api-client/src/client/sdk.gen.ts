@@ -127,9 +127,9 @@ export const importAccount = <ThrowOnError extends boolean = false>(options: Opt
 });
 
 /**
- * The caller's personal recipes
+ * The personal recipes of the caller's household
  *
- * Recipes the caller wrote. Curated library recipes are listed by listLibraryRecipes instead.
+ * Recipes the caller or anyone in their household added (see getHousehold); each names who added it in createdBy. Curated library recipes are listed by listLibraryRecipes instead.
  *
  */
 export const listMyRecipes = <ThrowOnError extends boolean = false>(options?: Options<ListMyRecipesData, ThrowOnError>): RequestResult<ListMyRecipesResponses, ListMyRecipesErrors, ThrowOnError> => (options?.client ?? client).get<ListMyRecipesResponses, ListMyRecipesErrors, ThrowOnError>({ url: '/api/v1/recipes', ...options });
@@ -137,7 +137,7 @@ export const listMyRecipes = <ThrowOnError extends boolean = false>(options?: Op
 /**
  * Create a personal recipe
  *
- * Creates a recipe owned by the caller and returns it with its id. Steps are in cooking order. Prefer calculated nutrition: set nutritionSource to INGREDIENTS and give each ingredient line the catalogSlug of what it is (find slugs with listIngredients, or add a missing one with createIngredient), with its amount in g, kg, ml, l, tsp, or tbsp, or no unit for a count of pieces, matching the entry's basis. A line can instead be one of the caller's own recipes (recipeId, from listMyRecipes), measured in servings of it, like 2 servings of a focaccia in a sandwich. Put prep like "minced" in the line's note, not its name. Check the result first with estimateRecipeNutrition. With MANUAL, send per-serving nutrition and leave out values you do not know rather than guessing zero.
+ * Creates a recipe owned by the caller's household, which everyone in it can see and change, and returns it with its id. Steps are in cooking order. Prefer calculated nutrition: set nutritionSource to INGREDIENTS and give each ingredient line the catalogSlug of what it is (find slugs with listIngredients, or add a missing one with createIngredient), with its amount in g, kg, ml, l, tsp, or tbsp, or no unit for a count of pieces, matching the entry's basis. A line can instead be one of the caller's own recipes (recipeId, from listMyRecipes), measured in servings of it, like 2 servings of a focaccia in a sandwich. Put prep like "minced" in the line's note, not its name. Check the result first with estimateRecipeNutrition. With MANUAL, send per-serving nutrition and leave out values you do not know rather than guessing zero.
  *
  */
 export const createRecipe = <ThrowOnError extends boolean = false>(options: Options<CreateRecipeData, ThrowOnError>): RequestResult<CreateRecipeResponses, CreateRecipeErrors, ThrowOnError> => (options.client ?? client).post<CreateRecipeResponses, CreateRecipeErrors, ThrowOnError>({
@@ -152,20 +152,20 @@ export const createRecipe = <ThrowOnError extends boolean = false>(options: Opti
 /**
  * Delete a personal recipe
  *
- * Deletes one of the caller's recipes. Lines of other recipes that used it as an ingredient stay, no longer linked, and stop counting toward their nutrition.
+ * Deletes one of the household's recipes. Lines of other recipes that used it as an ingredient stay, no longer linked, and stop counting toward their nutrition.
  *
  */
 export const deleteRecipe = <ThrowOnError extends boolean = false>(options: Options<DeleteRecipeData, ThrowOnError>): RequestResult<DeleteRecipeResponses, DeleteRecipeErrors, ThrowOnError> => (options.client ?? client).delete<DeleteRecipeResponses, DeleteRecipeErrors, ThrowOnError>({ url: '/api/v1/recipes/{recipeId}', ...options });
 
 /**
- * A recipe the caller may see (own or library)
+ * A recipe the caller may see (their household's or library)
  */
 export const getRecipe = <ThrowOnError extends boolean = false>(options: Options<GetRecipeData, ThrowOnError>): RequestResult<GetRecipeResponses, GetRecipeErrors, ThrowOnError> => (options.client ?? client).get<GetRecipeResponses, GetRecipeErrors, ThrowOnError>({ url: '/api/v1/recipes/{recipeId}', ...options });
 
 /**
  * Replace a personal recipe
  *
- * Replaces every field, so send the whole recipe (read it first with getRecipe and change what you need). Only the recipe's owner may replace it; curated library recipes are read-only. A line may not link the recipe itself, or a recipe that already uses it (directly or through other recipes): that is a 400.
+ * Replaces every field, so send the whole recipe (read it first with getRecipe and change what you need). Anyone in the household that owns the recipe may replace it; curated library recipes are read-only. A line may not link the recipe itself, or a recipe that already uses it (directly or through other recipes): that is a 400.
  *
  */
 export const replaceRecipe = <ThrowOnError extends boolean = false>(options: Options<ReplaceRecipeData, ThrowOnError>): RequestResult<ReplaceRecipeResponses, ReplaceRecipeErrors, ThrowOnError> => (options.client ?? client).put<ReplaceRecipeResponses, ReplaceRecipeErrors, ThrowOnError>({

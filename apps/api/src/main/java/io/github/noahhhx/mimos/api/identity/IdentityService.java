@@ -2,10 +2,15 @@ package io.github.noahhhx.mimos.api.identity;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,6 +60,20 @@ public class IdentityService {
             jdbc.update("delete from household where id = ?", householdId);
         }
         return Objects.requireNonNull(jdbc.queryForObject(SELECT_PROFILE, PROFILE_MAPPER, subjectId));
+    }
+
+    /** The display names of these profiles; unknown ids are omitted. */
+    public Map<UUID, String> displayNames(Collection<UUID> profileIds) {
+        if (profileIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<UUID, String> names = new HashMap<>();
+        jdbc.query(
+                "select id, display_name from user_profile where id in ("
+                        + String.join(",", Collections.nCopies(profileIds.size(), "?")) + ")",
+                (RowCallbackHandler) rs -> names.put(rs.getObject("id", UUID.class), rs.getString("display_name")),
+                profileIds.toArray());
+        return names;
     }
 
     /**
