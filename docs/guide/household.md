@@ -24,6 +24,15 @@ Everyone in a household is equal. Anyone can add, change, or delete its
 recipes, plan its meals, and tick off its shopping list. A recipe someone
 else added says **Added by** them, in the recipe list and above the recipe.
 
+## Sharing meals
+
+Each planned meal says who in the household eats it. A new dinner is for
+everyone; a new breakfast, lunch, or snack is for the person who planned
+it. Anyone can change who eats a meal. The plan shows your meals or
+everyone's, and when you log a meal you shared, you log your share of it.
+See [Planning for a household](planning.md#planning-for-a-household) and
+[Logging a planned meal](log.md#logging-a-planned-meal).
+
 ## Invite someone
 
 1. On the Household page, under **Invite someone**, choose **Create invite

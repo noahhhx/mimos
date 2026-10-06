@@ -10,7 +10,9 @@ slots: breakfast, lunch, dinner, and snack. Use **← Previous** and
 
 1. Choose **+** next to the slot you want to fill.
 2. Search your recipes and the library, or scroll the list.
-3. Choose a recipe. It goes into the slot for 2 servings.
+3. Choose a recipe. It goes into the slot for 2 servings, or, when you
+   [share a household](#planning-for-a-household), one serving for each
+   person eating it.
 
 ![Picking a recipe for Friday's dinner](../assets/screenshots/plan-picker.png)
 
@@ -23,7 +25,7 @@ Each planned meal has a row of buttons:
 | Button      | What it does                                                    |
 | ----------- | --------------------------------------------------------------- |
 | **−** / **+** | Fewer or more servings, half a serving at a time.            |
-| **Log**     | Adds the meal to your [food log](log.md) for that day.          |
+| **Log**     | Adds the meal to your [food log](log.md) for that day. Only on meals you eat. |
 | **✕**       | Takes the meal out of the plan.                                 |
 
 Servings matter: the [shopping list](shopping-list.md) and the food log
@@ -31,6 +33,38 @@ both scale each recipe to the servings you planned.
 
 To swap a meal, take it out with **✕** and add another. The Kitchen's
 **Swap meal** button brings you here for that.
+
+## Planning for a household
+
+When you [share a household](household.md), everyone in it plans the same
+week. Each meal says who eats it, so a dinner can be for everyone and a
+lunch for one person.
+
+![A shared week: dinners for both, and a lunch each](../assets/screenshots/plan-shared.png)
+
+**Who eats it.** Under each meal is a button for each person in the
+household, showing their initials. A filled button means that person eats
+the meal. Choose a button to add or remove that person. A meal always has
+someone eating it, so the last filled button can't be removed.
+
+A new meal starts with:
+
+| Meal                      | Who eats it      | Servings             |
+| ------------------------- | ---------------- | -------------------- |
+| Dinner                    | Everyone         | One for each person  |
+| Breakfast, lunch, snack   | You              | One                  |
+
+Servings are what gets cooked, for everyone eating it together, so the
+[shopping list](shopping-list.md) buys for the whole household. Changing
+who eats a meal doesn't change its servings; use **−** and **+** for that.
+
+**Mine and Everyone.** Above the week, **Mine** shows only the meals you
+eat, shared dinners included. **Everyone** shows the whole household's
+meals, so you can see what others have planned. Mimos remembers your
+choice on each device.
+
+A household of one sees none of this: no buttons under meals and no
+toggle.
 
 ## Suggestions
 

@@ -12,6 +12,13 @@ In the [plan](planning.md), choose **Log** on a meal once you've eaten it.
 Mimos works out its nutrition from the recipe and the servings you planned.
 A recipe without nutrition still logs; it just adds nothing to the totals.
 
+In a [household](household.md), you log only your own share of a meal
+you shared. When a meal has more than one person eating it, **Log** asks
+for **Your share** first. It starts at the servings divided by the number
+of people eating, to the nearest 0.1 serving: 3 servings for 2 people is
+1.5 servings each. Change it if you ate more or less, then choose **Log
+share**. **Log** appears only on meals you eat.
+
 ## Logging something else
 
 For anything you didn't plan:
