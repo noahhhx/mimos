@@ -195,7 +195,8 @@ public class AccountImporter {
                                 ingredient.getUnit(),
                                 ingredient.getName(),
                                 ingredient.getNote(),
-                                ingredient.getCatalogSlug()))
+                                ingredient.getCatalogSlug(),
+                                null))
                         .toList();
                 List<Ingredient> linkable = relinked(recipe.getTitle(), lines);
                 NutritionSource source = NutritionSource.valueOf(
@@ -352,7 +353,8 @@ public class AccountImporter {
                                     .computeIfAbsent(slug, key -> new LinkedHashSet<>())
                                     .add(recipeTitle);
                         }
-                        return new Ingredient(line.quantity(), line.unit(), line.name(), line.note(), imported);
+                        return new Ingredient(
+                                line.quantity(), line.unit(), line.name(), line.note(), imported, line.recipeId());
                     })
                     .toList();
         }

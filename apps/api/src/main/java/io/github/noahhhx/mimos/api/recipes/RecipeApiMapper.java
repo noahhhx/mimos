@@ -106,7 +106,8 @@ public final class RecipeApiMapper {
                         .unit(ingredient.unit())
                         .name(ingredient.name())
                         .note(ingredient.note())
-                        .catalogSlug(ingredient.catalogSlug()))
+                        .catalogSlug(ingredient.catalogSlug())
+                        .recipeId(ingredient.recipeId()))
                 .toList();
     }
 
@@ -117,7 +118,8 @@ public final class RecipeApiMapper {
                         ingredient.getUnit(),
                         ingredient.getName(),
                         ingredient.getNote(),
-                        ingredient.getCatalogSlug()))
+                        ingredient.getCatalogSlug(),
+                        ingredient.getRecipeId()))
                 .toList();
     }
 

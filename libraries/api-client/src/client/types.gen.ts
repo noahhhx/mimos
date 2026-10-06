@@ -106,10 +106,15 @@ export type IngredientQuantity = {
      */
     note?: string;
     /**
-     * Slug of the catalog ingredient this line counts as for calculated nutrition (see listIngredients); omitted when the line is not linked.
+     * Slug of the catalog ingredient this line counts as for calculated nutrition (see listIngredients); omitted when the line is not linked to one. A line links at most one of catalogSlug and recipeId.
      *
      */
     catalogSlug?: string;
+    /**
+     * Id of one of your own recipes this line is (see listMyRecipes), counted in servings of it (unit `servings`) for calculated nutrition, using that recipe's current per-serving nutrition; omitted when not linked to a recipe. A line links at most one of catalogSlug and recipeId. Library recipes, other users' recipes, the recipe itself, and a recipe that already uses this one cannot be linked. In an account export it is the `id` of another recipe in the same document.
+     *
+     */
+    recipeId?: string;
 };
 
 /**
@@ -156,10 +161,10 @@ export type NutritionEstimateInput = {
 };
 
 /**
- * Whether an ingredient line counted toward calculated nutrition. UNMEASURED: linked but has no amount. NOT_LINKED: no catalogSlug. UNIT_NOT_SUPPORTED: linked, but its unit does not fit the catalog entry's basis.
+ * Whether an ingredient line counted toward calculated nutrition. UNMEASURED: linked but has no amount. NOT_LINKED: neither a catalogSlug nor a recipeId. UNIT_NOT_SUPPORTED: linked, but its unit does not fit the catalog entry's basis, or a recipe link is not in servings. NUTRITION_UNKNOWN: links a recipe whose per-serving calories, protein, carbs, or fat are not known (typed nutrition left blank, or nothing in it counts), so it adds nothing.
  *
  */
-export type IngredientLineStatus = 'COUNTED' | 'UNMEASURED' | 'NOT_LINKED' | 'UNIT_NOT_SUPPORTED';
+export type IngredientLineStatus = 'COUNTED' | 'UNMEASURED' | 'NOT_LINKED' | 'UNIT_NOT_SUPPORTED' | 'NUTRITION_UNKNOWN';
 
 /**
  * Calculated per-serving nutrition, unknown when no line counted.

@@ -13,7 +13,9 @@ public record NutritionEstimate(Nutrition perServing, List<LineStatus> lines) {
         /** Linked, but has no amount ("salt, to taste"). */
         UNMEASURED,
         NOT_LINKED,
-        /** Linked, but its unit is not one its catalog entry's basis counts. */
-        UNIT_NOT_SUPPORTED
+        /** Linked, but its unit is not one its link counts: its catalog entry's basis, or servings of a recipe. */
+        UNIT_NOT_SUPPORTED,
+        /** Linked to a recipe whose per-serving nutrition is not fully known (ADR-0018). */
+        NUTRITION_UNKNOWN
     }
 }

@@ -83,7 +83,7 @@ export const listMyRecipes = <ThrowOnError extends boolean = false>(options?: Op
 /**
  * Create a personal recipe
  *
- * Creates a recipe owned by the caller and returns it with its id. Steps are in cooking order. Prefer calculated nutrition: set nutritionSource to INGREDIENTS and give each ingredient line the catalogSlug of what it is (find slugs with listIngredients, or add a missing one with createIngredient), with its amount in g, kg, ml, l, tsp, or tbsp, or no unit for a count of pieces, matching the entry's basis. Put prep like "minced" in the line's note, not its name. Check the result first with estimateRecipeNutrition. With MANUAL, send per-serving nutrition and leave out values you do not know rather than guessing zero.
+ * Creates a recipe owned by the caller and returns it with its id. Steps are in cooking order. Prefer calculated nutrition: set nutritionSource to INGREDIENTS and give each ingredient line the catalogSlug of what it is (find slugs with listIngredients, or add a missing one with createIngredient), with its amount in g, kg, ml, l, tsp, or tbsp, or no unit for a count of pieces, matching the entry's basis. A line can instead be one of the caller's own recipes (recipeId, from listMyRecipes), measured in servings of it, like 2 servings of a focaccia in a sandwich. Put prep like "minced" in the line's note, not its name. Check the result first with estimateRecipeNutrition. With MANUAL, send per-serving nutrition and leave out values you do not know rather than guessing zero.
  *
  */
 export const createRecipe = <ThrowOnError extends boolean = false>(options: Options<CreateRecipeData, ThrowOnError>): RequestResult<CreateRecipeResponses, CreateRecipeErrors, ThrowOnError> => (options.client ?? client).post<CreateRecipeResponses, CreateRecipeErrors, ThrowOnError>({
@@ -97,6 +97,9 @@ export const createRecipe = <ThrowOnError extends boolean = false>(options: Opti
 
 /**
  * Delete a personal recipe
+ *
+ * Deletes one of the caller's recipes. Lines of other recipes that used it as an ingredient stay, no longer linked, and stop counting toward their nutrition.
+ *
  */
 export const deleteRecipe = <ThrowOnError extends boolean = false>(options: Options<DeleteRecipeData, ThrowOnError>): RequestResult<DeleteRecipeResponses, DeleteRecipeErrors, ThrowOnError> => (options.client ?? client).delete<DeleteRecipeResponses, DeleteRecipeErrors, ThrowOnError>({ url: '/api/v1/recipes/{recipeId}', ...options });
 
@@ -108,7 +111,7 @@ export const getRecipe = <ThrowOnError extends boolean = false>(options: Options
 /**
  * Replace a personal recipe
  *
- * Replaces every field, so send the whole recipe (read it first with getRecipe and change what you need). Only the recipe's owner may replace it; curated library recipes are read-only.
+ * Replaces every field, so send the whole recipe (read it first with getRecipe and change what you need). Only the recipe's owner may replace it; curated library recipes are read-only. A line may not link the recipe itself, or a recipe that already uses it (directly or through other recipes): that is a 400.
  *
  */
 export const replaceRecipe = <ThrowOnError extends boolean = false>(options: Options<ReplaceRecipeData, ThrowOnError>): RequestResult<ReplaceRecipeResponses, ReplaceRecipeErrors, ThrowOnError> => (options.client ?? client).put<ReplaceRecipeResponses, ReplaceRecipeErrors, ThrowOnError>({
@@ -123,7 +126,7 @@ export const replaceRecipe = <ThrowOnError extends boolean = false>(options: Opt
 /**
  * Calculate nutrition for ingredient lines without saving
  *
- * Runs the calculation a recipe with nutritionSource INGREDIENTS gets: each line counts when it has a catalogSlug, an amount, and a unit its catalog entry's basis covers (PER_100_G: g, kg; PER_100_ML: ml, l, tsp = 5 ml, tbsp = 15 ml; PER_PIECE: no unit). Returns the per-serving nutrition of the lines that counted and each line's status, in order. Nothing is saved.
+ * Runs the calculation a recipe with nutritionSource INGREDIENTS gets: each line counts when it has a catalogSlug, an amount, and a unit its catalog entry's basis covers (PER_100_G: g, kg; PER_100_ML: ml, l, tsp = 5 ml, tbsp = 15 ml; PER_PIECE: no unit), or a recipeId of one of the caller's recipes whose nutrition is known, an amount, and the unit servings. Returns the per-serving nutrition of the lines that counted and each line's status, in order. Nothing is saved.
  *
  */
 export const estimateRecipeNutrition = <ThrowOnError extends boolean = false>(options: Options<EstimateRecipeNutritionData, ThrowOnError>): RequestResult<EstimateRecipeNutritionResponses, EstimateRecipeNutritionErrors, ThrowOnError> => (options.client ?? client).post<EstimateRecipeNutritionResponses, EstimateRecipeNutritionErrors, ThrowOnError>({

@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -23,7 +25,8 @@ import org.springframework.stereotype.Repository;
  * module owns these tables (ADR-0001); nothing outside core-recipes touches
  * them. Child rows are loaded in batches to avoid per-recipe queries.
  * Calculated nutrition is worked out here, as recipes are read, so every
- * reader sees the catalog's current values (ADR-0015).
+ * reader sees the catalog's current values (ADR-0015) and the current
+ * nutrition of the recipes a recipe uses as ingredients (ADR-0018).
  */
 @Repository
 public class RecipeRepository {
@@ -131,6 +134,30 @@ public class RecipeRepository {
         return found.isEmpty() ? Optional.empty() : Optional.of(found.getFirst());
     }
 
+    /**
+     * The first of {@code recipeIds} that uses {@code target} as an
+     * ingredient, directly or through other recipes (ADR-0018).
+     */
+    public Optional<UUID> findFirstUsing(Collection<UUID> recipeIds, UUID target) {
+        if (recipeIds.isEmpty()) {
+            return Optional.empty();
+        }
+        List<UUID> found = jdbc.queryForList(
+                """
+                with recursive reachable(root, id) as (
+                    select id, id from recipe where id in (%s)
+                    union
+                    select reachable.root, line.linked_recipe_id
+                    from reachable join recipe_ingredient line on line.recipe_id = reachable.id
+                    where line.linked_recipe_id is not null
+                )
+                select root from reachable where id = ? limit 1
+                """.formatted(placeholders(recipeIds.size())),
+                UUID.class,
+                concat(List.copyOf(recipeIds), List.of(target)).toArray());
+        return found.stream().findFirst();
+    }
+
     /** Loads recipes by id, in the order requested; missing ids are omitted. */
     public Map<UUID, Recipe> findByIds(Collection<UUID> ids) {
         if (ids.isEmpty()) {
@@ -157,12 +184,14 @@ public class RecipeRepository {
                 ingredient.unit(),
                 ingredient.name(),
                 ingredient.note(),
-                ingredient.catalogSlug()
+                ingredient.catalogSlug(),
+                ingredient.recipeId()
             });
         }
         jdbc.batchUpdate(
-                "insert into recipe_ingredient (recipe_id, position, quantity, unit, name, note, catalog_slug)"
-                        + " values (?, ?, ?, ?, ?, ?, ?)",
+                "insert into recipe_ingredient"
+                        + " (recipe_id, position, quantity, unit, name, note, catalog_slug, linked_recipe_id)"
+                        + " values (?, ?, ?, ?, ?, ?, ?, ?)",
                 ingredientRows);
         List<Object[]> stepRows = new ArrayList<>();
         for (int i = 0; i < recipe.steps().size(); i++) {
@@ -189,7 +218,7 @@ public class RecipeRepository {
                         """, concat(args, List.of(pattern, pattern, pattern, pattern)));
     }
 
-    private static List<Object> concat(List<Object> first, List<Object> second) {
+    private static List<Object> concat(List<?> first, List<?> second) {
         List<Object> all = new ArrayList<>(first);
         all.addAll(second);
         return all;
@@ -197,21 +226,17 @@ public class RecipeRepository {
 
     private record Sql(String text, List<Object> args) {}
 
-    /** Runs a recipe query and hydrates children in three batch queries. */
+    /** Runs a recipe query and hydrates children in three batch queries, plus what calculated nutrition needs. */
     private List<Recipe> loadAll(String sql, List<Object> args) {
         List<RecipeRow> rows = jdbc.query(sql, RECIPE_ROW_MAPPER, args.toArray());
         if (rows.isEmpty()) {
             return List.of();
         }
-        Map<UUID, List<Ingredient>> ingredients = loadIngredients(rows);
-        Map<UUID, List<RecipeStep>> steps = loadSteps(rows);
-        Map<UUID, List<String>> tags = loadTags(rows);
-        Map<String, CatalogIngredient> linked = catalog.findBySlugs(rows.stream()
-                .filter(row -> row.nutritionSource() == NutritionSource.INGREDIENTS)
-                .flatMap(row -> ingredients.getOrDefault(row.id(), List.of()).stream())
-                .map(Ingredient::catalogSlug)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet()));
+        List<UUID> ids = rows.stream().map(RecipeRow::id).toList();
+        Map<UUID, List<Ingredient>> ingredients = loadIngredients(ids);
+        Map<UUID, List<RecipeStep>> steps = loadSteps(ids);
+        Map<UUID, List<String>> tags = loadTags(ids);
+        Map<UUID, Nutrition> nutrition = perServing(rows, ingredients);
         return rows.stream()
                 .map(row -> new Recipe(
                         row.id(),
@@ -222,11 +247,7 @@ public class RecipeRepository {
                         row.servings(),
                         row.prepMinutes(),
                         row.cookMinutes(),
-                        row.nutritionSource() == NutritionSource.INGREDIENTS
-                                ? NutritionCalculator.estimate(
-                                                ingredients.getOrDefault(row.id(), List.of()), row.servings(), linked)
-                                        .perServing()
-                                : row.nutrition(),
+                        nutrition.getOrDefault(row.id(), Nutrition.UNKNOWN),
                         row.nutritionSource(),
                         tags.getOrDefault(row.id(), List.of()),
                         ingredients.getOrDefault(row.id(), List.of()),
@@ -236,12 +257,63 @@ public class RecipeRepository {
                 .toList();
     }
 
-    private Map<UUID, List<Ingredient>> loadIngredients(List<RecipeRow> rows) {
+    /**
+     * Per-serving nutrition of the rows. The recipes that calculated ones
+     * link to are loaded a level of links at a time (rows and lines only),
+     * then the catalog entries of all of them at once.
+     */
+    private Map<UUID, Nutrition> perServing(List<RecipeRow> rows, Map<UUID, List<Ingredient>> ingredients) {
+        Map<UUID, NutritionCalculator.Node> graph = new HashMap<>();
+        List<RecipeRow> level = rows;
+        Map<UUID, List<Ingredient>> levelLines = ingredients;
+        while (!level.isEmpty()) {
+            for (RecipeRow row : level) {
+                graph.put(
+                        row.id(),
+                        new NutritionCalculator.Node(
+                                row.servings(),
+                                row.nutritionSource(),
+                                row.nutrition(),
+                                levelLines.getOrDefault(row.id(), List.of())));
+            }
+            List<UUID> linked = calculatedLines(level.stream().map(RecipeRow::id), graph)
+                    .map(Ingredient::recipeId)
+                    .filter(Objects::nonNull)
+                    .filter(id -> !graph.containsKey(id))
+                    .distinct()
+                    .toList();
+            if (linked.isEmpty()) {
+                break;
+            }
+            level = jdbc.query(
+                    SELECT_BASE + " where id in (" + placeholders(linked.size()) + ")",
+                    RECIPE_ROW_MAPPER,
+                    linked.toArray());
+            levelLines = loadIngredients(level.stream().map(RecipeRow::id).toList());
+        }
+        Map<String, CatalogIngredient> entries = catalog.findBySlugs(calculatedLines(graph.keySet().stream(), graph)
+                .map(Ingredient::catalogSlug)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet()));
+        return NutritionCalculator.perServing(graph, entries);
+    }
+
+    /** The lines of the calculated recipes among {@code ids}: the only lines nutrition reads. */
+    private static Stream<Ingredient> calculatedLines(Stream<UUID> ids, Map<UUID, NutritionCalculator.Node> graph) {
+        return ids.map(graph::get)
+                .filter(node -> node != null && node.source() == NutritionSource.INGREDIENTS)
+                .flatMap(node -> node.lines().stream());
+    }
+
+    private Map<UUID, List<Ingredient>> loadIngredients(List<UUID> ids) {
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
         return jdbc
                 .query(
-                        "select recipe_id, position, quantity, unit, name, note, catalog_slug from recipe_ingredient"
-                                + " where recipe_id in ("
-                                + placeholders(rows.size()) + ") order by recipe_id, position",
+                        "select recipe_id, position, quantity, unit, name, note, catalog_slug, linked_recipe_id"
+                                + " from recipe_ingredient where recipe_id in ("
+                                + placeholders(ids.size()) + ") order by recipe_id, position",
                         (rs, i) -> Map.entry(
                                 rs.getObject("recipe_id", UUID.class),
                                 new Ingredient(
@@ -249,8 +321,9 @@ public class RecipeRepository {
                                         rs.getString("unit"),
                                         rs.getString("name"),
                                         rs.getString("note"),
-                                        rs.getString("catalog_slug"))),
-                        rowIds(rows))
+                                        rs.getString("catalog_slug"),
+                                        rs.getObject("linked_recipe_id", UUID.class))),
+                        ids.toArray())
                 .stream()
                 .collect(
                         LinkedHashMap::new,
@@ -259,14 +332,14 @@ public class RecipeRepository {
                         Map::putAll);
     }
 
-    private Map<UUID, List<RecipeStep>> loadSteps(List<RecipeRow> rows) {
+    private Map<UUID, List<RecipeStep>> loadSteps(List<UUID> ids) {
         return jdbc
                 .query(
                         "select recipe_id, position, instruction from recipe_step where recipe_id in ("
-                                + placeholders(rows.size()) + ") order by recipe_id, position",
+                                + placeholders(ids.size()) + ") order by recipe_id, position",
                         (rs, i) -> Map.entry(
                                 rs.getObject("recipe_id", UUID.class), new RecipeStep(rs.getString("instruction"))),
-                        rowIds(rows))
+                        ids.toArray())
                 .stream()
                 .collect(
                         LinkedHashMap::new,
@@ -275,23 +348,19 @@ public class RecipeRepository {
                         Map::putAll);
     }
 
-    private Map<UUID, List<String>> loadTags(List<RecipeRow> rows) {
+    private Map<UUID, List<String>> loadTags(List<UUID> ids) {
         return jdbc
                 .query(
-                        "select recipe_id, tag from recipe_tag where recipe_id in (" + placeholders(rows.size())
+                        "select recipe_id, tag from recipe_tag where recipe_id in (" + placeholders(ids.size())
                                 + ") order by recipe_id, tag",
                         (rs, i) -> Map.entry(rs.getObject("recipe_id", UUID.class), rs.getString("tag")),
-                        rowIds(rows))
+                        ids.toArray())
                 .stream()
                 .collect(
                         LinkedHashMap::new,
                         (map, entry) -> map.computeIfAbsent(entry.getKey(), id -> new ArrayList<>())
                                 .add(entry.getValue()),
                         Map::putAll);
-    }
-
-    private static Object[] rowIds(List<RecipeRow> rows) {
-        return rows.stream().map(RecipeRow::id).toArray();
     }
 
     private static String placeholders(int count) {

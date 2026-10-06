@@ -84,7 +84,12 @@ public class RecipeService {
             throw new IllegalArgumentException("a recipe can have at most " + MAX_INGREDIENTS + " ingredients");
         }
         lines.forEach(RecipeService::validateIngredient);
-        return NutritionCalculator.estimate(lines, servings, requireCatalogEntries(viewerProfileId, lines));
+        return NutritionCalculator.estimate(
+                lines,
+                servings,
+                new NutritionCalculator.Links(
+                        requireCatalogEntries(viewerProfileId, lines),
+                        requireLinkedRecipes(viewerProfileId, null, lines)));
     }
 
     private Recipe save(
@@ -98,6 +103,7 @@ public class RecipeService {
         RecipeDraft draft = withDistinctTags(submitted);
         validate(draft);
         requireCatalogEntries(ownerProfileId, draft.ingredients());
+        requireLinkedRecipes(ownerProfileId, isNew ? null : id, draft.ingredients());
         Recipe recipe = new Recipe(
                 id,
                 ownerProfileId,
@@ -136,6 +142,42 @@ public class RecipeService {
             }
         }
         return found;
+    }
+
+    /**
+     * The per-serving nutrition of the recipes the lines link to (ADR-0018).
+     * Each must be one of the owner's own, and none may be the saved recipe
+     * {@code savedId} or use it through other recipes, which would make a
+     * cycle. Anything else is a 400 that does not say whether the recipe
+     * exists.
+     */
+    private Map<UUID, Nutrition> requireLinkedRecipes(
+            UUID ownerProfileId, @Nullable UUID savedId, List<Ingredient> lines) {
+        Set<UUID> linked = lines.stream()
+                .map(Ingredient::recipeId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (linked.isEmpty()) {
+            return Map.of();
+        }
+        if (savedId != null && linked.contains(savedId)) {
+            throw new IllegalArgumentException("a recipe can't use itself as an ingredient");
+        }
+        Map<UUID, Recipe> found = repository.findByIds(linked);
+        for (UUID id : linked) {
+            Recipe recipe = found.get(id);
+            if (recipe == null || !ownerProfileId.equals(recipe.ownerProfileId())) {
+                throw new IllegalArgumentException("you have no recipe with id " + id);
+            }
+        }
+        if (savedId != null) {
+            repository.findFirstUsing(linked, savedId).ifPresent(user -> {
+                throw new IllegalArgumentException(
+                        "\"" + Objects.requireNonNull(found.get(user)).title()
+                                + "\" uses this recipe, so this recipe can't use it");
+            });
+        }
+        return found.values().stream().collect(Collectors.toMap(Recipe::id, Recipe::nutrition));
     }
 
     /** Deletes a personal recipe; library recipes are read-only. */

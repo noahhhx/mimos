@@ -13,7 +13,7 @@
 openapi: 3.1.0
 info:
   title: Mimos API
-  version: 0.9.0
+  version: 0.10.0
   description: |
     The Mimos recipe companion API. Endpoints require a bearer token issued
     by the instance's Keycloak realm unless they live under `/api/v1/public`
@@ -199,8 +199,11 @@ paths:
         catalogSlug of what it is (find slugs with listIngredients, or add
         a missing one with createIngredient), with its amount in g, kg, ml,
         l, tsp, or tbsp, or no unit for a count of pieces, matching the
-        entry's basis. Put prep like "minced" in the line's note, not its
-        name. Check the result first with estimateRecipeNutrition. With MANUAL, send per-serving nutrition and
+        entry's basis. A line can instead be one of the caller's own
+        recipes (recipeId, from listMyRecipes), measured in servings of it,
+        like 2 servings of a focaccia in a sandwich. Put prep like "minced"
+        in the line's note, not its name. Check the result first with
+        estimateRecipeNutrition. With MANUAL, send per-serving nutrition and
         leave out values you do not know rather than guessing zero.
       requestBody:
         required: true
@@ -245,7 +248,9 @@ paths:
       description: >
         Replaces every field, so send the whole recipe (read it first with
         getRecipe and change what you need). Only the recipe's owner may
-        replace it; curated library recipes are read-only.
+        replace it; curated library recipes are read-only. A line may not
+        link the recipe itself, or a recipe that already uses it (directly
+        or through other recipes): that is a 400.
       requestBody:
         required: true
         content:
@@ -271,6 +276,10 @@ paths:
       tags: [recipes]
       operationId: deleteRecipe
       summary: Delete a personal recipe
+      description: >
+        Deletes one of the caller's recipes. Lines of other recipes that
+        used it as an ingredient stay, no longer linked, and stop counting
+        toward their nutrition.
       responses:
         '204':
           description: Deleted.
@@ -290,9 +299,11 @@ paths:
         Runs the calculation a recipe with nutritionSource INGREDIENTS gets:
         each line counts when it has a catalogSlug, an amount, and a unit
         its catalog entry's basis covers (PER_100_G: g, kg; PER_100_ML: ml,
-        l, tsp = 5 ml, tbsp = 15 ml; PER_PIECE: no unit). Returns the
-        per-serving nutrition of the lines that counted and each line's
-        status, in order. Nothing is saved.
+        l, tsp = 5 ml, tbsp = 15 ml; PER_PIECE: no unit), or a recipeId of
+        one of the caller's recipes whose nutrition is known, an amount,
+        and the unit servings. Returns the per-serving nutrition of the
+        lines that counted and each line's status, in order. Nothing is
+        saved.
       requestBody:
         required: true
         content:
@@ -1009,7 +1020,20 @@ components:
           description: >
             Slug of the catalog ingredient this line counts as for
             calculated nutrition (see listIngredients); omitted when the
-            line is not linked.
+            line is not linked to one. A line links at most one of
+            catalogSlug and recipeId.
+        recipeId:
+          type: string
+          format: uuid
+          description: >
+            Id of one of your own recipes this line is (see listMyRecipes),
+            counted in servings of it (unit `servings`) for calculated
+            nutrition, using that recipe's current per-serving nutrition;
+            omitted when not linked to a recipe. A line links at most one
+            of catalogSlug and recipeId. Library recipes, other users'
+            recipes, the recipe itself, and a recipe that already uses this
+            one cannot be linked. In an account export it is the `id` of
+            another recipe in the same document.
     NutritionSource:
       type: string
       description: >
@@ -1068,10 +1092,13 @@ components:
       type: string
       description: >
         Whether an ingredient line counted toward calculated nutrition.
-        UNMEASURED: linked but has no amount. NOT_LINKED: no catalogSlug.
-        UNIT_NOT_SUPPORTED: linked, but its unit does not fit the catalog
-        entry's basis.
-      enum: [COUNTED, UNMEASURED, NOT_LINKED, UNIT_NOT_SUPPORTED]
+        UNMEASURED: linked but has no amount. NOT_LINKED: neither a
+        catalogSlug nor a recipeId. UNIT_NOT_SUPPORTED: linked, but its unit
+        does not fit the catalog entry's basis, or a recipe link is not in
+        servings. NUTRITION_UNKNOWN: links a recipe whose per-serving
+        calories, protein, carbs, or fat are not known (typed nutrition left
+        blank, or nothing in it counts), so it adds nothing.
+      enum: [COUNTED, UNMEASURED, NOT_LINKED, UNIT_NOT_SUPPORTED, NUTRITION_UNKNOWN]
     NutritionEstimate:
       type: object
       description: Calculated per-serving nutrition, unknown when no line counted.
