@@ -219,6 +219,63 @@ class RecipesAsIngredientsTests extends ApiIntegrationTestSupport {
         assertThat(get(token, "/api/v1/recipes")).hasSize(2);
     }
 
+    @Test
+    void anExportKeepsTheLinkWhenImportedIntoAnotherAccount() {
+        String owner = accessToken(createUser());
+        String focaccia = create(owner, focaccia(8)).get("id").asText();
+        create(owner, sandwich(focaccia));
+        JsonNode export = get(owner, "/api/v1/account/export");
+        assertThat(export.get("version").asInt()).isEqualTo(3);
+        // Newest first, so the sandwich comes before the recipe it uses.
+        assertThat(export.get("recipes")
+                        .get(0)
+                        .get("ingredients")
+                        .get(0)
+                        .get("recipeId")
+                        .asText())
+                .isEqualTo(focaccia);
+
+        String other = accessToken(createUser());
+        ok(send(other, "POST", "/api/v1/account/import", export), 200);
+
+        JsonNode recipes = get(other, "/api/v1/recipes");
+        String importedFocaccia = recipes.get(1).get("id").asText();
+        JsonNode sandwich =
+                get(other, "/api/v1/recipes/" + recipes.get(0).get("id").asText());
+        assertThat(sandwich.get("ingredients").get(0).get("recipeId").asText())
+                .isEqualTo(importedFocaccia)
+                .isNotEqualTo(focaccia);
+        assertNutrition(sandwich.get("nutrition"), 300, 7.5, 52.5, 6.6);
+    }
+
+    @Test
+    void anImportRefusesALinkOutsideTheDocumentOrACycleAndWritesNothing() {
+        String owner = accessToken(createUser());
+        String focaccia = create(owner, focaccia(8)).get("id").asText();
+        create(owner, sandwich(focaccia));
+        String other = accessToken(createUser());
+
+        ObjectNode dangling = (ObjectNode) get(owner, "/api/v1/account/export");
+        String nowhere = UUID.randomUUID().toString();
+        ((ObjectNode) dangling.get("recipes").get(0).get("ingredients").get(0)).put("recipeId", nowhere);
+        Response outside = send(other, "POST", "/api/v1/account/import", dangling);
+        assertThat(outside.status()).isEqualTo(400);
+        assertThat(outside.body())
+                .contains("recipes[0].ingredients[0]: recipeId " + nowhere + " is not one of the export's recipes");
+
+        ObjectNode circular = (ObjectNode) get(owner, "/api/v1/account/export");
+        String sandwichId = circular.get("recipes").get(0).get("id").asText();
+        ObjectNode flour =
+                (ObjectNode) circular.get("recipes").get(1).get("ingredients").get(0);
+        flour.remove("catalogSlug");
+        flour.put("unit", "servings").put("recipeId", sandwichId);
+        Response cycle = send(other, "POST", "/api/v1/account/import", circular);
+        assertThat(cycle.status()).isEqualTo(400);
+        assertThat(cycle.body()).contains("recipes[0]: \\\"Focaccia sandwich\\\" uses itself as an ingredient");
+
+        assertThat(get(other, "/api/v1/recipes")).isEmpty();
+    }
+
     private ObjectNode focaccia(int servings) {
         return recipe(
                 "Focaccia",

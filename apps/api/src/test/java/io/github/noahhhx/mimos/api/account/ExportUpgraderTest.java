@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 
-/** The format gate and the upgrade chain, with made-up steps (production has none yet). */
+/** The format gate and the upgrade chain, mostly with made-up steps. */
 class ExportUpgraderTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -82,6 +82,18 @@ class ExportUpgraderTest {
         assertThatThrownBy(() -> upgrader.upgrade(document(0)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("no valid format version");
+    }
+
+    @Test
+    void version2BecomesVersion3Unchanged() {
+        ObjectNode v2 = document(2);
+        v2.putArray("recipes").addObject().put("title", "Soup").put("nutritionSource", "INGREDIENTS");
+
+        ObjectNode upgraded = ExportUpgrader.standard().upgrade(v2).document();
+
+        assertThat(upgraded.remove("version").asInt()).isEqualTo(3);
+        v2.remove("version");
+        assertThat(upgraded).isEqualTo(v2);
     }
 
     @Test

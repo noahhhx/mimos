@@ -1574,7 +1574,7 @@ components:
     AccountExport:
       type: object
       description: >
-        One user's data, in export format version 2 (ADR-0011). Any change
+        One user's data, in export format version 3 (ADR-0011). Any change
         to this schema bumps the version and adds an upgrade step from the
         previous one.
       required: [format, version, exportedAt, ingredients, recipes, mealPlans, shoppingLists, mealLogs]
@@ -1584,7 +1584,7 @@ components:
           enum: [mimos.export]
         version:
           type: integer
-          description: The format version. This instance exports version 2.
+          description: The format version. This instance exports version 3.
         exportedAt:
           type: string
           format: date-time
@@ -1625,7 +1625,10 @@ components:
             - $ref: '#/components/schemas/Nutrition'
     ExportedRecipe:
       type: object
-      description: A personal recipe. `id` is a key within the document; import assigns a new one.
+      description: >
+        A personal recipe. `id` is a key within the document; import assigns
+        a new one. A line's recipeId names another recipe in the document
+        by this id.
       required:
         [id, title, description, servings, tags, nutrition, nutritionSource, ingredients, steps, createdAt, updatedAt]
       properties:

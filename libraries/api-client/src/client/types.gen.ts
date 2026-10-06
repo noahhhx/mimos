@@ -535,13 +535,13 @@ export type DailyLogSummary = {
 };
 
 /**
- * One user's data, in export format version 2 (ADR-0011). Any change to this schema bumps the version and adds an upgrade step from the previous one.
+ * One user's data, in export format version 3 (ADR-0011). Any change to this schema bumps the version and adds an upgrade step from the previous one.
  *
  */
 export type AccountExport = {
     format: 'mimos.export';
     /**
-     * The format version. This instance exports version 2.
+     * The format version. This instance exports version 3.
      */
     version: number;
     exportedAt: string;
@@ -566,7 +566,8 @@ export type ExportedIngredient = {
 };
 
 /**
- * A personal recipe. `id` is a key within the document; import assigns a new one.
+ * A personal recipe. `id` is a key within the document; import assigns a new one. A line's recipeId names another recipe in the document by this id.
+ *
  */
 export type ExportedRecipe = {
     id: string;

@@ -21,7 +21,8 @@ public final class ExportUpgrader {
     public static final String FORMAT = "mimos.export";
 
     /** {@code STEPS.get(i)} upgrades version {@code i + 1} to {@code i + 2}. */
-    private static final List<UnaryOperator<ObjectNode>> STEPS = List.of(ExportUpgrader::markNutritionManual);
+    private static final List<UnaryOperator<ObjectNode>> STEPS =
+            List.of(ExportUpgrader::markNutritionManual, ExportUpgrader::allowRecipeLinks);
 
     /** The version this instance exports. */
     public static final int CURRENT_VERSION = STEPS.size() + 1;
@@ -78,6 +79,15 @@ public final class ExportUpgrader {
                 exported.put("nutritionSource", "MANUAL");
             }
         });
+        return document;
+    }
+
+    /**
+     * Version 3 (ADR-0018): an ingredient line may link another recipe in
+     * the document by its {@code id}. Version 2 had no such links, so its
+     * data comes through unchanged.
+     */
+    private static ObjectNode allowRecipeLinks(ObjectNode document) {
         return document;
     }
 

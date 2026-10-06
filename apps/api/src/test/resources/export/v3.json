@@ -1,0 +1,265 @@
+{
+  "format": "mimos.export",
+  "version": 3,
+  "exportedAt": "2026-10-06T09:00:00Z",
+  "ingredients": [
+    {
+      "slug": "homemade-stock-a1b2c3",
+      "name": "Homemade stock",
+      "basis": "PER_100_ML",
+      "nutrition": {
+        "calories": 8,
+        "proteinG": 1,
+        "carbsG": 0.5,
+        "fatG": 0.2
+      }
+    }
+  ],
+  "recipes": [
+    {
+      "id": "6f1c2a7e-0b1d-4c55-9a52-0d6c1f0a1b04",
+      "title": "Fixture Focaccia Sandwich",
+      "description": "A frozen v3 fixture recipe that uses another recipe as an ingredient.",
+      "servings": 2,
+      "prepMinutes": 5,
+      "tags": [
+        "lunch"
+      ],
+      "nutrition": {
+        "calories": 300,
+        "proteinG": 7.5,
+        "carbsG": 52.5,
+        "fatG": 6.6
+      },
+      "nutritionSource": "INGREDIENTS",
+      "ingredients": [
+        {
+          "quantity": 2,
+          "unit": "servings",
+          "name": "focaccia",
+          "note": "split",
+          "recipeId": "6f1c2a7e-0b1d-4c55-9a52-0d6c1f0a1b03"
+        },
+        {
+          "quantity": 2,
+          "name": "tomatoes",
+          "catalogSlug": "tomato",
+          "note": "sliced"
+        }
+      ],
+      "steps": [
+        {
+          "instruction": "Fill the focaccia with the tomatoes."
+        }
+      ],
+      "createdAt": "2026-10-03T12:00:00Z",
+      "updatedAt": "2026-10-03T12:00:00Z"
+    },
+    {
+      "id": "6f1c2a7e-0b1d-4c55-9a52-0d6c1f0a1b03",
+      "title": "Fixture Focaccia",
+      "description": "A frozen v3 fixture recipe, calculated from the catalog.",
+      "servings": 8,
+      "prepMinutes": 20,
+      "cookMinutes": 25,
+      "tags": [
+        "bread"
+      ],
+      "nutrition": {
+        "calories": 278,
+        "proteinG": 6.4,
+        "carbsG": 47.7,
+        "fatG": 6.4
+      },
+      "nutritionSource": "INGREDIENTS",
+      "ingredients": [
+        {
+          "quantity": 500,
+          "unit": "g",
+          "name": "flour",
+          "catalogSlug": "all-purpose-flour"
+        },
+        {
+          "quantity": 50,
+          "unit": "ml",
+          "name": "olive oil",
+          "catalogSlug": "olive-oil"
+        },
+        {
+          "quantity": 1,
+          "unit": "tsp",
+          "name": "salt",
+          "catalogSlug": "salt"
+        }
+      ],
+      "steps": [
+        {
+          "instruction": "Mix, prove, dimple, and bake."
+        }
+      ],
+      "createdAt": "2026-10-02T09:00:00Z",
+      "updatedAt": "2026-10-02T09:00:00Z"
+    },
+    {
+      "id": "6f1c2a7e-0b1d-4c55-9a52-0d6c1f0a1b01",
+      "title": "Fixture Lentil Soup",
+      "description": "A frozen v2 fixture recipe, calculated from the catalog.",
+      "servings": 4,
+      "prepMinutes": 10,
+      "cookMinutes": 35,
+      "tags": [
+        "soup",
+        "vegan"
+      ],
+      "nutrition": {
+        "calories": 256,
+        "proteinG": 17.8,
+        "carbsG": 43.5,
+        "fatG": 1.9
+      },
+      "nutritionSource": "INGREDIENTS",
+      "ingredients": [
+        {
+          "quantity": 250,
+          "unit": "g",
+          "name": "red lentils",
+          "catalogSlug": "red-lentils"
+        },
+        {
+          "quantity": 2,
+          "name": "carrots",
+          "catalogSlug": "carrot",
+          "note": "diced"
+        },
+        {
+          "quantity": 1,
+          "unit": "l",
+          "name": "stock",
+          "note": "homemade",
+          "catalogSlug": "homemade-stock-a1b2c3"
+        },
+        {
+          "name": "salt",
+          "catalogSlug": "salt"
+        }
+      ],
+      "steps": [
+        {
+          "instruction": "Soften the carrots."
+        },
+        {
+          "instruction": "Simmer with the lentils until soft."
+        }
+      ],
+      "createdAt": "2026-09-01T18:30:00Z",
+      "updatedAt": "2026-09-05T12:00:00Z"
+    },
+    {
+      "id": "6f1c2a7e-0b1d-4c55-9a52-0d6c1f0a1b02",
+      "title": "Fixture Toast",
+      "description": "Breakfast at its plainest.",
+      "servings": 1,
+      "tags": [],
+      "nutrition": {
+        "calories": 150
+      },
+      "nutritionSource": "MANUAL",
+      "ingredients": [
+        {
+          "quantity": 1,
+          "unit": "slice",
+          "name": "bread"
+        }
+      ],
+      "steps": [
+        {
+          "instruction": "Toast it."
+        }
+      ],
+      "createdAt": "2026-09-02T07:00:00Z",
+      "updatedAt": "2026-09-02T07:00:00Z"
+    }
+  ],
+  "mealPlans": [
+    {
+      "startDate": "2026-09-28",
+      "entries": [
+        {
+          "date": "2026-09-28",
+          "mealType": "DINNER",
+          "recipeId": "6f1c2a7e-0b1d-4c55-9a52-0d6c1f0a1b01",
+          "servings": 2
+        },
+        {
+          "date": "2026-09-29",
+          "mealType": "BREAKFAST",
+          "librarySlug": "shakshuka",
+          "servings": 1.5
+        }
+      ]
+    }
+  ],
+  "shoppingLists": [
+    {
+      "startDate": "2026-09-28",
+      "generatedAt": "2026-09-27T16:00:00Z",
+      "items": [
+        {
+          "name": "red lentils",
+          "unit": "g",
+          "quantity": 125,
+          "category": "Pantry",
+          "checked": true
+        },
+        {
+          "name": "salt",
+          "category": "Pantry",
+          "checked": false
+        }
+      ]
+    }
+  ],
+  "mealLogs": [
+    {
+      "date": "2026-09-28",
+      "mealType": "DINNER",
+      "recipeId": "6f1c2a7e-0b1d-4c55-9a52-0d6c1f0a1b01",
+      "description": "Fixture Lentil Soup",
+      "servings": 2,
+      "nutrition": {
+        "calories": 640,
+        "proteinG": 36,
+        "carbsG": 96,
+        "fatG": 12
+      },
+      "loggedAt": "2026-09-28T19:45:00Z"
+    },
+    {
+      "date": "2026-09-29",
+      "mealType": "BREAKFAST",
+      "librarySlug": "shakshuka",
+      "description": "Shakshuka",
+      "servings": 1,
+      "nutrition": {
+        "calories": 310,
+        "proteinG": 17,
+        "carbsG": 14,
+        "fatG": 20
+      },
+      "loggedAt": "2026-09-29T08:10:00Z"
+    },
+    {
+      "date": "2026-09-29",
+      "mealType": "SNACK",
+      "description": "Handful of almonds",
+      "servings": 1,
+      "nutrition": {
+        "calories": 180,
+        "proteinG": 6,
+        "carbsG": 0,
+        "fatG": 16
+      },
+      "loggedAt": "2026-09-29T15:00:00Z"
+    }
+  ]
+}

@@ -42,6 +42,7 @@ import org.openapitools.model.ExportedRecipe;
 import org.openapitools.model.ExportedShoppingList;
 import org.openapitools.model.ExportedShoppingListItem;
 import org.openapitools.model.ImportReport;
+import org.openapitools.model.IngredientQuantity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.core.JacksonException;
@@ -183,48 +184,62 @@ public class AccountImporter {
             });
         }
 
+        /** Restores each recipe after the recipes its lines link to, so every link has a recipe to point at. */
         void importRecipes(List<ExportedRecipe> exported) {
+            Map<UUID, Integer> positions = new HashMap<>();
             eachAt("recipes", exported, recipe -> {
                 UUID exportedId = present(recipe.getId(), "id");
-                if (recipeIds.containsKey(exportedId)) {
+                if (positions.containsKey(exportedId)) {
                     throw new IllegalArgumentException("id " + exportedId + " is used by another recipe");
                 }
-                List<Ingredient> lines = present(recipe.getIngredients(), "ingredients").stream()
-                        .map(ingredient -> new Ingredient(
-                                fromBigDecimal(present(ingredient, "ingredient").getQuantity()),
+                positions.put(exportedId, positions.size());
+            });
+            for (int index : new LinkedFirst(exported, positions).order()) {
+                ExportedRecipe recipe = exported.get(index);
+                at("recipes[" + index + "]", () -> importRecipe(recipe));
+            }
+        }
+
+        private void importRecipe(ExportedRecipe recipe) {
+            UUID exportedId = present(recipe.getId(), "id");
+            List<Ingredient> lines = present(recipe.getIngredients(), "ingredients").stream()
+                    .map(ingredient -> {
+                        UUID linked = present(ingredient, "ingredient").getRecipeId();
+                        return new Ingredient(
+                                fromBigDecimal(ingredient.getQuantity()),
                                 ingredient.getUnit(),
                                 ingredient.getName(),
                                 ingredient.getNote(),
                                 ingredient.getCatalogSlug(),
-                                null))
-                        .toList();
-                List<Ingredient> linkable = relinked(recipe.getTitle(), lines);
-                NutritionSource source = NutritionSource.valueOf(
-                        present(recipe.getNutritionSource(), "nutritionSource").name());
-                // A calculated recipe that lost a link keeps the nutrition it was exported with.
-                if (unlinkedCount(linkable) > unlinkedCount(lines)) {
-                    source = NutritionSource.MANUAL;
-                }
-                Recipe restored = recipes.restore(
-                        owner,
-                        new RecipeDraft(
-                                recipe.getTitle(),
-                                recipe.getDescription(),
-                                present(recipe.getServings(), "servings"),
-                                recipe.getPrepMinutes(),
-                                recipe.getCookMinutes(),
-                                present(recipe.getTags(), "tags"),
-                                fromApiNutrition(present(recipe.getNutrition(), "nutrition")),
-                                source,
-                                linkable,
-                                present(recipe.getSteps(), "steps").stream()
-                                        .map(step -> new RecipeStep(
-                                                present(step, "step").getInstruction()))
-                                        .toList()),
-                        present(recipe.getCreatedAt(), "createdAt").toInstant(),
-                        present(recipe.getUpdatedAt(), "updatedAt").toInstant());
-                recipeIds.put(exportedId, restored.id());
-            });
+                                linked == null ? null : imported(linked));
+                    })
+                    .toList();
+            List<Ingredient> linkable = relinked(recipe.getTitle(), lines);
+            NutritionSource source = NutritionSource.valueOf(
+                    present(recipe.getNutritionSource(), "nutritionSource").name());
+            // A calculated recipe that lost a link keeps the nutrition it was exported with.
+            if (unlinkedCount(linkable) > unlinkedCount(lines)) {
+                source = NutritionSource.MANUAL;
+            }
+            Recipe restored = recipes.restore(
+                    owner,
+                    new RecipeDraft(
+                            recipe.getTitle(),
+                            recipe.getDescription(),
+                            present(recipe.getServings(), "servings"),
+                            recipe.getPrepMinutes(),
+                            recipe.getCookMinutes(),
+                            present(recipe.getTags(), "tags"),
+                            fromApiNutrition(present(recipe.getNutrition(), "nutrition")),
+                            source,
+                            linkable,
+                            present(recipe.getSteps(), "steps").stream()
+                                    .map(step ->
+                                            new RecipeStep(present(step, "step").getInstruction()))
+                                    .toList()),
+                    present(recipe.getCreatedAt(), "createdAt").toInstant(),
+                    present(recipe.getUpdatedAt(), "updatedAt").toInstant());
+            recipeIds.put(exportedId, restored.id());
         }
 
         void importPlans(List<ExportedMealPlan> exported) {
@@ -397,6 +412,62 @@ public class AccountImporter {
         }
     }
 
+    /**
+     * The document's recipes in an order that puts each after the recipes
+     * its lines link to (ADR-0018). A link to an id that is not one of the
+     * document's recipes, or a recipe that uses itself through its links,
+     * is a 400 naming where.
+     */
+    private static final class LinkedFirst {
+
+        private final List<ExportedRecipe> recipes;
+        private final Map<UUID, Integer> positions;
+        private final List<Integer> order = new ArrayList<>();
+        private final Set<Integer> placing = new HashSet<>();
+        private final Set<Integer> placed = new HashSet<>();
+
+        LinkedFirst(List<ExportedRecipe> recipes, Map<UUID, Integer> positions) {
+            this.recipes = recipes;
+            this.positions = positions;
+        }
+
+        List<Integer> order() {
+            for (int index = 0; index < recipes.size(); index++) {
+                place(index);
+            }
+            return order;
+        }
+
+        private void place(int index) {
+            if (placed.contains(index)) {
+                return;
+            }
+            String at = "recipes[" + index + "]";
+            ExportedRecipe recipe = recipes.get(index);
+            if (!placing.add(index)) {
+                throw new IllegalArgumentException(at + ": \"" + recipe.getTitle()
+                        + "\" uses itself as an ingredient, directly or through other recipes");
+            }
+            List<IngredientQuantity> lines = recipe.getIngredients() == null ? List.of() : recipe.getIngredients();
+            for (int line = 0; line < lines.size(); line++) {
+                IngredientQuantity ingredient = lines.get(line);
+                UUID linked = ingredient == null ? null : ingredient.getRecipeId();
+                if (linked == null) {
+                    continue;
+                }
+                Integer position = positions.get(linked);
+                if (position == null) {
+                    throw new IllegalArgumentException(at + ".ingredients[" + line + "]: recipeId " + linked
+                            + " is not one of the export's recipes");
+                }
+                place(position);
+            }
+            placing.remove(index);
+            placed.add(index);
+            order.add(index);
+        }
+    }
+
     private static ShoppingListRepository.ItemRow toItemRow(ExportedShoppingListItem item) {
         return new ShoppingListRepository.ItemRow(
                 present(item.getName(), "name"),
@@ -417,13 +488,18 @@ public class AccountImporter {
             if (element == null) {
                 throw new IllegalArgumentException(at + " is missing");
             }
-            try {
-                action.accept(element);
-            } catch (IllegalArgumentException | NoSuchElementException exception) {
-                String message = String.valueOf(exception.getMessage());
-                String separator = NESTED_PATH.matcher(message).lookingAt() ? "." : ": ";
-                throw new IllegalArgumentException(at + separator + message, exception);
-            }
+            at(at, () -> action.accept(element));
+        }
+    }
+
+    /** Runs the action, prefixing any validation failure with {@code path}. */
+    private static void at(String path, Runnable action) {
+        try {
+            action.run();
+        } catch (IllegalArgumentException | NoSuchElementException exception) {
+            String message = String.valueOf(exception.getMessage());
+            String separator = NESTED_PATH.matcher(message).lookingAt() ? "." : ": ";
+            throw new IllegalArgumentException(path + separator + message, exception);
         }
     }
 

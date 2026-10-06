@@ -142,6 +142,28 @@ class ExportFixturesTests extends ApiIntegrationTestSupport {
         assertThat(toast.get("nutrition").get("calories").asDouble()).isEqualTo(150);
     }
 
+    @Test
+    void version3RestoresRecipesUsedAsIngredients() {
+        RestClient api = api();
+        String token = accessToken(createUser());
+
+        importFixture(api, token, 3);
+
+        JsonNode recipes = get(api, token, "/api/v1/recipes");
+        assertThat(titles(recipes)).startsWith("Fixture Focaccia Sandwich", "Fixture Focaccia");
+        String focacciaId = recipes.get(1).get("id").asText();
+        JsonNode sandwich =
+                get(api, token, "/api/v1/recipes/" + recipes.get(0).get("id").asText());
+        // The sandwich comes first in the document; the link follows the focaccia to its new id.
+        JsonNode line = sandwich.get("ingredients").get(0);
+        assertThat(line.get("recipeId").asText())
+                .isEqualTo(focacciaId)
+                .isNotEqualTo("6f1c2a7e-0b1d-4c55-9a52-0d6c1f0a1b03");
+        assertThat(line.get("unit").asText()).isEqualTo("servings");
+        // 2 servings of the 278 kcal focaccia and 2 tomatoes, over 2 servings.
+        assertThat(sandwich.get("nutrition").get("calories").asDouble()).isEqualTo(300);
+    }
+
     private JsonNode importFixture(RestClient api, String token, int version) {
         JsonNode document;
         try (InputStream in = new ClassPathResource(fixturePath(version)).getInputStream()) {
