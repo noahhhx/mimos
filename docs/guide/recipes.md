@@ -74,6 +74,28 @@ are calculated the same way.
 Your recipes work everywhere library recipes do: you can plan them, they
 add to your shopping list, and they count in your food log.
 
+### Using one of your recipes as an ingredient
+
+A recipe can use another of your recipes, like a chicken focaccia
+sandwich made with the focaccia you bake from your own recipe. Type the
+recipe's name in an ingredient line: your recipes appear in the list
+too, marked **Your recipe** with the calories in one serving. Pick one,
+then give the amount in **servings** of it, like "2 servings focaccia".
+
+The line counts toward nutrition with the other recipe's nutrition per
+serving, as that recipe is now: change the focaccia and the sandwich
+follows. A line doesn't count when:
+
+- its unit is anything but servings, or
+- the other recipe's nutrition isn't known yet, because you left some of
+  it blank or none of its ingredients count.
+
+On the recipe page, the ingredient links to the recipe it uses. If you
+delete that recipe, the line stays in the sandwich but no longer counts.
+A recipe can't use itself, or a recipe that already uses it. Your
+shopping list shows the line as it is ("2 servings focaccia"), not the
+focaccia's own ingredients.
+
 ## Editing and deleting
 
 Open one of your recipes and choose **Edit** to change it, or **Delete** to
