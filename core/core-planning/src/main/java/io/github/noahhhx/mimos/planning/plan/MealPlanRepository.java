@@ -21,7 +21,8 @@ import org.springframework.stereotype.Repository;
 public class MealPlanRepository {
 
     private static final String SELECT_ENTRIES = """
-            select e.id, e.entry_date, e.meal_type, e.recipe_id, e.servings
+            select e.id, e.entry_date, e.meal_type, e.recipe_id, e.servings,
+                   array(select d.profile_id from meal_plan_entry_diner d where d.entry_id = e.id) as diners
             from meal_plan_entry e
             join meal_plan p on p.id = e.meal_plan_id
             where p.household_id = ? and p.start_date = ?
@@ -58,7 +59,7 @@ public class MealPlanRepository {
     }
 
     /** Inserts an entry and its diners. */
-    public void insertEntry(UUID planId, PlannedMealInput entry, Set<UUID> dinerProfileIds) {
+    public void insertEntry(UUID planId, PlannedMealInput entry) {
         jdbc.update(
                 """
                 insert into meal_plan_entry (id, meal_plan_id, entry_date, meal_type, recipe_id, servings)
@@ -70,15 +71,25 @@ public class MealPlanRepository {
                 entry.mealType().name(),
                 entry.recipeId(),
                 entry.servings());
-        jdbc.batchUpdate(
-                "insert into meal_plan_entry_diner (entry_id, profile_id) values (?, ?)",
-                dinerProfileIds.stream()
-                        .map(profileId -> new Object[] {entry.id(), profileId})
-                        .toList());
+        insertDiners(entry.id(), entry.dinerProfileIds());
     }
 
     public void updateServings(UUID entryId, double servings) {
         jdbc.update("update meal_plan_entry set servings = ? where id = ?", servings, entryId);
+    }
+
+    /** Replaces who eats the entry. */
+    public void replaceDiners(UUID entryId, Set<UUID> dinerProfileIds) {
+        jdbc.update("delete from meal_plan_entry_diner where entry_id = ?", entryId);
+        insertDiners(entryId, dinerProfileIds);
+    }
+
+    private void insertDiners(UUID entryId, Set<UUID> dinerProfileIds) {
+        jdbc.batchUpdate(
+                "insert into meal_plan_entry_diner (entry_id, profile_id) values (?, ?)",
+                dinerProfileIds.stream()
+                        .map(profileId -> new Object[] {entryId, profileId})
+                        .toList());
     }
 
     public void deleteEntry(UUID entryId) {
@@ -95,7 +106,8 @@ public class MealPlanRepository {
     public List<WeekEntry> loadAllEntryInputs(UUID ownerId) {
         return jdbc.query(
                 """
-                select p.id as plan_id, p.start_date, e.id, e.entry_date, e.meal_type, e.recipe_id, e.servings
+                select p.id as plan_id, p.start_date, e.id, e.entry_date, e.meal_type, e.recipe_id, e.servings,
+                       array(select d.profile_id from meal_plan_entry_diner d where d.entry_id = e.id) as diners
                 from meal_plan_entry e
                 join meal_plan p on p.id = e.meal_plan_id
                 where p.household_id = ?
@@ -149,7 +161,8 @@ public class MealPlanRepository {
     /** A single entry (owner-checked via the plan join), for patch/delete confirmation. */
     public Optional<PlannedMealInput> findEntry(UUID ownerId, UUID entryId) {
         List<PlannedMealInput> rows = jdbc.query("""
-                select e.id, e.entry_date, e.meal_type, e.recipe_id, e.servings
+                select e.id, e.entry_date, e.meal_type, e.recipe_id, e.servings,
+                       array(select d.profile_id from meal_plan_entry_diner d where d.entry_id = e.id) as diners
                 from meal_plan_entry e
                 join meal_plan p on p.id = e.meal_plan_id
                 where p.household_id = ? and e.id = ?
@@ -158,7 +171,8 @@ public class MealPlanRepository {
     }
 
     /** Raw entry data before title resolution. */
-    public record PlannedMealInput(UUID id, LocalDate date, MealType mealType, UUID recipeId, double servings) {}
+    public record PlannedMealInput(
+            UUID id, LocalDate date, MealType mealType, UUID recipeId, double servings, Set<UUID> dinerProfileIds) {}
 
     /** An entry with its plan and the Monday of the plan's week. */
     public record WeekEntry(UUID planId, LocalDate startDate, PlannedMealInput entry) {}
@@ -174,7 +188,8 @@ public class MealPlanRepository {
                     rs.getDate("entry_date").toLocalDate(),
                     MealType.valueOf(rs.getString("meal_type")),
                     rs.getObject("recipe_id", UUID.class),
-                    rs.getDouble("servings"));
+                    rs.getDouble("servings"),
+                    Set.of((UUID[]) rs.getArray("diners").getArray()));
         }
     }
 }

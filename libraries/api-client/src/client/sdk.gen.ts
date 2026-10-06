@@ -257,9 +257,9 @@ export const listPublicRecipes = <ThrowOnError extends boolean = false>(options?
 export const getPublicRecipe = <ThrowOnError extends boolean = false>(options: Options<GetPublicRecipeData, ThrowOnError>): RequestResult<GetPublicRecipeResponses, GetPublicRecipeErrors, ThrowOnError> => (options.client ?? client).get<GetPublicRecipeResponses, GetPublicRecipeErrors, ThrowOnError>({ url: '/api/v1/public/recipes/{slug}', ...options });
 
 /**
- * The caller's meal plan for a week
+ * The caller's household's meal plan for a week
  *
- * Returns the plan for the week starting at `startDate`, which must be a Monday. The plan is created empty on first access. Each entry has the id that updateMealPlanEntry and deleteMealPlanEntry take.
+ * Returns the plan for the week starting at `startDate`, which must be a Monday. The plan is created empty on first access and is shared by everyone in the caller's household (ADR-0019). Each entry has the id that updateMealPlanEntry and deleteMealPlanEntry take, and names its diners: the members who eat it, with `you` marking the caller. The caller's own meals are the entries where they are a diner.
  *
  */
 export const getMealPlan = <ThrowOnError extends boolean = false>(options: Options<GetMealPlanData, ThrowOnError>): RequestResult<GetMealPlanResponses, GetMealPlanErrors, ThrowOnError> => (options.client ?? client).get<GetMealPlanResponses, GetMealPlanErrors, ThrowOnError>({ url: '/api/v1/plans/{startDate}', ...options });
@@ -267,7 +267,7 @@ export const getMealPlan = <ThrowOnError extends boolean = false>(options: Optio
 /**
  * Plan a meal in the week
  *
- * Plans a recipe (personal or library, by its id) for a day and meal. `startDate` is the week's Monday and `date` must fall within that week (Monday to Sunday). A slot can hold more than one recipe. Servings may be fractional.
+ * Plans a recipe (personal or library, by its id) for a day and meal. `startDate` is the week's Monday and `date` must fall within that week (Monday to Sunday). A slot can hold more than one recipe. `servings` is the amount cooked, for everyone who eats it, and may be fractional. `diners` names who eats it by profile id (from getHousehold): one or more members of the caller's household. Leave `diners` out for the usual choice: a DINNER is eaten by every member, a BREAKFAST, LUNCH or SNACK by the caller alone. An empty list, or anyone who is not a member, is a 400.
  *
  */
 export const addMealPlanEntry = <ThrowOnError extends boolean = false>(options: Options<AddMealPlanEntryData, ThrowOnError>): RequestResult<AddMealPlanEntryResponses, AddMealPlanEntryErrors, ThrowOnError> => (options.client ?? client).post<AddMealPlanEntryResponses, AddMealPlanEntryErrors, ThrowOnError>({
@@ -285,7 +285,10 @@ export const addMealPlanEntry = <ThrowOnError extends boolean = false>(options: 
 export const deleteMealPlanEntry = <ThrowOnError extends boolean = false>(options: Options<DeleteMealPlanEntryData, ThrowOnError>): RequestResult<DeleteMealPlanEntryResponses, DeleteMealPlanEntryErrors, ThrowOnError> => (options.client ?? client).delete<DeleteMealPlanEntryResponses, DeleteMealPlanEntryErrors, ThrowOnError>({ url: '/api/v1/plans/{startDate}/entries/{entryId}', ...options });
 
 /**
- * Change a planned meal's servings
+ * Change a planned meal's servings or who eats it
+ *
+ * Send `servings`, `diners`, or both; leaving one out keeps it. `diners` replaces the whole list and must name one or more members of the caller's household (profile ids from getHousehold); an empty list, or anyone who is not a member, is a 400. Changing the diners does not change the servings cooked.
+ *
  */
 export const updateMealPlanEntry = <ThrowOnError extends boolean = false>(options: Options<UpdateMealPlanEntryData, ThrowOnError>): RequestResult<UpdateMealPlanEntryResponses, UpdateMealPlanEntryErrors, ThrowOnError> => (options.client ?? client).patch<UpdateMealPlanEntryResponses, UpdateMealPlanEntryErrors, ThrowOnError>({
     url: '/api/v1/plans/{startDate}/entries/{entryId}',
@@ -366,7 +369,7 @@ export const listMealLogs = <ThrowOnError extends boolean = false>(options: Opti
 /**
  * Log a meal
  *
- * Either reference a recipe (nutrition is derived from the recipe's per-serving values scaled by servings) or log ad-hoc with a description and manual nutrition totals.
+ * Either reference a recipe (nutrition is derived from the recipe's per-serving values scaled by servings) or log ad-hoc with a description and manual nutrition totals. The log is the caller's own, not their household's. To log a planned meal for the caller, send the entry's recipeId, date, and mealType, with `servings` set to the caller's share: the entry's servings divided by its number of diners (a dinner of 4 servings for 2 diners is 2 servings each), unless the user says how much they ate.
  *
  */
 export const createMealLog = <ThrowOnError extends boolean = false>(options: Options<CreateMealLogData, ThrowOnError>): RequestResult<CreateMealLogResponses, CreateMealLogErrors, ThrowOnError> => (options.client ?? client).post<CreateMealLogResponses, CreateMealLogErrors, ThrowOnError>({

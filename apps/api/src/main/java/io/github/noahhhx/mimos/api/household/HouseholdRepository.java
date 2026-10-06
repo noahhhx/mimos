@@ -20,10 +20,10 @@ class HouseholdRepository {
         this.jdbc = jdbc;
     }
 
-    List<Member> members(UUID householdId) {
+    List<HouseholdMember> members(UUID householdId) {
         return jdbc.query(
                 "select id, display_name from user_profile where household_id = ? order by lower(display_name), id",
-                (rs, i) -> new Member(rs.getObject("id", UUID.class), rs.getString("display_name")),
+                (rs, i) -> new HouseholdMember(rs.getObject("id", UUID.class), rs.getString("display_name")),
                 householdId);
     }
 
@@ -89,8 +89,6 @@ class HouseholdRepository {
                         tokenHash)
                 > 0;
     }
-
-    record Member(UUID profileId, String displayName) {}
 
     record Invite(
             UUID householdId, Instant expiresAt, @Nullable Instant usedAt) {}

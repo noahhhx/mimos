@@ -339,9 +339,15 @@ export type MealPlanEntry = {
      */
     recipeTitle: string;
     /**
-     * How many servings of the recipe are planned.
+     * How many servings of the recipe are cooked, for all its diners together.
+     *
      */
     servings: number;
+    /**
+     * Who in the household eats this meal, by name; never empty. `you` marks the caller.
+     *
+     */
+    diners: Array<Person>;
 };
 
 /**
@@ -356,11 +362,30 @@ export type MealPlanEntryInput = {
     date: string;
     mealType: MealType;
     recipeId: string;
+    /**
+     * How many servings are cooked, for all the diners together.
+     */
     servings: number;
+    /**
+     * Profile ids of the household members who eat it; at least one. Leave it out (or send null) for every member at DINNER and the caller alone otherwise.
+     *
+     */
+    diners?: Array<string> | null;
 };
 
+/**
+ * What to change; at least one of `servings` and `diners`.
+ */
 export type MealPlanEntryPatch = {
-    servings: number;
+    /**
+     * How many servings are cooked, for all the diners together.
+     */
+    servings?: number;
+    /**
+     * Profile ids of the household members who eat it, at least one; replaces the list. Leave it out (or send null) to keep it.
+     *
+     */
+    diners?: Array<string> | null;
 };
 
 /**

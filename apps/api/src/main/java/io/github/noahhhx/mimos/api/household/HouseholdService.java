@@ -74,7 +74,7 @@ public class HouseholdService {
         this.random = random;
     }
 
-    public List<HouseholdRepository.Member> members(UUID householdId) {
+    public List<HouseholdMember> members(UUID householdId) {
         return households.members(householdId);
     }
 
@@ -189,8 +189,5 @@ public class HouseholdService {
     record CreatedInvite(String token, Instant expiresAt) {}
 
     record InvitePreview(
-            List<HouseholdRepository.Member> members,
-            Instant expiresAt,
-            boolean alreadyMember,
-            boolean currentHouseholdShared) {}
+            List<HouseholdMember> members, Instant expiresAt, boolean alreadyMember, boolean currentHouseholdShared) {}
 }

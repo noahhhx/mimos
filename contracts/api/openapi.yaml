@@ -642,11 +642,14 @@ paths:
     get:
       tags: [planning]
       operationId: getMealPlan
-      summary: The caller's meal plan for a week
+      summary: The caller's household's meal plan for a week
       description: >
         Returns the plan for the week starting at `startDate`, which must be
-        a Monday. The plan is created empty on first access. Each entry has
-        the id that updateMealPlanEntry and deleteMealPlanEntry take.
+        a Monday. The plan is created empty on first access and is shared by
+        everyone in the caller's household (ADR-0019). Each entry has the id
+        that updateMealPlanEntry and deleteMealPlanEntry take, and names its
+        diners: the members who eat it, with `you` marking the caller. The
+        caller's own meals are the entries where they are a diner.
       responses:
         '200':
           description: The week's plan.
@@ -669,7 +672,12 @@ paths:
         Plans a recipe (personal or library, by its id) for a day and meal.
         `startDate` is the week's Monday and `date` must fall within that
         week (Monday to Sunday). A slot can hold more than one recipe.
-        Servings may be fractional.
+        `servings` is the amount cooked, for everyone who eats it, and may be
+        fractional. `diners` names who eats it by profile id (from
+        getHousehold): one or more members of the caller's household. Leave
+        `diners` out for the usual choice: a DINNER is eaten by every member,
+        a BREAKFAST, LUNCH or SNACK by the caller alone. An empty list, or
+        anyone who is not a member, is a 400.
       requestBody:
         required: true
         content:
@@ -696,7 +704,13 @@ paths:
     patch:
       tags: [planning]
       operationId: updateMealPlanEntry
-      summary: Change a planned meal's servings
+      summary: Change a planned meal's servings or who eats it
+      description: >
+        Send `servings`, `diners`, or both; leaving one out keeps it.
+        `diners` replaces the whole list and must name one or more members
+        of the caller's household (profile ids from getHousehold); an empty
+        list, or anyone who is not a member, is a 400. Changing the diners
+        does not change the servings cooked.
       requestBody:
         required: true
         content:
@@ -942,7 +956,12 @@ paths:
       description: >
         Either reference a recipe (nutrition is derived from the recipe's
         per-serving values scaled by servings) or log ad-hoc with a
-        description and manual nutrition totals.
+        description and manual nutrition totals. The log is the caller's
+        own, not their household's. To log a planned meal for the caller,
+        send the entry's recipeId, date, and mealType, with `servings` set
+        to the caller's share: the entry's servings divided by its number of
+        diners (a dinner of 4 servings for 2 diners is 2 servings each),
+        unless the user says how much they ate.
       requestBody:
         required: true
         content:
@@ -1450,7 +1469,7 @@ components:
     MealPlanEntry:
       type: object
       description: One planned meal in a week.
-      required: [id, date, mealType, recipeId, recipeTitle, servings]
+      required: [id, date, mealType, recipeId, recipeTitle, servings, diners]
       properties:
         id:
           type: string
@@ -1468,7 +1487,16 @@ components:
           description: Title of the planned recipe at planning time.
         servings:
           type: number
-          description: How many servings of the recipe are planned.
+          description: >
+            How many servings of the recipe are cooked, for all its diners
+            together.
+        diners:
+          type: array
+          description: >
+            Who in the household eats this meal, by name; never empty. `you`
+            marks the caller.
+          items:
+            $ref: '#/components/schemas/Person'
     MealPlan:
       type: object
       description: A week of planned meals, keyed by its Monday.
@@ -1495,12 +1523,32 @@ components:
           format: uuid
         servings:
           type: number
+          description: How many servings are cooked, for all the diners together.
+        diners:
+          type: [array, 'null']
+          description: >
+            Profile ids of the household members who eat it; at least one.
+            Leave it out (or send null) for every member at DINNER and the
+            caller alone otherwise.
+          items:
+            type: string
+            format: uuid
     MealPlanEntryPatch:
       type: object
-      required: [servings]
+      description: What to change; at least one of `servings` and `diners`.
+      minProperties: 1
       properties:
         servings:
           type: number
+          description: How many servings are cooked, for all the diners together.
+        diners:
+          type: [array, 'null']
+          description: >
+            Profile ids of the household members who eat it, at least one;
+            replaces the list. Leave it out (or send null) to keep it.
+          items:
+            type: string
+            format: uuid
     PlanSuggestions:
       type: object
       description: Suggestion cards for a week, from the instance's registered plugins (ADR-0006).

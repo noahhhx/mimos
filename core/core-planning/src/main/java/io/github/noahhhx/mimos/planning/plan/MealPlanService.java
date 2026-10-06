@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,31 +52,52 @@ public class MealPlanService {
             MealType mealType,
             UUID recipeId,
             double servings) {
-        if (dinerProfileIds.isEmpty()) {
-            throw new IllegalArgumentException("a planned meal needs at least one diner");
-        }
+        requireDiners(dinerProfileIds);
         requireMonday(startDate);
         requireWithinWeek(startDate, date);
         requireServings(servings);
         Recipe recipe = recipes.findVisible(recipeId, ownerId)
                 .orElseThrow(() -> new NoSuchElementException("recipe not found: " + recipeId));
         UUID planId = plans.ensurePlan(ownerId, startDate);
-        MealPlanRepository.PlannedMealInput entry =
-                new MealPlanRepository.PlannedMealInput(UUID.randomUUID(), date, mealType, recipeId, servings);
-        plans.insertEntry(planId, entry, dinerProfileIds);
-        return new PlannedMeal(
-                entry.id(), entry.date(), entry.mealType(), entry.recipeId(), recipe.title(), entry.servings());
+        MealPlanRepository.PlannedMealInput entry = new MealPlanRepository.PlannedMealInput(
+                UUID.randomUUID(), date, mealType, recipeId, servings, Set.copyOf(dinerProfileIds));
+        plans.insertEntry(planId, entry);
+        return toPlannedMeal(entry, Map.of(recipeId, recipe));
     }
 
-    /** Changes the planned servings of one of the owner's entries. */
+    /**
+     * Changes the servings, the diners (at least one), or both, of one of
+     * the owner's entries; null leaves that part as it is. The servings
+     * cooked do not follow the diners.
+     */
     @Transactional
-    public PlannedMeal updateServings(UUID ownerId, LocalDate startDate, UUID entryId, double servings) {
+    public PlannedMeal updateEntry(
+            UUID ownerId,
+            LocalDate startDate,
+            UUID entryId,
+            @Nullable Double servings,
+            @Nullable Set<UUID> dinerProfileIds) {
         requireMonday(startDate);
-        requireServings(servings);
+        if (servings != null) {
+            requireServings(servings);
+        }
+        if (dinerProfileIds != null) {
+            requireDiners(dinerProfileIds);
+        }
         MealPlanRepository.PlannedMealInput entry = requireEntry(ownerId, startDate, entryId);
-        plans.updateServings(entryId, servings);
+        if (servings != null) {
+            plans.updateServings(entryId, servings);
+        }
+        if (dinerProfileIds != null) {
+            plans.replaceDiners(entryId, dinerProfileIds);
+        }
         return withTitle(new MealPlanRepository.PlannedMealInput(
-                entry.id(), entry.date(), entry.mealType(), entry.recipeId(), servings));
+                entry.id(),
+                entry.date(),
+                entry.mealType(),
+                entry.recipeId(),
+                servings != null ? servings : entry.servings(),
+                dinerProfileIds != null ? Set.copyOf(dinerProfileIds) : entry.dinerProfileIds()));
     }
 
     /** Removes one of the owner's entries. */
@@ -147,13 +169,12 @@ public class MealPlanService {
                 input.mealType(),
                 input.recipeId(),
                 recipe != null ? recipe.title() : "Deleted recipe",
-                input.servings());
+                input.servings(),
+                input.dinerProfileIds());
     }
 
     private PlannedMeal withTitle(MealPlanRepository.PlannedMealInput entry) {
-        Recipe recipe = recipes.findByIds(List.of(entry.recipeId())).get(entry.recipeId());
-        String title = recipe != null ? recipe.title() : "Deleted recipe";
-        return new PlannedMeal(entry.id(), entry.date(), entry.mealType(), entry.recipeId(), title, entry.servings());
+        return toPlannedMeal(entry, recipes.findByIds(List.of(entry.recipeId())));
     }
 
     private MealPlanRepository.PlannedMealInput requireEntry(UUID ownerId, LocalDate startDate, UUID entryId) {
@@ -175,6 +196,12 @@ public class MealPlanService {
     private static void requireWithinWeek(LocalDate startDate, LocalDate date) {
         if (date.isBefore(startDate) || date.isAfter(startDate.plusDays(6))) {
             throw new IllegalArgumentException("date must fall within the plan's week");
+        }
+    }
+
+    private static void requireDiners(Set<UUID> dinerProfileIds) {
+        if (dinerProfileIds.isEmpty()) {
+            throw new IllegalArgumentException("a planned meal needs at least one diner");
         }
     }
 

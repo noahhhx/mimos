@@ -6,7 +6,7 @@ import static org.assertj.core.api.Assertions.within;
 
 import io.github.noahhhx.mimos.api.support.ApiIntegrationTestSupport;
 import io.github.noahhhx.mimos.api.support.MutableClock;
-import io.github.noahhhx.mimos.api.support.TestRecipes;
+import io.github.noahhhx.mimos.api.support.TestUser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Clock;
@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -27,9 +26,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -223,7 +220,6 @@ class HouseholdEndpointTests extends ApiIntegrationTestSupport {
         UUID hostLunch = host.plan(soup, "LUNCH");
         UUID leaverLunch = leaver.plan(soup, "LUNCH");
         UUID dinner = host.plan(soup, "DINNER");
-        jdbc.update("insert into meal_plan_entry_diner (entry_id, profile_id) values (?, ?)", dinner, leaver.profileId);
         UUID leaverLog = leaver.log(soup);
         UUID householdId = host.household();
 
@@ -365,34 +361,11 @@ class HouseholdEndpointTests extends ApiIntegrationTestSupport {
         return values;
     }
 
-    /** A fresh realm user, signed in, with their profile created. */
-    private final class User {
+    /** A fresh user, planning and logging in this class's week. */
+    private final class User extends TestUser {
 
-        final String username = createUser();
-        final String token = accessToken(username);
-        final RestClient api =
-                RestClient.builder().baseUrl("http://localhost:" + port).build();
-        final UUID profileId =
-                UUID.fromString(ok(HttpMethod.GET, "/api/v1/me", null).get("id").asText());
-
-        UUID household() {
-            return requireNonNull(
-                    jdbc.queryForObject("select household_id from user_profile where id = ?", UUID.class, profileId));
-        }
-
-        String invite() {
-            return ok(HttpMethod.POST, "/api/v1/household/invites", null)
-                    .get("token")
-                    .asText();
-        }
-
-        void join(User host) {
-            ok(HttpMethod.POST, "/api/v1/household/join", Map.of("token", host.invite()));
-        }
-
-        UUID recipe(String title) {
-            return UUID.fromString(
-                    TestRecipes.create(api, token, title).get("id").asText());
+        User() {
+            super(port, objectMapper, jdbc);
         }
 
         UUID plan(UUID recipeId, String mealType) {
@@ -412,32 +385,5 @@ class HouseholdEndpointTests extends ApiIntegrationTestSupport {
                     .get("id")
                     .asText());
         }
-
-        JsonNode ok(HttpMethod method, String uri, @Nullable Object body) {
-            Response response = send(method, uri, body);
-            assertThat(response.status())
-                    .as(method + " " + uri + " answered " + response.body())
-                    .isBetween(200, 299);
-            return requireNonNull(response.body(), method + " " + uri + " returned no body");
-        }
-
-        int status(HttpMethod method, String uri, @Nullable Object body) {
-            return send(method, uri, body).status();
-        }
-
-        private Response send(HttpMethod method, String uri, @Nullable Object body) {
-            RestClient.RequestBodySpec request =
-                    api.method(method).uri(uri).headers(headers -> headers.setBearerAuth(token));
-            if (body != null) {
-                request.contentType(MediaType.APPLICATION_JSON).body(body);
-            }
-            return requireNonNull(request.exchange((req, res) -> {
-                byte[] bytes = res.getBody().readAllBytes();
-                return new Response(
-                        res.getStatusCode().value(), bytes.length == 0 ? null : objectMapper.readTree(bytes));
-            }));
-        }
     }
-
-    private record Response(int status, @Nullable JsonNode body) {}
 }

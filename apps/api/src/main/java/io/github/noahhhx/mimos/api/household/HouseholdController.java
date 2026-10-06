@@ -68,7 +68,7 @@ public class HouseholdController implements HouseholdApi {
         return new Household().members(people(households.members(householdId), callerId));
     }
 
-    private static List<Person> people(List<HouseholdRepository.Member> members, UUID callerId) {
+    private static List<Person> people(List<HouseholdMember> members, UUID callerId) {
         return members.stream()
                 .map(member -> new Person()
                         .id(member.profileId())
