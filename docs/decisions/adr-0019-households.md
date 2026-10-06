@@ -1,6 +1,6 @@
 # ADR-0019: Households
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-06
 - Changes: [ADR-0005](adr-0005-core-product-domain.md) (who owns
   personal data), [ADR-0011](adr-0011-account-export-import.md) (export
