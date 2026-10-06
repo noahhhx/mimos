@@ -12,6 +12,7 @@ const entry = (date: string, mealType: MealPlanEntry["mealType"], recipeTitle: s
   recipeId: recipeTitle.toLowerCase(),
   recipeTitle,
   servings: 2,
+  diners: [{ id: "me", displayName: "Sam", you: true }],
 });
 
 const at = (hour: number, minute = 0) => new Date(2026, 9, 2, hour, minute);

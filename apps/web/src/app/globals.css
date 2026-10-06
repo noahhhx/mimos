@@ -1353,6 +1353,47 @@ input[type="search"]:focus {
   padding: 0 4px;
 }
 
+/* Who eats a meal (ADR-0019): one chip per member, filled for a diner. */
+.diners {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.diners .button.small {
+  min-width: 34px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+/* The last diner cannot be taken off, but still reads as eating. */
+.diners .button:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 4px 8px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.share label {
+  margin: 0;
+}
+
+.share input {
+  width: 6em;
+}
+
+.share .muted {
+  padding-bottom: 8px;
+}
+
 .picker {
   position: sticky;
   bottom: 16px;
