@@ -38,16 +38,16 @@ public class IngredientCatalog {
     }
 
     /** The shared entries and the profile's own, by name. */
-    public List<CatalogIngredient> findVisibleTo(UUID profileId) {
+    public List<CatalogIngredient> findVisibleTo(UUID ownerId) {
         return jdbc.query(
                 SELECT + " where owner_profile_id is null or owner_profile_id = ? order by lower(name), slug",
                 MAPPER,
-                profileId);
+                ownerId);
     }
 
     /** The profile's own entries, by name. */
-    public List<CatalogIngredient> findOwnedBy(UUID profileId) {
-        return jdbc.query(SELECT + " where owner_profile_id = ? order by lower(name), slug", MAPPER, profileId);
+    public List<CatalogIngredient> findOwnedBy(UUID ownerId) {
+        return jdbc.query(SELECT + " where owner_profile_id = ? order by lower(name), slug", MAPPER, ownerId);
     }
 
     /** The entries with these slugs, whoever owns them; unknown slugs are omitted. */
@@ -91,7 +91,7 @@ public class IngredientCatalog {
                 values (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 entry.slug(),
-                entry.ownerProfileId(),
+                entry.ownerId(),
                 entry.name(),
                 entry.basis().name(),
                 entry.calories(),

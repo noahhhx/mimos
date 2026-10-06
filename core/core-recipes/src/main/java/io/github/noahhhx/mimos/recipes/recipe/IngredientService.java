@@ -29,49 +29,49 @@ public class IngredientService {
     }
 
     /** The shared entries and the viewer's own, by name. */
-    public List<CatalogIngredient> findVisible(UUID viewerProfileId) {
-        return catalog.findVisibleTo(viewerProfileId);
+    public List<CatalogIngredient> findVisible(UUID ownerId) {
+        return catalog.findVisibleTo(ownerId);
     }
 
     /** The owner's own entries (for the account export). */
-    public List<CatalogIngredient> findOwned(UUID ownerProfileId) {
-        return catalog.findOwnedBy(ownerProfileId);
+    public List<CatalogIngredient> findOwned(UUID ownerId) {
+        return catalog.findOwnedBy(ownerId);
     }
 
     /** The entries with these slugs that the viewer may link; others are omitted. */
-    public Map<String, CatalogIngredient> findVisibleBySlugs(UUID viewerProfileId, Collection<String> slugs) {
+    public Map<String, CatalogIngredient> findVisibleBySlugs(UUID ownerId, Collection<String> slugs) {
         Map<String, CatalogIngredient> found = new HashMap<>(catalog.findBySlugs(slugs));
-        found.values().removeIf(entry -> !entry.isVisibleTo(viewerProfileId));
+        found.values().removeIf(entry -> !entry.isVisibleTo(ownerId));
         return found;
     }
 
     /** Creates a personal ingredient with a new slug made from its name. */
     @Transactional
-    public CatalogIngredient create(UUID ownerProfileId, IngredientDraft draft) {
-        CatalogIngredient created = toEntry(slugFor(draft.name()), ownerProfileId, draft);
+    public CatalogIngredient create(UUID ownerId, IngredientDraft draft) {
+        CatalogIngredient created = toEntry(slugFor(draft.name()), ownerId, draft);
         catalog.insert(created);
         return created;
     }
 
     /** Replaces a personal ingredient's name and nutrition; its slug, and so every link to it, stays. */
     @Transactional
-    public CatalogIngredient replace(UUID ownerProfileId, String slug, IngredientDraft draft) {
-        requireOwned(ownerProfileId, slug);
-        CatalogIngredient replaced = toEntry(slug, ownerProfileId, draft);
+    public CatalogIngredient replace(UUID ownerId, String slug, IngredientDraft draft) {
+        requireOwned(ownerId, slug);
+        CatalogIngredient replaced = toEntry(slug, ownerId, draft);
         catalog.update(replaced);
         return replaced;
     }
 
     /** Deletes a personal ingredient; recipe lines that linked it stay, unlinked. */
     @Transactional
-    public void delete(UUID ownerProfileId, String slug) {
-        requireOwned(ownerProfileId, slug);
+    public void delete(UUID ownerId, String slug) {
+        requireOwned(ownerId, slug);
         catalog.delete(slug);
     }
 
-    private void requireOwned(UUID ownerProfileId, String slug) {
+    private void requireOwned(UUID ownerId, String slug) {
         CatalogIngredient existing = catalog.findBySlugs(List.of(slug)).get(slug);
-        if (existing == null || !existing.isVisibleTo(ownerProfileId)) {
+        if (existing == null || !existing.isVisibleTo(ownerId)) {
             throw new NoSuchElementException("ingredient not found: " + slug);
         }
         if (existing.isShared()) {
@@ -79,7 +79,7 @@ public class IngredientService {
         }
     }
 
-    private static CatalogIngredient toEntry(String slug, UUID ownerProfileId, IngredientDraft draft) {
+    private static CatalogIngredient toEntry(String slug, UUID ownerId, IngredientDraft draft) {
         String name = draft.name() == null ? "" : draft.name().strip();
         if (name.isEmpty() || name.length() > MAX_NAME_LENGTH) {
             throw new IllegalArgumentException(
@@ -88,7 +88,7 @@ public class IngredientService {
         Nutrition nutrition = draft.nutrition();
         return new CatalogIngredient(
                 slug,
-                ownerProfileId,
+                ownerId,
                 name,
                 draft.basis(),
                 required("calories", nutrition.calories()),

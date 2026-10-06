@@ -51,13 +51,13 @@ public class ShoppingListService {
 
     /** Generates (or regenerates) the owner's shopping list for the week. */
     @Transactional
-    public ShoppingList generate(UUID ownerProfileId, LocalDate startDate) {
+    public ShoppingList generate(UUID ownerId, LocalDate startDate) {
         requireMonday(startDate);
-        List<PlannedMeal> planned = mealPlanService.plannedMeals(ownerProfileId, startDate);
+        List<PlannedMeal> planned = mealPlanService.plannedMeals(ownerId, startDate);
         Map<UUID, Recipe> recipesById =
                 recipes.findByIds(planned.stream().map(PlannedMeal::recipeId).toList());
         Map<String, Boolean> previouslyChecked = repository
-                .findList(ownerProfileId, startDate)
+                .findList(ownerId, startDate)
                 .map(list -> list.items().stream()
                         .collect(java.util.stream.Collectors.toMap(
                                 item -> lineKey(Aisles.normalizeName(item.name()), item.unit()),
@@ -102,25 +102,25 @@ public class ShoppingListService {
                 .sorted(Comparator.comparing((ShoppingListRepository.ItemRow item) -> categoryRank(item.category()))
                         .thenComparing(ShoppingListRepository.ItemRow::name, String.CASE_INSENSITIVE_ORDER))
                 .toList();
-        repository.replaceList(ownerProfileId, startDate, clock.instant(), items);
-        return find(ownerProfileId, startDate)
+        repository.replaceList(ownerId, startDate, clock.instant(), items);
+        return find(ownerId, startDate)
                 .orElseThrow(() -> new IllegalStateException("list must exist after generation"));
     }
 
     /** The owner's generated list for the week, if one exists. */
-    public Optional<ShoppingList> find(UUID ownerProfileId, LocalDate startDate) {
+    public Optional<ShoppingList> find(UUID ownerId, LocalDate startDate) {
         requireMonday(startDate);
-        return repository.findList(ownerProfileId, startDate);
+        return repository.findList(ownerId, startDate);
     }
 
     /** Every list the owner has, oldest week first. */
-    public List<ShoppingList> findAll(UUID ownerProfileId) {
-        return repository.findAllLists(ownerProfileId);
+    public List<ShoppingList> findAll(UUID ownerId) {
+        return repository.findAllLists(ownerId);
     }
 
     /** Whether any of the owner's lists has an item. */
-    public boolean hasItems(UUID ownerProfileId) {
-        return repository.hasItems(ownerProfileId);
+    public boolean hasItems(UUID ownerId) {
+        return repository.hasItems(ownerId);
     }
 
     /**
@@ -130,7 +130,7 @@ public class ShoppingListService {
      */
     @Transactional
     public ShoppingList restore(
-            UUID ownerProfileId, LocalDate startDate, Instant generatedAt, List<ShoppingListRepository.ItemRow> items) {
+            UUID ownerId, LocalDate startDate, Instant generatedAt, List<ShoppingListRepository.ItemRow> items) {
         requireMonday(startDate);
         if (items.size() > MAX_ITEMS) {
             throw new IllegalArgumentException("a shopping list can have at most " + MAX_ITEMS + " items");
@@ -146,18 +146,17 @@ public class ShoppingListService {
                 throw new IllegalArgumentException("item quantity must not be negative: " + item.name());
             }
         }
-        repository.replaceList(ownerProfileId, startDate, generatedAt, items);
-        return find(ownerProfileId, startDate)
-                .orElseThrow(() -> new IllegalStateException("list must exist after restoring"));
+        repository.replaceList(ownerId, startDate, generatedAt, items);
+        return find(ownerId, startDate).orElseThrow(() -> new IllegalStateException("list must exist after restoring"));
     }
 
     /** Checks an item off (or back on). */
     @Transactional
     public ShoppingList.ShoppingListItem updateChecked(
-            UUID ownerProfileId, LocalDate startDate, UUID itemId, boolean checked) {
+            UUID ownerId, LocalDate startDate, UUID itemId, boolean checked) {
         requireMonday(startDate);
         ShoppingList.ShoppingListItem item = repository
-                .findItem(ownerProfileId, startDate, itemId)
+                .findItem(ownerId, startDate, itemId)
                 .orElseThrow(() -> new NoSuchElementException("shopping list item not found: " + itemId));
         repository.updateChecked(itemId, checked);
         return new ShoppingList.ShoppingListItem(

@@ -63,7 +63,7 @@ public class RecipeRepository {
         jdbc.update(
                 INSERT_RECIPE,
                 recipe.id(),
-                recipe.ownerProfileId(),
+                recipe.ownerId(),
                 recipe.slug(),
                 recipe.title(),
                 recipe.description(),
@@ -113,14 +113,14 @@ public class RecipeRepository {
     }
 
     /** The recipes a profile owns, newest first, optionally filtered by a search term. */
-    public List<Recipe> findOwnedBy(UUID ownerProfileId, @Nullable String query) {
-        Sql sql = searchSql(" where owner_profile_id = ?", List.of(ownerProfileId), query);
+    public List<Recipe> findOwnedBy(UUID ownerId, @Nullable String query) {
+        Sql sql = searchSql(" where owner_profile_id = ?", List.of(ownerId), query);
         return loadAll(sql.text() + " order by created_at desc", sql.args());
     }
 
-    public boolean existsOwnedBy(UUID ownerProfileId) {
+    public boolean existsOwnedBy(UUID ownerId) {
         return Boolean.TRUE.equals(jdbc.queryForObject(
-                "select exists (select 1 from recipe where owner_profile_id = ?)", Boolean.class, ownerProfileId));
+                "select exists (select 1 from recipe where owner_profile_id = ?)", Boolean.class, ownerId));
     }
 
     /** Curated library recipes, by title, optionally filtered by a search term. */
@@ -240,7 +240,7 @@ public class RecipeRepository {
         return rows.stream()
                 .map(row -> new Recipe(
                         row.id(),
-                        row.ownerProfileId(),
+                        row.ownerId(),
                         row.slug(),
                         row.title(),
                         row.description(),
@@ -369,7 +369,7 @@ public class RecipeRepository {
 
     private record RecipeRow(
             UUID id,
-            @Nullable UUID ownerProfileId,
+            @Nullable UUID ownerId,
             @Nullable String slug,
             String title,
             String description,

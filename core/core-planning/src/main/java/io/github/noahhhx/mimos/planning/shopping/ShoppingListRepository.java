@@ -38,15 +38,14 @@ public class ShoppingListRepository {
     }
 
     /** Replaces the owner's list for the week (items cascade). */
-    public void replaceList(UUID ownerProfileId, LocalDate startDate, Instant generatedAt, List<ItemRow> items) {
-        jdbc.update(
-                "delete from shopping_list where owner_profile_id = ? and start_date = ?", ownerProfileId, startDate);
+    public void replaceList(UUID ownerId, LocalDate startDate, Instant generatedAt, List<ItemRow> items) {
+        jdbc.update("delete from shopping_list where owner_profile_id = ? and start_date = ?", ownerId, startDate);
         jdbc.update(
                 "insert into shopping_list (owner_profile_id, start_date, generated_at) values (?, ?, ?)",
-                ownerProfileId,
+                ownerId,
                 startDate,
                 Timestamp.from(generatedAt));
-        UUID listId = requireListId(ownerProfileId, startDate);
+        UUID listId = requireListId(ownerId, startDate);
         int position = 0;
         for (ItemRow item : items) {
             jdbc.update(
@@ -65,11 +64,11 @@ public class ShoppingListRepository {
     }
 
     /** The owner's generated list for the week, if any. */
-    public Optional<ShoppingList> findList(UUID ownerProfileId, LocalDate startDate) {
+    public Optional<ShoppingList> findList(UUID ownerId, LocalDate startDate) {
         List<UUID> ids = jdbc.queryForList(
                 "select id from shopping_list where owner_profile_id = ? and start_date = ?",
                 UUID.class,
-                ownerProfileId,
+                ownerId,
                 startDate);
         if (ids.isEmpty()) {
             return Optional.empty();
@@ -77,40 +76,40 @@ public class ShoppingListRepository {
         UUID listId = ids.getFirst();
         var generatedAt = requireNonNullTimestamp(
                 jdbc.queryForObject("select generated_at from shopping_list where id = ?", Timestamp.class, listId));
-        List<ShoppingList.ShoppingListItem> items = jdbc.query(SELECT_ITEMS, ITEM_MAPPER, ownerProfileId, startDate);
+        List<ShoppingList.ShoppingListItem> items = jdbc.query(SELECT_ITEMS, ITEM_MAPPER, ownerId, startDate);
         return Optional.of(new ShoppingList(listId, startDate, generatedAt, items));
     }
 
     /** Every list the owner has, oldest week first. */
-    public List<ShoppingList> findAllLists(UUID ownerProfileId) {
+    public List<ShoppingList> findAllLists(UUID ownerId) {
         return jdbc
                 .queryForList(
                         "select start_date from shopping_list where owner_profile_id = ? order by start_date",
                         LocalDate.class,
-                        ownerProfileId)
+                        ownerId)
                 .stream()
-                .flatMap(startDate -> findList(ownerProfileId, startDate).stream())
+                .flatMap(startDate -> findList(ownerId, startDate).stream())
                 .toList();
     }
 
     /** Whether any of the owner's lists has an item (an empty generated list holds nothing). */
-    public boolean hasItems(UUID ownerProfileId) {
+    public boolean hasItems(UUID ownerId) {
         return Boolean.TRUE.equals(jdbc.queryForObject("""
                 select exists (
                     select 1 from shopping_list_item i
                     join shopping_list l on l.id = i.shopping_list_id
                     where l.owner_profile_id = ?)
-                """, Boolean.class, ownerProfileId));
+                """, Boolean.class, ownerId));
     }
 
     /** The item if it belongs to the owner's list for the week. */
-    public Optional<ShoppingList.ShoppingListItem> findItem(UUID ownerProfileId, LocalDate startDate, UUID itemId) {
+    public Optional<ShoppingList.ShoppingListItem> findItem(UUID ownerId, LocalDate startDate, UUID itemId) {
         List<ShoppingList.ShoppingListItem> items = jdbc.query("""
                 select i.id, i.name, i.unit, i.quantity, i.category, i.checked
                 from shopping_list_item i
                 join shopping_list l on l.id = i.shopping_list_id
                 where l.owner_profile_id = ? and l.start_date = ? and i.id = ?
-                """, ITEM_MAPPER, ownerProfileId, startDate, itemId);
+                """, ITEM_MAPPER, ownerId, startDate, itemId);
         return items.isEmpty() ? Optional.empty() : Optional.of(items.getFirst());
     }
 
@@ -118,12 +117,12 @@ public class ShoppingListRepository {
         jdbc.update("update shopping_list_item set checked = ? where id = ?", checked, itemId);
     }
 
-    private UUID requireListId(UUID ownerProfileId, LocalDate startDate) {
+    private UUID requireListId(UUID ownerId, LocalDate startDate) {
         return java.util.Objects.requireNonNull(
                 jdbc.queryForObject(
                         "select id from shopping_list where owner_profile_id = ? and start_date = ?",
                         UUID.class,
-                        ownerProfileId,
+                        ownerId,
                         startDate),
                 "list row must exist after insert");
     }

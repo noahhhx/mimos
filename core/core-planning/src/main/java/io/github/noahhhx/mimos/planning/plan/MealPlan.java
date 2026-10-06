@@ -5,4 +5,4 @@ import java.util.List;
 import java.util.UUID;
 
 /** A week of planned meals, keyed by its Monday. */
-public record MealPlan(UUID id, UUID ownerProfileId, LocalDate startDate, List<PlannedMeal> entries) {}
+public record MealPlan(UUID id, UUID ownerId, LocalDate startDate, List<PlannedMeal> entries) {}

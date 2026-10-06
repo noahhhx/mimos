@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
  */
 public record Recipe(
         UUID id,
-        @Nullable UUID ownerProfileId,
+        @Nullable UUID ownerId,
         @Nullable String slug,
         String title,
         String description,
@@ -29,6 +29,6 @@ public record Recipe(
         Instant updatedAt) {
 
     public boolean isLibrary() {
-        return ownerProfileId == null;
+        return ownerId == null;
     }
 }

@@ -10,7 +10,7 @@ import org.jspecify.annotations.Nullable;
  */
 public record CatalogIngredient(
         String slug,
-        @Nullable UUID ownerProfileId,
+        @Nullable UUID ownerId,
         String name,
         NutritionBasis basis,
         double calories,
@@ -29,12 +29,12 @@ public record CatalogIngredient(
     }
 
     public boolean isShared() {
-        return ownerProfileId == null;
+        return ownerId == null;
     }
 
     /** Whether this owner may link recipe lines to the entry: it is shared, or theirs. */
-    public boolean isVisibleTo(@Nullable UUID profileId) {
-        return ownerProfileId == null || ownerProfileId.equals(profileId);
+    public boolean isVisibleTo(@Nullable UUID viewerOwnerId) {
+        return ownerId == null || ownerId.equals(viewerOwnerId);
     }
 
     public Nutrition nutrition() {

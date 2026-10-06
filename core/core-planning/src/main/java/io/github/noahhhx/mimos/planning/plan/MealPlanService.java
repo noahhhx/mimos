@@ -34,27 +34,22 @@ public class MealPlanService {
     }
 
     /** The owner's plan for the week, created empty on first access. */
-    public MealPlan planFor(UUID ownerProfileId, LocalDate startDate) {
+    public MealPlan planFor(UUID ownerId, LocalDate startDate) {
         requireMonday(startDate);
-        UUID planId = plans.ensurePlan(ownerProfileId, startDate);
-        return hydrate(ownerProfileId, startDate, planId);
+        UUID planId = plans.ensurePlan(ownerId, startDate);
+        return hydrate(ownerId, startDate, planId);
     }
 
     /** Plans a meal in the week's plan. */
     @Transactional
     public PlannedMeal addEntry(
-            UUID ownerProfileId,
-            LocalDate startDate,
-            LocalDate date,
-            MealType mealType,
-            UUID recipeId,
-            double servings) {
+            UUID ownerId, LocalDate startDate, LocalDate date, MealType mealType, UUID recipeId, double servings) {
         requireMonday(startDate);
         requireWithinWeek(startDate, date);
         requireServings(servings);
-        Recipe recipe = recipes.findVisible(recipeId, ownerProfileId)
+        Recipe recipe = recipes.findVisible(recipeId, ownerId)
                 .orElseThrow(() -> new NoSuchElementException("recipe not found: " + recipeId));
-        UUID planId = plans.ensurePlan(ownerProfileId, startDate);
+        UUID planId = plans.ensurePlan(ownerId, startDate);
         MealPlanRepository.PlannedMealInput entry =
                 new MealPlanRepository.PlannedMealInput(UUID.randomUUID(), date, mealType, recipeId, servings);
         plans.insertEntry(planId, entry);
@@ -64,10 +59,10 @@ public class MealPlanService {
 
     /** Changes the planned servings of one of the owner's entries. */
     @Transactional
-    public PlannedMeal updateServings(UUID ownerProfileId, LocalDate startDate, UUID entryId, double servings) {
+    public PlannedMeal updateServings(UUID ownerId, LocalDate startDate, UUID entryId, double servings) {
         requireMonday(startDate);
         requireServings(servings);
-        MealPlanRepository.PlannedMealInput entry = requireEntry(ownerProfileId, startDate, entryId);
+        MealPlanRepository.PlannedMealInput entry = requireEntry(ownerId, startDate, entryId);
         plans.updateServings(entryId, servings);
         return withTitle(new MealPlanRepository.PlannedMealInput(
                 entry.id(), entry.date(), entry.mealType(), entry.recipeId(), servings));
@@ -75,49 +70,48 @@ public class MealPlanService {
 
     /** Removes one of the owner's entries. */
     @Transactional
-    public void removeEntry(UUID ownerProfileId, LocalDate startDate, UUID entryId) {
+    public void removeEntry(UUID ownerId, LocalDate startDate, UUID entryId) {
         requireMonday(startDate);
-        requireEntry(ownerProfileId, startDate, entryId);
+        requireEntry(ownerId, startDate, entryId);
         plans.deleteEntry(entryId);
     }
 
     /** The week's raw entries with their recipes resolved (for shopping lists and logging). */
-    public List<PlannedMeal> plannedMeals(UUID ownerProfileId, LocalDate startDate) {
-        return hydrate(ownerProfileId, startDate, plans.ensurePlan(ownerProfileId, startDate))
-                .entries();
+    public List<PlannedMeal> plannedMeals(UUID ownerId, LocalDate startDate) {
+        return hydrate(ownerId, startDate, plans.ensurePlan(ownerId, startDate)).entries();
     }
 
     /** Every week the owner has planned meals in, oldest first; weeks without entries are left out. */
-    public List<MealPlan> plansWithEntries(UUID ownerProfileId) {
-        List<MealPlanRepository.WeekEntry> all = plans.loadAllEntryInputs(ownerProfileId);
+    public List<MealPlan> plansWithEntries(UUID ownerId) {
+        List<MealPlanRepository.WeekEntry> all = plans.loadAllEntryInputs(ownerId);
         Map<UUID, Recipe> recipesById = recipes.findByIds(
                 all.stream().map(weekEntry -> weekEntry.entry().recipeId()).toList());
         Map<UUID, MealPlan> byPlan = new LinkedHashMap<>();
         for (MealPlanRepository.WeekEntry weekEntry : all) {
             byPlan.computeIfAbsent(
                             weekEntry.planId(),
-                            planId -> new MealPlan(planId, ownerProfileId, weekEntry.startDate(), new ArrayList<>()))
+                            planId -> new MealPlan(planId, ownerId, weekEntry.startDate(), new ArrayList<>()))
                     .entries()
                     .add(toPlannedMeal(weekEntry.entry(), recipesById));
         }
         return byPlan.values().stream()
-                .map(plan -> new MealPlan(plan.id(), ownerProfileId, plan.startDate(), List.copyOf(plan.entries())))
+                .map(plan -> new MealPlan(plan.id(), ownerId, plan.startDate(), List.copyOf(plan.entries())))
                 .toList();
     }
 
     /** Whether the owner has planned any meal in any week. */
-    public boolean hasEntries(UUID ownerProfileId) {
-        return plans.hasEntries(ownerProfileId);
+    public boolean hasEntries(UUID ownerId) {
+        return plans.hasEntries(ownerId);
     }
 
-    private MealPlan hydrate(UUID ownerProfileId, LocalDate startDate, UUID planId) {
-        List<MealPlanRepository.PlannedMealInput> inputs = plans.loadEntryInputs(ownerProfileId, startDate);
+    private MealPlan hydrate(UUID ownerId, LocalDate startDate, UUID planId) {
+        List<MealPlanRepository.PlannedMealInput> inputs = plans.loadEntryInputs(ownerId, startDate);
         Map<UUID, Recipe> recipesById = recipes.findByIds(inputs.stream()
                 .map(MealPlanRepository.PlannedMealInput::recipeId)
                 .toList());
         List<PlannedMeal> entries =
                 inputs.stream().map(input -> toPlannedMeal(input, recipesById)).toList();
-        return new MealPlan(planId, ownerProfileId, startDate, entries);
+        return new MealPlan(planId, ownerId, startDate, entries);
     }
 
     private static PlannedMeal toPlannedMeal(MealPlanRepository.PlannedMealInput input, Map<UUID, Recipe> recipesById) {
@@ -137,8 +131,8 @@ public class MealPlanService {
         return new PlannedMeal(entry.id(), entry.date(), entry.mealType(), entry.recipeId(), title, entry.servings());
     }
 
-    private MealPlanRepository.PlannedMealInput requireEntry(UUID ownerProfileId, LocalDate startDate, UUID entryId) {
-        MealPlanRepository.PlannedMealInput entry = plans.findEntry(ownerProfileId, entryId)
+    private MealPlanRepository.PlannedMealInput requireEntry(UUID ownerId, LocalDate startDate, UUID entryId) {
+        MealPlanRepository.PlannedMealInput entry = plans.findEntry(ownerId, entryId)
                 .orElseThrow(() -> new NoSuchElementException("plan entry not found: " + entryId));
         if (entry.date().isBefore(startDate) || entry.date().isAfter(startDate.plusDays(6))) {
             // Exists, but not in the week named in the request.

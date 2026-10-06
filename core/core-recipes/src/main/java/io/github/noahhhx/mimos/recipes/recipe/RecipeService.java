@@ -46,9 +46,9 @@ public class RecipeService {
 
     /** Creates a personal recipe for the given owner. */
     @Transactional
-    public Recipe create(UUID ownerProfileId, RecipeDraft submitted) {
+    public Recipe create(UUID ownerId, RecipeDraft submitted) {
         Instant now = clock.instant();
-        return save(UUID.randomUUID(), ownerProfileId, null, submitted, now, now, true);
+        return save(UUID.randomUUID(), ownerId, null, submitted, now, now, true);
     }
 
     /**
@@ -56,29 +56,22 @@ public class RecipeService {
      * like any new recipe, with a new id and the exported timestamps.
      */
     @Transactional
-    public Recipe restore(UUID ownerProfileId, RecipeDraft submitted, Instant createdAt, Instant updatedAt) {
-        return save(UUID.randomUUID(), ownerProfileId, null, submitted, createdAt, updatedAt, true);
+    public Recipe restore(UUID ownerId, RecipeDraft submitted, Instant createdAt, Instant updatedAt) {
+        return save(UUID.randomUUID(), ownerId, null, submitted, createdAt, updatedAt, true);
     }
 
     /** Replaces a personal recipe; library recipes are read-only. */
     @Transactional
-    public Recipe replace(UUID ownerProfileId, UUID recipeId, RecipeDraft submitted) {
-        Recipe existing = requireOwned(ownerProfileId, recipeId);
-        return save(
-                existing.id(),
-                ownerProfileId,
-                existing.slug(),
-                submitted,
-                existing.createdAt(),
-                clock.instant(),
-                false);
+    public Recipe replace(UUID ownerId, UUID recipeId, RecipeDraft submitted) {
+        Recipe existing = requireOwned(ownerId, recipeId);
+        return save(existing.id(), ownerId, existing.slug(), submitted, existing.createdAt(), clock.instant(), false);
     }
 
     /**
      * Calculates per-serving nutrition for the viewer's ingredient lines
      * that are not saved yet, and reports which lines counted (ADR-0015).
      */
-    public NutritionEstimate estimateNutrition(UUID viewerProfileId, List<Ingredient> lines, int servings) {
+    public NutritionEstimate estimateNutrition(UUID ownerId, List<Ingredient> lines, int servings) {
         requireServings(servings);
         if (lines.size() > MAX_INGREDIENTS) {
             throw new IllegalArgumentException("a recipe can have at most " + MAX_INGREDIENTS + " ingredients");
@@ -88,13 +81,12 @@ public class RecipeService {
                 lines,
                 servings,
                 new NutritionCalculator.Links(
-                        requireCatalogEntries(viewerProfileId, lines),
-                        requireLinkedRecipes(viewerProfileId, null, lines)));
+                        requireCatalogEntries(ownerId, lines), requireLinkedRecipes(ownerId, null, lines)));
     }
 
     private Recipe save(
             UUID id,
-            UUID ownerProfileId,
+            UUID ownerId,
             @Nullable String slug,
             RecipeDraft submitted,
             Instant createdAt,
@@ -102,11 +94,11 @@ public class RecipeService {
             boolean isNew) {
         RecipeDraft draft = withDistinctTags(submitted);
         validate(draft);
-        requireCatalogEntries(ownerProfileId, draft.ingredients());
-        requireLinkedRecipes(ownerProfileId, isNew ? null : id, draft.ingredients());
+        requireCatalogEntries(ownerId, draft.ingredients());
+        requireLinkedRecipes(ownerId, isNew ? null : id, draft.ingredients());
         Recipe recipe = new Recipe(
                 id,
-                ownerProfileId,
+                ownerId,
                 slug,
                 draft.title(),
                 draft.description(),
@@ -130,12 +122,12 @@ public class RecipeService {
     }
 
     /** The catalog entries the lines link to; a slug the owner cannot see is a 400. */
-    private Map<String, CatalogIngredient> requireCatalogEntries(UUID ownerProfileId, List<Ingredient> lines) {
+    private Map<String, CatalogIngredient> requireCatalogEntries(UUID ownerId, List<Ingredient> lines) {
         Set<String> slugs = lines.stream()
                 .map(Ingredient::catalogSlug)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
-        Map<String, CatalogIngredient> found = ingredients.findVisibleBySlugs(ownerProfileId, slugs);
+        Map<String, CatalogIngredient> found = ingredients.findVisibleBySlugs(ownerId, slugs);
         for (String slug : slugs) {
             if (!found.containsKey(slug)) {
                 throw new IllegalArgumentException("ingredient catalog has no entry \"" + slug + "\"");
@@ -151,8 +143,7 @@ public class RecipeService {
      * cycle. Anything else is a 400 that does not say whether the recipe
      * exists.
      */
-    private Map<UUID, Nutrition> requireLinkedRecipes(
-            UUID ownerProfileId, @Nullable UUID savedId, List<Ingredient> lines) {
+    private Map<UUID, Nutrition> requireLinkedRecipes(UUID ownerId, @Nullable UUID savedId, List<Ingredient> lines) {
         Set<UUID> linked = lines.stream()
                 .map(Ingredient::recipeId)
                 .filter(Objects::nonNull)
@@ -166,7 +157,7 @@ public class RecipeService {
         Map<UUID, Recipe> found = repository.findByIds(linked);
         for (UUID id : linked) {
             Recipe recipe = found.get(id);
-            if (recipe == null || !ownerProfileId.equals(recipe.ownerProfileId())) {
+            if (recipe == null || !ownerId.equals(recipe.ownerId())) {
                 throw new IllegalArgumentException("you have no recipe with id " + id);
             }
         }
@@ -182,26 +173,24 @@ public class RecipeService {
 
     /** Deletes a personal recipe; library recipes are read-only. */
     @Transactional
-    public void delete(UUID ownerProfileId, UUID recipeId) {
-        Recipe existing = requireOwned(ownerProfileId, recipeId);
+    public void delete(UUID ownerId, UUID recipeId) {
+        Recipe existing = requireOwned(ownerId, recipeId);
         repository.deleteById(existing.id());
     }
 
     /** A recipe the viewer may see: their own or a library recipe. */
-    public Optional<Recipe> findVisible(UUID recipeId, UUID viewerProfileId) {
-        return repository
-                .findById(recipeId)
-                .filter(recipe -> recipe.isLibrary() || viewerProfileId.equals(recipe.ownerProfileId()));
+    public Optional<Recipe> findVisible(UUID recipeId, UUID ownerId) {
+        return repository.findById(recipeId).filter(recipe -> recipe.isLibrary() || ownerId.equals(recipe.ownerId()));
     }
 
     /** The viewer's personal recipes, optionally filtered by a search term. */
-    public List<Recipe> findOwned(UUID viewerProfileId, @Nullable String query) {
-        return repository.findOwnedBy(viewerProfileId, normalizeQuery(query));
+    public List<Recipe> findOwned(UUID ownerId, @Nullable String query) {
+        return repository.findOwnedBy(ownerId, normalizeQuery(query));
     }
 
     /** Whether the owner has any personal recipes. */
-    public boolean hasOwned(UUID ownerProfileId) {
-        return repository.existsOwnedBy(ownerProfileId);
+    public boolean hasOwned(UUID ownerId) {
+        return repository.existsOwnedBy(ownerId);
     }
 
     /** Curated library recipes, optionally filtered by a search term. */
@@ -219,14 +208,14 @@ public class RecipeService {
         return repository.findByIds(recipeIds);
     }
 
-    private Recipe requireOwned(UUID ownerProfileId, UUID recipeId) {
+    private Recipe requireOwned(UUID ownerId, UUID recipeId) {
         Recipe recipe = repository
                 .findById(recipeId)
                 .orElseThrow(() -> new NoSuchElementException("recipe not found: " + recipeId));
         if (recipe.isLibrary()) {
             throw new ReadOnlyRecipeException("library recipes are read-only");
         }
-        if (!ownerProfileId.equals(recipe.ownerProfileId())) {
+        if (!ownerId.equals(recipe.ownerId())) {
             // Not the owner: indistinguishable from nonexistent.
             throw new NoSuchElementException("recipe not found: " + recipeId);
         }

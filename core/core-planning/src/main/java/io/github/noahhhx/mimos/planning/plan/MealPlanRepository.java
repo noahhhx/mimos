@@ -42,17 +42,17 @@ public class MealPlanRepository {
     }
 
     /** Returns the plan id for the owner's week, creating the (empty) plan if absent. */
-    public UUID ensurePlan(UUID ownerProfileId, LocalDate startDate) {
+    public UUID ensurePlan(UUID ownerId, LocalDate startDate) {
         jdbc.update("""
                 insert into meal_plan (owner_profile_id, start_date)
                 values (?, ?)
                 on conflict (owner_profile_id, start_date) do nothing
-                """, ownerProfileId, Date.valueOf(startDate));
+                """, ownerId, Date.valueOf(startDate));
         return java.util.Objects.requireNonNull(
                 jdbc.queryForObject(
                         "select id from meal_plan where owner_profile_id = ? and start_date = ?",
                         UUID.class,
-                        ownerProfileId,
+                        ownerId,
                         Date.valueOf(startDate)),
                 "plan row must exist after ensure");
     }
@@ -80,7 +80,7 @@ public class MealPlanRepository {
     }
 
     /** The week's entries in display order; titles resolved against the given recipe titles. */
-    public List<PlannedMeal> loadEntries(UUID ownerProfileId, LocalDate startDate, Map<UUID, String> recipeTitles) {
+    public List<PlannedMeal> loadEntries(UUID ownerId, LocalDate startDate, Map<UUID, String> recipeTitles) {
         return jdbc
                 .query(
                         SELECT_ENTRIES,
@@ -91,20 +91,20 @@ public class MealPlanRepository {
                                 rs.getObject("recipe_id", UUID.class),
                                 recipeTitles.getOrDefault(rs.getObject("recipe_id", UUID.class), "Deleted recipe"),
                                 rs.getDouble("servings")),
-                        ownerProfileId,
+                        ownerId,
                         Date.valueOf(startDate))
                 .stream()
                 .toList();
     }
 
     /** The week's raw entries (used by the shopping list and logging services). */
-    public List<PlannedMealInput> loadEntryInputs(UUID ownerProfileId, LocalDate startDate) {
-        return jdbc.query(SELECT_ENTRIES, ENTRY_INPUT_MAPPER, ownerProfileId, Date.valueOf(startDate)).stream()
+    public List<PlannedMealInput> loadEntryInputs(UUID ownerId, LocalDate startDate) {
+        return jdbc.query(SELECT_ENTRIES, ENTRY_INPUT_MAPPER, ownerId, Date.valueOf(startDate)).stream()
                 .toList();
     }
 
     /** Every entry the owner has planned, with its week, in week and display order. */
-    public List<WeekEntry> loadAllEntryInputs(UUID ownerProfileId) {
+    public List<WeekEntry> loadAllEntryInputs(UUID ownerId) {
         return jdbc.query(
                 """
                 select p.id as plan_id, p.start_date, e.id, e.entry_date, e.meal_type, e.recipe_id, e.servings
@@ -125,26 +125,26 @@ public class MealPlanRepository {
                         rs.getObject("plan_id", UUID.class),
                         rs.getDate("start_date").toLocalDate(),
                         ENTRY_INPUT_MAPPER.mapRow(rs, i)),
-                ownerProfileId);
+                ownerId);
     }
 
-    public boolean hasEntries(UUID ownerProfileId) {
+    public boolean hasEntries(UUID ownerId) {
         return Boolean.TRUE.equals(jdbc.queryForObject("""
                 select exists (
                     select 1 from meal_plan_entry e
                     join meal_plan p on p.id = e.meal_plan_id
                     where p.owner_profile_id = ?)
-                """, Boolean.class, ownerProfileId));
+                """, Boolean.class, ownerId));
     }
 
     /** A single entry (owner-checked via the plan join), for patch/delete confirmation. */
-    public Optional<PlannedMealInput> findEntry(UUID ownerProfileId, UUID entryId) {
+    public Optional<PlannedMealInput> findEntry(UUID ownerId, UUID entryId) {
         List<PlannedMealInput> rows = jdbc.query("""
                 select e.id, e.entry_date, e.meal_type, e.recipe_id, e.servings
                 from meal_plan_entry e
                 join meal_plan p on p.id = e.meal_plan_id
                 where p.owner_profile_id = ? and e.id = ?
-                """, ENTRY_INPUT_MAPPER, ownerProfileId, entryId);
+                """, ENTRY_INPUT_MAPPER, ownerId, entryId);
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.getFirst());
     }
 
