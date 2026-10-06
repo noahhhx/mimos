@@ -82,6 +82,8 @@ recipe's name in an ingredient line: your recipes appear in the list
 too, marked **Your recipe** with the calories in one serving. Pick one,
 then give the amount in **servings** of it, like "2 servings focaccia".
 
+![A sandwich recipe using the focaccia recipe, measured in servings](../assets/screenshots/recipe-uses-recipe.png)
+
 The line counts toward nutrition with the other recipe's nutrition per
 serving, as that recipe is now: change the focaccia and the sandwich
 follows. A line doesn't count when:
