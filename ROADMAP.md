@@ -150,3 +150,13 @@ Rules for using this file:
     Per-user export/import is done (ADR-0011, the web app's "Your data"
     page); the instance-level backup story (database and Keycloak) is
     still open.
+
+## Phase 5 — Shared kitchens
+
+17. **Households.** A family shares recipes, dinners, the shopping list,
+    and plugins like the Country of the Week, while each person plans
+    their own breakfasts and lunches and logs their own meals. Designed
+    in ADR-0019 (proposed); delivered in its four steps.
+    *Done when: two users in one household plan a shared dinner and their
+    own lunches, shop from one list, see one country of the week, and
+    each log their share of the dinner.*

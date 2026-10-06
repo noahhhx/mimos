@@ -24,6 +24,7 @@ right at the time.
 | [ADR-0016](adr-0016-personal-ingredients.md)                       | Personal ingredients and the ingredient search |
 | [ADR-0017](adr-0017-plugin-week-panels.md)                         | Week panels, and plugins that remember their users |
 | [ADR-0018](adr-0018-recipes-as-ingredients.md)                     | Recipes as ingredients |
+| [ADR-0019](adr-0019-households.md)                                 | Households (proposed) |
 
 New ADRs are sequential: `adr-NNNN-title.md`, with the numbering in this
 index. Once accepted, an ADR is never rewritten — superseding decisions get
