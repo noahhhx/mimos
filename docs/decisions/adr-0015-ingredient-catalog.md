@@ -27,6 +27,16 @@ The seeder runs whether or not the library seed is enabled, since personal
 recipes link to the catalog too. It starts small: the ingredients the
 library uses. Personal saved ingredients may come later.
 
+*Update 2026-10-06:* the seed now covers the standard kitchen
+ingredients, about 470 of them, measured the way a cook measures each:
+weighed foods per 100 g, liquids and anything spooned per 100 ml
+(converted with a realistic density), and counted foods per piece of a
+stated or typical size. Values follow USDA FoodData Central, raw unless
+the name says otherwise. Personal ingredients arrived with ADR-0016.
+`IngredientSeedTests` (core-recipes) keeps the original slugs, checks
+slugs and names, and flags calories that disagree with the macros,
+except for a listed few that honestly do (fibre-heavy spices, alcohol).
+
 Each entry has a stable `slug`, a display `name`, a **basis**, and its
 calories, protein, carbs, and fat for that basis. All four are required.
 
