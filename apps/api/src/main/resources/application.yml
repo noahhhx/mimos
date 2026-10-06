@@ -37,8 +37,10 @@ spring:
           Mimos is a recipe companion: a curated recipe library shared by
           everyone on this instance, the user's own personal recipes, weekly
           meal plans, shopping lists generated from a plan, and a log of meals
-          eaten with their calories and macros. Library recipes are read-only;
-          personal recipes belong to the user and only they can see them. A
+          eaten with their calories and macros. Library recipes are read-only.
+          Personal recipes, meal plans, and shopping lists belong to the
+          user's household, and everyone in it can see and change them; each
+          person's meal log is their own (getHousehold names who is in it). A
           plan week starts on a Monday, and every plan, suggestion, and
           shopping-list tool takes that Monday as startDate. Search recipes by
           title, tag, or ingredient with the q parameter of listMyRecipes and

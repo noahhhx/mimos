@@ -125,6 +125,16 @@ public class RecipeRepository {
                 "select exists (select 1 from recipe where household_id = ?)", Boolean.class, ownerId));
     }
 
+    /** The ids of the recipes an owner owns. */
+    public List<UUID> findOwnedIds(UUID ownerId) {
+        return jdbc.queryForList("select id from recipe where household_id = ?", UUID.class, ownerId);
+    }
+
+    /** Gives every recipe one owner owns to another, keeping who created each. */
+    public void moveOwned(UUID fromOwnerId, UUID toOwnerId) {
+        jdbc.update("update recipe set household_id = ? where household_id = ?", toOwnerId, fromOwnerId);
+    }
+
     /** Curated library recipes, by title, optionally filtered by a search term. */
     public List<Recipe> findLibrary(@Nullable String query) {
         Sql sql = searchSql(" where household_id is null", List.of(), query);

@@ -11,6 +11,7 @@ import java.util.NoSuchElementException;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Calorie and macro logging. Logging from a recipe copies the recipe's
@@ -118,6 +119,16 @@ public class MealLogService {
     /** Whether the owner has logged any meal. */
     public boolean hasLogs(UUID ownerProfileId) {
         return repository.existsFor(ownerProfileId);
+    }
+
+    /**
+     * Clears the links from a profile's logs to the recipes of
+     * {@code recipeOwnerId}, which the profile can no longer see. Each log
+     * keeps its description and the nutrition copied when it was logged.
+     */
+    @Transactional
+    public void unlinkRecipesOf(UUID ownerProfileId, UUID recipeOwnerId) {
+        repository.unlinkRecipes(ownerProfileId, recipes.ownedIds(recipeOwnerId));
     }
 
     /** The owner's logs in a date range (inclusive), in display order. */

@@ -114,6 +114,21 @@ public class MealPlanService {
         return plans.hasEntries(ownerId);
     }
 
+    /** Deletes every plan the owner has, with all their entries. */
+    @Transactional
+    public void deleteAll(UUID ownerId) {
+        plans.deleteAllPlans(ownerId);
+    }
+
+    /**
+     * Takes a diner off every meal the owner has planned, in every week;
+     * a meal left with no diners is deleted, since an entry needs one.
+     */
+    @Transactional
+    public void removeDiner(UUID ownerId, UUID dinerProfileId) {
+        plans.removeDiner(ownerId, dinerProfileId);
+    }
+
     private MealPlan hydrate(UUID ownerId, LocalDate startDate, UUID planId) {
         List<MealPlanRepository.PlannedMealInput> inputs = plans.loadEntryInputs(ownerId, startDate);
         Map<UUID, Recipe> recipesById = recipes.findByIds(inputs.stream()

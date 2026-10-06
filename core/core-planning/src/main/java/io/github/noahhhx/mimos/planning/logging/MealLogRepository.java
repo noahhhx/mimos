@@ -7,9 +7,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -88,6 +91,17 @@ public class MealLogRepository {
         List<MealLog> logs =
                 jdbc.query(SELECT_BASE + " where owner_profile_id = ? and id = ?", LOG_MAPPER, ownerProfileId, logId);
         return logs.isEmpty() ? Optional.empty() : Optional.of(logs.getFirst());
+    }
+
+    /** Clears the owner's links to these recipes; the logs and their nutrition stay. */
+    public void unlinkRecipes(UUID ownerProfileId, Collection<UUID> recipeIds) {
+        if (recipeIds.isEmpty()) {
+            return;
+        }
+        jdbc.update(
+                "update meal_log set recipe_id = null where owner_profile_id = ? and recipe_id in ("
+                        + String.join(",", Collections.nCopies(recipeIds.size(), "?")) + ")",
+                Stream.concat(Stream.of(ownerProfileId), recipeIds.stream()).toArray());
     }
 
     public boolean deleteById(UUID ownerProfileId, UUID logId) {

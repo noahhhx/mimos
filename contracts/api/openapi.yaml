@@ -13,7 +13,7 @@
 openapi: 3.1.0
 info:
   title: Mimos API
-  version: 0.10.0
+  version: 0.11.0
   description: |
     The Mimos recipe companion API. Endpoints require a bearer token issued
     by the instance's Keycloak realm unless they live under `/api/v1/public`
@@ -100,6 +100,146 @@ paths:
         '404':
           $ref: '#/components/responses/Problem'
 
+  /api/v1/household:
+    get:
+      tags: [household]
+      operationId: getHousehold
+      summary: The caller's household and who is in it
+      description: >
+        Every user belongs to exactly one household (ADR-0019); a user on
+        their own is a household of one. The household shares its recipes,
+        personal ingredients, meal plans, shopping lists, and plugin
+        choices; each member's meal log stays their own. Members are listed
+        by name, and `you` marks the caller.
+      responses:
+        '200':
+          description: The caller's household.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Household'
+        '401':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/household/invites:
+    post:
+      tags: [household]
+      operationId: createHouseholdInvite
+      summary: Invite someone to the caller's household
+      description: >
+        Creates an invite to the caller's household. Any member may create
+        one. The token is returned only here: give the person the link
+        `/app/join/{token}` on this Mimos. It works once, for seven days.
+        Joining is something the invited person confirms themselves in the
+        web app.
+      responses:
+        '201':
+          description: The invite, with its one-time token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HouseholdInvite'
+        '401':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/household/invites/preview:
+    post:
+      tags: [household]
+      operationId: previewHouseholdInvite
+      x-mcp: false
+      summary: What joining with an invite would mean for the caller
+      description: >
+        Reads an invite without using it, for the page that asks the caller
+        to confirm: who is in the inviting household, when the invite
+        expires, whether the caller is already a member, and whether the
+        caller's current household is shared. The token travels in the body
+        so it stays out of request logs. An unknown token is a 404; an
+        expired or used one is a 410.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HouseholdInviteToken'
+      responses:
+        '200':
+          description: The invite's household and what joining would do.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HouseholdInvitePreview'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '410':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/household/join:
+    post:
+      tags: [household]
+      operationId: joinHousehold
+      x-mcp: false
+      summary: Join a household with an invite
+      description: >
+        Uses the invite and moves the caller into its household. From a
+        household of one, the caller's recipes and personal ingredients
+        come along; their meal plans, shopping lists, and plugin choices are
+        deleted. From a shared household, the caller leaves it first (see
+        leaveHousehold) and brings nothing. The caller's meal log stays
+        theirs either way. An unknown invite is a 404, an expired or used
+        one a 410, and an invite to the caller's own household a 409.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HouseholdInviteToken'
+      responses:
+        '200':
+          description: The household the caller is now in.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Household'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '410':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/household/leave:
+    post:
+      tags: [household]
+      operationId: leaveHousehold
+      x-mcp: false
+      summary: Leave the caller's shared household
+      description: >
+        The caller leaves and starts a new household of one. The household
+        keeps its recipes, ingredients, meal plans, and shopping lists. The
+        caller stops eating every planned meal there, and a meal nobody else
+        eats is removed. The caller keeps their meal log, but logged meals
+        no longer link to the household's recipes. Leaving a household of
+        one is a 409.
+      responses:
+        '200':
+          description: The caller's new household of one.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Household'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+
   /api/v1/account/export:
     get:
       tags: [account]
@@ -136,9 +276,10 @@ paths:
         Restores a document produced by `exportAccount`, from this or any
         other Mimos instance, into the caller's account. Any format version
         up to the current one is accepted; older ones are upgraded first.
-        The account must be empty: no personal recipes, planned meals,
-        logged meals, or shopping list items. The import is all or
-        nothing.
+        The account must be empty: no personal recipes or ingredients,
+        planned meals, logged meals, or shopping list items. It must also
+        be a household of one; a caller who shares a household gets a 409.
+        The import is all or nothing.
       requestBody:
         required: true
         description: >
@@ -966,6 +1107,71 @@ components:
       properties:
         enabled:
           type: boolean
+    Person:
+      type: object
+      description: A Mimos user as their household sees them.
+      required: [id, displayName, you]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The person's profile id.
+        displayName:
+          type: string
+        you:
+          type: boolean
+          description: True when this is the caller.
+    Household:
+      type: object
+      description: The household the caller belongs to (ADR-0019).
+      required: [members]
+      properties:
+        members:
+          type: array
+          description: Everyone in the household, by name.
+          items:
+            $ref: '#/components/schemas/Person'
+    HouseholdInvite:
+      type: object
+      description: A single-use invite to a household.
+      required: [token, expiresAt]
+      properties:
+        token:
+          type: string
+          description: The secret that makes the link `/app/join/{token}`. Shown once; only a hash is stored.
+        expiresAt:
+          type: string
+          format: date-time
+    HouseholdInviteToken:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 200
+    HouseholdInvitePreview:
+      type: object
+      description: An invite as the person it was given to sees it before joining.
+      required: [members, expiresAt, alreadyMember, currentHouseholdShared]
+      properties:
+        members:
+          type: array
+          description: Everyone in the inviting household, by name.
+          items:
+            $ref: '#/components/schemas/Person'
+        expiresAt:
+          type: string
+          format: date-time
+        alreadyMember:
+          type: boolean
+          description: True when the caller is already in the inviting household.
+        currentHouseholdShared:
+          type: boolean
+          description: >
+            True when the caller's current household has other members, so
+            joining means leaving it and bringing nothing. False when it is
+            a household of one, whose recipes and ingredients come along.
     Problem:
       type: object
       description: RFC 9457 problem details.

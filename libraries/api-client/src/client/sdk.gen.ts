@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddMealPlanEntryData, AddMealPlanEntryErrors, AddMealPlanEntryResponses, CreateIngredientData, CreateIngredientErrors, CreateIngredientResponses, CreateMealLogData, CreateMealLogErrors, CreateMealLogResponses, CreateRecipeData, CreateRecipeErrors, CreateRecipeResponses, DeleteIngredientData, DeleteIngredientErrors, DeleteIngredientResponses, DeleteMealLogData, DeleteMealLogErrors, DeleteMealLogResponses, DeleteMealPlanEntryData, DeleteMealPlanEntryErrors, DeleteMealPlanEntryResponses, DeleteRecipeData, DeleteRecipeErrors, DeleteRecipeResponses, EstimateRecipeNutritionData, EstimateRecipeNutritionErrors, EstimateRecipeNutritionResponses, ExportAccountData, ExportAccountErrors, ExportAccountResponses, GenerateShoppingListData, GenerateShoppingListErrors, GenerateShoppingListResponses, GetMealPlanData, GetMealPlanErrors, GetMealPlanResponses, GetMeData, GetMeErrors, GetMeResponses, GetPlanSuggestionsData, GetPlanSuggestionsErrors, GetPlanSuggestionsResponses, GetPublicRecipeData, GetPublicRecipeErrors, GetPublicRecipeResponses, GetRecipeData, GetRecipeErrors, GetRecipeResponses, GetShoppingListData, GetShoppingListErrors, GetShoppingListResponses, GetWeekPanelsData, GetWeekPanelsErrors, GetWeekPanelsResponses, ImportAccountData, ImportAccountErrors, ImportAccountResponses, ListIngredientsData, ListIngredientsErrors, ListIngredientsResponses, ListLibraryRecipesData, ListLibraryRecipesErrors, ListLibraryRecipesResponses, ListMealLogsData, ListMealLogsErrors, ListMealLogsResponses, ListMyPluginsData, ListMyPluginsErrors, ListMyPluginsResponses, ListMyRecipesData, ListMyRecipesErrors, ListMyRecipesResponses, ListPublicRecipesData, ListPublicRecipesResponses, PressWeekPanelActionData, PressWeekPanelActionErrors, PressWeekPanelActionResponses, ReplaceIngredientData, ReplaceIngredientErrors, ReplaceIngredientResponses, ReplaceRecipeData, ReplaceRecipeErrors, ReplaceRecipeResponses, SummarizeMealLogsData, SummarizeMealLogsErrors, SummarizeMealLogsResponses, UpdateMealPlanEntryData, UpdateMealPlanEntryErrors, UpdateMealPlanEntryResponses, UpdateMyPluginData, UpdateMyPluginErrors, UpdateMyPluginResponses, UpdateShoppingListItemData, UpdateShoppingListItemErrors, UpdateShoppingListItemResponses } from './types.gen';
+import type { AddMealPlanEntryData, AddMealPlanEntryErrors, AddMealPlanEntryResponses, CreateHouseholdInviteData, CreateHouseholdInviteErrors, CreateHouseholdInviteResponses, CreateIngredientData, CreateIngredientErrors, CreateIngredientResponses, CreateMealLogData, CreateMealLogErrors, CreateMealLogResponses, CreateRecipeData, CreateRecipeErrors, CreateRecipeResponses, DeleteIngredientData, DeleteIngredientErrors, DeleteIngredientResponses, DeleteMealLogData, DeleteMealLogErrors, DeleteMealLogResponses, DeleteMealPlanEntryData, DeleteMealPlanEntryErrors, DeleteMealPlanEntryResponses, DeleteRecipeData, DeleteRecipeErrors, DeleteRecipeResponses, EstimateRecipeNutritionData, EstimateRecipeNutritionErrors, EstimateRecipeNutritionResponses, ExportAccountData, ExportAccountErrors, ExportAccountResponses, GenerateShoppingListData, GenerateShoppingListErrors, GenerateShoppingListResponses, GetHouseholdData, GetHouseholdErrors, GetHouseholdResponses, GetMealPlanData, GetMealPlanErrors, GetMealPlanResponses, GetMeData, GetMeErrors, GetMeResponses, GetPlanSuggestionsData, GetPlanSuggestionsErrors, GetPlanSuggestionsResponses, GetPublicRecipeData, GetPublicRecipeErrors, GetPublicRecipeResponses, GetRecipeData, GetRecipeErrors, GetRecipeResponses, GetShoppingListData, GetShoppingListErrors, GetShoppingListResponses, GetWeekPanelsData, GetWeekPanelsErrors, GetWeekPanelsResponses, ImportAccountData, ImportAccountErrors, ImportAccountResponses, JoinHouseholdData, JoinHouseholdErrors, JoinHouseholdResponses, LeaveHouseholdData, LeaveHouseholdErrors, LeaveHouseholdResponses, ListIngredientsData, ListIngredientsErrors, ListIngredientsResponses, ListLibraryRecipesData, ListLibraryRecipesErrors, ListLibraryRecipesResponses, ListMealLogsData, ListMealLogsErrors, ListMealLogsResponses, ListMyPluginsData, ListMyPluginsErrors, ListMyPluginsResponses, ListMyRecipesData, ListMyRecipesErrors, ListMyRecipesResponses, ListPublicRecipesData, ListPublicRecipesResponses, PressWeekPanelActionData, PressWeekPanelActionErrors, PressWeekPanelActionResponses, PreviewHouseholdInviteData, PreviewHouseholdInviteErrors, PreviewHouseholdInviteResponses, ReplaceIngredientData, ReplaceIngredientErrors, ReplaceIngredientResponses, ReplaceRecipeData, ReplaceRecipeErrors, ReplaceRecipeResponses, SummarizeMealLogsData, SummarizeMealLogsErrors, SummarizeMealLogsResponses, UpdateMealPlanEntryData, UpdateMealPlanEntryErrors, UpdateMealPlanEntryResponses, UpdateMyPluginData, UpdateMyPluginErrors, UpdateMyPluginResponses, UpdateShoppingListItemData, UpdateShoppingListItemErrors, UpdateShoppingListItemResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -50,6 +50,60 @@ export const updateMyPlugin = <ThrowOnError extends boolean = false>(options: Op
 });
 
 /**
+ * The caller's household and who is in it
+ *
+ * Every user belongs to exactly one household (ADR-0019); a user on their own is a household of one. The household shares its recipes, personal ingredients, meal plans, shopping lists, and plugin choices; each member's meal log stays their own. Members are listed by name, and `you` marks the caller.
+ *
+ */
+export const getHousehold = <ThrowOnError extends boolean = false>(options?: Options<GetHouseholdData, ThrowOnError>): RequestResult<GetHouseholdResponses, GetHouseholdErrors, ThrowOnError> => (options?.client ?? client).get<GetHouseholdResponses, GetHouseholdErrors, ThrowOnError>({ url: '/api/v1/household', ...options });
+
+/**
+ * Invite someone to the caller's household
+ *
+ * Creates an invite to the caller's household. Any member may create one. The token is returned only here: give the person the link `/app/join/{token}` on this Mimos. It works once, for seven days. Joining is something the invited person confirms themselves in the web app.
+ *
+ */
+export const createHouseholdInvite = <ThrowOnError extends boolean = false>(options?: Options<CreateHouseholdInviteData, ThrowOnError>): RequestResult<CreateHouseholdInviteResponses, CreateHouseholdInviteErrors, ThrowOnError> => (options?.client ?? client).post<CreateHouseholdInviteResponses, CreateHouseholdInviteErrors, ThrowOnError>({ url: '/api/v1/household/invites', ...options });
+
+/**
+ * What joining with an invite would mean for the caller
+ *
+ * Reads an invite without using it, for the page that asks the caller to confirm: who is in the inviting household, when the invite expires, whether the caller is already a member, and whether the caller's current household is shared. The token travels in the body so it stays out of request logs. An unknown token is a 404; an expired or used one is a 410.
+ *
+ */
+export const previewHouseholdInvite = <ThrowOnError extends boolean = false>(options: Options<PreviewHouseholdInviteData, ThrowOnError>): RequestResult<PreviewHouseholdInviteResponses, PreviewHouseholdInviteErrors, ThrowOnError> => (options.client ?? client).post<PreviewHouseholdInviteResponses, PreviewHouseholdInviteErrors, ThrowOnError>({
+    url: '/api/v1/household/invites/preview',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Join a household with an invite
+ *
+ * Uses the invite and moves the caller into its household. From a household of one, the caller's recipes and personal ingredients come along; their meal plans, shopping lists, and plugin choices are deleted. From a shared household, the caller leaves it first (see leaveHousehold) and brings nothing. The caller's meal log stays theirs either way. An unknown invite is a 404, an expired or used one a 410, and an invite to the caller's own household a 409.
+ *
+ */
+export const joinHousehold = <ThrowOnError extends boolean = false>(options: Options<JoinHouseholdData, ThrowOnError>): RequestResult<JoinHouseholdResponses, JoinHouseholdErrors, ThrowOnError> => (options.client ?? client).post<JoinHouseholdResponses, JoinHouseholdErrors, ThrowOnError>({
+    url: '/api/v1/household/join',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Leave the caller's shared household
+ *
+ * The caller leaves and starts a new household of one. The household keeps its recipes, ingredients, meal plans, and shopping lists. The caller stops eating every planned meal there, and a meal nobody else eats is removed. The caller keeps their meal log, but logged meals no longer link to the household's recipes. Leaving a household of one is a 409.
+ *
+ */
+export const leaveHousehold = <ThrowOnError extends boolean = false>(options?: Options<LeaveHouseholdData, ThrowOnError>): RequestResult<LeaveHouseholdResponses, LeaveHouseholdErrors, ThrowOnError> => (options?.client ?? client).post<LeaveHouseholdResponses, LeaveHouseholdErrors, ThrowOnError>({ url: '/api/v1/household/leave', ...options });
+
+/**
  * Export the caller's data
  *
  * The caller's personal recipes, meal plans, shopping lists, and meal logs as one versioned document (ADR-0011). Library recipes are referenced by slug, not included. The response is offered as a file download.
@@ -60,7 +114,7 @@ export const exportAccount = <ThrowOnError extends boolean = false>(options?: Op
 /**
  * Import an export into the caller's (empty) account
  *
- * Restores a document produced by `exportAccount`, from this or any other Mimos instance, into the caller's account. Any format version up to the current one is accepted; older ones are upgraded first. The account must be empty: no personal recipes, planned meals, logged meals, or shopping list items. The import is all or nothing.
+ * Restores a document produced by `exportAccount`, from this or any other Mimos instance, into the caller's account. Any format version up to the current one is accepted; older ones are upgraded first. The account must be empty: no personal recipes or ingredients, planned meals, logged meals, or shopping list items. It must also be a household of one; a caller who shares a household gets a 409. The import is all or nothing.
  *
  */
 export const importAccount = <ThrowOnError extends boolean = false>(options: Options<ImportAccountData, ThrowOnError>): RequestResult<ImportAccountResponses, ImportAccountErrors, ThrowOnError> => (options.client ?? client).post<ImportAccountResponses, ImportAccountErrors, ThrowOnError>({

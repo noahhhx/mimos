@@ -1,6 +1,8 @@
 package io.github.noahhhx.mimos.api.support;
 
 import io.github.noahhhx.mimos.api.account.AccountNotEmptyException;
+import io.github.noahhhx.mimos.api.household.InviteNoLongerValidException;
+import io.github.noahhhx.mimos.api.household.MembershipConflictException;
 import io.github.noahhhx.mimos.plugins.PluginActionFailedException;
 import io.github.noahhhx.mimos.recipes.recipe.ReadOnlyIngredientException;
 import io.github.noahhhx.mimos.recipes.recipe.ReadOnlyRecipeException;
@@ -24,7 +26,9 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 /**
  * Maps every error raised in Spring MVC to an RFC 9457 problem-details
  * response: domain exceptions (400 invalid, 404 not found or not visible,
- * 403 read-only curated content, 409 import into a non-empty account, 502 a
+ * 403 read-only curated content, 409 import into a non-empty account or a
+ * join or leave that contradicts the caller's membership, 410 an expired or
+ * used household invite, 502 a
  * plugin that failed to answer a button press), Spring MVC's own errors (unsupported or
  * unacceptable media type, unsupported method, unknown path, malformed
  * input), which {@link ResponseEntityExceptionHandler} renders, and anything
@@ -59,6 +63,16 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AccountNotEmptyException.class)
     ProblemDetail conflict(AccountNotEmptyException exception) {
         return problem(HttpStatus.CONFLICT, "Account not empty", exception.getMessage());
+    }
+
+    @ExceptionHandler(MembershipConflictException.class)
+    ProblemDetail conflict(MembershipConflictException exception) {
+        return problem(HttpStatus.CONFLICT, "Membership conflict", exception.getMessage());
+    }
+
+    @ExceptionHandler(InviteNoLongerValidException.class)
+    ProblemDetail gone(InviteNoLongerValidException exception) {
+        return problem(HttpStatus.GONE, "Invite no longer valid", exception.getMessage());
     }
 
     @ExceptionHandler(PluginActionFailedException.class)

@@ -125,6 +125,27 @@ public class MealPlanRepository {
                 """, Boolean.class, ownerId));
     }
 
+    /** Deletes every plan the owner has; entries and their diners go with them. */
+    public void deleteAllPlans(UUID ownerId) {
+        jdbc.update("delete from meal_plan where household_id = ?", ownerId);
+    }
+
+    /** Takes the profile off every entry the owner has planned, then deletes the entries nobody eats. */
+    public void removeDiner(UUID ownerId, UUID dinerProfileId) {
+        jdbc.update("""
+                delete from meal_plan_entry_diner d
+                using meal_plan_entry e, meal_plan p
+                where d.entry_id = e.id and e.meal_plan_id = p.id
+                  and p.household_id = ? and d.profile_id = ?
+                """, ownerId, dinerProfileId);
+        jdbc.update("""
+                delete from meal_plan_entry e
+                using meal_plan p
+                where e.meal_plan_id = p.id and p.household_id = ?
+                  and not exists (select 1 from meal_plan_entry_diner d where d.entry_id = e.id)
+                """, ownerId);
+    }
+
     /** A single entry (owner-checked via the plan join), for patch/delete confirmation. */
     public Optional<PlannedMealInput> findEntry(UUID ownerId, UUID entryId) {
         List<PlannedMealInput> rows = jdbc.query("""

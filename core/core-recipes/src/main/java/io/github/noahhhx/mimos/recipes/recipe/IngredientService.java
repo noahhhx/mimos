@@ -38,6 +38,17 @@ public class IngredientService {
         return catalog.findOwnedBy(ownerId);
     }
 
+    /** Whether the owner has any ingredients of their own. */
+    public boolean hasOwned(UUID ownerId) {
+        return catalog.existsOwnedBy(ownerId);
+    }
+
+    /** Gives all of one owner's ingredients to another (ADR-0019); recipe lines that link them stay linked. */
+    @Transactional
+    public void moveAll(UUID fromOwnerId, UUID toOwnerId) {
+        catalog.moveOwned(fromOwnerId, toOwnerId);
+    }
+
     /** The entries with these slugs that the viewer may link; others are omitted. */
     public Map<String, CatalogIngredient> findVisibleBySlugs(UUID ownerId, Collection<String> slugs) {
         Map<String, CatalogIngredient> found = new HashMap<>(catalog.findBySlugs(slugs));

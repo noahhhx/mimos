@@ -1,5 +1,6 @@
 package io.github.noahhhx.mimos.api.account;
 
+import io.github.noahhhx.mimos.api.household.HouseholdService;
 import io.github.noahhhx.mimos.api.identity.IdentityService;
 import io.github.noahhhx.mimos.api.identity.UserProfileRecord;
 import io.github.noahhhx.mimos.planning.logging.MealLogDraft;
@@ -65,6 +66,7 @@ public class AccountImporter {
 
     private final ObjectMapper objectMapper;
     private final IdentityService identity;
+    private final HouseholdService households;
     private final RecipeService recipes;
     private final IngredientService ingredients;
     private final MealPlanService mealPlans;
@@ -75,6 +77,7 @@ public class AccountImporter {
     public AccountImporter(
             ObjectMapper objectMapper,
             IdentityService identity,
+            HouseholdService households,
             RecipeService recipes,
             IngredientService ingredients,
             MealPlanService mealPlans,
@@ -82,6 +85,7 @@ public class AccountImporter {
             MealLogService mealLogs) {
         this.objectMapper = objectMapper;
         this.identity = identity;
+        this.households = households;
         this.recipes = recipes;
         this.ingredients = ingredients;
         this.mealPlans = mealPlans;
@@ -97,12 +101,18 @@ public class AccountImporter {
 
         UUID householdId = importer.householdId();
         identity.lockHousehold(householdId);
+        if (households.isShared(householdId)) {
+            throw new AccountNotEmptyException("Import needs an account of your own, and you share a household."
+                    + " Leave the household first, or import into a fresh account.");
+        }
         if (recipes.hasOwned(householdId)
+                || ingredients.hasOwned(householdId)
                 || mealPlans.hasEntries(householdId)
                 || shoppingLists.hasItems(householdId)
                 || mealLogs.hasLogs(importer.id())) {
             throw new AccountNotEmptyException("Import needs an empty account, and this one already has recipes,"
-                    + " planned meals, shopping lists, or logged meals. Import into a fresh account instead.");
+                    + " ingredients, planned meals, shopping lists, or logged meals."
+                    + " Import into a fresh account instead.");
         }
 
         Run run = new Run(importer);

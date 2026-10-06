@@ -49,8 +49,14 @@ import tools.jackson.dataformat.yaml.YAMLMapper;
 @ExtendWith(OutputCaptureExtension.class)
 class McpEndpointTests extends ApiIntegrationTestSupport {
 
-    private static final Set<String> OPTED_OUT =
-            Set.of("listPublicRecipes", "getPublicRecipe", "exportAccount", "importAccount");
+    private static final Set<String> OPTED_OUT = Set.of(
+            "listPublicRecipes",
+            "getPublicRecipe",
+            "exportAccount",
+            "importAccount",
+            "previewHouseholdInvite",
+            "joinHousehold",
+            "leaveHousehold");
 
     @LocalServerPort
     int port;

@@ -114,4 +114,14 @@ public class IngredientCatalog {
     public void delete(String slug) {
         jdbc.update("delete from catalog_ingredient where slug = ?", slug);
     }
+
+    public boolean existsOwnedBy(UUID ownerId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject(
+                "select exists (select 1 from catalog_ingredient where household_id = ?)", Boolean.class, ownerId));
+    }
+
+    /** Gives every entry one owner owns to another; slugs, and so every link to them, stay. */
+    public void moveOwned(UUID fromOwnerId, UUID toOwnerId) {
+        jdbc.update("update catalog_ingredient set household_id = ? where household_id = ?", toOwnerId, fromOwnerId);
+    }
 }

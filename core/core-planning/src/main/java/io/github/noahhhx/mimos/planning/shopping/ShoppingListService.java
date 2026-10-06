@@ -123,6 +123,12 @@ public class ShoppingListService {
         return repository.hasItems(ownerId);
     }
 
+    /** Deletes every list the owner has. */
+    @Transactional
+    public void deleteAll(UUID ownerId) {
+        repository.deleteAllLists(ownerId);
+    }
+
     /**
      * Restores a list as it was exported (ADR-0011): items, order, and
      * check-off state as given, not regenerated from the plan, replacing

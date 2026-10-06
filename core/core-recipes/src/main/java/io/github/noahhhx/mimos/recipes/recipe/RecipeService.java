@@ -204,6 +204,21 @@ public class RecipeService {
         return repository.existsOwnedBy(ownerId);
     }
 
+    /** The ids of the owner's personal recipes. */
+    public Set<UUID> ownedIds(UUID ownerId) {
+        return Set.copyOf(repository.findOwnedIds(ownerId));
+    }
+
+    /**
+     * Gives all of one owner's personal recipes to another (ADR-0019), each
+     * keeping its id, its creator, and its links to the recipes and
+     * ingredients it uses.
+     */
+    @Transactional
+    public void moveAll(UUID fromOwnerId, UUID toOwnerId) {
+        repository.moveOwned(fromOwnerId, toOwnerId);
+    }
+
     /** Curated library recipes, optionally filtered by a search term. */
     public List<Recipe> findLibrary(@Nullable String query) {
         return repository.findLibrary(normalizeQuery(query));

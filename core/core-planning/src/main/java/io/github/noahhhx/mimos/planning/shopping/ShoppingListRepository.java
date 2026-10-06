@@ -92,6 +92,11 @@ public class ShoppingListRepository {
                 .toList();
     }
 
+    /** Deletes every list the owner has, with their items. */
+    public void deleteAllLists(UUID ownerId) {
+        jdbc.update("delete from shopping_list where household_id = ?", ownerId);
+    }
+
     /** Whether any of the owner's lists has an item (an empty generated list holds nothing). */
     public boolean hasItems(UUID ownerId) {
         return Boolean.TRUE.equals(jdbc.queryForObject("""

@@ -44,6 +44,11 @@ public class PluginOptInService {
                 "select plugin_id from plugin_opt_in where household_id = ?", String.class, householdId));
     }
 
+    /** Withdraws every choice this household made, for a household that is going away (ADR-0019). */
+    public void deleteAll(UUID householdId) {
+        jdbc.update("delete from plugin_opt_in where household_id = ?", householdId);
+    }
+
     /**
      * The plugins offering {@code capability} that this household turned on, in
      * registration order, each with the manifest it was judged by. Opt-in is

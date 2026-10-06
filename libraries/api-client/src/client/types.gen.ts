@@ -53,6 +53,66 @@ export type UserPluginSetting = {
 };
 
 /**
+ * A Mimos user as their household sees them.
+ */
+export type Person = {
+    /**
+     * The person's profile id.
+     */
+    id: string;
+    displayName: string;
+    /**
+     * True when this is the caller.
+     */
+    you: boolean;
+};
+
+/**
+ * The household the caller belongs to (ADR-0019).
+ */
+export type Household = {
+    /**
+     * Everyone in the household, by name.
+     */
+    members: Array<Person>;
+};
+
+/**
+ * A single-use invite to a household.
+ */
+export type HouseholdInvite = {
+    /**
+     * The secret that makes the link `/app/join/{token}`. Shown once; only a hash is stored.
+     */
+    token: string;
+    expiresAt: string;
+};
+
+export type HouseholdInviteToken = {
+    token: string;
+};
+
+/**
+ * An invite as the person it was given to sees it before joining.
+ */
+export type HouseholdInvitePreview = {
+    /**
+     * Everyone in the inviting household, by name.
+     */
+    members: Array<Person>;
+    expiresAt: string;
+    /**
+     * True when the caller is already in the inviting household.
+     */
+    alreadyMember: boolean;
+    /**
+     * True when the caller's current household has other members, so joining means leaving it and bringing nothing. False when it is a household of one, whose recipes and ingredients come along.
+     *
+     */
+    currentHouseholdShared: boolean;
+};
+
+/**
  * RFC 9457 problem details.
  */
 export type Problem = {
@@ -790,6 +850,163 @@ export type UpdateMyPluginResponses = {
 };
 
 export type UpdateMyPluginResponse = UpdateMyPluginResponses[keyof UpdateMyPluginResponses];
+
+export type GetHouseholdData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/household';
+};
+
+export type GetHouseholdErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type GetHouseholdError = GetHouseholdErrors[keyof GetHouseholdErrors];
+
+export type GetHouseholdResponses = {
+    /**
+     * The caller's household.
+     */
+    200: Household;
+};
+
+export type GetHouseholdResponse = GetHouseholdResponses[keyof GetHouseholdResponses];
+
+export type CreateHouseholdInviteData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/household/invites';
+};
+
+export type CreateHouseholdInviteErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type CreateHouseholdInviteError = CreateHouseholdInviteErrors[keyof CreateHouseholdInviteErrors];
+
+export type CreateHouseholdInviteResponses = {
+    /**
+     * The invite, with its one-time token.
+     */
+    201: HouseholdInvite;
+};
+
+export type CreateHouseholdInviteResponse = CreateHouseholdInviteResponses[keyof CreateHouseholdInviteResponses];
+
+export type PreviewHouseholdInviteData = {
+    body: HouseholdInviteToken;
+    path?: never;
+    query?: never;
+    url: '/api/v1/household/invites/preview';
+};
+
+export type PreviewHouseholdInviteErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    410: Problem;
+};
+
+export type PreviewHouseholdInviteError = PreviewHouseholdInviteErrors[keyof PreviewHouseholdInviteErrors];
+
+export type PreviewHouseholdInviteResponses = {
+    /**
+     * The invite's household and what joining would do.
+     */
+    200: HouseholdInvitePreview;
+};
+
+export type PreviewHouseholdInviteResponse = PreviewHouseholdInviteResponses[keyof PreviewHouseholdInviteResponses];
+
+export type JoinHouseholdData = {
+    body: HouseholdInviteToken;
+    path?: never;
+    query?: never;
+    url: '/api/v1/household/join';
+};
+
+export type JoinHouseholdErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    409: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    410: Problem;
+};
+
+export type JoinHouseholdError = JoinHouseholdErrors[keyof JoinHouseholdErrors];
+
+export type JoinHouseholdResponses = {
+    /**
+     * The household the caller is now in.
+     */
+    200: Household;
+};
+
+export type JoinHouseholdResponse = JoinHouseholdResponses[keyof JoinHouseholdResponses];
+
+export type LeaveHouseholdData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/household/leave';
+};
+
+export type LeaveHouseholdErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    409: Problem;
+};
+
+export type LeaveHouseholdError = LeaveHouseholdErrors[keyof LeaveHouseholdErrors];
+
+export type LeaveHouseholdResponses = {
+    /**
+     * The caller's new household of one.
+     */
+    200: Household;
+};
+
+export type LeaveHouseholdResponse = LeaveHouseholdResponses[keyof LeaveHouseholdResponses];
 
 export type ExportAccountData = {
     body?: never;

@@ -46,6 +46,15 @@ public class PluginSubjectService {
         return created;
     }
 
+    /**
+     * Forgets this household's subjects, for a household that is going away
+     * (ADR-0019). What a plugin stored against them can no longer be
+     * reached through Mimos.
+     */
+    public void deleteAll(UUID householdId) {
+        jdbc.update("delete from plugin_subject where household_id = ?", householdId);
+    }
+
     private @Nullable UUID find(UUID householdId, String pluginId) {
         List<UUID> subjects = jdbc.queryForList(
                 "select subject from plugin_subject where household_id = ? and plugin_id = ?",
