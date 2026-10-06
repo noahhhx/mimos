@@ -249,10 +249,11 @@ paths:
       x-mcp: false
       summary: Export the caller's data
       description: >
-        The caller's personal recipes, meal plans, shopping lists, and meal
-        logs as one versioned document (ADR-0011). Library recipes are
-        referenced by slug, not included. The response is offered as a
-        file download.
+        One person's data as one versioned document (ADR-0011, ADR-0019):
+        the household's personal recipes, ingredients, and shopping lists,
+        the planned meals the caller eats (other members' meals are left
+        out), and the caller's meal logs. Library recipes are referenced by
+        slug, not included. The response is offered as a file download.
       responses:
         '200':
           description: The caller's data in the current export format version.
@@ -281,6 +282,7 @@ paths:
         The account must be empty: no personal recipes or ingredients,
         planned meals, logged meals, or shopping list items. It must also
         be a household of one; a caller who shares a household gets a 409.
+        Every planned meal is restored with the caller as its only diner.
         The import is all or nothing.
       requestBody:
         required: true
@@ -1845,9 +1847,9 @@ components:
     AccountExport:
       type: object
       description: >
-        One user's data, in export format version 3 (ADR-0011). Any change
-        to this schema bumps the version and adds an upgrade step from the
-        previous one.
+        One person's data, in export format version 4 (ADR-0011, ADR-0019).
+        Any change to this schema, or to what a section holds, bumps the
+        version and adds an upgrade step from the previous one.
       required: [format, version, exportedAt, ingredients, recipes, mealPlans, shoppingLists, mealLogs]
       properties:
         format:
@@ -1855,34 +1857,40 @@ components:
           enum: [mimos.export]
         version:
           type: integer
-          description: The format version. This instance exports version 3.
+          description: The format version. This instance exports version 4.
         exportedAt:
           type: string
           format: date-time
         ingredients:
           type: array
-          description: The user's own ingredients; recipe lines refer to them by slug.
+          description: The household's own ingredients; recipe lines refer to them by slug.
           items:
             $ref: '#/components/schemas/ExportedIngredient'
         recipes:
           type: array
+          description: The household's personal recipes.
           items:
             $ref: '#/components/schemas/ExportedRecipe'
         mealPlans:
           type: array
+          description: >
+            The weeks the exporter eats a planned meal in, with only those
+            meals. Who else ate a meal is not exported.
           items:
             $ref: '#/components/schemas/ExportedMealPlan'
         shoppingLists:
           type: array
+          description: The household's shopping lists.
           items:
             $ref: '#/components/schemas/ExportedShoppingList'
         mealLogs:
           type: array
+          description: The exporter's own logged meals.
           items:
             $ref: '#/components/schemas/ExportedMealLog'
     ExportedIngredient:
       type: object
-      description: One of the user's own ingredients. `slug` is a key within the document; import assigns a new one.
+      description: One of the household's own ingredients. `slug` is a key within the document; import assigns a new one.
       required: [slug, name, basis, nutrition]
       properties:
         slug:
@@ -1953,7 +1961,10 @@ components:
             $ref: '#/components/schemas/ExportedPlanEntry'
     ExportedPlanEntry:
       type: object
-      description: One planned meal. Exactly one of `recipeId` and `librarySlug` is present.
+      description: >
+        One planned meal the exporter eats. Exactly one of `recipeId` and
+        `librarySlug` is present. `servings` is the amount cooked, for
+        everyone who ate it together.
       required: [date, mealType, servings]
       properties:
         date:

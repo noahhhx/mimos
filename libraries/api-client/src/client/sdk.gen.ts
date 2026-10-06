@@ -106,7 +106,7 @@ export const leaveHousehold = <ThrowOnError extends boolean = false>(options?: O
 /**
  * Export the caller's data
  *
- * The caller's personal recipes, meal plans, shopping lists, and meal logs as one versioned document (ADR-0011). Library recipes are referenced by slug, not included. The response is offered as a file download.
+ * One person's data as one versioned document (ADR-0011, ADR-0019): the household's personal recipes, ingredients, and shopping lists, the planned meals the caller eats (other members' meals are left out), and the caller's meal logs. Library recipes are referenced by slug, not included. The response is offered as a file download.
  *
  */
 export const exportAccount = <ThrowOnError extends boolean = false>(options?: Options<ExportAccountData, ThrowOnError>): RequestResult<ExportAccountResponses, ExportAccountErrors, ThrowOnError> => (options?.client ?? client).get<ExportAccountResponses, ExportAccountErrors, ThrowOnError>({ url: '/api/v1/account/export', ...options });
@@ -114,7 +114,7 @@ export const exportAccount = <ThrowOnError extends boolean = false>(options?: Op
 /**
  * Import an export into the caller's (empty) account
  *
- * Restores a document produced by `exportAccount`, from this or any other Mimos instance, into the caller's account. Any format version up to the current one is accepted; older ones are upgraded first. The account must be empty: no personal recipes or ingredients, planned meals, logged meals, or shopping list items. It must also be a household of one; a caller who shares a household gets a 409. The import is all or nothing.
+ * Restores a document produced by `exportAccount`, from this or any other Mimos instance, into the caller's account. Any format version up to the current one is accepted; older ones are upgraded first. The account must be empty: no personal recipes or ingredients, planned meals, logged meals, or shopping list items. It must also be a household of one; a caller who shares a household gets a 409. Every planned meal is restored with the caller as its only diner. The import is all or nothing.
  *
  */
 export const importAccount = <ThrowOnError extends boolean = false>(options: Options<ImportAccountData, ThrowOnError>): RequestResult<ImportAccountResponses, ImportAccountErrors, ThrowOnError> => (options.client ?? client).post<ImportAccountResponses, ImportAccountErrors, ThrowOnError>({

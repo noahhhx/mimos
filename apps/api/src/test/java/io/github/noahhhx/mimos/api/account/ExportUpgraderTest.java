@@ -85,15 +85,26 @@ class ExportUpgraderTest {
     }
 
     @Test
-    void version2BecomesVersion3Unchanged() {
-        ObjectNode v2 = document(2);
-        v2.putArray("recipes").addObject().put("title", "Soup").put("nutritionSource", "INGREDIENTS");
+    void versions2And3ComeThroughUnchanged() {
+        for (int version = 2; version <= 3; version++) {
+            ObjectNode old = document(version);
+            old.putArray("recipes").addObject().put("title", "Soup").put("nutritionSource", "INGREDIENTS");
+            old.putArray("mealPlans")
+                    .addObject()
+                    .put("startDate", "2026-09-28")
+                    .putArray("entries")
+                    .addObject()
+                    .put("date", "2026-09-28")
+                    .put("mealType", "DINNER")
+                    .put("librarySlug", "shakshuka")
+                    .put("servings", 2);
 
-        ObjectNode upgraded = ExportUpgrader.standard().upgrade(v2).document();
+            ObjectNode upgraded = ExportUpgrader.standard().upgrade(old).document();
 
-        assertThat(upgraded.remove("version").asInt()).isEqualTo(3);
-        v2.remove("version");
-        assertThat(upgraded).isEqualTo(v2);
+            assertThat(upgraded.remove("version").asInt()).isEqualTo(4);
+            old.remove("version");
+            assertThat(upgraded).as("version %d", version).isEqualTo(old);
+        }
     }
 
     @Test

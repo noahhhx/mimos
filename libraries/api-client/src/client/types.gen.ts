@@ -630,28 +630,41 @@ export type DailyLogSummary = {
 };
 
 /**
- * One user's data, in export format version 3 (ADR-0011). Any change to this schema bumps the version and adds an upgrade step from the previous one.
+ * One person's data, in export format version 4 (ADR-0011, ADR-0019). Any change to this schema, or to what a section holds, bumps the version and adds an upgrade step from the previous one.
  *
  */
 export type AccountExport = {
     format: 'mimos.export';
     /**
-     * The format version. This instance exports version 3.
+     * The format version. This instance exports version 4.
      */
     version: number;
     exportedAt: string;
     /**
-     * The user's own ingredients; recipe lines refer to them by slug.
+     * The household's own ingredients; recipe lines refer to them by slug.
      */
     ingredients: Array<ExportedIngredient>;
+    /**
+     * The household's personal recipes.
+     */
     recipes: Array<ExportedRecipe>;
+    /**
+     * The weeks the exporter eats a planned meal in, with only those meals. Who else ate a meal is not exported.
+     *
+     */
     mealPlans: Array<ExportedMealPlan>;
+    /**
+     * The household's shopping lists.
+     */
     shoppingLists: Array<ExportedShoppingList>;
+    /**
+     * The exporter's own logged meals.
+     */
     mealLogs: Array<ExportedMealLog>;
 };
 
 /**
- * One of the user's own ingredients. `slug` is a key within the document; import assigns a new one.
+ * One of the household's own ingredients. `slug` is a key within the document; import assigns a new one.
  */
 export type ExportedIngredient = {
     slug: string;
@@ -689,7 +702,8 @@ export type ExportedMealPlan = {
 };
 
 /**
- * One planned meal. Exactly one of `recipeId` and `librarySlug` is present.
+ * One planned meal the exporter eats. Exactly one of `recipeId` and `librarySlug` is present. `servings` is the amount cooked, for everyone who ate it together.
+ *
  */
 export type ExportedPlanEntry = {
     date: string;

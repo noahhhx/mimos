@@ -164,6 +164,26 @@ class ExportFixturesTests extends ApiIntegrationTestSupport {
         assertThat(sandwich.get("nutrition").get("calories").asDouble()).isEqualTo(300);
     }
 
+    @Test
+    void version4RestoresEveryPlannedMealAsTheImporters() {
+        RestClient api = api();
+        String token = accessToken(createUser());
+
+        JsonNode report = importFixture(api, token, 4);
+
+        assertThat(report.get("plannedMeals").asInt()).isEqualTo(2);
+        JsonNode entries = get(api, token, "/api/v1/plans/2026-09-28").get("entries");
+        assertThat(entries).hasSize(2);
+        entries.forEach(entry -> {
+            assertThat(entry.get("diners")).hasSize(1);
+            assertThat(entry.get("diners").get(0).get("you").asBoolean()).isTrue();
+        });
+        // A shared dinner keeps the amount cooked; the log keeps the exporter's share of it.
+        assertThat(entries.get(0).get("servings").asDouble()).isEqualTo(4);
+        JsonNode logs = get(api, token, "/api/v1/logs?from=2026-09-28&to=2026-09-28");
+        assertThat(logs.get(0).get("servings").asDouble()).isEqualTo(2);
+    }
+
     private JsonNode importFixture(RestClient api, String token, int version) {
         JsonNode document;
         try (InputStream in = new ClassPathResource(fixturePath(version)).getInputStream()) {

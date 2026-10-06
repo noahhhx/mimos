@@ -39,9 +39,11 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Writes one user's data as an account export in the current format
- * version (ADR-0011), read through the core modules' public services.
- * Personal recipes are exported in full; library recipes only by slug.
+ * Writes one person's data as an account export in the current format
+ * version (ADR-0011, ADR-0019), read through the core modules' public
+ * services: their household's recipes, ingredients, and shopping lists,
+ * the planned meals they eat, and their own logs. Personal recipes are
+ * exported in full; library recipes only by slug.
  */
 @Service
 public class AccountExporter {
@@ -68,12 +70,15 @@ public class AccountExporter {
         this.clock = clock;
     }
 
-    /** The exporter's household data and their own logs as one consistent snapshot. */
+    /** The exporter's household data, the meals they eat, and their own logs as one consistent snapshot. */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public AccountExport export(UserProfileRecord exporter) {
         UUID householdId = exporter.householdId();
         List<Recipe> owned = recipes.findOwned(householdId, null);
-        List<MealPlan> plans = mealPlans.plansWithEntries(householdId);
+        List<MealPlan> plans = mealPlans.plansWithEntries(householdId).stream()
+                .map(plan -> eatenBy(exporter.id(), plan))
+                .filter(plan -> !plan.entries().isEmpty())
+                .toList();
         List<ShoppingList> lists = shoppingLists.findAll(householdId);
         List<MealLog> logs = mealLogs.findAll(exporter.id());
 
@@ -103,6 +108,17 @@ public class AccountExporter {
                 .shoppingLists(lists.stream().map(AccountExporter::toExported).toList())
                 .mealLogs(logs.stream()
                         .map(log -> toExported(log, ownedIds, librarySlugs))
+                        .toList());
+    }
+
+    /** The week with only the meals the profile eats, which import gives the importer as their own. */
+    private static MealPlan eatenBy(UUID profileId, MealPlan plan) {
+        return new MealPlan(
+                plan.id(),
+                plan.ownerId(),
+                plan.startDate(),
+                plan.entries().stream()
+                        .filter(entry -> entry.dinerProfileIds().contains(profileId))
                         .toList());
     }
 

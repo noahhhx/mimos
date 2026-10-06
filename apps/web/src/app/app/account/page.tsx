@@ -82,8 +82,9 @@ export default function AccountPage() {
       <section className="card" aria-labelledby="export-heading">
         <h2 id="export-heading">Export</h2>
         <p>
-          Download everything you have added to Mimos as one file: your recipes, meal plans, shopping lists and
-          food log. Keep it somewhere safe. You can import it into a fresh account, here or on another Mimos.
+          Download your recipes, meal plans, shopping lists and food log as one file. In a shared household, it holds
+          the household&apos;s recipes and lists but only the meals you eat and your own food log. Keep it somewhere
+          safe. You can import it into a fresh account, here or on another Mimos.
         </p>
         {exportError && (
           <p className="card error" role="alert">

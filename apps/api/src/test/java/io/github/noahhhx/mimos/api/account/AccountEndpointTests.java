@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.noahhhx.mimos.api.support.ApiIntegrationTestSupport;
 import io.github.noahhhx.mimos.api.support.TestRecipes;
+import io.github.noahhhx.mimos.api.support.TestUser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
@@ -12,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -42,6 +45,9 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
 
     @Autowired
     ObjectMapper objectMapper;
+
+    @Autowired
+    JdbcTemplate jdbc;
 
     private RestClient api() {
         return RestClient.builder().baseUrl("http://localhost:" + port).build();
@@ -108,6 +114,45 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
                 .get("recipes")
                 .forEach(recipe -> importedIds.add(recipe.get("id").asText()));
         assertThat(importedIds).doesNotContain(soupId, toastId);
+    }
+
+    @Test
+    void aSharedHouseholdExportsOnlyTheExportersMealsAndLogs() {
+        TestUser host = new TestUser(port, objectMapper, jdbc);
+        TestUser guest = new TestUser(port, objectMapper, jdbc);
+        guest.join(host);
+        UUID stew = host.recipe("Household Stew");
+        String week = "/api/v1/plans/" + MONDAY;
+        String nextWeek = "/api/v1/plans/" + MONDAY.plusWeeks(1);
+        host.ok(HttpMethod.POST, week + "/entries", meal(MONDAY, "DINNER", stew, 4));
+        host.ok(HttpMethod.POST, week + "/entries", meal(MONDAY, "LUNCH", stew, 1));
+        guest.ok(HttpMethod.POST, week + "/entries", meal(MONDAY.plusDays(1), "BREAKFAST", stew, 1));
+        host.ok(HttpMethod.POST, nextWeek + "/entries", meal(MONDAY.plusWeeks(1), "LUNCH", stew, 1));
+        host.ok(HttpMethod.POST, week + "/shopping-list", null);
+        host.ok(HttpMethod.POST, "/api/v1/logs", meal(MONDAY, "DINNER", stew, 2));
+        host.ok(HttpMethod.POST, "/api/v1/logs", meal(MONDAY, "LUNCH", stew, 1));
+        guest.ok(HttpMethod.POST, "/api/v1/logs", meal(MONDAY, "DINNER", stew, 2));
+
+        JsonNode exported = guest.ok(HttpMethod.GET, "/api/v1/account/export", null);
+
+        assertThat(titles(exported.get("recipes"))).containsExactly("Household Stew");
+        assertThat(exported.get("shoppingLists")).hasSize(1);
+        assertThat(exported.get("mealPlans"))
+                .as("the week the guest eats nothing in is left out")
+                .hasSize(1);
+        JsonNode entries = exported.get("mealPlans").get(0).get("entries");
+        assertThat(meals(entries)).containsExactlyInAnyOrder("2026-09-28 DINNER 4.0", "2026-09-29 BREAKFAST 1.0");
+        assertThat(meals(exported.get("mealLogs"))).containsExactly("2026-09-28 DINNER 2.0");
+
+        TestUser fresh = new TestUser(port, objectMapper, jdbc);
+        JsonNode report = fresh.ok(HttpMethod.POST, "/api/v1/account/import", exported);
+        assertThat(report.get("plannedMeals").asInt()).isEqualTo(2);
+        assertThat(report.get("mealLogs").asInt()).isEqualTo(1);
+        fresh.ok(HttpMethod.GET, week, null)
+                .get("entries")
+                .forEach(entry -> assertThat(dinerIds(entry)).containsExactly(fresh.profileId.toString()));
+        assertThat(comparable(fresh.ok(HttpMethod.GET, "/api/v1/account/export", null)))
+                .isEqualTo(comparable(exported));
     }
 
     @Test
@@ -265,6 +310,32 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
                             .isEqualTo(expectedStatus);
                     return body;
                 });
+    }
+
+    /** A plan entry or a meal log of a recipe, which take the same fields. */
+    private static Map<String, Object> meal(LocalDate date, String mealType, UUID recipeId, double servings) {
+        return Map.of("date", date.toString(), "mealType", mealType, "recipeId", recipeId, "servings", servings);
+    }
+
+    /** Each planned or logged meal as "date mealType servings". */
+    private static List<String> meals(JsonNode meals) {
+        List<String> described = new ArrayList<>();
+        meals.forEach(meal -> described.add(meal.get("date").asText() + " "
+                + meal.get("mealType").asText() + " "
+                + meal.get("servings").asDouble()));
+        return described;
+    }
+
+    private static List<String> titles(JsonNode recipes) {
+        List<String> titles = new ArrayList<>();
+        recipes.forEach(recipe -> titles.add(recipe.get("title").asText()));
+        return titles;
+    }
+
+    private static List<String> dinerIds(JsonNode entry) {
+        List<String> ids = new ArrayList<>();
+        entry.get("diners").forEach(diner -> ids.add(diner.get("id").asText()));
+        return ids;
     }
 
     private void plan(RestClient api, String token, LocalDate date, String mealType, String recipeId, double servings) {

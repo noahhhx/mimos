@@ -21,8 +21,8 @@ public final class ExportUpgrader {
     public static final String FORMAT = "mimos.export";
 
     /** {@code STEPS.get(i)} upgrades version {@code i + 1} to {@code i + 2}. */
-    private static final List<UnaryOperator<ObjectNode>> STEPS =
-            List.of(ExportUpgrader::markNutritionManual, ExportUpgrader::allowRecipeLinks);
+    private static final List<UnaryOperator<ObjectNode>> STEPS = List.of(
+            ExportUpgrader::markNutritionManual, ExportUpgrader::allowRecipeLinks, ExportUpgrader::keepOnlyOwnMeals);
 
     /** The version this instance exports. */
     public static final int CURRENT_VERSION = STEPS.size() + 1;
@@ -88,6 +88,16 @@ public final class ExportUpgrader {
      * data comes through unchanged.
      */
     private static ObjectNode allowRecipeLinks(ObjectNode document) {
+        return document;
+    }
+
+    /**
+     * Version 4 (ADR-0019): the plans hold only the meals the exporter
+     * eats, since a household's other members plan meals too. Every
+     * version 3 entry was the exporter's, so its data comes through
+     * unchanged.
+     */
+    private static ObjectNode keepOnlyOwnMeals(ObjectNode document) {
         return document;
     }
 

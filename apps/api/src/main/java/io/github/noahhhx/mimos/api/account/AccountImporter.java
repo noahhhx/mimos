@@ -93,7 +93,11 @@ public class AccountImporter {
         this.mealLogs = mealLogs;
     }
 
-    /** Imports the document into the importer's account, which must be empty. */
+    /**
+     * Imports the document into the importer's account, which must be an
+     * empty household of one. Every planned meal becomes the importer's
+     * alone, as an export holds only the meals its exporter ate.
+     */
     @Transactional
     public ImportReport importInto(UserProfileRecord importer, JsonNode body) {
         ExportUpgrader.Upgraded upgraded = upgrader.upgrade(body);
