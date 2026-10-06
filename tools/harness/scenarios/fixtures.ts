@@ -2,7 +2,7 @@ import { appendFileSync } from "node:fs";
 
 import { expect, test as base, type Page } from "@playwright/test";
 
-import { DEFAULT_USER, USERS } from "../src/config.ts";
+import { DEFAULT_USER, USERS, endpoints } from "../src/config.ts";
 import { redactText } from "../src/redact.ts";
 
 /**
@@ -75,17 +75,41 @@ export async function register(page: Page, username: string): Promise<void> {
   await test.step(`register ${username}`, async () => {
     await page.goto("/app");
     await page.getByRole("button", { name: "Sign in" }).click();
-    await page.getByRole("link", { name: "Register" }).click();
-    await page.locator("#username").fill(username);
-    await page.locator("#email").fill(`${username}@example.com`);
-    await page.locator("#firstName").fill("Harness");
-    await page.locator("#lastName").fill("Cook");
-    await page.locator("#password").fill("mimos-test");
-    await page.locator("#password-confirm").fill("mimos-test");
-    await page.getByRole("button", { name: "Register" }).click();
+    await fillRegistration(page, username);
     await expect(page).toHaveURL(/\/app$/);
     await expect(page.getByRole("heading", { name: "This week" })).toBeVisible();
   });
+}
+
+/** From Keycloak's sign-in page, registers a new realm user; Keycloak then returns to the app. */
+export async function fillRegistration(page: Page, username: string): Promise<void> {
+  await page.getByRole("link", { name: "Register" }).click();
+  await page.locator("#username").fill(username);
+  await page.locator("#email").fill(`${username}@example.com`);
+  await page.locator("#firstName").fill("Harness");
+  await page.locator("#lastName").fill("Cook");
+  await page.locator("#password").fill("mimos-test");
+  await page.locator("#password-confirm").fill("mimos-test");
+  await page.getByRole("button", { name: "Register" }).click();
+}
+
+/** The API, called as the signed-in user with the token oidc-client-ts keeps in sessionStorage. */
+export async function apiAs(page: Page) {
+  const token = await page.evaluate(() => {
+    const key = Object.keys(sessionStorage).find((name) => name.startsWith("oidc.user:"));
+    return key ? (JSON.parse(sessionStorage.getItem(key) ?? "{}") as { access_token?: string }).access_token : undefined;
+  });
+  expect(token, "the signed-in page holds an access token").toBeTruthy();
+  const call = async <T>(method: string, path: string, data?: unknown): Promise<T> => {
+    const response = await page.request.fetch(`${endpoints().api}${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${token}` },
+      ...(data === undefined ? {} : { data }),
+    });
+    expect(response.ok(), `${method} ${path} answered ${response.status()}`).toBe(true);
+    return (response.status() === 204 ? undefined : await response.json()) as T;
+  };
+  return call;
 }
 
 export { expect };

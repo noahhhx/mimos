@@ -11,6 +11,7 @@ const PAGES = [
   { path: "/app/plan", heading: /plan/i },
   { path: "/app/shopping-list", heading: /shopping list/i },
   { path: "/app/log", heading: /log/i },
+  { path: "/app/household", heading: "Household" },
   { path: "/app/plugins", heading: "Plugins" },
   { path: "/app/account", heading: "Your data" },
 ];

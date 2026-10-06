@@ -1,7 +1,4 @@
-import type { Page } from "@playwright/test";
-
-import { endpoints } from "../src/config.ts";
-import { expect, register, test } from "./fixtures.ts";
+import { apiAs, expect, register, test } from "./fixtures.ts";
 
 /**
  * The Kitchen home (docs/design/index.md, "Kitchen home"), on a fresh
@@ -12,25 +9,6 @@ import { expect, register, test } from "./fixtures.ts";
  * country, ADR-0017) offers tonight; adding it puts the recipe under
  * Tonight and on today's row of the week.
  */
-
-/** The API, called as the signed-in user with the token oidc-client-ts keeps in sessionStorage. */
-async function apiAs(page: Page) {
-  const token = await page.evaluate(() => {
-    const key = Object.keys(sessionStorage).find((name) => name.startsWith("oidc.user:"));
-    return key ? (JSON.parse(sessionStorage.getItem(key) ?? "{}") as { access_token?: string }).access_token : undefined;
-  });
-  expect(token, "the signed-in page holds an access token").toBeTruthy();
-  const call = async <T>(method: string, path: string, data?: unknown): Promise<T> => {
-    const response = await page.request.fetch(`${endpoints().api}${path}`, {
-      method,
-      headers: { Authorization: `Bearer ${token}` },
-      ...(data === undefined ? {} : { data }),
-    });
-    expect(response.ok(), `${method} ${path} answered ${response.status()}`).toBe(true);
-    return (response.status() === 204 ? undefined : await response.json()) as T;
-  };
-  return call;
-}
 
 test("tonight, the week, and a plugin's thought for an open evening", async ({ page }) => {
   await register(page, `kitchen-${Date.now().toString(36)}`);
