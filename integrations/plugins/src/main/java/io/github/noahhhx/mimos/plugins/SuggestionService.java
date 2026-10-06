@@ -52,10 +52,10 @@ public class SuggestionService {
     }
 
     /** Validated, attributed suggestion cards for the owner's week, in registration order. */
-    public List<PlanSuggestion> suggestions(UUID ownerProfileId, LocalDate startDate) {
+    public List<PlanSuggestion> suggestions(UUID householdId, LocalDate startDate) {
         requireMonday(startDate);
         List<PluginOptInService.EnabledPlugin> plugins =
-                optIns.enabledPlugins(ownerProfileId, PluginManifest.CAPABILITY_PLAN_SUGGESTIONS);
+                optIns.enabledPlugins(householdId, PluginManifest.CAPABILITY_PLAN_SUGGESTIONS);
         if (plugins.isEmpty()) {
             return List.of();
         }
@@ -67,7 +67,7 @@ public class SuggestionService {
         }
         // Personal recipes contribute their slot shape only — never their
         // identity or content (ADR-0006).
-        List<PlannedSlot> plannedSlots = mealPlanService.plannedMeals(ownerProfileId, startDate).stream()
+        List<PlannedSlot> plannedSlots = mealPlanService.plannedMeals(householdId, startDate).stream()
                 .map(meal -> new PlannedSlot(
                         meal.date(),
                         meal.mealType(),
@@ -84,7 +84,7 @@ public class SuggestionService {
             Plugin plugin = enabled.plugin();
             PluginManifest manifest = enabled.manifest();
             SuggestionContext context = new SuggestionContext(
-                    subjects.subjectFor(ownerProfileId, manifest.id()), startDate, plannedSlots, catalog);
+                    subjects.subjectFor(householdId, manifest.id()), startDate, plannedSlots, catalog);
             try {
                 result.addAll(validatedCards(manifest, plugin.client().fetchSuggestions(context), context));
             } catch (RuntimeException exception) {

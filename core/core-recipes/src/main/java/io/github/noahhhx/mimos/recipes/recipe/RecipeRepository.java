@@ -32,15 +32,16 @@ import org.springframework.stereotype.Repository;
 public class RecipeRepository {
 
     private static final String SELECT_BASE = """
-            select id, owner_profile_id, slug, title, description, servings, prep_minutes, cook_minutes,
-                   calories, protein_g, carbs_g, fat_g, nutrition_source, created_at, updated_at
+            select id, household_id, created_by_profile_id, slug, title, description, servings, prep_minutes,
+                   cook_minutes, calories, protein_g, carbs_g, fat_g, nutrition_source, created_at, updated_at
             from recipe
             """;
 
     private static final String INSERT_RECIPE = """
-            insert into recipe (id, owner_profile_id, slug, title, description, servings, prep_minutes, cook_minutes,
-                                calories, protein_g, carbs_g, fat_g, nutrition_source, created_at, updated_at)
-            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            insert into recipe (id, household_id, created_by_profile_id, slug, title, description, servings,
+                                prep_minutes, cook_minutes, calories, protein_g, carbs_g, fat_g, nutrition_source,
+                                created_at, updated_at)
+            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
     private static final String UPDATE_RECIPE = """
@@ -64,6 +65,7 @@ public class RecipeRepository {
                 INSERT_RECIPE,
                 recipe.id(),
                 recipe.ownerId(),
+                recipe.createdByProfileId(),
                 recipe.slug(),
                 recipe.title(),
                 recipe.description(),
@@ -112,20 +114,20 @@ public class RecipeRepository {
         return found.isEmpty() ? Optional.empty() : Optional.of(found.getFirst());
     }
 
-    /** The recipes a profile owns, newest first, optionally filtered by a search term. */
+    /** The recipes an owner owns, newest first, optionally filtered by a search term. */
     public List<Recipe> findOwnedBy(UUID ownerId, @Nullable String query) {
-        Sql sql = searchSql(" where owner_profile_id = ?", List.of(ownerId), query);
+        Sql sql = searchSql(" where household_id = ?", List.of(ownerId), query);
         return loadAll(sql.text() + " order by created_at desc", sql.args());
     }
 
     public boolean existsOwnedBy(UUID ownerId) {
         return Boolean.TRUE.equals(jdbc.queryForObject(
-                "select exists (select 1 from recipe where owner_profile_id = ?)", Boolean.class, ownerId));
+                "select exists (select 1 from recipe where household_id = ?)", Boolean.class, ownerId));
     }
 
     /** Curated library recipes, by title, optionally filtered by a search term. */
     public List<Recipe> findLibrary(@Nullable String query) {
-        Sql sql = searchSql(" where owner_profile_id is null", List.of(), query);
+        Sql sql = searchSql(" where household_id is null", List.of(), query);
         return loadAll(sql.text() + " order by title", sql.args());
     }
 
@@ -241,6 +243,7 @@ public class RecipeRepository {
                 .map(row -> new Recipe(
                         row.id(),
                         row.ownerId(),
+                        row.createdByProfileId(),
                         row.slug(),
                         row.title(),
                         row.description(),
@@ -370,6 +373,7 @@ public class RecipeRepository {
     private record RecipeRow(
             UUID id,
             @Nullable UUID ownerId,
+            @Nullable UUID createdByProfileId,
             @Nullable String slug,
             String title,
             String description,
@@ -389,7 +393,8 @@ public class RecipeRepository {
         public RecipeRow mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new RecipeRow(
                     rs.getObject("id", UUID.class),
-                    rs.getObject("owner_profile_id", UUID.class),
+                    rs.getObject("household_id", UUID.class),
+                    rs.getObject("created_by_profile_id", UUID.class),
                     rs.getString("slug"),
                     rs.getString("title"),
                     rs.getString("description"),

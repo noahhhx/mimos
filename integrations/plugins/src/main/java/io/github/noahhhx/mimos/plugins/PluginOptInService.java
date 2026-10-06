@@ -10,9 +10,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 /**
- * Per-user plugin opt-in (ADR-0013). Plugins start off for everyone: an
- * instance owner registering a plugin makes it available, and each user
- * decides whether it sees their plan context and suggests into it. A row
+ * Per-household plugin opt-in (ADR-0013, ADR-0019). Plugins start off for
+ * everyone: an instance owner registering a plugin makes it available, and
+ * each household decides whether it sees their plan context and suggests
+ * into it. A row
  * in {@code plugin_opt_in} means on. Plugin ids come from instance
  * configuration, so a row may outlive its plugin; it is ignored until a
  * plugin with that id is registered again.
@@ -28,29 +29,29 @@ public class PluginOptInService {
         this.registry = registry;
     }
 
-    /** The instance's available plugins, in registration order, each with this user's choice. */
-    public List<UserPlugin> plugins(UUID profileId) {
-        Set<String> enabled = enabledPluginIds(profileId);
+    /** The instance's available plugins, in registration order, each with this household's choice. */
+    public List<UserPlugin> plugins(UUID householdId) {
+        Set<String> enabled = enabledPluginIds(householdId);
         return registry.availablePlugins().stream()
                 .map(manifest -> new UserPlugin(
                         manifest.id(), manifest.name(), manifest.homepageUrl(), enabled.contains(manifest.id())))
                 .toList();
     }
 
-    /** Ids of the plugins this user turned on, whether or not they are available right now. */
-    public Set<String> enabledPluginIds(UUID profileId) {
-        return new HashSet<>(
-                jdbc.queryForList("select plugin_id from plugin_opt_in where profile_id = ?", String.class, profileId));
+    /** Ids of the plugins this household turned on, whether or not they are available right now. */
+    public Set<String> enabledPluginIds(UUID householdId) {
+        return new HashSet<>(jdbc.queryForList(
+                "select plugin_id from plugin_opt_in where household_id = ?", String.class, householdId));
     }
 
     /**
-     * The plugins offering {@code capability} that this user turned on, in
+     * The plugins offering {@code capability} that this household turned on, in
      * registration order, each with the manifest it was judged by. Opt-in is
-     * consent (ADR-0013): no other plugin may be called with this user's
+     * consent (ADR-0013): no other plugin may be called with this household's
      * context or subject.
      */
-    List<EnabledPlugin> enabledPlugins(UUID profileId, String capability) {
-        Set<String> enabled = enabledPluginIds(profileId);
+    List<EnabledPlugin> enabledPlugins(UUID householdId, String capability) {
+        Set<String> enabled = enabledPluginIds(householdId);
         List<EnabledPlugin> result = new ArrayList<>();
         for (Plugin plugin : registry.pluginsWithCapability(capability)) {
             PluginManifest manifest = plugin.manifest();
@@ -64,14 +65,14 @@ public class PluginOptInService {
     record EnabledPlugin(Plugin plugin, PluginManifest manifest) {}
 
     /**
-     * Turns a plugin on or off for this user. Turning one on needs it to be
+     * Turns a plugin on or off for this household. Turning one on needs it to be
      * available ({@link NoSuchElementException} otherwise); turning one off
      * always succeeds, so a choice can be withdrawn while the plugin is
      * unreachable or after it was removed.
      */
-    public void setEnabled(UUID profileId, String pluginId, boolean enabled) {
+    public void setEnabled(UUID householdId, String pluginId, boolean enabled) {
         if (!enabled) {
-            jdbc.update("delete from plugin_opt_in where profile_id = ? and plugin_id = ?", profileId, pluginId);
+            jdbc.update("delete from plugin_opt_in where household_id = ? and plugin_id = ?", householdId, pluginId);
             return;
         }
         boolean available = registry.availablePlugins().stream()
@@ -80,9 +81,9 @@ public class PluginOptInService {
             throw new NoSuchElementException("no plugin '" + pluginId + "' is available on this instance");
         }
         jdbc.update("""
-                insert into plugin_opt_in (profile_id, plugin_id)
+                insert into plugin_opt_in (household_id, plugin_id)
                 values (?, ?)
-                on conflict (profile_id, plugin_id) do nothing
-                """, profileId, pluginId);
+                on conflict (household_id, plugin_id) do nothing
+                """, householdId, pluginId);
     }
 }

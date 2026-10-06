@@ -28,17 +28,17 @@ public class ShoppingListsController implements ShoppingListsApi {
 
     @Override
     public ResponseEntity<org.openapitools.model.ShoppingList> generateShoppingList(LocalDate startDate) {
-        UUID profileId = currentUser.requireProfile().id();
+        UUID householdId = currentUser.requireProfile().householdId();
         io.github.noahhhx.mimos.planning.shopping.ShoppingList generated =
-                shoppingListService.generate(profileId, startDate);
+                shoppingListService.generate(householdId, startDate);
         return ResponseEntity.ok(toApiList(generated));
     }
 
     @Override
     public ResponseEntity<org.openapitools.model.ShoppingList> getShoppingList(LocalDate startDate) {
-        UUID profileId = currentUser.requireProfile().id();
+        UUID householdId = currentUser.requireProfile().householdId();
         io.github.noahhhx.mimos.planning.shopping.ShoppingList list = shoppingListService
-                .find(profileId, startDate)
+                .find(householdId, startDate)
                 .orElseThrow(() -> new NoSuchElementException("no shopping list for week " + startDate));
         return ResponseEntity.ok(toApiList(list));
     }
@@ -46,9 +46,9 @@ public class ShoppingListsController implements ShoppingListsApi {
     @Override
     public ResponseEntity<ShoppingListItem> updateShoppingListItem(
             LocalDate startDate, UUID itemId, ShoppingListItemPatch shoppingListItemPatch) {
-        UUID profileId = currentUser.requireProfile().id();
+        UUID householdId = currentUser.requireProfile().householdId();
         io.github.noahhhx.mimos.planning.shopping.ShoppingList.ShoppingListItem item =
-                shoppingListService.updateChecked(profileId, startDate, itemId, shoppingListItemPatch.getChecked());
+                shoppingListService.updateChecked(householdId, startDate, itemId, shoppingListItemPatch.getChecked());
         return ResponseEntity.ok(toApiItem(item));
     }
 

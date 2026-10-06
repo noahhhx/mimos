@@ -20,14 +20,14 @@ public class ShoppingListRepository {
     private static final String SELECT_LIST = """
             select id, start_date, generated_at
             from shopping_list
-            where owner_profile_id = ? and start_date = ?
+            where household_id = ? and start_date = ?
             """;
 
     private static final String SELECT_ITEMS = """
             select i.id, i.name, i.unit, i.quantity, i.category, i.checked
             from shopping_list_item i
             join shopping_list l on l.id = i.shopping_list_id
-            where l.owner_profile_id = ? and l.start_date = ?
+            where l.household_id = ? and l.start_date = ?
             order by i.position
             """;
 
@@ -39,9 +39,9 @@ public class ShoppingListRepository {
 
     /** Replaces the owner's list for the week (items cascade). */
     public void replaceList(UUID ownerId, LocalDate startDate, Instant generatedAt, List<ItemRow> items) {
-        jdbc.update("delete from shopping_list where owner_profile_id = ? and start_date = ?", ownerId, startDate);
+        jdbc.update("delete from shopping_list where household_id = ? and start_date = ?", ownerId, startDate);
         jdbc.update(
-                "insert into shopping_list (owner_profile_id, start_date, generated_at) values (?, ?, ?)",
+                "insert into shopping_list (household_id, start_date, generated_at) values (?, ?, ?)",
                 ownerId,
                 startDate,
                 Timestamp.from(generatedAt));
@@ -66,7 +66,7 @@ public class ShoppingListRepository {
     /** The owner's generated list for the week, if any. */
     public Optional<ShoppingList> findList(UUID ownerId, LocalDate startDate) {
         List<UUID> ids = jdbc.queryForList(
-                "select id from shopping_list where owner_profile_id = ? and start_date = ?",
+                "select id from shopping_list where household_id = ? and start_date = ?",
                 UUID.class,
                 ownerId,
                 startDate);
@@ -84,7 +84,7 @@ public class ShoppingListRepository {
     public List<ShoppingList> findAllLists(UUID ownerId) {
         return jdbc
                 .queryForList(
-                        "select start_date from shopping_list where owner_profile_id = ? order by start_date",
+                        "select start_date from shopping_list where household_id = ? order by start_date",
                         LocalDate.class,
                         ownerId)
                 .stream()
@@ -98,7 +98,7 @@ public class ShoppingListRepository {
                 select exists (
                     select 1 from shopping_list_item i
                     join shopping_list l on l.id = i.shopping_list_id
-                    where l.owner_profile_id = ?)
+                    where l.household_id = ?)
                 """, Boolean.class, ownerId));
     }
 
@@ -108,7 +108,7 @@ public class ShoppingListRepository {
                 select i.id, i.name, i.unit, i.quantity, i.category, i.checked
                 from shopping_list_item i
                 join shopping_list l on l.id = i.shopping_list_id
-                where l.owner_profile_id = ? and l.start_date = ? and i.id = ?
+                where l.household_id = ? and l.start_date = ? and i.id = ?
                 """, ITEM_MAPPER, ownerId, startDate, itemId);
         return items.isEmpty() ? Optional.empty() : Optional.of(items.getFirst());
     }
@@ -120,7 +120,7 @@ public class ShoppingListRepository {
     private UUID requireListId(UUID ownerId, LocalDate startDate) {
         return java.util.Objects.requireNonNull(
                 jdbc.queryForObject(
-                        "select id from shopping_list where owner_profile_id = ? and start_date = ?",
+                        "select id from shopping_list where household_id = ? and start_date = ?",
                         UUID.class,
                         ownerId,
                         startDate),

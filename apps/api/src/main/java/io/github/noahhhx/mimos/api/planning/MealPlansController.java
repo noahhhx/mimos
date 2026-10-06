@@ -1,6 +1,7 @@
 package io.github.noahhhx.mimos.api.planning;
 
 import io.github.noahhhx.mimos.api.identity.CurrentUserService;
+import io.github.noahhhx.mimos.api.identity.UserProfileRecord;
 import io.github.noahhhx.mimos.planning.plan.MealPlan;
 import io.github.noahhhx.mimos.planning.plan.MealPlanService;
 import io.github.noahhhx.mimos.planning.plan.MealType;
@@ -8,6 +9,7 @@ import io.github.noahhhx.mimos.planning.plan.PlannedMeal;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.openapitools.api.PlanningApi;
 import org.openapitools.model.MealPlanEntry;
@@ -30,16 +32,17 @@ public class MealPlansController implements PlanningApi {
 
     @Override
     public ResponseEntity<org.openapitools.model.MealPlan> getMealPlan(LocalDate startDate) {
-        UUID profileId = currentUser.requireProfile().id();
-        MealPlan plan = mealPlanService.planFor(profileId, startDate);
+        UUID householdId = currentUser.requireProfile().householdId();
+        MealPlan plan = mealPlanService.planFor(householdId, startDate);
         return ResponseEntity.ok(toApiPlan(plan));
     }
 
     @Override
     public ResponseEntity<MealPlanEntry> addMealPlanEntry(LocalDate startDate, MealPlanEntryInput mealPlanEntryInput) {
-        UUID profileId = currentUser.requireProfile().id();
+        UserProfileRecord profile = currentUser.requireProfile();
         PlannedMeal entry = mealPlanService.addEntry(
-                profileId,
+                profile.householdId(),
+                Set.of(profile.id()),
                 startDate,
                 mealPlanEntryInput.getDate(),
                 MealType.valueOf(mealPlanEntryInput.getMealType().name()),
@@ -51,16 +54,19 @@ public class MealPlansController implements PlanningApi {
     @Override
     public ResponseEntity<MealPlanEntry> updateMealPlanEntry(
             LocalDate startDate, UUID entryId, MealPlanEntryPatch mealPlanEntryPatch) {
-        UUID profileId = currentUser.requireProfile().id();
+        UUID householdId = currentUser.requireProfile().householdId();
         PlannedMeal entry = mealPlanService.updateServings(
-                profileId, startDate, entryId, mealPlanEntryPatch.getServings().doubleValue());
+                householdId,
+                startDate,
+                entryId,
+                mealPlanEntryPatch.getServings().doubleValue());
         return ResponseEntity.ok(toApiEntry(entry));
     }
 
     @Override
     public ResponseEntity<Void> deleteMealPlanEntry(LocalDate startDate, UUID entryId) {
-        UUID profileId = currentUser.requireProfile().id();
-        mealPlanService.removeEntry(profileId, startDate, entryId);
+        UUID householdId = currentUser.requireProfile().householdId();
+        mealPlanService.removeEntry(householdId, startDate, entryId);
         return ResponseEntity.noContent().build();
     }
 

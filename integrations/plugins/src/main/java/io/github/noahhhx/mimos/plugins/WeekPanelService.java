@@ -30,12 +30,12 @@ public class WeekPanelService {
     }
 
     /** Panels from the user's healthy plugins, in registration order. A failing plugin is left out. */
-    public List<WeekPanel> panels(UUID profileId, LocalDate startDate) {
+    public List<WeekPanel> panels(UUID householdId, LocalDate startDate) {
         requireMonday(startDate);
         List<WeekPanel> result = new ArrayList<>();
         for (PluginOptInService.EnabledPlugin enabled :
-                optIns.enabledPlugins(profileId, PluginManifest.CAPABILITY_WEEK_PANEL)) {
-            UUID subject = subjects.subjectFor(profileId, enabled.manifest().id());
+                optIns.enabledPlugins(householdId, PluginManifest.CAPABILITY_WEEK_PANEL)) {
+            UUID subject = subjects.subjectFor(householdId, enabled.manifest().id());
             try {
                 result.add(enabled.plugin().client().fetchWeekPanel(enabled.manifest(), subject, startDate, null));
             } catch (RuntimeException exception) {
@@ -51,15 +51,15 @@ public class WeekPanelService {
      * user has not turned it on; {@link PluginActionFailedException} when it
      * fails to answer.
      */
-    public WeekPanel act(UUID profileId, LocalDate startDate, String pluginId, PanelAction action) {
+    public WeekPanel act(UUID householdId, LocalDate startDate, String pluginId, PanelAction action) {
         requireMonday(startDate);
         PluginOptInService.EnabledPlugin enabled =
-                optIns.enabledPlugins(profileId, PluginManifest.CAPABILITY_WEEK_PANEL).stream()
+                optIns.enabledPlugins(householdId, PluginManifest.CAPABILITY_WEEK_PANEL).stream()
                         .filter(candidate -> candidate.manifest().id().equals(pluginId))
                         .findFirst()
                         .orElseThrow(() -> new NoSuchElementException(
                                 "no plugin '" + pluginId + "' with a week panel is turned on for you"));
-        UUID subject = subjects.subjectFor(profileId, pluginId);
+        UUID subject = subjects.subjectFor(householdId, pluginId);
         try {
             return enabled.plugin().client().fetchWeekPanel(enabled.manifest(), subject, startDate, action);
         } catch (RuntimeException exception) {

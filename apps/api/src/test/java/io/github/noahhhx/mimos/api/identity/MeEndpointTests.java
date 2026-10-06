@@ -4,6 +4,12 @@ import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.noahhhx.mimos.api.support.ApiIntegrationTestSupport;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -75,10 +81,42 @@ class MeEndpointTests extends ApiIntegrationTestSupport {
         assertThat(problem.get("instance").asText()).isEqualTo("/api/v1/me");
     }
 
+    @Test
+    void aNewUserGetsAHouseholdOfOneAndConcurrentFirstRequestsLeaveNoOtherHousehold() throws Exception {
+        RestClient api =
+                RestClient.builder().baseUrl("http://localhost:" + port).build();
+        String token = accessToken(createUser());
+
+        List<CompletableFuture<JsonNode>> firstRequests = IntStream.range(0, 8)
+                .mapToObj(i -> CompletableFuture.supplyAsync(() -> me(api, token)))
+                .toList();
+        Set<String> profileIds = new HashSet<>();
+        for (CompletableFuture<JsonNode> request : firstRequests) {
+            profileIds.add(request.get().get("id").asText());
+        }
+        me(api, token);
+
+        assertThat(profileIds).hasSize(1);
+        UUID profileId = UUID.fromString(profileIds.iterator().next());
+        UUID householdId =
+                jdbc.queryForObject("select household_id from user_profile where id = ?", UUID.class, profileId);
+        assertThat(jdbc.queryForList("select id from user_profile where household_id = ?", UUID.class, householdId))
+                .containsExactly(profileId);
+        assertThat(jdbc.queryForObject(
+                        "select count(*) from household h"
+                                + " where not exists (select 1 from user_profile p where p.household_id = h.id)",
+                        Integer.class))
+                .isZero();
+    }
+
     private JsonNode me(RestClient api) {
+        return me(api, accessToken());
+    }
+
+    private JsonNode me(RestClient api, String token) {
         JsonNode body = api.get()
                 .uri("/api/v1/me")
-                .headers(headers -> headers.setBearerAuth(accessToken()))
+                .headers(headers -> headers.setBearerAuth(token))
                 .retrieve()
                 .body(JsonNode.class);
         return requireNonNull(body, "/api/v1/me returned no body");

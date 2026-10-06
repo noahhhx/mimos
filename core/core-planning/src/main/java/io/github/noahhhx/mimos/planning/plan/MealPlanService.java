@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,10 +41,19 @@ public class MealPlanService {
         return hydrate(ownerId, startDate, planId);
     }
 
-    /** Plans a meal in the week's plan. */
+    /** Plans a meal in the week's plan, eaten by the given diners (at least one). */
     @Transactional
     public PlannedMeal addEntry(
-            UUID ownerId, LocalDate startDate, LocalDate date, MealType mealType, UUID recipeId, double servings) {
+            UUID ownerId,
+            Set<UUID> dinerProfileIds,
+            LocalDate startDate,
+            LocalDate date,
+            MealType mealType,
+            UUID recipeId,
+            double servings) {
+        if (dinerProfileIds.isEmpty()) {
+            throw new IllegalArgumentException("a planned meal needs at least one diner");
+        }
         requireMonday(startDate);
         requireWithinWeek(startDate, date);
         requireServings(servings);
@@ -52,7 +62,7 @@ public class MealPlanService {
         UUID planId = plans.ensurePlan(ownerId, startDate);
         MealPlanRepository.PlannedMealInput entry =
                 new MealPlanRepository.PlannedMealInput(UUID.randomUUID(), date, mealType, recipeId, servings);
-        plans.insertEntry(planId, entry);
+        plans.insertEntry(planId, entry, dinerProfileIds);
         return new PlannedMeal(
                 entry.id(), entry.date(), entry.mealType(), entry.recipeId(), recipe.title(), entry.servings());
     }

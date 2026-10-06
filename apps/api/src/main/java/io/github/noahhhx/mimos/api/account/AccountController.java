@@ -1,7 +1,6 @@
 package io.github.noahhhx.mimos.api.account;
 
 import io.github.noahhhx.mimos.api.identity.CurrentUserService;
-import java.util.UUID;
 import org.openapitools.api.AccountApi;
 import org.openapitools.model.AccountExport;
 import org.openapitools.model.ImportReport;
@@ -34,8 +33,7 @@ public class AccountController implements AccountApi {
     @Override
     public ResponseEntity<AccountExport> exportAccount() {
         // Resolve (and on first sight create) the profile before the export's read-only snapshot.
-        UUID profileId = currentUser.requireProfile().id();
-        AccountExport document = exporter.export(profileId);
+        AccountExport document = exporter.export(currentUser.requireProfile());
         String fileName = "mimos-export-" + document.getExportedAt().toLocalDate() + ".json";
         return ResponseEntity.ok()
                 .header(
@@ -49,7 +47,6 @@ public class AccountController implements AccountApi {
 
     @Override
     public ResponseEntity<ImportReport> importAccount(Object body) {
-        UUID profileId = currentUser.requireProfile().id();
-        return ResponseEntity.ok(importer.importInto(profileId, objectMapper.valueToTree(body)));
+        return ResponseEntity.ok(importer.importInto(currentUser.requireProfile(), objectMapper.valueToTree(body)));
     }
 }

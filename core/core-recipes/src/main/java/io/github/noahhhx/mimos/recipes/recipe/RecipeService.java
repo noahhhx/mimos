@@ -44,11 +44,11 @@ public class RecipeService {
         this.clock = clock;
     }
 
-    /** Creates a personal recipe for the given owner. */
+    /** Creates a personal recipe for the given owner, recording the profile that created it. */
     @Transactional
-    public Recipe create(UUID ownerId, RecipeDraft submitted) {
+    public Recipe create(UUID ownerId, UUID createdByProfileId, RecipeDraft submitted) {
         Instant now = clock.instant();
-        return save(UUID.randomUUID(), ownerId, null, submitted, now, now, true);
+        return save(UUID.randomUUID(), ownerId, createdByProfileId, null, submitted, now, now, true);
     }
 
     /**
@@ -56,15 +56,24 @@ public class RecipeService {
      * like any new recipe, with a new id and the exported timestamps.
      */
     @Transactional
-    public Recipe restore(UUID ownerId, RecipeDraft submitted, Instant createdAt, Instant updatedAt) {
-        return save(UUID.randomUUID(), ownerId, null, submitted, createdAt, updatedAt, true);
+    public Recipe restore(
+            UUID ownerId, UUID createdByProfileId, RecipeDraft submitted, Instant createdAt, Instant updatedAt) {
+        return save(UUID.randomUUID(), ownerId, createdByProfileId, null, submitted, createdAt, updatedAt, true);
     }
 
     /** Replaces a personal recipe; library recipes are read-only. */
     @Transactional
     public Recipe replace(UUID ownerId, UUID recipeId, RecipeDraft submitted) {
         Recipe existing = requireOwned(ownerId, recipeId);
-        return save(existing.id(), ownerId, existing.slug(), submitted, existing.createdAt(), clock.instant(), false);
+        return save(
+                existing.id(),
+                ownerId,
+                existing.createdByProfileId(),
+                existing.slug(),
+                submitted,
+                existing.createdAt(),
+                clock.instant(),
+                false);
     }
 
     /**
@@ -87,6 +96,7 @@ public class RecipeService {
     private Recipe save(
             UUID id,
             UUID ownerId,
+            @Nullable UUID createdByProfileId,
             @Nullable String slug,
             RecipeDraft submitted,
             Instant createdAt,
@@ -99,6 +109,7 @@ public class RecipeService {
         Recipe recipe = new Recipe(
                 id,
                 ownerId,
+                createdByProfileId,
                 slug,
                 draft.title(),
                 draft.description(),

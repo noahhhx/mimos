@@ -380,7 +380,7 @@ class RecipesEndpointTests extends ApiIntegrationTestSupport {
 
     private UUID insertLibraryRecipe() {
         jdbc.update("""
-                insert into recipe (owner_profile_id, slug, title, description, servings,
+                insert into recipe (household_id, slug, title, description, servings,
                                     calories, protein_g, carbs_g, fat_g)
                 values (null, 'zz-library-test-recipe', 'ZZ Library Test Recipe',
                         'A seeded-looking library recipe.', 2, 100, 5, 10, 3)

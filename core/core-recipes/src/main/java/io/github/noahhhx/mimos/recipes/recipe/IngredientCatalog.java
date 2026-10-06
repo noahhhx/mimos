@@ -19,11 +19,11 @@ import org.springframework.stereotype.Repository;
 public class IngredientCatalog {
 
     private static final String SELECT =
-            "select slug, owner_profile_id, name, basis, calories, protein_g, carbs_g, fat_g from catalog_ingredient";
+            "select slug, household_id, name, basis, calories, protein_g, carbs_g, fat_g from catalog_ingredient";
 
     private static final RowMapper<CatalogIngredient> MAPPER = (rs, rowNum) -> new CatalogIngredient(
             rs.getString("slug"),
-            rs.getObject("owner_profile_id", UUID.class),
+            rs.getObject("household_id", UUID.class),
             rs.getString("name"),
             NutritionBasis.valueOf(rs.getString("basis")),
             rs.getBigDecimal("calories").doubleValue(),
@@ -37,17 +37,15 @@ public class IngredientCatalog {
         this.jdbc = jdbc;
     }
 
-    /** The shared entries and the profile's own, by name. */
+    /** The shared entries and the owner's own, by name. */
     public List<CatalogIngredient> findVisibleTo(UUID ownerId) {
         return jdbc.query(
-                SELECT + " where owner_profile_id is null or owner_profile_id = ? order by lower(name), slug",
-                MAPPER,
-                ownerId);
+                SELECT + " where household_id is null or household_id = ? order by lower(name), slug", MAPPER, ownerId);
     }
 
-    /** The profile's own entries, by name. */
+    /** The owner's own entries, by name. */
     public List<CatalogIngredient> findOwnedBy(UUID ownerId) {
-        return jdbc.query(SELECT + " where owner_profile_id = ? order by lower(name), slug", MAPPER, ownerId);
+        return jdbc.query(SELECT + " where household_id = ? order by lower(name), slug", MAPPER, ownerId);
     }
 
     /** The entries with these slugs, whoever owns them; unknown slugs are omitted. */
@@ -73,7 +71,7 @@ public class IngredientCatalog {
                 on conflict (slug) do update set name = excluded.name, basis = excluded.basis,
                     calories = excluded.calories, protein_g = excluded.protein_g,
                     carbs_g = excluded.carbs_g, fat_g = excluded.fat_g
-                where catalog_ingredient.owner_profile_id is null
+                where catalog_ingredient.household_id is null
                 """,
                 entry.slug(),
                 entry.name(),
@@ -87,7 +85,7 @@ public class IngredientCatalog {
     public void insert(CatalogIngredient entry) {
         jdbc.update(
                 """
-                insert into catalog_ingredient (slug, owner_profile_id, name, basis, calories, protein_g, carbs_g, fat_g)
+                insert into catalog_ingredient (slug, household_id, name, basis, calories, protein_g, carbs_g, fat_g)
                 values (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 entry.slug(),

@@ -119,7 +119,7 @@ class LibrarySeedTests extends ApiIntegrationTestSupport {
         assertThat(pancakes).isEqualTo(1);
 
         Integer libraryCount =
-                jdbc.queryForObject("select count(*) from recipe where owner_profile_id is null", Integer.class);
+                jdbc.queryForObject("select count(*) from recipe where household_id is null", Integer.class);
         assertThat(libraryCount).isGreaterThanOrEqualTo(12);
     }
 }

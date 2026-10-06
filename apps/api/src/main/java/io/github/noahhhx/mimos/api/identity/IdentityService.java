@@ -2,21 +2,25 @@ package io.github.noahhhx.mimos.api.identity;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Ensures and reads user profiles. Profiles are created lazily: the first
- * authenticated request for a subject inserts the row (idempotently) with
- * the display name the identity provider knows, then returns it.
+ * authenticated request for a subject inserts the row with the display
+ * name the identity provider knows, together with the household of one it
+ * belongs to (ADR-0019), then returns it.
  */
 @Service
 public class IdentityService {
 
     private static final String SELECT_PROFILE = """
-            select id, subject_id, display_name, created_at, updated_at
+            select id, subject_id, display_name, household_id, created_at, updated_at
             from user_profile
             where subject_id = ?
             """;
@@ -29,23 +33,36 @@ public class IdentityService {
         this.jdbc = jdbc;
     }
 
-    /** Returns the profile for the subject, creating it on first sight. */
+    /**
+     * Returns the profile for the subject, creating it and its household on
+     * first sight. Concurrent first requests agree on one profile and leave
+     * no household behind but its own.
+     */
+    @Transactional
     public UserProfileRecord ensureProfile(String subjectId, String displayName) {
-        jdbc.update("""
-                insert into user_profile (subject_id, display_name)
-                values (?, ?)
+        List<UserProfileRecord> existing = jdbc.query(SELECT_PROFILE, PROFILE_MAPPER, subjectId);
+        if (!existing.isEmpty()) {
+            return existing.getFirst();
+        }
+        UUID householdId = Objects.requireNonNull(
+                jdbc.queryForObject("insert into household default values returning id", UUID.class));
+        int inserted = jdbc.update("""
+                insert into user_profile (subject_id, display_name, household_id)
+                values (?, ?, ?)
                 on conflict (subject_id) do nothing
-                """, subjectId, displayName);
-        return jdbc.queryForObject(SELECT_PROFILE, PROFILE_MAPPER, subjectId);
+                """, subjectId, displayName, householdId);
+        if (inserted == 0) {
+            jdbc.update("delete from household where id = ?", householdId);
+        }
+        return Objects.requireNonNull(jdbc.queryForObject(SELECT_PROFILE, PROFILE_MAPPER, subjectId));
     }
 
     /**
-     * Locks the profile row until the surrounding transaction ends, so
-     * account-wide operations (import, ADR-0011) for one user run one at a
-     * time.
+     * Locks the household row until the surrounding transaction ends, so
+     * household-wide operations (import, ADR-0011) run one at a time.
      */
-    public void lockProfile(UUID profileId) {
-        jdbc.queryForList("select id from user_profile where id = ? for update", UUID.class, profileId);
+    public void lockHousehold(UUID householdId) {
+        jdbc.queryForList("select id from household where id = ? for update", UUID.class, householdId);
     }
 
     private static final class ProfileRowMapper implements RowMapper<UserProfileRecord> {
@@ -56,6 +73,7 @@ public class IdentityService {
                     rs.getObject("id", UUID.class),
                     rs.getString("subject_id"),
                     rs.getString("display_name"),
+                    rs.getObject("household_id", UUID.class),
                     rs.getTimestamp("created_at").toInstant(),
                     rs.getTimestamp("updated_at").toInstant());
         }

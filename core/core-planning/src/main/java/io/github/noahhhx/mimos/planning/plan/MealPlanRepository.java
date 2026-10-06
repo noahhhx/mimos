@@ -5,8 +5,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -24,7 +24,7 @@ public class MealPlanRepository {
             select e.id, e.entry_date, e.meal_type, e.recipe_id, e.servings
             from meal_plan_entry e
             join meal_plan p on p.id = e.meal_plan_id
-            where p.owner_profile_id = ? and p.start_date = ?
+            where p.household_id = ? and p.start_date = ?
             order by e.entry_date,
                      case e.meal_type
                          when 'BREAKFAST' then 0
@@ -44,20 +44,21 @@ public class MealPlanRepository {
     /** Returns the plan id for the owner's week, creating the (empty) plan if absent. */
     public UUID ensurePlan(UUID ownerId, LocalDate startDate) {
         jdbc.update("""
-                insert into meal_plan (owner_profile_id, start_date)
+                insert into meal_plan (household_id, start_date)
                 values (?, ?)
-                on conflict (owner_profile_id, start_date) do nothing
+                on conflict (household_id, start_date) do nothing
                 """, ownerId, Date.valueOf(startDate));
         return java.util.Objects.requireNonNull(
                 jdbc.queryForObject(
-                        "select id from meal_plan where owner_profile_id = ? and start_date = ?",
+                        "select id from meal_plan where household_id = ? and start_date = ?",
                         UUID.class,
                         ownerId,
                         Date.valueOf(startDate)),
                 "plan row must exist after ensure");
     }
 
-    public void insertEntry(UUID planId, PlannedMealInput entry) {
+    /** Inserts an entry and its diners. */
+    public void insertEntry(UUID planId, PlannedMealInput entry, Set<UUID> dinerProfileIds) {
         jdbc.update(
                 """
                 insert into meal_plan_entry (id, meal_plan_id, entry_date, meal_type, recipe_id, servings)
@@ -69,6 +70,11 @@ public class MealPlanRepository {
                 entry.mealType().name(),
                 entry.recipeId(),
                 entry.servings());
+        jdbc.batchUpdate(
+                "insert into meal_plan_entry_diner (entry_id, profile_id) values (?, ?)",
+                dinerProfileIds.stream()
+                        .map(profileId -> new Object[] {entry.id(), profileId})
+                        .toList());
     }
 
     public void updateServings(UUID entryId, double servings) {
@@ -77,24 +83,6 @@ public class MealPlanRepository {
 
     public void deleteEntry(UUID entryId) {
         jdbc.update("delete from meal_plan_entry where id = ?", entryId);
-    }
-
-    /** The week's entries in display order; titles resolved against the given recipe titles. */
-    public List<PlannedMeal> loadEntries(UUID ownerId, LocalDate startDate, Map<UUID, String> recipeTitles) {
-        return jdbc
-                .query(
-                        SELECT_ENTRIES,
-                        (rs, i) -> new PlannedMeal(
-                                rs.getObject("id", UUID.class),
-                                rs.getDate("entry_date").toLocalDate(),
-                                MealType.valueOf(rs.getString("meal_type")),
-                                rs.getObject("recipe_id", UUID.class),
-                                recipeTitles.getOrDefault(rs.getObject("recipe_id", UUID.class), "Deleted recipe"),
-                                rs.getDouble("servings")),
-                        ownerId,
-                        Date.valueOf(startDate))
-                .stream()
-                .toList();
     }
 
     /** The week's raw entries (used by the shopping list and logging services). */
@@ -110,7 +98,7 @@ public class MealPlanRepository {
                 select p.id as plan_id, p.start_date, e.id, e.entry_date, e.meal_type, e.recipe_id, e.servings
                 from meal_plan_entry e
                 join meal_plan p on p.id = e.meal_plan_id
-                where p.owner_profile_id = ?
+                where p.household_id = ?
                 order by p.start_date,
                          e.entry_date,
                          case e.meal_type
@@ -133,7 +121,7 @@ public class MealPlanRepository {
                 select exists (
                     select 1 from meal_plan_entry e
                     join meal_plan p on p.id = e.meal_plan_id
-                    where p.owner_profile_id = ?)
+                    where p.household_id = ?)
                 """, Boolean.class, ownerId));
     }
 
@@ -143,7 +131,7 @@ public class MealPlanRepository {
                 select e.id, e.entry_date, e.meal_type, e.recipe_id, e.servings
                 from meal_plan_entry e
                 join meal_plan p on p.id = e.meal_plan_id
-                where p.owner_profile_id = ? and e.id = ?
+                where p.household_id = ? and e.id = ?
                 """, ENTRY_INPUT_MAPPER, ownerId, entryId);
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.getFirst());
     }

@@ -42,8 +42,8 @@ public class PluginsController implements PluginsApi {
 
     @Override
     public ResponseEntity<org.openapitools.model.PlanSuggestions> getPlanSuggestions(LocalDate startDate) {
-        UUID profileId = currentUser.requireProfile().id();
-        List<PlanSuggestion> cards = suggestionService.suggestions(profileId, startDate);
+        UUID householdId = currentUser.requireProfile().householdId();
+        List<PlanSuggestion> cards = suggestionService.suggestions(householdId, startDate);
         return ResponseEntity.ok(new org.openapitools.model.PlanSuggestions()
                 .suggestions(
                         cards.stream().map(PluginsController::toApiSuggestion).toList()));
@@ -51,9 +51,9 @@ public class PluginsController implements PluginsApi {
 
     @Override
     public ResponseEntity<org.openapitools.model.WeekPanels> getWeekPanels(LocalDate startDate) {
-        UUID profileId = currentUser.requireProfile().id();
+        UUID householdId = currentUser.requireProfile().householdId();
         return ResponseEntity.ok(new org.openapitools.model.WeekPanels()
-                .panels(weekPanelService.panels(profileId, startDate).stream()
+                .panels(weekPanelService.panels(householdId, startDate).stream()
                         .map(PluginsController::toApiPanel)
                         .toList()));
     }
@@ -68,8 +68,8 @@ public class PluginsController implements PluginsApi {
             throw new IllegalArgumentException("id is required");
         }
         PanelAction action = new PanelAction(id, panelAction.getValue());
-        UUID profileId = currentUser.requireProfile().id();
-        return ResponseEntity.ok(toApiPanel(weekPanelService.act(profileId, startDate, pluginId, action)));
+        UUID householdId = currentUser.requireProfile().householdId();
+        return ResponseEntity.ok(toApiPanel(weekPanelService.act(householdId, startDate, pluginId, action)));
     }
 
     static org.openapitools.model.PlanSuggestion toApiSuggestion(PlanSuggestion card) {

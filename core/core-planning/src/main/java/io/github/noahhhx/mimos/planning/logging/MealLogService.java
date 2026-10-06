@@ -34,15 +34,19 @@ public class MealLogService {
         this.clock = clock;
     }
 
-    /** Logs a meal — from a recipe (nutrition derived) or ad-hoc. */
-    public MealLog create(UUID ownerProfileId, MealLogDraft draft) {
+    /**
+     * Logs a meal for a profile, from a recipe (nutrition derived) or
+     * ad-hoc. A recipe must be one visible to {@code recipeOwnerId}, the
+     * owner of the recipes the profile can see.
+     */
+    public MealLog create(UUID ownerProfileId, UUID recipeOwnerId, MealLogDraft draft) {
         if (draft.date() == null) {
             throw new IllegalArgumentException("date is required");
         }
         requireServings(draft.servings());
         MealLog log;
         if (draft.recipeId() != null) {
-            Recipe recipe = recipes.findVisible(draft.recipeId(), ownerProfileId)
+            Recipe recipe = recipes.findVisible(draft.recipeId(), recipeOwnerId)
                     .orElseThrow(() -> new NoSuchElementException("recipe not found: " + draft.recipeId()));
             String description =
                     draft.description() != null && !draft.description().isBlank()
@@ -78,15 +82,16 @@ public class MealLogService {
     /**
      * Restores a logged meal from an account export (ADR-0011). The draft's
      * nutrition is the total as logged, kept as history rather than derived
-     * from today's recipe; a referenced recipe must be visible to the owner.
+     * from today's recipe; a referenced recipe must be visible to
+     * {@code recipeOwnerId}.
      */
-    public MealLog restore(UUID ownerProfileId, MealLogDraft draft, Instant loggedAt) {
+    public MealLog restore(UUID ownerProfileId, UUID recipeOwnerId, MealLogDraft draft, Instant loggedAt) {
         if (draft.date() == null) {
             throw new IllegalArgumentException("date is required");
         }
         requireServings(draft.servings());
         if (draft.recipeId() != null
-                && recipes.findVisible(draft.recipeId(), ownerProfileId).isEmpty()) {
+                && recipes.findVisible(draft.recipeId(), recipeOwnerId).isEmpty()) {
             throw new NoSuchElementException("recipe not found: " + draft.recipeId());
         }
         if (draft.description() == null) {

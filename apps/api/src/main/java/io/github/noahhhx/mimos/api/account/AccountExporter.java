@@ -1,5 +1,6 @@
 package io.github.noahhhx.mimos.api.account;
 
+import io.github.noahhhx.mimos.api.identity.UserProfileRecord;
 import io.github.noahhhx.mimos.api.recipes.RecipeApiMapper;
 import io.github.noahhhx.mimos.planning.logging.MealLog;
 import io.github.noahhhx.mimos.planning.logging.MealLogService;
@@ -67,13 +68,14 @@ public class AccountExporter {
         this.clock = clock;
     }
 
-    /** The owner's data as one consistent snapshot. */
+    /** The exporter's household data and their own logs as one consistent snapshot. */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
-    public AccountExport export(UUID ownerProfileId) {
-        List<Recipe> owned = recipes.findOwned(ownerProfileId, null);
-        List<MealPlan> plans = mealPlans.plansWithEntries(ownerProfileId);
-        List<ShoppingList> lists = shoppingLists.findAll(ownerProfileId);
-        List<MealLog> logs = mealLogs.findAll(ownerProfileId);
+    public AccountExport export(UserProfileRecord exporter) {
+        UUID householdId = exporter.householdId();
+        List<Recipe> owned = recipes.findOwned(householdId, null);
+        List<MealPlan> plans = mealPlans.plansWithEntries(householdId);
+        List<ShoppingList> lists = shoppingLists.findAll(householdId);
+        List<MealLog> logs = mealLogs.findAll(exporter.id());
 
         Set<UUID> ownedIds = owned.stream().map(Recipe::id).collect(Collectors.toSet());
         Map<UUID, String> librarySlugs = librarySlugs(Stream.concat(
@@ -86,7 +88,7 @@ public class AccountExporter {
                 .format(AccountExport.FormatEnum.MIMOS_EXPORT)
                 .version(ExportUpgrader.CURRENT_VERSION)
                 .exportedAt(toOffset(clock.instant()))
-                .ingredients(ingredients.findOwned(ownerProfileId).stream()
+                .ingredients(ingredients.findOwned(householdId).stream()
                         .map(ingredient -> new ExportedIngredient()
                                 .slug(ingredient.slug())
                                 .name(ingredient.name())

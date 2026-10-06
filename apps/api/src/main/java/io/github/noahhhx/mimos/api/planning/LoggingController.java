@@ -1,6 +1,7 @@
 package io.github.noahhhx.mimos.api.planning;
 
 import io.github.noahhhx.mimos.api.identity.CurrentUserService;
+import io.github.noahhhx.mimos.api.identity.UserProfileRecord;
 import io.github.noahhhx.mimos.planning.logging.MealLogDraft;
 import io.github.noahhhx.mimos.planning.logging.MealLogService;
 import io.github.noahhhx.mimos.planning.plan.MealType;
@@ -29,8 +30,9 @@ public class LoggingController implements LoggingApi {
 
     @Override
     public ResponseEntity<org.openapitools.model.MealLog> createMealLog(MealLogInput mealLogInput) {
-        UUID profileId = currentUser.requireProfile().id();
-        io.github.noahhhx.mimos.planning.logging.MealLog log = mealLogService.create(profileId, toDraft(mealLogInput));
+        UserProfileRecord profile = currentUser.requireProfile();
+        io.github.noahhhx.mimos.planning.logging.MealLog log =
+                mealLogService.create(profile.id(), profile.householdId(), toDraft(mealLogInput));
         return ResponseEntity.status(201).body(toApiLog(log));
     }
 

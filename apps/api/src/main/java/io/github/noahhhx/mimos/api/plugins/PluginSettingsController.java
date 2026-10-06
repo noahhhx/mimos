@@ -28,8 +28,8 @@ public class PluginSettingsController implements PluginSettingsApi {
 
     @Override
     public ResponseEntity<List<org.openapitools.model.UserPlugin>> listMyPlugins() {
-        UUID profileId = currentUser.requireProfile().id();
-        return ResponseEntity.ok(optIns.plugins(profileId).stream()
+        UUID householdId = currentUser.requireProfile().householdId();
+        return ResponseEntity.ok(optIns.plugins(householdId).stream()
                 .map(PluginSettingsController::toApiPlugin)
                 .toList());
     }
@@ -42,8 +42,8 @@ public class PluginSettingsController implements PluginSettingsApi {
         if (enabled == null) {
             throw new IllegalArgumentException("enabled is required");
         }
-        UUID profileId = currentUser.requireProfile().id();
-        optIns.setEnabled(profileId, pluginId, enabled);
+        UUID householdId = currentUser.requireProfile().householdId();
+        optIns.setEnabled(householdId, pluginId, enabled);
         return ResponseEntity.noContent().build();
     }
 

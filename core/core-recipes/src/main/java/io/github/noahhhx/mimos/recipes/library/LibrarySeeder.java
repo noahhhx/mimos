@@ -90,6 +90,7 @@ public class LibrarySeeder implements ApplicationRunner {
         return new Recipe(
                 id,
                 null,
+                null,
                 seed.slug(),
                 seed.title(),
                 seed.description(),

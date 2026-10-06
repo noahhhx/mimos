@@ -1,6 +1,7 @@
 package io.github.noahhhx.mimos.api.account;
 
 import io.github.noahhhx.mimos.api.identity.IdentityService;
+import io.github.noahhhx.mimos.api.identity.UserProfileRecord;
 import io.github.noahhhx.mimos.planning.logging.MealLogDraft;
 import io.github.noahhhx.mimos.planning.logging.MealLogService;
 import io.github.noahhhx.mimos.planning.plan.MealPlanService;
@@ -88,22 +89,23 @@ public class AccountImporter {
         this.mealLogs = mealLogs;
     }
 
-    /** Imports the document into the owner's account, which must be empty. */
+    /** Imports the document into the importer's account, which must be empty. */
     @Transactional
-    public ImportReport importInto(UUID ownerProfileId, JsonNode body) {
+    public ImportReport importInto(UserProfileRecord importer, JsonNode body) {
         ExportUpgrader.Upgraded upgraded = upgrader.upgrade(body);
         AccountExport document = bind(upgraded.document());
 
-        identity.lockProfile(ownerProfileId);
-        if (recipes.hasOwned(ownerProfileId)
-                || mealPlans.hasEntries(ownerProfileId)
-                || shoppingLists.hasItems(ownerProfileId)
-                || mealLogs.hasLogs(ownerProfileId)) {
+        UUID householdId = importer.householdId();
+        identity.lockHousehold(householdId);
+        if (recipes.hasOwned(householdId)
+                || mealPlans.hasEntries(householdId)
+                || shoppingLists.hasItems(householdId)
+                || mealLogs.hasLogs(importer.id())) {
             throw new AccountNotEmptyException("Import needs an empty account, and this one already has recipes,"
                     + " planned meals, shopping lists, or logged meals. Import into a fresh account instead.");
         }
 
-        Run run = new Run(ownerProfileId);
+        Run run = new Run(importer);
         run.importIngredients(present(document.getIngredients(), "ingredients"));
         run.importRecipes(present(document.getRecipes(), "recipes"));
         run.importPlans(present(document.getMealPlans(), "mealPlans"));
@@ -144,7 +146,8 @@ public class AccountImporter {
     /** One import: the id mapping and what had to be left behind. */
     private final class Run {
 
-        private final UUID owner;
+        private final UUID household;
+        private final UUID profile;
         /** Exported recipe id to the id it was imported as. */
         private final Map<UUID, UUID> recipeIds = new HashMap<>();
         /** Library slugs resolved so far; empty when the slug is not in this library. */
@@ -160,8 +163,9 @@ public class AccountImporter {
         private int lists;
         private int logs;
 
-        Run(UUID owner) {
-            this.owner = owner;
+        Run(UserProfileRecord importer) {
+            this.household = importer.householdId();
+            this.profile = importer.id();
         }
 
         void importIngredients(List<ExportedIngredient> exported) {
@@ -174,7 +178,7 @@ public class AccountImporter {
                         exportedSlug,
                         ingredients
                                 .create(
-                                        owner,
+                                        household,
                                         new IngredientDraft(
                                                 present(ingredient.getName(), "name"),
                                                 NutritionBasis.valueOf(present(ingredient.getBasis(), "basis")
@@ -222,7 +226,8 @@ public class AccountImporter {
                 source = NutritionSource.MANUAL;
             }
             Recipe restored = recipes.restore(
-                    owner,
+                    household,
+                    profile,
                     new RecipeDraft(
                             recipe.getTitle(),
                             recipe.getDescription(),
@@ -251,7 +256,8 @@ public class AccountImporter {
                         return;
                     }
                     mealPlans.addEntry(
-                            owner,
+                            household,
+                            Set.of(profile),
                             startDate,
                             present(entry.getDate(), "date"),
                             MealType.valueOf(
@@ -273,7 +279,7 @@ public class AccountImporter {
                 List<ShoppingListRepository.ItemRow> items = new ArrayList<>();
                 eachAt("items", present(list.getItems(), "items"), item -> items.add(toItemRow(item)));
                 shoppingLists.restore(
-                        owner,
+                        household,
                         startDate,
                         present(list.getGeneratedAt(), "generatedAt").toInstant(),
                         items);
@@ -284,7 +290,8 @@ public class AccountImporter {
         void importLogs(List<ExportedMealLog> exported) {
             eachAt("mealLogs", exported, log -> {
                 mealLogs.restore(
-                        owner,
+                        profile,
+                        household,
                         new MealLogDraft(
                                 present(log.getDate(), "date"),
                                 MealType.valueOf(
@@ -355,7 +362,8 @@ public class AccountImporter {
                     shared.add(slug);
                 }
             });
-            Set<String> known = ingredients.findVisibleBySlugs(owner, shared).keySet();
+            Set<String> known =
+                    ingredients.findVisibleBySlugs(household, shared).keySet();
             return lines.stream()
                     .map(line -> {
                         String slug = line.catalogSlug();
