@@ -61,16 +61,19 @@ recipes and in the library.
 
 An agent signed in to your Mimos can do what you can do in the app:
 
-- Read, search, write, change, and delete your own recipes.
+- Read, search, write, change, and delete your household's recipes.
 - Read and search the library.
 - Plan meals, change servings, and remove planned meals.
 - Generate your shopping list and tick items off.
 - Log meals and read your daily totals.
 - Turn plugins on or off and read their suggestions.
+- See who is in your household and create an invite link.
 
 It can't:
 
-- See or change anyone else's recipes, plans, or log.
+- See or change another household's recipes, plans, or shopping lists, or
+  anyone else's log.
+- Join or leave a household for you. You do that yourself in the app.
 - Change library recipes.
 - Export or import your whole account. Use [Your data](your-data.md) for
   that.

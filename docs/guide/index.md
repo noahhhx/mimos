@@ -45,8 +45,10 @@ The row of links under the header takes you to each part of Mimos:
 
 The square with a person icon, at the top right, opens your profile menu:
 
-![The profile menu: your name, Plugins, Your data, and Sign out](../assets/screenshots/profile-menu.png){ width="420" }
+![The profile menu: your name, Household, Plugins, Your data, and Sign out](../assets/screenshots/profile-menu.png){ width="420" }
 
+- **Household** shows who you share recipes, plans, and shopping with, and
+  invites someone new. See [Household](household.md).
 - **Plugins** turns add-ons on and off. See [Plugins](plugins.md).
 - **Your data** downloads everything you've added, or restores it. See
   [Your data](your-data.md).

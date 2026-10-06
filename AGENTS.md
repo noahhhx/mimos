@@ -47,9 +47,9 @@ change** — an out-of-date AGENTS.md is worse than none.
 | Sync       | intervals.icu is the activity data source (future). Design for it, don't build it yet. |
 | Library content | Seed file `core/core-recipes/src/main/resources/library/library-seed.json`, loaded by an idempotent startup seeder (`mimos.library.seed-enabled`, default on). Content fixes ship with a restart; never via Flyway migrations. See ADR-0005. |
 | Ingredient catalog | One shared catalog seeded read-only from `core/core-recipes/src/main/resources/library/ingredient-seed.json` (always on, by slug, never deleted), plus each household's own ingredients, private to it and editable (`/api/v1/ingredients`, ADR-0016, ADR-0019). Recipe lines link to either by `catalogSlug` and carry prep in an optional `note`; the form's ingredient name is a search over both and the user's own recipes. A line may instead link one of its owner's own recipes (`recipeId`, never both, never itself or a cycle), counted in `servings` of it (ADR-0018). A recipe's `nutritionSource` is `MANUAL` (typed) or `INGREDIENTS` (calculated when read, so catalog fixes and edits to a linked recipe reach every recipe that uses them). Metric units only: `g`, `kg`, `ml`, `l`, `tsp` (5 ml), `tbsp` (15 ml), or none for pieces, plus `servings` for a recipe link. Library recipes are calculated and link no recipes. See ADR-0015, ADR-0016, ADR-0018. |
-| Households | Every user belongs to exactly one household; a user on their own is a household of one. The household owns recipes, personal ingredients, plans, shopping lists, and plugin opt-ins and pseudonyms; meal logs stay per person. Plan entries name their diners. Membership is Mimos domain data, not Keycloak groups. Being delivered in four steps (ROADMAP step 17); step 1 is in: every profile has a household (`household`, `user_profile.household_id`; a new user gets a household of one with their profile), household-owned tables carry `household_id`, recipes record `created_by_profile_id`, and every plan entry has diners (`meal_plan_entry_diner`; the API adds the caller as the only one). Invites, joining and leaving, diners in the API, and export version 4 are not built yet. See ADR-0019. |
+| Households | Every user belongs to exactly one household; a user on their own is a household of one. The household owns recipes, personal ingredients, plans, shopping lists, and plugin opt-ins and pseudonyms; meal logs stay per person. Plan entries name their diners. Membership is Mimos domain data, not Keycloak groups. Being delivered in four steps (ROADMAP step 17); steps 1 and 2 are in. Every profile has a household (`household`, `user_profile.household_id`; a new user gets a household of one with their profile), household-owned tables carry `household_id`, recipes record `created_by_profile_id` (shown as `createdBy`, "Added by" in the web), and every plan entry has diners (`meal_plan_entry_diner`; the API adds the caller as the only one). Any member creates a single-use invite valid for seven days (`household_invite`, SHA-256 of the token only; the web link is `/app/join/{token}`); joining from a household of one brings its recipes and ingredients and deletes its plans, lists, plugin opt-ins and pseudonyms; joining from a shared household leaves it first; leaving keeps the household's data, removes the leaver as a diner (deleting entries left with none), and unlinks their logs from its recipes. API under `/api/v1/household`; join, leave, and the invite preview are `x-mcp: false`. Web: the Household page (`/app/household`, in the profile menu) and `/app/join/[token]`. Diners in the API and export version 4 are not built yet. See ADR-0019. |
 | Public API | Unauthenticated read-only access to the curated library under `/api/v1/public/**` (SEO pages). Personal recipes never appear there; everything else requires a bearer token. |
-| Account data | Per-user export/import as one versioned JSON document (`GET /api/v1/account/export`, `POST /api/v1/account/import`): domain-shaped, never a table dump; library recipes by slug; recipe links by the linked recipe's id within the document, restored linked-first; import only into an empty account, atomically, through domain validation. Current format: version 3. Format changes bump the version, add an `ExportUpgrader` step and a frozen `export/v<N>.json` test fixture. See ADR-0011, ADR-0018. |
+| Account data | Per-user export/import as one versioned JSON document (`GET /api/v1/account/export`, `POST /api/v1/account/import`): domain-shaped, never a table dump; library recipes by slug; recipe links by the linked recipe's id within the document, restored linked-first; import only into an empty household of one (no recipes, own ingredients, planned meals, list items, or logs, and no other member; 409 otherwise), atomically, through domain validation. Current format: version 3. Format changes bump the version, add an `ExportUpgrader` step and a frozen `export/v<N>.json` test fixture. See ADR-0011, ADR-0018. |
 | Plugins    | HTTP sidecar plugins, pull-only in v1: config registry (`mimos.plugins.*`), manifest at `GET /manifest`, two capabilities (`plan-suggestions` cards, `week-panel` declarative panels with buttons), library-only context, households named by a per-plugin pseudonym (`subject`) the plugin may keep its own data against. See ADR-0006, ADR-0017. Registered means available; each household opts in from the Plugins page (`/app/plugins`, linked from the profile menu; API `/api/v1/me/plugins`), and every plugin starts off. See ADR-0013. |
 | Agent access | MCP server inside `mimos-api` at `/mcp` (Spring AI 2.0.x MCP server starter, stateless Streamable HTTP; Spring AI's model layer excluded). Tools are derived from `contracts/api/openapi.yaml` at startup: every `/api/v1` operation is a tool unless it declares `x-mcp: false`, and a call loops back through the HTTP API with the caller's token. Agents sign in as the public Keycloak client `mimos-agent` (Authorization Code + PKCE), found through Protected Resource Metadata (RFC 9728). See ADR-0014. |
 | Agent harness | `tools/harness` (`@mimos/harness`, TypeScript on Node type stripping) behind a devenv `harness` script; all agent tooling from devenv/nixpkgs; Playwright pinned to nixpkgs' `playwright-driver`; `.mcp.json` committed; debug-only behavior in `deploy/docker/compose.debug.yml`; scenarios run in CI via devenv. Plan and decisions in `docs/harness/`. |
@@ -82,6 +82,15 @@ wire-format contract:
   ingredients, plans, and shopping lists take an opaque `ownerId`, which
   the API sets to the caller's household id; meal logs, recipe creators,
   and plan-entry diners take profile ids.
+- `apps/api` package `household` — membership, invites, and the join
+  and leave rules (ADR-0019). Owns `household_invite` and
+  `user_profile.household_id`, and creates and deletes `household` rows
+  after sign-up (`identity` creates a new user's household of one). It
+  changes what a household owns in other modules only through their
+  public services (`moveAll`, `deleteAll`, `removeDiner`,
+  `unlinkRecipesOf`), never their tables, and runs a join or leave in one
+  transaction that locks the caller's profile row, then the households
+  involved in id order.
 - `apps/api` package `account` — account export/import (ADR-0011): an
   adapter over the core modules' public services, like the controllers.
   It never touches tables, so a migration that keeps the domain's meaning
@@ -240,7 +249,7 @@ is the contract:
 - Security failures (401/403) are RFC 9457 problem-details, as are API errors
   generally. Domain errors map once in `ApiExceptionHandler`:
   `IllegalArgumentException` → 400, `NoSuchElementException` → 404,
-  `ReadOnlyRecipeException` and `ReadOnlyIngredientException` → 403, `AccountNotEmptyException` → 409. It extends Spring's
+  `ReadOnlyRecipeException` and `ReadOnlyIngredientException` → 403, `AccountNotEmptyException` and `MembershipConflictException` → 409, `InviteNoLongerValidException` → 410. It extends Spring's
   `ResponseEntityExceptionHandler`, so Spring MVC's own errors (415, 405,
   unknown-path 404, 406, malformed input) are problem-details too; anything
   unmapped is a 500 problem, logged with its stack trace, its message never
@@ -392,7 +401,7 @@ mimos/
   ranges (`20–25 minutes`) and for an unknown value (`–`). Code comments
   and docs are not covered.
 - **Time/money-free:** no wall-clock dependence in domain logic; clocks and
-  randomness are injected.
+  randomness are injected (`TimeConfig`'s `Clock` and `SecureRandom`).
 - **Commit style:** conventional commits, present tense, scoped when it
   helps (`feat(planning): ...`).
 - **Naming:** product name is **Mimos**; the repo/backend service is

@@ -22,9 +22,10 @@ one.
 1. Under **Import**, choose the export file.
 2. Choose **Import**. Mimos reports what it restored, and any warnings.
 
-Import only works into an empty account: one with no recipes, plans,
-shopping lists, or logged meals yet. That way nothing is ever overwritten
-or doubled up. If you've already started using the new account, ask
+Import only works into an empty account: one with no recipes, ingredients
+of your own, plans, shopping lists, or logged meals yet. That way nothing
+is ever overwritten or doubled up. It also needs you to be on your own: if
+you share a [household](household.md), leave it first. If you've already started using the new account, ask
 whoever runs it to give you a fresh one.
 
 Plans and logs that use library recipes come across as long as the new

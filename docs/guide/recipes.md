@@ -2,7 +2,9 @@
 
 Open **Recipes** to see your recipe book. It has two tabs:
 
-- **My recipes**: the recipes you've written. Only you can see them.
+- **My recipes**: the recipes you and your [household](household.md) have
+  written. Only your household can see them, and a recipe someone else
+  added says **Added by** them.
 - **Library**: free recipes curated for everyone on this Mimos. Anyone can
   read them, signed in or not.
 
@@ -36,8 +38,8 @@ clear when you leave it.
    choose **pieces** as the unit for things you count, like "2 eggs".
 4. If an ingredient isn't in the list, choose **+ Add "…" as a new
    ingredient** and copy its calories, protein, carbs, and fat from the
-   label. It's saved as your own: only you see it, and you can use it in
-   any of your recipes. Under each ingredient, Mimos says what it matched;
+   label. It's saved as your household's own: only your household sees
+   it, and you can use it in any of your recipes. Under each ingredient, Mimos says what it matched;
    choose **Don't count it** if the match is wrong.
 5. Under **Nutrition per serving**, leave **Calculate from ingredients**
    chosen to have Mimos work it out, or choose **Enter it myself** to type
