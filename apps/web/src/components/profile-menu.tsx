@@ -12,7 +12,8 @@ type Load<T> = { state: "loading" } | { state: "error" } | { state: "ok"; data: 
 
 /**
  * The signed-in user's menu at the header's right: a square with a user
- * icon that opens their name, member-since date, "Plugins" (ADR-0013),
+ * icon that opens their name, member-since date, "Household" (ADR-0019),
+ * "Plugins" (ADR-0013),
  * "Your data" and "Sign out". Renders nothing when signed out. A
  * disclosure, not an ARIA menu: Escape or a click outside closes it.
  */
@@ -99,6 +100,9 @@ export function ProfileMenu() {
               </>
             )}
           </div>
+          <Link href="/app/household" onClick={() => setOpen(false)}>
+            Household
+          </Link>
           <Link href="/app/plugins" onClick={() => setOpen(false)}>
             Plugins
           </Link>

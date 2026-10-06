@@ -4,10 +4,12 @@ import { User } from "oidc-client-ts";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 import { currentUser, userManager } from "@/lib/auth";
+import type { SignInState } from "@/lib/return-to";
 
 type AuthState = {
   user: User | null;
-  signIn: () => Promise<void>;
+  /** Signs in through Keycloak, then returns to `returnTo` (an app path) or the Kitchen. */
+  signIn: (returnTo?: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -30,8 +32,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const signIn = useCallback(async () => {
-    await userManager.signinRedirect();
+  const signIn = useCallback(async (returnTo?: string) => {
+    const state: SignInState | undefined = returnTo ? { returnTo } : undefined;
+    await userManager.signinRedirect({ state });
   }, []);
 
   const signOut = useCallback(async () => {

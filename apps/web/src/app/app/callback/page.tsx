@@ -5,10 +5,12 @@ import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/page-header";
 import { userManager } from "@/lib/auth";
+import { returnPath } from "@/lib/return-to";
 
 /**
  * The OIDC redirect target: finishes the authorization code exchange, then
- * returns to the app. Also serves as the silent-renew target.
+ * returns to the page that started sign-in, or the Kitchen. Also serves as
+ * the silent-renew target.
  */
 export default function CallbackPage() {
   const router = useRouter();
@@ -18,9 +20,9 @@ export default function CallbackPage() {
     let cancelled = false;
     userManager
       .signinCallback()
-      .then(() => {
+      .then((user) => {
         if (!cancelled) {
-          router.replace("/app");
+          router.replace(returnPath(user?.state));
         }
       })
       .catch((err: unknown) => {

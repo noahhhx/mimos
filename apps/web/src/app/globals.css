@@ -1425,6 +1425,48 @@ input[type="search"]:focus {
   font-size: 13px;
 }
 
+/* ---------- Household (app/app/household, app/app/join) ---------- */
+
+.household-section {
+  margin-top: 40px;
+}
+
+.member-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.member-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 18px;
+}
+
+.member-list .muted {
+  font-size: 13px;
+}
+
+.invite {
+  margin-top: 16px;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 16px 0;
+}
+
+.consequences li {
+  margin: 8px 0;
+}
+
 /* ---------- Shopping list & log ---------- */
 
 .shopping-items li {
