@@ -29,7 +29,8 @@ tab left open overnight, it asks you to sign in again.
 After you sign in you land in the **Kitchen**, your home page. It shows
 tonight's dinner with a button to start cooking it, the week's dinners down
 the side, what's still on your shopping list, and sometimes a suggestion for
-an open evening.
+an open evening. If you share a [household](household.md), tonight and the
+week show only the meals you eat.
 
 ![The Kitchen: tonight's dinner, the week's dinners, and what's left to buy](../assets/screenshots/kitchen.png)
 

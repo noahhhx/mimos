@@ -15,6 +15,17 @@ const entry = (date: string, mealType: MealPlanEntry["mealType"], recipeTitle: s
   diners: [{ id: "me", displayName: "Sam", you: true }],
 });
 
+/** The same meal planned only for someone else in the household. */
+const theirs = (planned: MealPlanEntry): MealPlanEntry => ({
+  ...planned,
+  diners: [{ id: "them", displayName: "Alex", you: false }],
+});
+
+const shared = (planned: MealPlanEntry): MealPlanEntry => ({
+  ...planned,
+  diners: [...planned.diners, { id: "them", displayName: "Alex", you: false }],
+});
+
 const at = (hour: number, minute = 0) => new Date(2026, 9, 2, hour, minute);
 
 describe("greeting", () => {
@@ -54,6 +65,16 @@ describe("pickTonight", () => {
   it("is null when nothing is planned today", () => {
     assert.equal(pickTonight([entry("2026-10-03", "DINNER", "Chili")], today), null);
   });
+
+  it("takes only meals the caller eats, shared ones included", () => {
+    const theirDinner = theirs(entry(today, "DINNER", "Their Curry"));
+    const theirLunch = theirs(entry(today, "LUNCH", "Their Soup"));
+    const myBreakfast = entry(today, "BREAKFAST", "Oats");
+    const ourDinner = shared(entry(today, "DINNER", "Our Dahl"));
+    assert.deepEqual(pickTonight([theirDinner, theirLunch, myBreakfast], today), { entry: myBreakfast, label: "Today" });
+    assert.deepEqual(pickTonight([theirDinner, ourDinner], today), { entry: ourDinner, label: "Tonight" });
+    assert.equal(pickTonight([theirDinner, theirLunch], today), null);
+  });
 });
 
 describe("weekDinners", () => {
@@ -71,6 +92,20 @@ describe("weekDinners", () => {
         ["2026-10-03", null],
         ["2026-10-04", "Chili"],
       ],
+    );
+  });
+
+  it("shows only dinners the caller eats", () => {
+    const entries = [
+      theirs(entry("2026-09-28", "DINNER", "Their Curry")),
+      entry("2026-09-28", "DINNER", "Minestrone"),
+      theirs(entry("2026-09-29", "DINNER", "Their Chili")),
+      shared(entry("2026-09-30", "DINNER", "Our Dahl")),
+    ];
+    const dinners = weekDinners(entries, "2026-09-28").slice(0, 3);
+    assert.deepEqual(
+      dinners.map(({ dinner }) => dinner?.recipeTitle ?? null),
+      ["Minestrone", null, "Our Dahl"],
     );
   });
 });
@@ -99,6 +134,11 @@ describe("pickThought", () => {
     assert.equal(pickThought([past, taken, open], planned, "2026-10-02")?.suggestion.title, "Open");
     assert.equal(pickThought([past, taken], planned, "2026-10-02"), null);
     assert.equal(pickThought([], planned, "2026-10-02"), null);
+  });
+
+  it("counts anyone's dinner as planned, since a suggested dinner is for the whole household", () => {
+    const suggestion = card("Lebanon week", ["2026-10-03"]);
+    assert.equal(pickThought([suggestion], [theirs(entry("2026-10-03", "DINNER", "Chili"))], "2026-10-02"), null);
   });
 });
 

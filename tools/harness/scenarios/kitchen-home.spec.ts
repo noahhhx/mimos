@@ -1,3 +1,6 @@
+import type { Page } from "@playwright/test";
+
+import { endpoints } from "../src/config.ts";
 import { apiAs, expect, register, test } from "./fixtures.ts";
 
 /**
@@ -7,21 +10,15 @@ import { apiAs, expect, register, test } from "./fixtures.ts";
  * of the Week card (turned on first, since plugins are opt-in, ADR-0013;
  * and with Italy chosen for the week, since its card follows the week's
  * country, ADR-0017) offers tonight; adding it puts the recipe under
- * Tonight and on today's row of the week.
+ * Tonight and on today's row of the week. In a shared household
+ * (ADR-0019), each member's Tonight and week show only the meals they eat.
  */
 
 test("tonight, the week, and a plugin's thought for an open evening", async ({ page }) => {
   await register(page, `kitchen-${Date.now().toString(36)}`);
   const api = await apiAs(page);
   // The page's "today" is the browser's local date, so the scenario asks the browser.
-  const { today, monday } = await page.evaluate(() => {
-    const iso = (date: Date) =>
-      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-    const now = new Date();
-    const start = new Date(now);
-    start.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-    return { today: iso(now), monday: iso(start) };
-  });
+  const { today, monday } = await browserWeek(page);
   const planPath = `/api/v1/plans/${monday}`;
 
   await test.step("turn Country of the Week on", async () => {
@@ -81,6 +78,92 @@ test("tonight, the week, and a plugin's thought for an open evening", async ({ p
     await expect(tonight.getByRole("heading", { name: title, level: 3 })).toBeVisible();
   });
 });
+
+test("in a shared household, Tonight and the week are the meals you eat", async ({ page, browser }, testInfo) => {
+  test.slow();
+  const stamp = Date.now().toString(36);
+  const host = `kitchen-host-${stamp}`;
+  const guest = `kitchen-guest-${stamp}`;
+  const hostDinner = `Harness host's dinner ${stamp}`;
+  const guestLunch = `Harness guest's lunch ${stamp}`;
+  const ourDinner = `Harness shared dinner ${stamp}`;
+
+  await register(page, host);
+  const hostApi = await apiAs(page);
+  const guestContext = await browser.newContext({
+    baseURL: endpoints().web,
+    recordHar: { path: testInfo.outputPath("guest.har"), content: "embed" },
+  });
+  const guestPage = await guestContext.newPage();
+  try {
+    await register(guestPage, guest);
+    const guestApi = await apiAs(guestPage);
+    await test.step("the guest joins the host's household", async () => {
+      const { token } = await hostApi<{ token: string }>("POST", "/api/v1/household/invites");
+      await guestApi("POST", "/api/v1/household/join", { token });
+    });
+
+    const { today, monday } = await browserWeek(page);
+    // Another day of this week for the shared dinner, so today's row keeps only the host's.
+    const otherDay = today === monday ? nextDay(monday) : monday;
+    await test.step("today: a dinner only the host eats and a lunch only the guest eats; a dinner both eat on another day", async () => {
+      const hostId = (await hostApi<{ id: string }>("GET", "/api/v1/me")).id;
+      const guestId = (await guestApi<{ id: string }>("GET", "/api/v1/me")).id;
+      const meals = [
+        { title: hostDinner, date: today, mealType: "DINNER", diners: [hostId] },
+        { title: guestLunch, date: today, mealType: "LUNCH", diners: [guestId] },
+        { title: ourDinner, date: otherDay, mealType: "DINNER", diners: [hostId, guestId] },
+      ];
+      for (const { title, date, mealType, diners } of meals) {
+        const recipe = await hostApi<{ id: string }>("POST", "/api/v1/recipes", {
+          title,
+          description: "Written by the harness's kitchen-home scenario.",
+          servings: 2,
+          tags: [],
+          nutrition: { calories: 400, proteinG: 20, carbsG: 40, fatG: 10 },
+          nutritionSource: "MANUAL",
+          ingredients: [{ quantity: 400, unit: "g", name: "Potatoes" }],
+          steps: [{ instruction: "Cook it." }],
+        });
+        await hostApi("POST", `/api/v1/plans/${monday}/entries`, { date, mealType, recipeId: recipe.id, servings: diners.length, diners });
+      }
+    });
+
+    await test.step("the host's Tonight is their dinner; the guest's lunch is nowhere on the page", async () => {
+      await page.goto("/app");
+      const tonight = page.getByRole("region", { name: "Tonight" });
+      const week = page.getByRole("region", { name: "This week" });
+      await expect(tonight.getByRole("heading", { name: hostDinner, level: 3 })).toBeVisible();
+      await expect(week.locator("li.today").getByRole("link", { name: hostDinner })).toBeVisible();
+      await expect(week.getByRole("link", { name: ourDinner })).toBeVisible();
+      await expect(page.locator("main")).not.toContainText(guestLunch);
+    });
+
+    await test.step("the guest's Today is their lunch, and the host's dinner is not on their week", async () => {
+      await guestPage.goto("/app");
+      const today = guestPage.getByRole("region", { name: "Today" });
+      const week = guestPage.getByRole("region", { name: "This week" });
+      await expect(today.getByRole("heading", { name: guestLunch, level: 3 })).toBeVisible();
+      await expect(week.locator("li.today")).toContainText("Nothing yet");
+      await expect(week.getByRole("link", { name: ourDinner })).toBeVisible();
+      await expect(guestPage.locator("main")).not.toContainText(hostDinner);
+    });
+  } finally {
+    await guestContext.close();
+  }
+});
+
+/** Today and this week's Monday by the browser's local date, which is what the page uses. */
+async function browserWeek(page: Page): Promise<{ today: string; monday: string }> {
+  return page.evaluate(() => {
+    const iso = (date: Date) =>
+      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const now = new Date();
+    const start = new Date(now);
+    start.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    return { today: iso(now), monday: iso(start) };
+  });
+}
 
 function nextDay(isoDate: string): string {
   const day = new Date(`${isoDate}T00:00:00Z`);

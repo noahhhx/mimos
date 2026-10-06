@@ -7,12 +7,14 @@ import type {
   ShoppingListItem,
 } from "@mimos/api-client";
 
+import { eatsIt } from "./diners.ts";
 import { weekDays } from "./format.ts";
 
 /**
  * The Kitchen home's choices (docs/design/index.md, "Kitchen home"), as pure
  * functions of the week's data and an injected time, so they can be tested
- * without a browser.
+ * without a browser. Its meals are the caller's: in a shared household,
+ * a meal planned only for someone else is never "tonight" (ADR-0019).
  */
 
 /** "Good morning." 05:00–11:59, "Good afternoon." 12:00–17:59, "Good evening." otherwise, by local hour. */
@@ -37,11 +39,12 @@ export interface TonightPick {
 const TODAY_FALLBACK: MealType[] = ["LUNCH", "BREAKFAST", "SNACK"];
 
 /**
- * Today's first dinner; failing that, today's other meal (lunch, then
- * breakfast, then a snack) under "Today"; `null` when nothing is planned.
+ * Today's first dinner the caller eats; failing that, today's other meal
+ * they eat (lunch, then breakfast, then a snack) under "Today"; `null`
+ * when they have nothing planned.
  */
 export function pickTonight(entries: MealPlanEntry[], today: string): TonightPick | null {
-  const todays = entries.filter((entry) => entry.date === today);
+  const todays = entries.filter((entry) => entry.date === today && eatsIt(entry));
   const dinner = todays.find((entry) => entry.mealType === "DINNER");
   if (dinner) {
     return { entry: dinner, label: "Tonight" };
@@ -55,14 +58,14 @@ export function pickTonight(entries: MealPlanEntry[], today: string): TonightPic
   return null;
 }
 
-/** Monday to Sunday, each day with its first dinner or `null`. */
+/** Monday to Sunday, each day with its first dinner the caller eats, or `null`. */
 export function weekDinners(
   entries: MealPlanEntry[],
   weekStart: string,
 ): { date: string; dinner: MealPlanEntry | null }[] {
   return weekDays(weekStart).map((date) => ({
     date,
-    dinner: entries.find((entry) => entry.date === date && entry.mealType === "DINNER") ?? null,
+    dinner: entries.find((entry) => entry.date === date && entry.mealType === "DINNER" && eatsIt(entry)) ?? null,
   }));
 }
 
@@ -74,7 +77,8 @@ export interface Thought {
 
 /**
  * The first card that fills an open dinner from today on: its first dinner
- * entry on a day with no dinner planned. Past days are not offered.
+ * entry on a day with no dinner planned. Past days are not offered. Open
+ * means open for the household, since a suggested dinner is for everyone.
  */
 export function pickThought(suggestions: PlanSuggestion[], entries: MealPlanEntry[], today: string): Thought | null {
   const planned = new Set(entries.filter((entry) => entry.mealType === "DINNER").map((entry) => entry.date));
