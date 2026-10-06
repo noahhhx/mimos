@@ -115,7 +115,7 @@ export default function RecipeDetailPage() {
       ) : (
         <>
           <div className="toolbar">
-            <span className="muted">Your recipe</span>
+            <span className="muted">{whose(recipe)}</span>
             <div className="actions">
               {recipe.isLibrary ? (
                 <>
@@ -144,4 +144,12 @@ export default function RecipeDetailPage() {
       )}
     </>
   );
+}
+
+/** Whose recipe this is, above its actions. */
+function whose(recipe: RecipeDetail): string {
+  if (recipe.isLibrary) {
+    return "Library recipe";
+  }
+  return recipe.createdBy && !recipe.createdBy.you ? `Added by ${recipe.createdBy.displayName}` : "Your recipe";
 }
