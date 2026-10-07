@@ -16,6 +16,7 @@ import {
 
 import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";
+import { SignInPrompt } from "@/components/sign-in-prompt";
 import { Quantity } from "@/components/quantity";
 import { SplitPage } from "@/components/split-page";
 import { apiClient } from "@/lib/api";
@@ -36,7 +37,7 @@ const FAILED = { state: "error" } as const;
  * nothing.
  */
 export default function KitchenPage() {
-  const { user, signIn } = useAuth();
+  const { user } = useAuth();
   // Read once per visit: the greeting, today and the week all follow from it.
   const [now] = useState(() => new Date());
   const today = todayIso(now);
@@ -104,10 +105,7 @@ export default function KitchenPage() {
     return (
       <>
         <PageHeader title="Mimos" />
-        <p>You need to sign in to use Mimos.</p>
-        <button className="button" onClick={() => void signIn()}>
-          Sign in
-        </button>
+        <SignInPrompt>You need to sign in to use Mimos.</SignInPrompt>
       </>
     );
   }

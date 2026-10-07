@@ -8,6 +8,7 @@ import { deleteRecipe, getRecipe, type RecipeDetail } from "@mimos/api-client";
 
 import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";
+import { SignInPrompt } from "@/components/sign-in-prompt";
 import { RecipeForm } from "@/components/recipe-form";
 import { RecipeView } from "@/components/recipe-view";
 import { apiClient } from "@/lib/api";
@@ -18,7 +19,7 @@ import { apiClient } from "@/lib/api";
  * page).
  */
 export default function RecipeDetailPage() {
-  const { user, signIn } = useAuth();
+  const { user } = useAuth();
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [recipe, setRecipe] = useState<RecipeDetail | null>(null);
@@ -54,10 +55,7 @@ export default function RecipeDetailPage() {
     return (
       <>
         <PageHeader title="Recipe" />
-        <p>You need to sign in to use Mimos.</p>
-        <button className="button" onClick={() => void signIn()}>
-          Sign in
-        </button>
+        <SignInPrompt>You need to sign in to use Mimos.</SignInPrompt>
       </>
     );
   }

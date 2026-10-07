@@ -6,6 +6,7 @@ import { listMyPlugins, updateMyPlugin, type UserPlugin } from "@mimos/api-clien
 
 import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";
+import { SignInPrompt } from "@/components/sign-in-prompt";
 import { apiClient } from "@/lib/api";
 import { pluginHomepage } from "@/lib/plugins";
 
@@ -16,7 +17,7 @@ type Load<T> = { state: "loading" } | { state: "error" } | { state: "ok"; data: 
  * until someone in the household turns it on here (ADR-0019).
  */
 export default function PluginsPage() {
-  const { user, signIn } = useAuth();
+  const { user } = useAuth();
   const [plugins, setPlugins] = useState<Load<UserPlugin[]>>({ state: "loading" });
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,10 +42,7 @@ export default function PluginsPage() {
     return (
       <>
         <PageHeader title="Plugins" />
-        <p>You need to sign in to use Mimos.</p>
-        <button className="button" onClick={() => void signIn()}>
-          Sign in
-        </button>
+        <SignInPrompt>You need to sign in to use Mimos.</SignInPrompt>
       </>
     );
   }

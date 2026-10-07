@@ -11,6 +11,7 @@ import {
 
 import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";
+import { SignInPrompt } from "@/components/sign-in-prompt";
 import { RecipeList } from "@/components/recipe-list";
 import { apiClient } from "@/lib/api";
 
@@ -20,7 +21,7 @@ import { apiClient } from "@/lib/api";
  * to their public pages.
  */
 export default function RecipesPage() {
-  const { user, signIn } = useAuth();
+  const { user } = useAuth();
   const [tab, setTab] = useState<"mine" | "library">("mine");
   const [query, setQuery] = useState("");
   const [mine, setMine] = useState<RecipeSummary[] | null>(null);
@@ -59,10 +60,7 @@ export default function RecipesPage() {
     return (
       <>
         <PageHeader title="Recipes" />
-        <p>You need to sign in to use Mimos.</p>
-        <button className="button" onClick={() => void signIn()}>
-          Sign in
-        </button>
+        <SignInPrompt>You need to sign in to use Mimos.</SignInPrompt>
       </>
     );
   }

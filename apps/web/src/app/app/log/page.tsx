@@ -13,6 +13,7 @@ import {
 
 import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";
+import { SignInPrompt } from "@/components/sign-in-prompt";
 import { apiClient } from "@/lib/api";
 import { MEAL_TYPES, addDays, dayLabel, formatKcal, formatServings, mealLabel, mondayOf, todayIso, weekDays } from "@/lib/format";
 
@@ -22,7 +23,7 @@ import { MEAL_TYPES, addDays, dayLabel, formatKcal, formatServings, mealLabel, m
  * Information, not judgement — no streaks, no scolding.
  */
 export default function LogPage() {
-  const { user, signIn } = useAuth();
+  const { user } = useAuth();
   const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()));
   const [selectedDay, setSelectedDay] = useState(todayIso());
   const [logs, setLogs] = useState<MealLog[] | null>(null);
@@ -60,10 +61,7 @@ export default function LogPage() {
     return (
       <>
         <PageHeader title="Log" />
-        <p>You need to sign in to keep a log.</p>
-        <button className="button" onClick={() => void signIn()}>
-          Sign in
-        </button>
+        <SignInPrompt>You need to sign in to keep a log.</SignInPrompt>
       </>
     );
   }

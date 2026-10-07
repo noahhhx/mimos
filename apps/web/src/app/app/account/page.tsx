@@ -6,6 +6,7 @@ import { exportAccount, importAccount, type ImportReport } from "@mimos/api-clie
 
 import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";
+import { SignInPrompt } from "@/components/sign-in-prompt";
 import { exportFileName, importSummary, parseExportFile } from "@/lib/account-data";
 import { apiClient } from "@/lib/api";
 
@@ -14,7 +15,7 @@ import { apiClient } from "@/lib/api";
  * restore such a file into an empty account, here or on another Mimos.
  */
 export default function AccountPage() {
-  const { user, signIn } = useAuth();
+  const { user } = useAuth();
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -26,10 +27,7 @@ export default function AccountPage() {
     return (
       <>
         <PageHeader title="Your data" />
-        <p>You need to sign in to use Mimos.</p>
-        <button className="button" onClick={() => void signIn()}>
-          Sign in
-        </button>
+        <SignInPrompt>You need to sign in to use Mimos.</SignInPrompt>
       </>
     );
   }

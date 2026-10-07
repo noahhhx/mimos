@@ -12,6 +12,7 @@ import {
 
 import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";
+import { SignInPrompt } from "@/components/sign-in-prompt";
 import { apiClient } from "@/lib/api";
 import { Quantity } from "@/components/quantity";
 import { addDays, dayLabel, mondayOf } from "@/lib/format";
@@ -23,7 +24,7 @@ import { aislesToShop } from "@/lib/shopping";
  * you've already ticked off.
  */
 export default function ShoppingListPage() {
-  const { user, signIn } = useAuth();
+  const { user } = useAuth();
   const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()));
   const [list, setList] = useState<ShoppingList | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,10 +66,7 @@ export default function ShoppingListPage() {
     return (
       <>
         <PageHeader title="Shopping list" />
-        <p>You need to sign in to use Mimos.</p>
-        <button className="button" onClick={() => void signIn()}>
-          Sign in
-        </button>
+        <SignInPrompt>You need to sign in to use Mimos.</SignInPrompt>
       </>
     );
   }

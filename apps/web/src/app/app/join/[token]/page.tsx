@@ -8,6 +8,7 @@ import { joinHousehold, previewHouseholdInvite, type HouseholdInvitePreview } fr
 
 import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";
+import { SignInPrompt } from "@/components/sign-in-prompt";
 import { apiClient } from "@/lib/api";
 import { householdName, listNames } from "@/lib/household";
 
@@ -22,7 +23,7 @@ const INVALID = "This invite link is not valid. Ask for a new one.";
  * here.
  */
 export default function JoinPage() {
-  const { user, signIn } = useAuth();
+  const { user } = useAuth();
   const params = useParams<{ token: string }>();
   const router = useRouter();
   const [preview, setPreview] = useState<Preview>({ state: "loading" });
@@ -57,10 +58,9 @@ export default function JoinPage() {
     return (
       <>
         <PageHeader eyebrow="Household" title="You have an invite" />
-        <p>Someone invited you to share their household on Mimos. Sign in, or create an account, to see it.</p>
-        <button className="button" onClick={() => void signIn(`/app/join/${encodeURIComponent(token)}`)}>
-          Sign in
-        </button>
+        <SignInPrompt returnTo={`/app/join/${encodeURIComponent(token)}`}>
+          Someone invited you to share their household on Mimos. Sign in, or create an account, to see it.
+        </SignInPrompt>
       </>
     );
   }

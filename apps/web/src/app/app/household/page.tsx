@@ -12,6 +12,7 @@ import {
 
 import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";
+import { SignInPrompt } from "@/components/sign-in-prompt";
 import { apiClient } from "@/lib/api";
 import { appBaseUrl } from "@/lib/config";
 import { inviteLink } from "@/lib/household";
@@ -24,7 +25,7 @@ type Load<T> = { state: "loading" } | { state: "error" } | { state: "ok"; data: 
  * that says what stays and what goes.
  */
 export default function HouseholdPage() {
-  const { user, signIn } = useAuth();
+  const { user } = useAuth();
   const [household, setHousehold] = useState<Load<Household>>({ state: "loading" });
   const [invite, setInvite] = useState<HouseholdInvite | null>(null);
   const [inviting, setInviting] = useState(false);
@@ -54,10 +55,7 @@ export default function HouseholdPage() {
     return (
       <>
         <PageHeader title="Household" />
-        <p>You need to sign in to use Mimos.</p>
-        <button className="button" onClick={() => void signIn()}>
-          Sign in
-        </button>
+        <SignInPrompt>You need to sign in to use Mimos.</SignInPrompt>
       </>
     );
   }

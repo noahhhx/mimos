@@ -23,6 +23,7 @@ import {
 
 import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";
+import { SignInPrompt } from "@/components/sign-in-prompt";
 import { WeekPanelSection } from "@/components/week-panel";
 import { apiClient } from "@/lib/api";
 import {
@@ -50,7 +51,7 @@ const VIEW_KEY = "mimos.plan.view";
  * everyone's, and logging a shared meal logs your share.
  */
 export default function PlanPage() {
-  const { user, signIn } = useAuth();
+  const { user } = useAuth();
   const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()));
   const [plan, setPlan] = useState<MealPlan | null>(null);
   const [suggestions, setSuggestions] = useState<PlanSuggestion[] | null>(null);
@@ -146,10 +147,7 @@ export default function PlanPage() {
     return (
       <>
         <PageHeader title="Plan" />
-        <p>You need to sign in to plan meals.</p>
-        <button className="button" onClick={() => void signIn()}>
-          Sign in
-        </button>
+        <SignInPrompt>You need to sign in to plan meals.</SignInPrompt>
       </>
     );
   }
