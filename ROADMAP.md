@@ -160,3 +160,19 @@ Rules for using this file:
     *Done when: two users in one household plan a shared dinner and their
     own lunches, shop from one list, see one country of the week, and
     each log their share of the dinner.*
+    **Done.** ADR-0019. Every user belongs to one household (a household
+    of one on their own), which owns recipes, personal ingredients, plans,
+    shopping lists, and plugin opt-ins and pseudonyms; meal logs stay per
+    person. One forward-only migration gave each existing user a household
+    of one, so nothing changed until they joined someone. Members invite
+    with a single-use link, join (bringing their recipes and ingredients
+    from a household of one), and leave (taking their log) from the
+    Household page. Plan entries name their diners: a dinner defaults to
+    everyone and other meals to the caller, logging a planned meal logs
+    the caller's share, the plan page toggles Mine and Everyone, and the
+    Kitchen home shows only the caller's meals. A plugin is on or off for
+    the whole household and sees one `subject` for it, with no contract
+    change. Export format version 4 holds one person's meals and log.
+    The `shared-week` harness scenario proves the done-when with two
+    fresh accounts: a shared dinner and separate lunches, each logging
+    their share, one Country of the Week, and one shopping list.
