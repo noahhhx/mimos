@@ -129,13 +129,13 @@ export default function JoinPage() {
               with it, including the ones you added.
             </li>
             <li>You stop eating the meals planned there, and your logged meals no longer link to its recipes.</li>
-            <li>Your food log stays yours. Nobody else sees it.</li>
+            <li>Your food log, fuel settings and training stay yours. Nobody else sees them.</li>
           </ul>
         ) : (
           <ul className="consequences">
             <li>Your recipes and your own ingredients come with you, and everyone in the household can change them.</li>
             <li>Your meal plans, shopping lists and plugin settings are deleted. You use the household&apos;s instead.</li>
-            <li>Your food log stays yours. Nobody else sees it.</li>
+            <li>Your food log, fuel settings and training stay yours. Nobody else sees them.</li>
           </ul>
         )}
         <p className="muted">

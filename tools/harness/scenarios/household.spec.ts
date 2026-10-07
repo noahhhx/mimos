@@ -62,7 +62,7 @@ test("invite someone, who joins, sees your recipe, and leaves", async ({ page, b
       await expect(guestPage.getByRole("heading", { name: `Join ${host}'s household?` })).toBeVisible();
       await expect(guestPage.getByText("Your recipes and your own ingredients come with you")).toBeVisible();
       await expect(guestPage.getByText("Your meal plans, shopping lists and plugin settings are deleted.")).toBeVisible();
-      await expect(guestPage.getByText("Your food log stays yours.")).toBeVisible();
+      await expect(guestPage.getByText("Your food log, fuel settings and training stay yours.")).toBeVisible();
     });
 
     await test.step("the guest joins", async () => {

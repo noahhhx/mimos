@@ -188,6 +188,7 @@ export default function HouseholdPage() {
                 </li>
                 <li>You stop eating the meals planned there, and a meal only you eat is removed.</li>
                 <li>You keep your food log, but your logged meals no longer link to the household&apos;s recipes.</li>
+                <li>You keep your fuel settings and training.</li>
                 <li>You start again in a household of your own.</li>
               </ul>
               {leaveError && (

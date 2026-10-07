@@ -80,9 +80,10 @@ export default function AccountPage() {
       <section className="card" aria-labelledby="export-heading">
         <h2 id="export-heading">Export</h2>
         <p>
-          Download your recipes, meal plans, shopping lists and food log as one file. In a shared household, it holds
-          the household&apos;s recipes and lists but only the meals you eat and your own food log. Keep it somewhere
-          safe. You can import it into a fresh account, here or on another Mimos.
+          Download your recipes, meal plans, shopping lists, food log, and fuel settings with the training you added by
+          hand as one file. In a shared household, it holds the household&apos;s recipes and lists but only the meals
+          you eat and your own food log. Keep it somewhere safe. You can import it into a fresh account, here or on
+          another Mimos.
         </p>
         {exportError && (
           <p className="card error" role="alert">
@@ -97,8 +98,9 @@ export default function AccountPage() {
       <section className="card" aria-labelledby="import-heading">
         <h2 id="import-heading">Import</h2>
         <p>
-          Restore an export into this account. Import only works into an empty account, one with no recipes, plans,
-          shopping lists or logged meals yet, so nothing here is ever overwritten or doubled up.
+          Restore an export into this account. Import only works into an empty account, one with no recipes,
+          ingredients of your own, plans, shopping lists, logged meals, fuel settings or training yet, so nothing here
+          is ever overwritten or doubled up.
         </p>
         <form onSubmit={(event) => void restore(event)}>
           <label>
