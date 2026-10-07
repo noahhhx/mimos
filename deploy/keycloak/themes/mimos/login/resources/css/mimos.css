@@ -1,8 +1,9 @@
 /* Mimos login theme: Evening Kitchen (docs/design/index.md) over keycloak.v2.
    keycloak.v2 renders PatternFly 5 markup; this file remaps PatternFly's
    global tokens onto ours, then restyles the few components a login page
-   uses. The token values mirror apps/web/src/app/globals.css (light) —
-   change them there and here together. */
+   uses. The token values mirror apps/web/src/app/globals.css, light and
+   dark — change them there and here together. Dark applies when
+   js/theme.js sets data-theme (ADR-0021). */
 
 /* The app's committed fonts, copied in by deploy/keycloak/Dockerfile. */
 @font-face {
@@ -47,6 +48,15 @@
   --pf-v5-global--BackgroundColor--light-300: var(--bg);
   --pf-v5-global--Color--100: var(--fg);
   --pf-v5-global--Color--200: var(--muted);
+  /* Inputs and alerts reset the globals above to these "on light" variants,
+     which stay PatternFly's near-black in dark mode unless mapped too. */
+  --pf-v5-global--Color--dark-100: var(--fg);
+  --pf-v5-global--Color--dark-200: var(--muted);
+  --pf-v5-global--BorderColor--dark-100: var(--line);
+  --pf-v5-global--link--Color--dark: var(--fg);
+  --pf-v5-global--link--Color--dark--hover: var(--fg);
+  --pf-v5-global--icon--Color--light--dark: var(--muted);
+  --pf-v5-global--icon--Color--dark--dark: var(--fg);
   --pf-v5-global--icon--Color--light: var(--muted);
   --pf-v5-global--primary-color--100: var(--accent);
   --pf-v5-global--primary-color--200: var(--accent-deep);
@@ -73,6 +83,19 @@
   --pf-v5-global--TransitionDuration: 0s;
 
   color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #191512;
+  --surface: #221c18;
+  --hover: #2b241f;
+  --fg: #f1e7d9;
+  --muted: #a8998b;
+  --line: #3a312a;
+  --accent: #e9aa50;
+  --on-accent: #191512;
+  --danger: #d97a4f;
+  color-scheme: dark;
 }
 
 /* Straight edges and no motion, whatever a PatternFly component asks for. */
@@ -104,6 +127,10 @@
 
 /* The brand, as in the app's header: a short amber dash, then the serif name. */
 .pf-v5-c-login__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   margin: 40px 0 24px;
   padding: 0;
 }
@@ -136,6 +163,31 @@
   height: 2px;
   background: var(--accent);
   transform: translateY(-6px);
+}
+
+/* The app's theme toggle (globals.css .theme-toggle), added by js/theme.js. */
+.theme-toggle {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
+}
+
+.theme-toggle span {
+  width: 12px;
+  height: 12px;
+  border: 1px solid currentColor;
+  background: linear-gradient(90deg, currentColor 50%, transparent 50%);
 }
 
 /* The form sits in a card: --surface with a --line border, no shadow. */
