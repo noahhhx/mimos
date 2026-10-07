@@ -4,8 +4,8 @@ import { countryByCode } from "./countries.ts";
 import type { Effect, Ledger } from "./wheel.ts";
 
 /**
- * Each user's wheel, kept in SQLite under the pseudonymous `subject` Mimos
- * sends (ADR-0017). Calls are synchronous, so one request's read and write
+ * Each household's wheel, kept in SQLite under the pseudonymous `subject`
+ * Mimos sends (ADR-0017, ADR-0019). Calls are synchronous, so one request's read and write
  * never interleave with another's.
  */
 export type Store = {

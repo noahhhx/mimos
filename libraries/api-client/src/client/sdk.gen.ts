@@ -137,7 +137,7 @@ export const listMyRecipes = <ThrowOnError extends boolean = false>(options?: Op
 /**
  * Create a personal recipe
  *
- * Creates a recipe owned by the caller's household, which everyone in it can see and change, and returns it with its id. Steps are in cooking order. Prefer calculated nutrition: set nutritionSource to INGREDIENTS and give each ingredient line the catalogSlug of what it is (find slugs with listIngredients, or add a missing one with createIngredient), with its amount in g, kg, ml, l, tsp, or tbsp, or no unit for a count of pieces, matching the entry's basis. A line can instead be one of the caller's own recipes (recipeId, from listMyRecipes), measured in servings of it, like 2 servings of a focaccia in a sandwich. Put prep like "minced" in the line's note, not its name. Check the result first with estimateRecipeNutrition. With MANUAL, send per-serving nutrition and leave out values you do not know rather than guessing zero.
+ * Creates a recipe owned by the caller's household, which everyone in it can see and change, and returns it with its id. Steps are in cooking order. Prefer calculated nutrition: set nutritionSource to INGREDIENTS and give each ingredient line the catalogSlug of what it is (find slugs with listIngredients, or add a missing one with createIngredient), with its amount in g, kg, ml, l, tsp, or tbsp, or no unit for a count of pieces, matching the entry's basis. A line can instead be one of the household's recipes (recipeId, from listMyRecipes), measured in servings of it, like 2 servings of a focaccia in a sandwich. Put prep like "minced" in the line's note, not its name. Check the result first with estimateRecipeNutrition. With MANUAL, send per-serving nutrition and leave out values you do not know rather than guessing zero.
  *
  */
 export const createRecipe = <ThrowOnError extends boolean = false>(options: Options<CreateRecipeData, ThrowOnError>): RequestResult<CreateRecipeResponses, CreateRecipeErrors, ThrowOnError> => (options.client ?? client).post<CreateRecipeResponses, CreateRecipeErrors, ThrowOnError>({
@@ -180,7 +180,7 @@ export const replaceRecipe = <ThrowOnError extends boolean = false>(options: Opt
 /**
  * Calculate nutrition for ingredient lines without saving
  *
- * Runs the calculation a recipe with nutritionSource INGREDIENTS gets: each line counts when it has a catalogSlug, an amount, and a unit its catalog entry's basis covers (PER_100_G: g, kg; PER_100_ML: ml, l, tsp = 5 ml, tbsp = 15 ml; PER_PIECE: no unit), or a recipeId of one of the caller's recipes whose nutrition is known, an amount, and the unit servings. Returns the per-serving nutrition of the lines that counted and each line's status, in order. Nothing is saved.
+ * Runs the calculation a recipe with nutritionSource INGREDIENTS gets: each line counts when it has a catalogSlug, an amount, and a unit its catalog entry's basis covers (PER_100_G: g, kg; PER_100_ML: ml, l, tsp = 5 ml, tbsp = 15 ml; PER_PIECE: no unit), or a recipeId of one of the household's recipes whose nutrition is known, an amount, and the unit servings. Returns the per-serving nutrition of the lines that counted and each line's status, in order. Nothing is saved.
  *
  */
 export const estimateRecipeNutrition = <ThrowOnError extends boolean = false>(options: Options<EstimateRecipeNutritionData, ThrowOnError>): RequestResult<EstimateRecipeNutritionResponses, EstimateRecipeNutritionErrors, ThrowOnError> => (options.client ?? client).post<EstimateRecipeNutritionResponses, EstimateRecipeNutritionErrors, ThrowOnError>({
@@ -195,15 +195,15 @@ export const estimateRecipeNutrition = <ThrowOnError extends boolean = false>(op
 /**
  * The ingredients the caller can use
  *
- * Ingredients with known nutrition: the shared ones everyone on this instance sees (isShared) and the caller's own. Link an ingredient line to one with its slug (catalogSlug) so a recipe's nutrition can be calculated. Each entry's nutrition is for its basis: 100 g, 100 ml, or one piece. When nothing fits, add one with createIngredient.
+ * Ingredients with known nutrition: the shared ones everyone on this instance sees (isShared) and the household's own. Link an ingredient line to one with its slug (catalogSlug) so a recipe's nutrition can be calculated. Each entry's nutrition is for its basis: 100 g, 100 ml, or one piece. When nothing fits, add one with createIngredient.
  *
  */
 export const listIngredients = <ThrowOnError extends boolean = false>(options?: Options<ListIngredientsData, ThrowOnError>): RequestResult<ListIngredientsResponses, ListIngredientsErrors, ThrowOnError> => (options?.client ?? client).get<ListIngredientsResponses, ListIngredientsErrors, ThrowOnError>({ url: '/api/v1/ingredients', ...options });
 
 /**
- * Add one of the caller's own ingredients
+ * Add one of the household's own ingredients
  *
- * Adds an ingredient only the caller sees, with its nutrition for a basis (per 100 g, per 100 ml, or per piece), usually copied from a food label. All four values are required; use 0 when there is none. Returns it with a new slug to use as a line's catalogSlug.
+ * Adds an ingredient that only the caller's household sees, and anyone in it can change, with its nutrition for a basis (per 100 g, per 100 ml, or per piece), usually copied from a food label. All four values are required; use 0 when there is none. Returns it with a new slug to use as a line's catalogSlug.
  *
  */
 export const createIngredient = <ThrowOnError extends boolean = false>(options: Options<CreateIngredientData, ThrowOnError>): RequestResult<CreateIngredientResponses, CreateIngredientErrors, ThrowOnError> => (options.client ?? client).post<CreateIngredientResponses, CreateIngredientErrors, ThrowOnError>({
@@ -216,7 +216,7 @@ export const createIngredient = <ThrowOnError extends boolean = false>(options: 
 });
 
 /**
- * Delete one of the caller's own ingredients
+ * Delete one of the household's own ingredients
  *
  * Recipe lines that used it stay, but no longer count toward calculated nutrition. Shared ingredients are read-only.
  *
@@ -224,7 +224,7 @@ export const createIngredient = <ThrowOnError extends boolean = false>(options: 
 export const deleteIngredient = <ThrowOnError extends boolean = false>(options: Options<DeleteIngredientData, ThrowOnError>): RequestResult<DeleteIngredientResponses, DeleteIngredientErrors, ThrowOnError> => (options.client ?? client).delete<DeleteIngredientResponses, DeleteIngredientErrors, ThrowOnError>({ url: '/api/v1/ingredients/{ingredientSlug}', ...options });
 
 /**
- * Replace one of the caller's own ingredients
+ * Replace one of the household's own ingredients
  *
  * Replaces its name, basis, and nutrition. The slug stays, so every recipe that uses it is recalculated. Shared ingredients are read-only.
  *
@@ -302,7 +302,7 @@ export const updateMealPlanEntry = <ThrowOnError extends boolean = false>(option
 /**
  * Suggestion cards for a planned week
  *
- * Suggestion cards from the instance's plugins (ADR-0006), each attributed to its plugin. Cards are advisory and change nothing on their own: to apply a card, call addMealPlanEntry once for each of its entries, with the entry's date, mealType, recipeId, and servings. Only plugins the caller turned on are asked (ADR-0013; see listMyPlugins and updateMyPlugin). Returns an empty list when the caller turned none on, or all of theirs are unavailable.
+ * Suggestion cards from the instance's plugins (ADR-0006), each attributed to its plugin. Cards are advisory and change nothing on their own: to apply a card, call addMealPlanEntry once for each of its entries, with the entry's date, mealType, recipeId, and servings. Only plugins the caller's household turned on are asked (ADR-0013, ADR-0019; see listMyPlugins and updateMyPlugin). Returns an empty list when the household turned none on, or all of its plugins are unavailable.
  *
  */
 export const getPlanSuggestions = <ThrowOnError extends boolean = false>(options: Options<GetPlanSuggestionsData, ThrowOnError>): RequestResult<GetPlanSuggestionsResponses, GetPlanSuggestionsErrors, ThrowOnError> => (options.client ?? client).get<GetPlanSuggestionsResponses, GetPlanSuggestionsErrors, ThrowOnError>({ url: '/api/v1/plans/{startDate}/suggestions', ...options });
@@ -310,7 +310,7 @@ export const getPlanSuggestions = <ThrowOnError extends boolean = false>(options
 /**
  * Plugin panels for a planned week
  *
- * The week's panels from the plugins the caller turned on that offer one (ADR-0017), in registration order. A panel is declarative: a summary line for when it is collapsed, then blocks of text, highlights, a wheel, and buttons. To press a button, call pressWeekPanelAction with the plugin's id and the button's id and value. Reading panels changes nothing. A plugin that fails is left out; the list is empty when the caller turned none on.
+ * The week's panels from the plugins the caller's household turned on that offer one (ADR-0017), in registration order. A panel is declarative: a summary line for when it is collapsed, then blocks of text, highlights, a wheel, and buttons. To press a button, call pressWeekPanelAction with the plugin's id and the button's id and value. Reading panels changes nothing. A plugin that fails is left out; the list is empty when the household turned none on.
  *
  */
 export const getWeekPanels = <ThrowOnError extends boolean = false>(options: Options<GetWeekPanelsData, ThrowOnError>): RequestResult<GetWeekPanelsResponses, GetWeekPanelsErrors, ThrowOnError> => (options.client ?? client).get<GetWeekPanelsResponses, GetWeekPanelsErrors, ThrowOnError>({ url: '/api/v1/plans/{startDate}/panels', ...options });

@@ -190,13 +190,13 @@ export type NutritionSource = 'MANUAL' | 'INGREDIENTS';
 export type NutritionBasis = 'PER_100_G' | 'PER_100_ML' | 'PER_PIECE';
 
 /**
- * An ingredient with known nutrition for its basis, shared or the caller's own.
+ * An ingredient with known nutrition for its basis, shared or the household's own.
  */
 export type CatalogIngredient = {
     slug: string;
     name: string;
     /**
-     * True for the shared ingredients everyone sees, false for the caller's own.
+     * True for the shared ingredients everyone sees, false for the household's own.
      */
     isShared: boolean;
     basis: NutritionBasis;
@@ -204,7 +204,7 @@ export type CatalogIngredient = {
 };
 
 /**
- * One of the caller's own ingredients as submitted; nutrition needs all four values.
+ * One of the household's own ingredients as submitted; nutrition needs all four values.
  */
 export type IngredientInput = {
     name: string;
@@ -1144,7 +1144,7 @@ export type ListMyRecipesError = ListMyRecipesErrors[keyof ListMyRecipesErrors];
 
 export type ListMyRecipesResponses = {
     /**
-     * The caller's personal recipes, newest first.
+     * The household's personal recipes, newest first.
      */
     200: Array<RecipeSummary>;
 };
@@ -1707,7 +1707,7 @@ export type GetPlanSuggestionsError = GetPlanSuggestionsErrors[keyof GetPlanSugg
 
 export type GetPlanSuggestionsResponses = {
     /**
-     * Cards from the caller's healthy plugins, in registration order.
+     * Cards from the household's healthy plugins, in registration order.
      */
     200: PlanSuggestions;
 };
@@ -1742,7 +1742,7 @@ export type GetWeekPanelsError = GetWeekPanelsErrors[keyof GetWeekPanelsErrors];
 
 export type GetWeekPanelsResponses = {
     /**
-     * Panels from the caller's healthy plugins.
+     * Panels from the household's healthy plugins.
      */
     200: WeekPanels;
 };

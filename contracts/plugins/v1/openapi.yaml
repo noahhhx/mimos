@@ -25,8 +25,9 @@ info:
     The model is pull-only: the plugin receives everything it needs in the
     request and never calls Mimos. Context contains curated library recipes
     only — personal recipes contribute their slot shape, never their
-    identity or content. Mimos calls a plugin only for users who turned it
-    on, and names each user by a `subject`: a pseudonym that is stable per
+    identity or content. Mimos calls a plugin only for households that
+    turned it on (any member turns it on for everyone in the household),
+    and names each household by a `subject`: a pseudonym that is stable per
     household and plugin, different for every plugin, and unrelated to any
     identity Mimos holds. A user on their own is a household of one. A
     plugin may keep its own data against it.

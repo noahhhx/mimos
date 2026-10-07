@@ -325,7 +325,7 @@ paths:
             type: string
       responses:
         '200':
-          description: The caller's personal recipes, newest first.
+          description: The household's personal recipes, newest first.
           content:
             application/json:
               schema:
@@ -346,7 +346,7 @@ paths:
         catalogSlug of what it is (find slugs with listIngredients, or add
         a missing one with createIngredient), with its amount in g, kg, ml,
         l, tsp, or tbsp, or no unit for a count of pieces, matching the
-        entry's basis. A line can instead be one of the caller's own
+        entry's basis. A line can instead be one of the household's
         recipes (recipeId, from listMyRecipes), measured in servings of it,
         like 2 servings of a focaccia in a sandwich. Put prep like "minced"
         in the line's note, not its name. Check the result first with
@@ -448,7 +448,7 @@ paths:
         each line counts when it has a catalogSlug, an amount, and a unit
         its catalog entry's basis covers (PER_100_G: g, kg; PER_100_ML: ml,
         l, tsp = 5 ml, tbsp = 15 ml; PER_PIECE: no unit), or a recipeId of
-        one of the caller's recipes whose nutrition is known, an amount,
+        one of the household's recipes whose nutrition is known, an amount,
         and the unit servings. Returns the per-serving nutrition of the
         lines that counted and each line's status, in order. Nothing is
         saved.
@@ -477,7 +477,7 @@ paths:
       summary: The ingredients the caller can use
       description: >
         Ingredients with known nutrition: the shared ones everyone on this
-        instance sees (isShared) and the caller's own. Link an ingredient
+        instance sees (isShared) and the household's own. Link an ingredient
         line to one with its slug (catalogSlug) so a recipe's nutrition
         can be calculated. Each entry's nutrition is for its basis: 100 g,
         100 ml, or one piece. When nothing fits, add one with
@@ -502,9 +502,10 @@ paths:
     post:
       tags: [recipes]
       operationId: createIngredient
-      summary: Add one of the caller's own ingredients
+      summary: Add one of the household's own ingredients
       description: >
-        Adds an ingredient only the caller sees, with its nutrition for a
+        Adds an ingredient that only the caller's household sees, and
+        anyone in it can change, with its nutrition for a
         basis (per 100 g, per 100 ml, or per piece), usually copied from a
         food label. All four values are required; use 0 when there is
         none. Returns it with a new slug to use as a line's catalogSlug.
@@ -532,7 +533,7 @@ paths:
     put:
       tags: [recipes]
       operationId: replaceIngredient
-      summary: Replace one of the caller's own ingredients
+      summary: Replace one of the household's own ingredients
       description: >
         Replaces its name, basis, and nutrition. The slug stays, so every
         recipe that uses it is recalculated. Shared ingredients are
@@ -561,7 +562,7 @@ paths:
     delete:
       tags: [recipes]
       operationId: deleteIngredient
-      summary: Delete one of the caller's own ingredients
+      summary: Delete one of the household's own ingredients
       description: >
         Recipe lines that used it stay, but no longer count toward
         calculated nutrition. Shared ingredients are read-only.
@@ -760,12 +761,13 @@ paths:
         attributed to its plugin. Cards are advisory and change nothing on
         their own: to apply a card, call addMealPlanEntry once for each of
         its entries, with the entry's date, mealType, recipeId, and
-        servings. Only plugins the caller turned on are asked (ADR-0013;
-        see listMyPlugins and updateMyPlugin). Returns an empty list when
-        the caller turned none on, or all of theirs are unavailable.
+        servings. Only plugins the caller's household turned on are asked
+        (ADR-0013, ADR-0019; see listMyPlugins and updateMyPlugin). Returns
+        an empty list when the household turned none on, or all of its
+        plugins are unavailable.
       responses:
         '200':
-          description: Cards from the caller's healthy plugins, in registration order.
+          description: Cards from the household's healthy plugins, in registration order.
           content:
             application/json:
               schema:
@@ -783,16 +785,17 @@ paths:
       operationId: getWeekPanels
       summary: Plugin panels for a planned week
       description: >
-        The week's panels from the plugins the caller turned on that offer
-        one (ADR-0017), in registration order. A panel is declarative: a
+        The week's panels from the plugins the caller's household turned
+        on that offer one (ADR-0017), in registration order. A panel is
+        declarative: a
         summary line for when it is collapsed, then blocks of text,
         highlights, a wheel, and buttons. To press a button, call
         pressWeekPanelAction with the plugin's id and the button's id and
         value. Reading panels changes nothing. A plugin that fails is left
-        out; the list is empty when the caller turned none on.
+        out; the list is empty when the household turned none on.
       responses:
         '200':
-          description: Panels from the caller's healthy plugins.
+          description: Panels from the household's healthy plugins.
           content:
             application/json:
               schema:
@@ -1282,7 +1285,7 @@ components:
       enum: [PER_100_G, PER_100_ML, PER_PIECE]
     CatalogIngredient:
       type: object
-      description: An ingredient with known nutrition for its basis, shared or the caller's own.
+      description: An ingredient with known nutrition for its basis, shared or the household's own.
       required: [slug, name, basis, nutrition, isShared]
       properties:
         slug:
@@ -1291,7 +1294,7 @@ components:
           type: string
         isShared:
           type: boolean
-          description: True for the shared ingredients everyone sees, false for the caller's own.
+          description: True for the shared ingredients everyone sees, false for the household's own.
         basis:
           $ref: '#/components/schemas/NutritionBasis'
         nutrition:
@@ -1299,7 +1302,7 @@ components:
             - $ref: '#/components/schemas/Nutrition'
     IngredientInput:
       type: object
-      description: One of the caller's own ingredients as submitted; nutrition needs all four values.
+      description: One of the household's own ingredients as submitted; nutrition needs all four values.
       required: [name, basis, nutrition]
       properties:
         name:

@@ -139,8 +139,8 @@ export type WeekState =
 - **locked**: the user chose a country for this week.
 - **exhausted**: no country is left to spin.
 
-`step(ledger, week, action, rng)` takes the user's saved data and the
-button they pressed. It returns the week's next state and at most one
+`step(ledger, week, action, rng)` takes the household's saved data and
+the button that was pressed. It returns the week's next state and at most one
 `Effect`, the write that the action implies. `step` writes nothing
 itself. The server reads the ledger, calls `step`, and hands the effect
 to the store:
