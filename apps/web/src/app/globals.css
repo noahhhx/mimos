@@ -1287,6 +1287,22 @@ input[type="search"]:focus {
   opacity: 0.5;
 }
 
+.log-what {
+  flex: 3 1 14rem;
+  min-width: 12rem;
+}
+
+.field-row label.log-servings {
+  flex: 0 1 8rem;
+}
+
+/* Level with the servings input beside it: the label's bottom margin, and the input's padding and border. */
+.log-total {
+  flex: 1 1 12rem;
+  margin: 0 0 12px;
+  padding: 9px 0;
+}
+
 /* ---------- Week plan ---------- */
 
 .week {

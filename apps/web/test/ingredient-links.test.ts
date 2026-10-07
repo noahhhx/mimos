@@ -55,6 +55,10 @@ describe("searchRecipes and describeRecipe", () => {
     assert.equal(describeRecipe(FOCACCIA), "Your recipe · 278 kcal per serving");
     assert.equal(describeRecipe(PESTO), "Your recipe · nutrition unknown");
   });
+
+  it("names a library recipe as one", () => {
+    assert.equal(describeRecipe({ ...FOCACCIA, isLibrary: true }), "Library · 278 kcal per serving");
+  });
 });
 
 describe("picking", () => {

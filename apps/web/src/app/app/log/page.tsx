@@ -5,21 +5,50 @@ import { useCallback, useEffect, useState } from "react";
 import {
   createMealLog,
   deleteMealLog,
+  listLibraryRecipes,
   listMealLogs,
+  listMyRecipes,
   summarizeMealLogs,
   type DailyLogSummary,
   type MealLog,
+  type RecipeSummary,
 } from "@mimos/api-client";
 
 import { useAuth } from "@/components/auth-provider";
+import { Combobox } from "@/components/combobox";
 import { PageHeader } from "@/components/page-header";
 import { SignInPrompt } from "@/components/sign-in-prompt";
 import { apiClient } from "@/lib/api";
-import { MEAL_TYPES, addDays, dayLabel, formatKcal, formatServings, mealLabel, mondayOf, todayIso, weekDays } from "@/lib/format";
+import {
+  MEAL_TYPES,
+  addDays,
+  dayLabel,
+  formatKcal,
+  formatServings,
+  mealLabel,
+  mondayOf,
+  todayIso,
+  weekDays,
+  type MealTypeValue,
+} from "@/lib/format";
+import { describeRecipe, searchRecipes } from "@/lib/ingredient-links";
+import {
+  EMPTY_NUTRITION,
+  EMPTY_WHAT,
+  describeTotal,
+  logBody,
+  parseServings,
+  recipeTotal,
+  typeWhat,
+  whatText,
+  type LogWhat,
+  type NutritionFields,
+} from "@/lib/log-entry";
 
 /**
  * The food diary: per-day calorie and macro totals for the week, the
- * selected day's meals, and an ad-hoc log for the unplanned ones.
+ * selected day's meals, and a log for the unplanned ones: a recipe, in
+ * servings, or anything else counted by hand.
  * Information, not judgement — no streaks, no scolding.
  */
 export default function LogPage() {
@@ -29,12 +58,11 @@ export default function LogPage() {
   const [logs, setLogs] = useState<MealLog[] | null>(null);
   const [summary, setSummary] = useState<DailyLogSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [description, setDescription] = useState("");
-  const [mealType, setMealType] = useState<string>("SNACK");
-  const [calories, setCalories] = useState("");
-  const [proteinG, setProteinG] = useState("");
-  const [carbsG, setCarbsG] = useState("");
-  const [fatG, setFatG] = useState("");
+  const [recipes, setRecipes] = useState<RecipeSummary[]>([]);
+  const [what, setWhat] = useState<LogWhat>(EMPTY_WHAT);
+  const [mealType, setMealType] = useState<MealTypeValue>("SNACK");
+  const [servings, setServings] = useState("1");
+  const [nutrition, setNutrition] = useState<NutritionFields>(EMPTY_NUTRITION);
 
   const reload = useCallback(async () => {
     const to = addDays(weekStart, 6);
@@ -57,6 +85,24 @@ export default function LogPage() {
     }
   }, [user, reload]);
 
+  // Recipes only make logging quicker: when they fail to load, the form still logs anything by hand.
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    let cancelled = false;
+    void Promise.all([listMyRecipes({ client: apiClient }), listLibraryRecipes({ client: apiClient })]).then(
+      ([mine, library]) => {
+        if (!cancelled) {
+          setRecipes([...(mine.data ?? []), ...(library.data ?? [])]);
+        }
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
   if (!user) {
     return (
       <>
@@ -68,34 +114,22 @@ export default function LogPage() {
 
   const summaryByDay = new Map((summary ?? []).map((day) => [day.date, day]));
   const dayLogs = (logs ?? []).filter((log) => log.date === selectedDay);
+  const body = logBody(what, selectedDay, mealType, servings, nutrition);
+  const parsedServings = parseServings(servings);
 
-  const addAdHoc = async () => {
-    const numberOrNull = (value: string) => (value.trim() === "" ? undefined : Number(value));
-    const result = await createMealLog({
-      client: apiClient,
-      body: {
-        date: selectedDay,
-        mealType: mealType as (typeof MEAL_TYPES)[number],
-        description,
-        servings: 1,
-        nutrition: {
-          calories: numberOrNull(calories),
-          proteinG: numberOrNull(proteinG),
-          carbsG: numberOrNull(carbsG),
-          fatG: numberOrNull(fatG),
-        },
-      },
-    });
+  const addLog = async () => {
+    if (!body) {
+      return;
+    }
+    const result = await createMealLog({ client: apiClient, body });
     if (result.error) {
       setError("Could not log that meal.");
       return;
     }
     setError(null);
-    setDescription("");
-    setCalories("");
-    setProteinG("");
-    setCarbsG("");
-    setFatG("");
+    setWhat(EMPTY_WHAT);
+    setServings("1");
+    setNutrition(EMPTY_NUTRITION);
     await reload();
   };
 
@@ -107,6 +141,19 @@ export default function LogPage() {
     }
     await reload();
   };
+
+  const nutritionField = (field: keyof NutritionFields, label: string) => (
+    <label>
+      {label}
+      <input
+        type="number"
+        min={0}
+        step="any"
+        value={nutrition[field]}
+        onChange={(e) => setNutrition({ ...nutrition, [field]: e.target.value })}
+      />
+    </label>
+  );
 
   return (
     <>
@@ -193,18 +240,29 @@ export default function LogPage() {
 
             <h3>Log something else</h3>
             <div className="field-row">
-              <label>
-                What
-                <input
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Toast with peanut butter"
-                  maxLength={200}
-                />
-              </label>
+              <Combobox
+                label="What"
+                ariaLabel="What"
+                value={whatText(what)}
+                placeholder="Search your recipes, or type anything"
+                className="log-what"
+                options={searchRecipes(whatText(what), recipes, 6)}
+                keyOf={(recipe) => recipe.id}
+                onType={(text) => setWhat(typeWhat(text))}
+                onChoose={(recipe) => {
+                  setWhat({ kind: "recipe", recipe });
+                  setServings("1");
+                }}
+                renderOption={(recipe) => (
+                  <>
+                    <span>{recipe.title}</span>
+                    <span className="muted">{describeRecipe(recipe)}</span>
+                  </>
+                )}
+              />
               <label>
                 Meal
-                <select value={mealType} onChange={(e) => setMealType(e.target.value)}>
+                <select value={mealType} onChange={(e) => setMealType(e.target.value as MealTypeValue)}>
                   {MEAL_TYPES.map((type) => (
                     <option key={type} value={type}>
                       {mealLabel(type)}
@@ -213,30 +271,35 @@ export default function LogPage() {
                 </select>
               </label>
             </div>
-            <div className="field-row">
-              <label>
-                Calories
-                <input type="number" min={0} step="any" value={calories} onChange={(e) => setCalories(e.target.value)} />
-              </label>
-              <label>
-                Protein g
-                <input type="number" min={0} step="any" value={proteinG} onChange={(e) => setProteinG(e.target.value)} />
-              </label>
-              <label>
-                Carbs g
-                <input type="number" min={0} step="any" value={carbsG} onChange={(e) => setCarbsG(e.target.value)} />
-              </label>
-              <label>
-                Fat g
-                <input type="number" min={0} step="any" value={fatG} onChange={(e) => setFatG(e.target.value)} />
-              </label>
-            </div>
+            {what.kind === "recipe" ? (
+              <div className="field-row">
+                <label className="log-servings">
+                  Servings
+                  <input
+                    type="number"
+                    min={0.1}
+                    max={100}
+                    step={0.1}
+                    value={servings}
+                    onChange={(e) => setServings(e.target.value)}
+                  />
+                </label>
+                <p className="muted log-total" role="status">
+                  {parsedServings === undefined
+                    ? "Servings run from 0.1 to 100."
+                    : describeTotal(recipeTotal(what.recipe, parsedServings))}
+                </p>
+              </div>
+            ) : (
+              <div className="field-row">
+                {nutritionField("calories", "Calories")}
+                {nutritionField("proteinG", "Protein g")}
+                {nutritionField("carbsG", "Carbs g")}
+                {nutritionField("fatG", "Fat g")}
+              </div>
+            )}
             <p>
-              <button
-                className="button"
-                onClick={() => void addAdHoc()}
-                disabled={description.trim() === ""}
-              >
+              <button className="button" onClick={() => void addLog()} disabled={body === undefined}>
                 Log meal
               </button>
             </p>

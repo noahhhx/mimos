@@ -39,11 +39,11 @@ export function searchRecipes(query: string, recipes: RecipeSummary[], limit = 4
   return searchByName(query, recipes, (recipe) => recipe.title, limit);
 }
 
-/** A recipe as a search option's second line, like "Your recipe · 278 kcal per serving". */
+/** A recipe as a search option's second line, like "Your recipe · 278 kcal per serving" or "Library · 450 kcal per serving". */
 export function describeRecipe(recipe: RecipeSummary): string {
   const { calories, proteinG, carbsG, fatG } = recipe.nutrition;
   const known = calories != null && proteinG != null && carbsG != null && fatG != null;
-  return `Your recipe · ${known ? `${Math.round(calories)} kcal per serving` : "nutrition unknown"}`;
+  return `${recipe.isLibrary ? "Library" : "Your recipe"} · ${known ? `${Math.round(calories)} kcal per serving` : "nutrition unknown"}`;
 }
 
 /** What a linked row counts as, in words for the form. */
