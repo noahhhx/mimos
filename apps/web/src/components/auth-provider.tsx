@@ -20,6 +20,15 @@ type AuthState = {
 
 const AuthContext = createContext<AuthState | null>(null);
 
+/**
+ * Keycloak's pages cannot read the app's stored theme, so every sign-in
+ * carries the one on screen (ADR-0021). Light is sent too, so it replaces
+ * a dark choice made earlier on Keycloak's own pages.
+ */
+function themeParam(): { mimos_theme: "light" | "dark" } {
+  return { mimos_theme: document.documentElement.dataset.theme === "dark" ? "dark" : "light" };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
@@ -39,12 +48,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = useCallback(async (returnTo?: string) => {
     const state: SignInState | undefined = returnTo ? { returnTo } : undefined;
-    await userManager.signinRedirect({ state });
+    await userManager.signinRedirect({ state, extraQueryParams: themeParam() });
   }, []);
 
   const signUp = useCallback(async (returnTo?: string) => {
     const state: SignInState | undefined = returnTo ? { returnTo } : undefined;
-    await userManager.signinRedirect({ state, prompt: "create" });
+    await userManager.signinRedirect({ state, prompt: "create", extraQueryParams: themeParam() });
   }, []);
 
   const signOut = useCallback(async () => {
