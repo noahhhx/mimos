@@ -60,7 +60,9 @@ The square with a person icon, at the top right, opens your profile menu:
 - **Sign out** signs you out on this device.
 
 The button next to it switches between the light and dark themes. Mimos
-starts in light and remembers your choice in each browser.
+starts in light and remembers your choice in each browser. The sign-in
+and registration pages open in the theme you chose, and have the same
+button.
 
 ## Your first week
 

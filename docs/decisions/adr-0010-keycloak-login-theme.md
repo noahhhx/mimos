@@ -3,6 +3,8 @@
 - Status: Accepted
 - Date: 2026-10-02
 - Supersedes: none
+- Superseded in part by: [ADR-0021](adr-0021-keycloak-follows-app-theme.md)
+  (the "Light only" decision)
 
 ## Context
 
@@ -34,7 +36,9 @@ should wear it too, on every deployment, including self-hosted ones.
   (`${MIMOS_WEB_ORIGIN}/`), so a signed-out visitor can leave the sign-in
   and register pages without the browser's back button. Keycloak's
   sanitizer keeps the link, so no template is copied for it.
-- **Light only.** The app keeps its dark choice in the app origin's
+- **Light only.** (Superseded by
+  [ADR-0021](adr-0021-keycloak-follows-app-theme.md): the pages follow the
+  app's light or dark choice.) The app keeps its dark choice in the app origin's
   `localStorage`, which Keycloak's pages cannot read, and the OS setting is
   not followed (ADR-0008), so the theme sets `darkMode=false`.
 

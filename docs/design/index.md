@@ -92,15 +92,21 @@ Keycloak's pages (sign in, register, errors) use the `mimos` login theme
 in `deploy/keycloak/themes/mimos/` ([ADR-0010](../decisions/adr-0010-keycloak-login-theme.md)):
 the brand above a `--surface` card holding a `PageHeader`-style title and
 rule, the app's labels, inputs, and buttons, and errors in `--danger`. It
-restyles Keycloak's `keycloak.v2` templates with CSS only, light only.
+restyles Keycloak's `keycloak.v2` templates with CSS and one script,
+`js/theme.js`, which applies the app's light or dark choice and adds
+the theme toggle beside the brand
+([ADR-0021](../decisions/adr-0021-keycloak-follows-app-theme.md)).
 
-- Its tokens in `resources/css/mimos.css` mirror the light values in
-  `globals.css`; change both together.
+- Its tokens in `resources/css/mimos.css` mirror the light and dark
+  values in `globals.css`; change both together.
+- The app sends its theme as `mimos_theme` on every sign-in and sign-up
+  request; the script stores it on Keycloak's origin for the pages that
+  follow. A toggle on Keycloak's pages lasts there only.
 - The fonts are the app's own files, copied in by
   `deploy/keycloak/Dockerfile`.
 - After a change, rebuild the Keycloak image (`harness up` does) and run
   `harness ui keycloak-theme`; its screenshots show each page at phone
-  and desktop width.
+  and desktop width, light and dark.
 
 ## Documentation site
 

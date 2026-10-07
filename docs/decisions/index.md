@@ -26,6 +26,7 @@ right at the time.
 | [ADR-0018](adr-0018-recipes-as-ingredients.md)                     | Recipes as ingredients |
 | [ADR-0019](adr-0019-households.md)                                 | Households |
 | [ADR-0020](adr-0020-sign-up.md)                                    | Sign-up |
+| [ADR-0021](adr-0021-keycloak-follows-app-theme.md)                 | Keycloak pages follow the app theme |
 
 New ADRs are sequential: `adr-NNNN-title.md`, with the numbering in this
 index. Once accepted, an ADR is never rewritten — superseding decisions get

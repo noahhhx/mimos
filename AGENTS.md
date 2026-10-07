@@ -218,10 +218,9 @@ is the contract:
   ADR-0017). Fonts are committed files
   in `src/fonts/` loaded with `next/font/local`; never a font host or a
   font npm package. Rebuild them as `src/fonts/README.md` says (its tools
-  come from devenv). Keycloak's login theme mirrors the light tokens and
-  reuses these fonts (`deploy/keycloak`, ADR-0010), and the docs site
-  mirrors both themes' tokens and links to the same fonts
-  (`docs/assets/`); change them all together. The exception is the
+  come from devenv). Keycloak's login theme and the docs site mirror both
+  themes' tokens and reuse these fonts (`deploy/keycloak`, ADR-0010,
+  ADR-0021; `docs/assets/`); change them all together. The exception is the
   Twemoji flag subset (`src/fonts/twemoji-flags/`, ADR-0017), which is
   web only and draws nothing but flags. Pages start with
   `PageHeader` (eyebrow, serif h1, amber rule, actions) or, for a rail
@@ -242,8 +241,13 @@ is the contract:
   the full export with `test`/`test2`. Users added to the export never
   reach a published image.
 - Keycloak's pages wear the `mimos` login theme (ADR-0010):
-  `deploy/keycloak/themes/mimos/` extends `keycloak.v2` with CSS only (no
-  copied templates, so upstream form ids stay), light only. Compose builds
+  `deploy/keycloak/themes/mimos/` extends `keycloak.v2` with CSS and one
+  script (no copied templates, so upstream form ids stay). It follows the app's
+  light or dark choice (ADR-0021): `signIn` and `signUp` send it as the
+  `mimos_theme` query parameter, and `js/theme.js` stores it on
+  Keycloak's origin, applies it as `data-theme`, and adds the app's
+  toggle; `darkMode=false` stays, so the OS setting is not followed. A
+  choice made on Keycloak's pages never reaches the app. Compose builds
   `deploy/keycloak/Dockerfile`, which adds the theme and the web app's
   committed fonts to the stock image. Its tokens mirror `globals.css`;
   the `keycloak-theme` harness scenario checks it. The brand above the
