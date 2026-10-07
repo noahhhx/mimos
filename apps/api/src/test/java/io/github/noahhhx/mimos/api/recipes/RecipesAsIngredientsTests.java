@@ -3,6 +3,7 @@ package io.github.noahhhx.mimos.api.recipes;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.github.noahhhx.mimos.api.account.ExportUpgrader;
 import io.github.noahhhx.mimos.api.support.ApiIntegrationTestSupport;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
@@ -225,7 +226,7 @@ class RecipesAsIngredientsTests extends ApiIntegrationTestSupport {
         String focaccia = create(owner, focaccia(8)).get("id").asText();
         create(owner, sandwich(focaccia));
         JsonNode export = get(owner, "/api/v1/account/export");
-        assertThat(export.get("version").asInt()).isEqualTo(3);
+        assertThat(export.get("version").asInt()).isEqualTo(ExportUpgrader.CURRENT_VERSION);
         // Newest first, so the sandwich comes before the recipe it uses.
         assertThat(export.get("recipes")
                         .get(0)
