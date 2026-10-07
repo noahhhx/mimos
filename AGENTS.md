@@ -44,7 +44,7 @@ change** — an out-of-date AGENTS.md is worse than none.
 | Docs       | MkDocs with Material; `mkdocs.yml` at repo root, source in `docs/`. The published site is the user guide only (using the app, self-hosting, writing plugins); contributor docs (`docs/design/`, `docs/harness/`, `docs/decisions/`) stay in the repo and are kept off the site by `exclude_docs`. ADRs live in `docs/decisions/`. CI publishes the site from `main` to GitHub Pages (`https://noahhhx.github.io/mimos/`, the `site_url`), and the web home page links to it. Styled as Evening Kitchen by `docs/assets/stylesheets/mimos.css` only: no template overrides or hooks (see "Documentation site" in `docs/design/index.md`). |
 | Deploy     | Build-from-source and CI parity via `deploy/docker` (compose); servers run the published images via `deploy/selfhost` (compose, production-mode Keycloak, operator's TLS proxy); AWS via IaC in `deploy/aws`. No click-ops. |
 | Images     | CI publishes `ghcr.io/noahhhx/mimos-{api,web,keycloak,country-week}` (amd64) after every other job passes: `main` + `sha-*` from main, semver + `latest` from `v*` tags. Images carry no deployment-specific config. See ADR-0012. |
-| Sync       | intervals.icu is the activity data source (future). Design for it, don't build it yet. |
+| Training and fuel | Per-person daily fuel targets in `core/core-fueling`, off until a person turns them on. Calories are an energy-availability level times fat-free mass plus exercise energy (45 kcal/kg FFM to fuel training, 40 and 35 to lose weight, 50 to gain). Carbs follow published g/kg ranges by the day's training duration, protein is set in g/kg, and fat takes the remainder within 20–35% of calories. Targets are calculated when read, never stored. Training comes from intervals.icu (`integrations/intervals-icu`: a personal API key encrypted under `MIMOS_SECRET_KEY`, polled, feature-gated by `mimos.intervals-icu.enabled`) or is entered by hand. Shown as "Fuel for the day" with no scoring. Plugins never see any of it. Built in the order of ROADMAP step 14. See ADR-0022. |
 | Library content | Seed file `core/core-recipes/src/main/resources/library/library-seed.json`, loaded by an idempotent startup seeder (`mimos.library.seed-enabled`, default on). Content fixes ship with a restart; never via Flyway migrations. See ADR-0005. |
 | Ingredient catalog | One shared catalog seeded read-only from `core/core-recipes/src/main/resources/library/ingredient-seed.json` (always on, by slug, never deleted), plus each household's own ingredients, private to it and editable (`/api/v1/ingredients`, ADR-0016, ADR-0019). Recipe lines link to either by `catalogSlug` and carry prep in an optional `note`; the form's ingredient name is a search over both and the household's recipes. A line may instead link one of its owner's own recipes (`recipeId`, never both, never itself or a cycle), counted in `servings` of it (ADR-0018). A recipe's `nutritionSource` is `MANUAL` (typed) or `INGREDIENTS` (calculated when read, so catalog fixes and edits to a linked recipe reach every recipe that uses them). Metric units only: `g`, `kg`, `ml`, `l`, `tsp` (5 ml), `tbsp` (15 ml), or none for pieces, plus `servings` for a recipe link. Library recipes are calculated and link no recipes. See ADR-0015, ADR-0016, ADR-0018. |
 | Households | Every user belongs to exactly one household; a user on their own is a household of one, created with their profile. The household (`household`, `user_profile.household_id`) owns recipes, personal ingredients, plans, shopping lists, and plugin opt-ins and pseudonyms, all keyed by `household_id`; meal logs stay per person. Membership is Mimos domain data, not Keycloak groups. Every member is equal: any member reads and edits the household's data and creates invites, anyone may leave, nobody removes anyone. Recipes record who added them (`created_by_profile_id`; `createdBy` in the API, "Added by" in the web). Every plan entry names one or more diners, all members of its household (`meal_plan_entry_diner`; `diners` in the API as `Person`s). A create request without diners gives a dinner every member and any other meal the caller alone; the entry patch changes servings, diners, or both; an empty list or a non-member is a 400. Both writes hold the household's membership for their transaction (`HouseholdService.holdMembership`: share locks on the caller's profile row, then the household row), so nobody joins or leaves until they commit. `servings` is the amount cooked, so the shopping list ignores diners, and plugins never see them. Logging a planned meal logs the caller's share, servings divided by diners (to 0.1, editable before saving; `apps/web/src/lib/diners.ts`); Log shows only on meals the caller eats. The plan page toggles Mine (meals the caller eats) and Everyone, remembered per browser, and the Kitchen home shows only meals the caller eats; a household of one sees no chips, no toggle, and the old default of 2 servings, while a shared household starts a meal at one serving per default diner. Any member creates a single-use invite valid for seven days (`household_invite`, SHA-256 of the token only; the web link is `/app/join/{token}`); joining from a household of one brings its recipes and ingredients and deletes its plans, lists, plugin opt-ins and pseudonyms; joining from a shared household leaves it first; leaving keeps the household's data, removes the leaver as a diner (deleting entries left with none), and unlinks their logs from its recipes. A plugin is on or off for the whole household and sees one `subject` per household. The account export stays one person's (see "Account data"). API under `/api/v1/household`; join, leave, and the invite preview are `x-mcp: false`. Web: the Household page (`/app/household`, in the profile menu) and `/app/join/[token]`. See ADR-0019. |
@@ -114,9 +114,17 @@ wire-format contract:
   Depends on the core modules' public interfaces only; external API types
   never cross this boundary. Optional at runtime — no plugins registered,
   no behavior.
-- `integrations/intervals-icu` — future. External API types never cross
-  this boundary; translate to domain types at the edge. Feature-gated and
-  optional at runtime (self-hosters must not need it).
+- `core-fueling` — planned (ADR-0022). Fuel profiles, training
+  sessions, and daily fuel targets, keyed by profile id. Depends on no
+  other module and knows nothing about households, plans, or
+  intervals.icu; `apps/api` puts a day's target next to the caller's
+  planned and logged totals.
+- `integrations/intervals-icu` — planned (ADR-0022). External API types
+  never cross this boundary; translate events, activities, and wellness
+  into `core-fueling` training sessions at the edge. A sync replaces a
+  person's synced sessions in its date range, so a repeated or
+  interrupted sync converges. Feature-gated and optional at runtime
+  (self-hosters must not need it).
 - `plugins` — see below.
 - Modules communicate through their public interfaces only; no reaching into
   another module's internals or tables. Cross-module FKs (e.g.
@@ -311,9 +319,11 @@ mimos/
 │   └── plugins/          # versioned plugin extension-API specs (ADR-0006)
 ├── core/
 │   ├── core-recipes/     # recipe domain module
-│   └── core-planning/    # planning domain module
+│   ├── core-planning/    # planning domain module
+│   └── core-fueling/     # fuel profiles, training sessions, daily targets (ADR-0022, planned)
 ├── integrations/
-│   └── plugins/          # plugin runtime: registry, extension-API client, card validation (ADR-0006)
+│   ├── plugins/          # plugin runtime: registry, extension-API client, card validation (ADR-0006)
+│   └── intervals-icu/    # training sync from intervals.icu (ADR-0022, planned)
 ├── libraries/            # shared contracts: OpenAPI-generated clients, plugin SDK
 │   ├── api-client/       # @mimos/api-client — generated TypeScript client (committed)
 │   └── plugin-sdk/       # @mimos/plugin-sdk — generated TypeScript types for the plugin API (committed)

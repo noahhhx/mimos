@@ -132,11 +132,32 @@ Rules for using this file:
 
 ## Phase 4 — Scale and sync
 
-14. **Intervals.icu integration.** OAuth, sync, translating activity data
-    into domain types at the edge; training-aware meal plan suggestions
-    against calorie/macro goals. Feature-gated and optional at runtime.
-    *Done when: a self-hoster without intervals.icu loses nothing, and a
-    connected user's plan suggestions account for training load.*
+14. **Training-aware fuel targets.** Designed in ADR-0022: per-person
+    daily calorie and macro targets in core, from energy availability and
+    the day's training, with intervals.icu as an optional training
+    source. It is not a plugin; ADR-0022 says why. Delivered in this
+    order:
+    1. *Planned totals.* Each person's planned calories and macros per
+       day (entries they eat × servings ÷ diners), in the API and on the
+       plan page's Mine view. No targets yet. This closes step 10's
+       planned-week gap.
+    2. *Fuel profile.* `core/core-fueling` with the per-person profile
+       (on/off, weight, sex, optional body fat and FTP, goal, protein
+       g/kg), the Fuel page in the profile menu, and export format
+       version 5.
+    3. *Targets and manual training.* The target calculator, manual
+       training sessions, targets beside planned totals on the plan page
+       and logged totals on the Log page, and `docs/guide/fuel.md`.
+    4. *intervals.icu sync.* `integrations/intervals-icu`: connect with an
+       athlete id and API key, encrypted at rest; scheduled and on-demand
+       sync from 7 days back to 14 ahead; weight and body-fat hints.
+    5. *Later, each its own decision.* On-bike carbs per hour, writing
+       logged intake back to intervals.icu, training-aware recipe
+       suggestions, and OAuth on a hosted instance.
+    *Done when: a self-hoster without intervals.icu can enter training by
+    hand and see targets, a connected person's targets follow their
+    planned and completed workouts, and a person with targets off sees
+    no change.*
 
 15. **AWS deployment.** Resolve the deferred decisions (compute, IaC tool),
     stand up `deploy/aws`, with the self-hosted path still the CI-checked
