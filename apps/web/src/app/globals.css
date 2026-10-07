@@ -915,8 +915,11 @@ input[type="radio"] {
   padding-bottom: 7px;
 }
 
-.ingredient-picker {
+.combobox {
   position: relative;
+}
+
+.ingredient-picker {
   flex: 3 1 14rem;
   min-width: 12rem;
 }
