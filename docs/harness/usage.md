@@ -84,7 +84,9 @@ without errors), `app-nav` (the app nav has no vertical overflow,
 which would show a scrollbar beside its links), `keycloak-theme`
 (Keycloak's sign-in, error, and register pages wear the Mimos theme
 and follow the app's light or dark choice, ADR-0021; screenshots at
-phone and desktop width), and `account-data` (registers
+phone and desktop width), `fuel-profile` (a fresh account saves its fuel
+profile from the Fuel page, protein follows the goal, and each value the
+API refuses gets its own error, ADR-0022), and `account-data` (registers
 two fresh accounts: one writes a recipe and downloads its export, which
 it cannot import over its own data; the other imports it, ADR-0011). See [writing a scenario](step-2-browser.md#writing-a-scenario).
 For exploration before a scenario exists, `.mcp.json` registers a

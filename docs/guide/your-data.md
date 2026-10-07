@@ -8,7 +8,8 @@ at the top right and choose **Your data**.
 ## Exporting
 
 Choose **Download export** to save one file with your recipes, meal plans,
-shopping lists, and food log. Keep it somewhere safe as a backup, or use it
+shopping lists, food log, and fuel settings with the training you added
+by hand. Keep it somewhere safe as a backup, or use it
 to move to another Mimos.
 
 If you share a [household](household.md), the export is still just yours.
@@ -28,7 +29,8 @@ one.
 2. Choose **Import**. Mimos reports what it restored, and any warnings.
 
 Import only works into an empty account: one with no recipes, ingredients
-of your own, plans, shopping lists, or logged meals yet. That way nothing
+of your own, plans, shopping lists, logged meals, fuel settings, or
+training yet. That way nothing
 is ever overwritten or doubled up. It also needs you to be on your own: if
 you share a [household](household.md), leave it first. If you've already started using the new account, ask
 whoever runs it to give you a fresh one.

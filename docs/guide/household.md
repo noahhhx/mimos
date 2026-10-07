@@ -12,13 +12,13 @@ To see yours, open the profile menu at the top right and choose
 
 ## What is shared
 
-| Shared with your household       | Yours alone   |
-| -------------------------------- | ------------- |
-| Recipes, and who added each one  | Your food log |
-| Ingredients you added            |               |
-| Meal plans                       |               |
-| Shopping lists                   |               |
-| Plugins and what they remember   |               |
+| Shared with your household       | Yours alone                     |
+| -------------------------------- | ------------------------------- |
+| Recipes, and who added each one  | Your food log                   |
+| Ingredients you added            | Your fuel settings and training |
+| Meal plans                       |                                 |
+| Shopping lists                   |                                 |
+| Plugins and what they remember   |                                 |
 
 Everyone in a household is equal. Anyone can add, change, or delete its
 recipes, plan its meals, and tick off its shopping list. A recipe someone
@@ -63,8 +63,8 @@ What joining does depends on whether you share a household already:
   ingredients, meal plans, and shopping lists stay with it, including the
   ones you added.
 
-Either way, your food log stays yours. Nobody else in the household sees
-it.
+Either way, your food log, fuel settings, and training stay yours. Nobody else in
+the household sees them.
 
 ## Leave a household
 
@@ -80,6 +80,7 @@ When you leave:
   removed from the plan.
 - You keep your food log. Meals you logged from the household's recipes
   keep their calories and macros but no longer link to the recipe.
+- You keep your fuel settings and training.
 - You start again as a household of one.
 
 Nobody can remove someone else from a household. If you are the only one
