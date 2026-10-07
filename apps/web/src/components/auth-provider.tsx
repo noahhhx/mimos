@@ -10,6 +10,11 @@ type AuthState = {
   user: User | null;
   /** Signs in through Keycloak, then returns to `returnTo` (an app path) or the Kitchen. */
   signIn: (returnTo?: string) => Promise<void>;
+  /**
+   * Opens Keycloak's registration form, then returns like `signIn`. Every
+   * Create account calls this, so a paid sign-up replaces only this (ADR-0020).
+   */
+  signUp: (returnTo?: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -37,11 +42,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await userManager.signinRedirect({ state });
   }, []);
 
+  const signUp = useCallback(async (returnTo?: string) => {
+    const state: SignInState | undefined = returnTo ? { returnTo } : undefined;
+    await userManager.signinRedirect({ state, prompt: "create" });
+  }, []);
+
   const signOut = useCallback(async () => {
     await userManager.signoutRedirect();
   }, []);
 
-  return <AuthContext.Provider value={{ user, signIn, signOut }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, signIn, signUp, signOut }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthState {

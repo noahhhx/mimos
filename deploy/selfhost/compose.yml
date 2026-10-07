@@ -119,6 +119,7 @@ services:
       MIMOS_APP_URL: ${WEB_ORIGIN}
       MIMOS_API_URL: ${API_PUBLIC_URL:?set API_PUBLIC_URL in .env}
       MIMOS_OIDC_AUTHORITY: ${KEYCLOAK_PUBLIC_URL}/realms/mimos
+      MIMOS_SIGNUP: ${SIGNUP:-open}
       # Public recipe pages are rendered server-side over the compose network.
       API_SERVER_URL: http://api:8080
     ports:

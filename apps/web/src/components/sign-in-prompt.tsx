@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/components/auth-provider";
+import { CreateAccountButton } from "@/components/create-account-button";
 
 /** What a page of the app shows a signed-out visitor: why to sign in, and the way in. */
 export function SignInPrompt({ children, returnTo }: { children: React.ReactNode; returnTo?: string }) {
@@ -12,6 +13,7 @@ export function SignInPrompt({ children, returnTo }: { children: React.ReactNode
         <button className="button" onClick={() => void signIn(returnTo)}>
           Sign in
         </button>
+        <CreateAccountButton returnTo={returnTo} />
       </p>
     </>
   );

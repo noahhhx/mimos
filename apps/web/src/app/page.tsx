@@ -1,13 +1,15 @@
 import Link from "next/link";
 
+import { CreateAccountButton } from "@/components/create-account-button";
 import { SplitPage } from "@/components/split-page";
 
 /** The user guide, published from main to GitHub Pages (mkdocs.yml). */
 const DOCS_URL = "https://noahhhx.github.io/mimos/";
 
 /**
- * The public landing page. No client JavaScript, no authentication: it is
- * statically generated at build time (SEO-friendly by construction).
+ * The public landing page, statically generated at build time
+ * (SEO-friendly by construction). Create account is its only client
+ * component.
  */
 export default function HomePage() {
   return (
@@ -27,6 +29,7 @@ export default function HomePage() {
       }
     >
       <p className="cta">
+        <CreateAccountButton primary />
         <Link href="/app" className="button">
           Open the app
         </Link>

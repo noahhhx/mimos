@@ -31,7 +31,20 @@ describe("publicConfigFromEnv", () => {
       oidcAuthority: "https://auth.mimos.home/realms/mimos",
       oidcClientId: "mimos-web",
       appUrl: "https://mimos.home",
+      signup: "open",
     });
+  });
+
+  it("offers sign-up when MIMOS_SIGNUP is unset, blank, or open in any case", () => {
+    for (const value of [undefined, "", "  ", "open", " OPEN ", "Open"]) {
+      assert.equal(publicConfigFromEnv({ MIMOS_SIGNUP: value }).signup, "open", `MIMOS_SIGNUP=${JSON.stringify(value)}`);
+    }
+  });
+
+  it("closes sign-up for any other value", () => {
+    for (const value of ["closed", "off", "false", "disabled", "no", "opened"]) {
+      assert.equal(publicConfigFromEnv({ MIMOS_SIGNUP: value }).signup, "closed", `MIMOS_SIGNUP=${value}`);
+    }
   });
 });
 

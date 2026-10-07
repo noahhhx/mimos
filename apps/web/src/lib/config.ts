@@ -3,8 +3,8 @@ import { DEFAULT_PUBLIC_CONFIG, PUBLIC_CONFIG_GLOBAL, publicConfigFromEnv, type 
 /**
  * Public runtime configuration (ADR-0012). The server reads the container's
  * environment (MIMOS_API_URL, MIMOS_OIDC_AUTHORITY, MIMOS_OIDC_CLIENT_ID,
- * MIMOS_APP_URL); the browser reads what `/runtime-config.js` set, which
- * the root layout loads before any app code. Changing a URL means
+ * MIMOS_APP_URL, MIMOS_SIGNUP); the browser reads what `/runtime-config.js`
+ * set, which the root layout loads before any app code. Changing one means
  * restarting the container, not rebuilding the image.
  */
 function readPublicConfig(): PublicConfig {
@@ -24,6 +24,8 @@ export const oidcAuthority = config.oidcAuthority;
 export const oidcClientId = config.oidcClientId;
 
 export const appBaseUrl = config.appUrl;
+
+export const signupPolicy = config.signup;
 
 /**
  * Base URL for server-side fetches (public SEO pages). Inside compose the

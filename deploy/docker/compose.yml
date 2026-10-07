@@ -104,6 +104,8 @@ services:
       MIMOS_OIDC_AUTHORITY: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8081}/realms/mimos
       MIMOS_OIDC_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-mimos-web}
       MIMOS_APP_URL: ${WEB_ORIGIN:-http://localhost:3000}
+      # open shows Create account; closed hides it (ADR-0020).
+      MIMOS_SIGNUP: ${SIGNUP:-open}
       # Server-side fetches (public recipe pages) use the internal compose
       # network.
       API_SERVER_URL: ${API_INTERNAL_URL:-http://api:8080}

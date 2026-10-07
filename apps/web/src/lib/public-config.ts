@@ -1,6 +1,10 @@
+/** Who may create an account here. A paid mode joins later (ADR-0020). */
+export type SignupPolicy = "open" | "closed";
+
 /**
- * The browser-facing URLs the web app needs, read from the container's
- * environment at run time (ADR-0012) so one image serves any deployment.
+ * The browser-facing URLs and settings the web app needs, read from the
+ * container's environment at run time (ADR-0012) so one image serves any
+ * deployment.
  * The server reads them here; the browser gets them from
  * `/runtime-config.js`, which the root layout loads before any app code.
  */
@@ -13,6 +17,8 @@ export type PublicConfig = {
   oidcClientId: string;
   /** This app's own origin, for OIDC redirects. */
   appUrl: string;
+  /** Whether the web offers Create account. Keycloak's realm decides whether registration works. */
+  signup: SignupPolicy;
 };
 
 /** The global `/runtime-config.js` sets in the browser. */
@@ -24,6 +30,7 @@ export const DEFAULT_PUBLIC_CONFIG: PublicConfig = {
   oidcAuthority: "http://localhost:8081/realms/mimos",
   oidcClientId: "mimos-web",
   appUrl: "http://localhost:3000",
+  signup: "open",
 };
 
 export function publicConfigFromEnv(env: Record<string, string | undefined>): PublicConfig {
@@ -32,6 +39,7 @@ export function publicConfigFromEnv(env: Record<string, string | undefined>): Pu
     oidcAuthority: url(env.MIMOS_OIDC_AUTHORITY) ?? DEFAULT_PUBLIC_CONFIG.oidcAuthority,
     oidcClientId: env.MIMOS_OIDC_CLIENT_ID?.trim() || DEFAULT_PUBLIC_CONFIG.oidcClientId,
     appUrl: url(env.MIMOS_APP_URL) ?? DEFAULT_PUBLIC_CONFIG.appUrl,
+    signup: signupPolicy(env.MIMOS_SIGNUP),
   };
 }
 
@@ -40,6 +48,16 @@ export function runtimeConfigScript(config: PublicConfig): string {
   // JSON is valid JavaScript; escaping "<" keeps it inert even if inlined.
   const json = JSON.stringify(config).replace(/</g, "\\u003c");
   return `window.${PUBLIC_CONFIG_GLOBAL} = ${json};\n`;
+}
+
+/**
+ * Unset or blank means open, and anything but "open" means closed: an
+ * operator who writes off, false, or disabled wants it closed, and a Create
+ * account that Keycloak then refuses is a dead end.
+ */
+function signupPolicy(value: string | undefined): SignupPolicy {
+  const trimmed = value?.trim().toLowerCase();
+  return !trimmed || trimmed === "open" ? "open" : "closed";
 }
 
 /** Blank means unset; a trailing slash is dropped so paths join cleanly. */
