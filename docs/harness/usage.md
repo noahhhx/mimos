@@ -82,8 +82,9 @@ changes a week's country, and the next week's wheel leaves both out,
 ADR-0017), `app-pages` (every signed-in page loads
 without errors), `app-nav` (the app nav has no vertical overflow,
 which would show a scrollbar beside its links), `keycloak-theme`
-(Keycloak's sign-in, error, and register pages wear the Mimos theme;
-screenshots at phone and desktop width), and `account-data` (registers
+(Keycloak's sign-in, error, and register pages wear the Mimos theme
+and follow the app's light or dark choice, ADR-0021; screenshots at
+phone and desktop width), and `account-data` (registers
 two fresh accounts: one writes a recipe and downloads its export, which
 it cannot import over its own data; the other imports it, ADR-0011). See [writing a scenario](step-2-browser.md#writing-a-scenario).
 For exploration before a scenario exists, `.mcp.json` registers a
