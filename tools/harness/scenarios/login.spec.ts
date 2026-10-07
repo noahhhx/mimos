@@ -19,4 +19,9 @@ test("signs in and shows the profile", async ({ loggedInPage: page, user }) => {
   await page.getByRole("link", { name: "Your data" }).click();
   await expect(page.getByRole("heading", { name: "Your data", level: 1 })).toBeVisible();
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "Open the app" })).toBeVisible();
+  await expect(toggle).toBeVisible();
+  await expect(page.getByRole("button", { name: "Create account" })).toHaveCount(0);
 });

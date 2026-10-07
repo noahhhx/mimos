@@ -70,20 +70,20 @@ export const test = base.extend<HarnessFixtures>({
   },
 });
 
-/** Signs up a new realm user through Keycloak's registration form and lands on the Kitchen. */
+/** Signs up a new realm user with the home page's Create account and lands on the Kitchen. */
 export async function register(page: Page, username: string): Promise<void> {
   await test.step(`register ${username}`, async () => {
-    await page.goto("/app");
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.goto("/");
+    await page.getByRole("button", { name: "Create account" }).click();
     await fillRegistration(page, username);
     await expect(page).toHaveURL(/\/app$/);
     await expect(page.getByRole("heading", { name: "This week" })).toBeVisible();
   });
 }
 
-/** From Keycloak's sign-in page, registers a new realm user; Keycloak then returns to the app. */
+/** Fills in Keycloak's registration form and submits it; Keycloak then returns to the app. */
 export async function fillRegistration(page: Page, username: string): Promise<void> {
-  await page.getByRole("link", { name: "Register" }).click();
+  await expect(page.locator("#kc-page-title")).toHaveText("Register");
   await page.locator("#username").fill(username);
   await page.locator("#email").fill(`${username}@example.com`);
   await page.locator("#firstName").fill("Harness");

@@ -50,10 +50,10 @@ test("invite someone, who joins, sees your recipe, and leaves", async ({ page, b
   });
   const guestPage = await guestContext.newPage();
   try {
-    await test.step("the guest opens the link signed out, registers, and comes back to it", async () => {
+    await test.step("the guest opens the link signed out, creates an account, and comes back to it", async () => {
       await guestPage.goto(link);
       await expect(guestPage.getByRole("heading", { name: "You have an invite" })).toBeVisible();
-      await guestPage.getByRole("button", { name: "Sign in" }).click();
+      await guestPage.getByRole("button", { name: "Create account" }).click();
       await fillRegistration(guestPage, guest);
       await expect(guestPage).toHaveURL(link);
     });
