@@ -141,17 +141,18 @@ Rules for using this file:
        day (entries they eat × servings ÷ diners), in the API and on the
        plan page's Mine view. No targets yet. This closes step 10's
        planned-week gap.
-    2. *Fuel profile.* `core/core-fueling` with the per-person profile
-       (on/off, weight, sex, optional body fat and FTP, goal, protein
-       g/kg), the Fuel page in the profile menu, and export format
-       version 5.
-    3. *Targets and manual training.* The target calculator, manual
-       training sessions, targets beside planned totals on the plan page
-       and logged totals on the Log page, and `docs/guide/fuel.md`.
-    4. *intervals.icu sync.* `integrations/intervals-icu`: connect with an
+    2. *Fuel profile and training sessions.* `core/core-fueling` with the
+       per-person profile (on/off, weight, sex, optional body fat and
+       FTP, goal, protein g/kg) and manual training sessions, their API,
+       the Fuel page in the profile menu, and export format version 5.
+    3. *Target calculator.* The calculator and the per-caller daily fuel
+       read (target, planned, logged, and training per day). API only.
+    4. *Targets in the app.* Training entry and "Fuel for the day" on the
+       plan page, targets on the Log page, and `docs/guide/fuel.md`.
+    5. *intervals.icu sync.* `integrations/intervals-icu`: connect with an
        athlete id and API key, encrypted at rest; scheduled and on-demand
        sync from 7 days back to 14 ahead; weight and body-fat hints.
-    5. *Later, each its own decision.* On-bike carbs per hour, writing
+    6. *Later, each its own decision.* On-bike carbs per hour, writing
        logged intake back to intervals.icu, training-aware recipe
        suggestions, and OAuth on a hosted instance.
     *Done when: a self-hoster without intervals.icu can enter training by
