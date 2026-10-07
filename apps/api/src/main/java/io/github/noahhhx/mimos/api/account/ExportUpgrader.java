@@ -22,7 +22,10 @@ public final class ExportUpgrader {
 
     /** {@code STEPS.get(i)} upgrades version {@code i + 1} to {@code i + 2}. */
     private static final List<UnaryOperator<ObjectNode>> STEPS = List.of(
-            ExportUpgrader::markNutritionManual, ExportUpgrader::allowRecipeLinks, ExportUpgrader::keepOnlyOwnMeals);
+            ExportUpgrader::markNutritionManual,
+            ExportUpgrader::allowRecipeLinks,
+            ExportUpgrader::keepOnlyOwnMeals,
+            ExportUpgrader::addTraining);
 
     /** The version this instance exports. */
     public static final int CURRENT_VERSION = STEPS.size() + 1;
@@ -98,6 +101,16 @@ public final class ExportUpgrader {
      * unchanged.
      */
     private static ObjectNode keepOnlyOwnMeals(ObjectNode document) {
+        return document;
+    }
+
+    /**
+     * Version 5 (ADR-0022): the exporter's fuel profile, absent when they
+     * have none, and the training sessions they entered by hand. Version 4
+     * had neither, so it gets an empty sessions section and no profile.
+     */
+    private static ObjectNode addTraining(ObjectNode document) {
+        document.putArray("trainingSessions");
         return document;
     }
 

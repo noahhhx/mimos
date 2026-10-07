@@ -13,7 +13,7 @@
 openapi: 3.1.0
 info:
   title: Mimos API
-  version: 0.12.0
+  version: 0.13.0
   description: |
     The Mimos recipe companion API. Endpoints require a bearer token issued
     by the instance's Keycloak realm unless they live under `/api/v1/public`
@@ -95,6 +95,151 @@ paths:
       responses:
         '204':
           description: The choice is saved.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/me/fuel-profile:
+    get:
+      tags: [fuel]
+      operationId: getMyFuelProfile
+      summary: The caller's fuel profile, which their daily fuel targets are calculated from
+      description: >
+        Fuel targets are per person and off until the person turns them on
+        (ADR-0022); everyone in a household has their own profile. A caller
+        who never saved a profile gets targets off, goal FUEL, sex
+        UNSPECIFIED, protein 1.6 g/kg, and no weight, never a 404.
+      responses:
+        '200':
+          description: The caller's fuel profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FuelProfile'
+        '401':
+          $ref: '#/components/responses/Problem'
+    put:
+      tags: [fuel]
+      operationId: updateMyFuelProfile
+      summary: Save the caller's fuel profile
+      description: >
+        Replaces the caller's whole profile. Bounds: weightKg 30 to 250,
+        bodyFatPercent 3 to 60, ftpWatts 50 to 600, proteinGPerKg 1.2 to
+        3.0. Leave proteinGPerKg out to take the goal's default (FUEL 1.6,
+        GRADUAL_LOSS 2.0, FASTER_LOSS 2.2, GAIN 1.8). A 400 names every
+        value that is out of bounds, separated by semicolons.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FuelProfileInput'
+      responses:
+        '200':
+          description: The saved profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FuelProfile'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/me/training:
+    get:
+      tags: [fuel]
+      operationId: listMyTraining
+      summary: The caller's training sessions in a date range
+      description: >
+        Sessions the caller entered by hand and, once connected, ones
+        synced from intervals.icu, in date order. The range is inclusive
+        and at most 62 days. Dates run from 1900-01-01 to 9999-12-31.
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The sessions in the range.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrainingSession'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [fuel]
+      operationId: addMyTraining
+      summary: Add a training session by hand
+      description: >
+        A session the caller did or plans to do: its sport, its length in
+        minutes (1 to 1440), and how hard it is. Send workKj too when the
+        work is known, as from a power meter. kind defaults to PLANNED;
+        on a day with a COMPLETED session, planned ones stop counting
+        toward the day's fuel.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainingSessionInput'
+      responses:
+        '201':
+          description: The added session.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingSession'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/me/training/{sessionId}:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    get:
+      tags: [fuel]
+      operationId: getMyTrainingSession
+      summary: One of the caller's training sessions
+      responses:
+        '200':
+          description: The session.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingSession'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+    delete:
+      tags: [fuel]
+      operationId: deleteMyTraining
+      summary: Delete a training session the caller entered by hand
+      description: >
+        Only MANUAL sessions can be deleted (400 otherwise): a synced
+        session changes when its source does.
+      responses:
+        '204':
+          description: Deleted.
         '400':
           $ref: '#/components/responses/Problem'
         '401':
@@ -252,7 +397,8 @@ paths:
         One person's data as one versioned document (ADR-0011, ADR-0019):
         the household's personal recipes, ingredients, and shopping lists,
         the planned meals the caller eats (other members' meals are left
-        out), and the caller's meal logs. Library recipes are referenced by
+        out), the caller's meal logs, and the caller's fuel profile and the
+        training sessions they entered by hand. Library recipes are referenced by
         slug, not included. The response is offered as a file download.
       responses:
         '200':
@@ -280,7 +426,8 @@ paths:
         other Mimos instance, into the caller's account. Any format version
         up to the current one is accepted; older ones are upgraded first.
         The account must be empty: no personal recipes or ingredients,
-        planned meals, logged meals, or shopping list items. It must also
+        planned meals, logged meals, shopping list items, fuel profile, or
+        training sessions. It must also
         be a household of one; a caller who shares a household gets a 409.
         Every planned meal is restored with the caller as its only diner.
         The import is all or nothing.
@@ -1120,6 +1267,13 @@ components:
       schema:
         type: string
         format: uuid
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   responses:
     Problem:
       description: An RFC 9457 problem-details error.
@@ -1235,6 +1389,120 @@ components:
             True when the caller's current household has other members, so
             joining means leaving it and bringing nothing. False when it is
             a household of one, whose recipes and ingredients come along.
+    FuelGoal:
+      type: string
+      description: >
+        What the person wants their food to do (ADR-0022). FUEL fuels
+        training; GRADUAL_LOSS and FASTER_LOSS lose weight; GAIN gains it.
+      enum: [FUEL, GRADUAL_LOSS, FASTER_LOSS, GAIN]
+    FuelSex:
+      type: string
+      description: Picks the default body fat when none is given.
+      enum: [FEMALE, MALE, UNSPECIFIED]
+    FuelProfile:
+      type: object
+      description: One person's fuel profile (ADR-0022). Targets show only while `enabled`.
+      required: [enabled, sex, goal, proteinGPerKg]
+      properties:
+        enabled:
+          type: boolean
+          description: Whether the person turned fuel targets on.
+        weightKg:
+          type: number
+          description: Body weight in kg. Absent until the person saves a profile.
+        sex:
+          $ref: '#/components/schemas/FuelSex'
+        bodyFatPercent:
+          type: number
+          description: Body fat in percent, when the person knows it.
+        ftpWatts:
+          type: integer
+          description: Functional threshold power in watts, when the person knows it.
+        goal:
+          $ref: '#/components/schemas/FuelGoal'
+        proteinGPerKg:
+          type: number
+          description: Daily protein in g per kg of body weight.
+    FuelProfileInput:
+      type: object
+      required: [enabled, weightKg, sex, goal]
+      properties:
+        enabled:
+          type: boolean
+        weightKg:
+          type: number
+          description: 30 to 250.
+        sex:
+          $ref: '#/components/schemas/FuelSex'
+        bodyFatPercent:
+          type: number
+          description: 3 to 60, or absent when unknown.
+        ftpWatts:
+          type: integer
+          description: 50 to 600, or absent when unknown.
+        goal:
+          $ref: '#/components/schemas/FuelGoal'
+        proteinGPerKg:
+          type: number
+          description: 1.2 to 3.0. Defaults to the goal's default.
+    TrainingSource:
+      type: string
+      description: Where a session came from. Only MANUAL sessions can be deleted.
+      enum: [MANUAL, INTERVALS_ICU]
+    TrainingKind:
+      type: string
+      enum: [PLANNED, COMPLETED]
+    TrainingSport:
+      type: string
+      enum: [RIDE, RUN, SWIM, STRENGTH, OTHER]
+    TrainingIntensity:
+      type: string
+      description: How hard a session is, for a session whose work is not known.
+      enum: [EASY, ENDURANCE, HARD]
+    TrainingSession:
+      type: object
+      description: One training session on one day.
+      required: [id, date, source, kind, sport, durationMinutes]
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        source:
+          $ref: '#/components/schemas/TrainingSource'
+        kind:
+          $ref: '#/components/schemas/TrainingKind'
+        sport:
+          $ref: '#/components/schemas/TrainingSport'
+        durationMinutes:
+          type: integer
+        workKj:
+          type: number
+          description: Mechanical work in kJ, when known.
+        intensity:
+          $ref: '#/components/schemas/TrainingIntensity'
+    TrainingSessionInput:
+      type: object
+      required: [date, sport, durationMinutes, intensity]
+      properties:
+        date:
+          type: string
+          format: date
+          description: From 1900-01-01 to 9999-12-31.
+        kind:
+          $ref: '#/components/schemas/TrainingKind'
+        sport:
+          $ref: '#/components/schemas/TrainingSport'
+        durationMinutes:
+          type: integer
+          description: 1 to 1440.
+        intensity:
+          $ref: '#/components/schemas/TrainingIntensity'
+        workKj:
+          type: number
+          description: Mechanical work in kJ, when known. 0 to 51840.
     Problem:
       type: object
       description: RFC 9457 problem details.
@@ -1919,17 +2187,17 @@ components:
     AccountExport:
       type: object
       description: >
-        One person's data, in export format version 4 (ADR-0011, ADR-0019).
+        One person's data, in export format version 5 (ADR-0011, ADR-0019, ADR-0022).
         Any change to this schema, or to what a section holds, bumps the
         version and adds an upgrade step from the previous one.
-      required: [format, version, exportedAt, ingredients, recipes, mealPlans, shoppingLists, mealLogs]
+      required: [format, version, exportedAt, ingredients, recipes, mealPlans, shoppingLists, mealLogs, trainingSessions]
       properties:
         format:
           type: string
           enum: [mimos.export]
         version:
           type: integer
-          description: The format version. This instance exports version 4.
+          description: The format version. This instance exports version 5.
         exportedAt:
           type: string
           format: date-time
@@ -1960,6 +2228,54 @@ components:
           description: The exporter's own logged meals.
           items:
             $ref: '#/components/schemas/ExportedMealLog'
+        fuelProfile:
+          allOf:
+            - $ref: '#/components/schemas/ExportedFuelProfile'
+          description: The exporter's fuel profile. Absent when they never saved one.
+        trainingSessions:
+          type: array
+          description: >
+            The training sessions the exporter entered by hand. Synced
+            sessions are left out; connecting the source again brings them
+            back.
+          items:
+            $ref: '#/components/schemas/ExportedTrainingSession'
+    ExportedFuelProfile:
+      type: object
+      required: [enabled, weightKg, sex, goal, proteinGPerKg]
+      properties:
+        enabled:
+          type: boolean
+        weightKg:
+          type: number
+        sex:
+          $ref: '#/components/schemas/FuelSex'
+        bodyFatPercent:
+          type: number
+        ftpWatts:
+          type: integer
+        goal:
+          $ref: '#/components/schemas/FuelGoal'
+        proteinGPerKg:
+          type: number
+    ExportedTrainingSession:
+      type: object
+      description: A training session entered by hand.
+      required: [date, kind, sport, durationMinutes, intensity]
+      properties:
+        date:
+          type: string
+          format: date
+        kind:
+          $ref: '#/components/schemas/TrainingKind'
+        sport:
+          $ref: '#/components/schemas/TrainingSport'
+        durationMinutes:
+          type: integer
+        workKj:
+          type: number
+        intensity:
+          $ref: '#/components/schemas/TrainingIntensity'
     ExportedIngredient:
       type: object
       description: One of the household's own ingredients. `slug` is a key within the document; import assigns a new one.
@@ -2116,7 +2432,7 @@ components:
     ImportReport:
       type: object
       description: The outcome of an import.
-      required: [sourceVersion, recipes, plannedMeals, shoppingLists, mealLogs, warnings]
+      required: [sourceVersion, recipes, plannedMeals, shoppingLists, mealLogs, fuelProfile, trainingSessions, warnings]
       properties:
         sourceVersion:
           type: integer
@@ -2133,6 +2449,12 @@ components:
         mealLogs:
           type: integer
           description: Logged meals imported.
+        fuelProfile:
+          type: boolean
+          description: Whether fuel settings were imported.
+        trainingSessions:
+          type: integer
+          description: Hand-entered training sessions imported.
         warnings:
           type: array
           description: Data that could not be carried over as it was, in plain words.

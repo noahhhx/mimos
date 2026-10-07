@@ -25,13 +25,14 @@ export function parseExportFile(
   return { ok: true, document: parsed as Record<string, unknown> };
 }
 
-/** "Imported 2 recipes, 1 planned meal, no shopping lists and 3 logged meals." */
 export function importSummary(report: ImportReport): string {
   const parts = [
     count(report.recipes, "recipe"),
     count(report.plannedMeals, "planned meal"),
     count(report.shoppingLists, "shopping list"),
     count(report.mealLogs, "logged meal"),
+    report.fuelProfile ? "your fuel settings" : "no fuel settings",
+    count(report.trainingSessions, "training session"),
   ];
   return `Imported ${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}.`;
 }

@@ -2,6 +2,10 @@ package io.github.noahhhx.mimos.api.account;
 
 import io.github.noahhhx.mimos.api.identity.UserProfileRecord;
 import io.github.noahhhx.mimos.api.recipes.RecipeApiMapper;
+import io.github.noahhhx.mimos.fueling.FuelProfile;
+import io.github.noahhhx.mimos.fueling.FuelService;
+import io.github.noahhhx.mimos.fueling.Intensity;
+import io.github.noahhhx.mimos.fueling.TrainingSession;
 import io.github.noahhhx.mimos.planning.logging.MealLog;
 import io.github.noahhhx.mimos.planning.logging.MealLogService;
 import io.github.noahhhx.mimos.planning.plan.MealPlan;
@@ -27,6 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.openapitools.model.AccountExport;
+import org.openapitools.model.ExportedFuelProfile;
 import org.openapitools.model.ExportedIngredient;
 import org.openapitools.model.ExportedMealLog;
 import org.openapitools.model.ExportedMealPlan;
@@ -34,6 +39,7 @@ import org.openapitools.model.ExportedPlanEntry;
 import org.openapitools.model.ExportedRecipe;
 import org.openapitools.model.ExportedShoppingList;
 import org.openapitools.model.ExportedShoppingListItem;
+import org.openapitools.model.ExportedTrainingSession;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,8 +48,9 @@ import org.springframework.transaction.annotation.Transactional;
  * Writes one person's data as an account export in the current format
  * version (ADR-0011, ADR-0019), read through the core modules' public
  * services: their household's recipes, ingredients, and shopping lists,
- * the planned meals they eat, and their own logs. Personal recipes are
- * exported in full; library recipes only by slug.
+ * the planned meals they eat, their own logs, and their fuel profile and
+ * hand-entered training (ADR-0022). Personal recipes are exported in full;
+ * library recipes only by slug.
  */
 @Service
 public class AccountExporter {
@@ -53,6 +60,7 @@ public class AccountExporter {
     private final MealPlanService mealPlans;
     private final ShoppingListService shoppingLists;
     private final MealLogService mealLogs;
+    private final FuelService fuel;
     private final Clock clock;
 
     public AccountExporter(
@@ -61,16 +69,18 @@ public class AccountExporter {
             MealPlanService mealPlans,
             ShoppingListService shoppingLists,
             MealLogService mealLogs,
+            FuelService fuel,
             Clock clock) {
         this.recipes = recipes;
         this.ingredients = ingredients;
         this.mealPlans = mealPlans;
         this.shoppingLists = shoppingLists;
         this.mealLogs = mealLogs;
+        this.fuel = fuel;
         this.clock = clock;
     }
 
-    /** The exporter's household data, the meals they eat, and their own logs as one consistent snapshot. */
+    /** The exporter's household data, the meals they eat, and their own logs and fuel data as one consistent snapshot. */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public AccountExport export(UserProfileRecord exporter) {
         UUID householdId = exporter.householdId();
@@ -108,6 +118,12 @@ public class AccountExporter {
                 .shoppingLists(lists.stream().map(AccountExporter::toExported).toList())
                 .mealLogs(logs.stream()
                         .map(log -> toExported(log, ownedIds, librarySlugs))
+                        .toList())
+                .fuelProfile(fuel.profile(exporter.id())
+                        .map(AccountExporter::toExported)
+                        .orElse(null))
+                .trainingSessions(fuel.manualSessions(exporter.id()).stream()
+                        .map(AccountExporter::toExported)
                         .toList());
     }
 
@@ -195,6 +211,30 @@ public class AccountExporter {
                 .servings(BigDecimal.valueOf(log.servings()))
                 .nutrition(toApiNutrition(log.nutrition()))
                 .loggedAt(toOffset(log.loggedAt()));
+    }
+
+    private static ExportedFuelProfile toExported(FuelProfile profile) {
+        return new ExportedFuelProfile()
+                .enabled(profile.enabled())
+                .weightKg(BigDecimal.valueOf(profile.weightKg()))
+                .sex(org.openapitools.model.FuelSex.valueOf(profile.sex().name()))
+                .bodyFatPercent(toBigDecimal(profile.bodyFatPercent()))
+                .ftpWatts(profile.ftpWatts())
+                .goal(org.openapitools.model.FuelGoal.valueOf(profile.goal().name()))
+                .proteinGPerKg(BigDecimal.valueOf(profile.proteinGPerKg()));
+    }
+
+    private static ExportedTrainingSession toExported(TrainingSession session) {
+        Intensity intensity = session.intensity();
+        return new ExportedTrainingSession()
+                .date(session.date())
+                .kind(org.openapitools.model.TrainingKind.valueOf(session.kind().name()))
+                .sport(org.openapitools.model.TrainingSport.valueOf(
+                        session.sport().name()))
+                .durationMinutes(session.durationMinutes())
+                .workKj(toBigDecimal(session.workKj()))
+                .intensity(
+                        intensity == null ? null : org.openapitools.model.TrainingIntensity.valueOf(intensity.name()));
     }
 
     private static org.openapitools.model.Nutrition toApiNutrition(Nutrition nutrition) {

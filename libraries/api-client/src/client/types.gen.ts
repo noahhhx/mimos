@@ -113,6 +113,116 @@ export type HouseholdInvitePreview = {
 };
 
 /**
+ * What the person wants their food to do (ADR-0022). FUEL fuels training; GRADUAL_LOSS and FASTER_LOSS lose weight; GAIN gains it.
+ *
+ */
+export type FuelGoal = 'FUEL' | 'GRADUAL_LOSS' | 'FASTER_LOSS' | 'GAIN';
+
+/**
+ * Picks the default body fat when none is given.
+ */
+export type FuelSex = 'FEMALE' | 'MALE' | 'UNSPECIFIED';
+
+/**
+ * One person's fuel profile (ADR-0022). Targets show only while `enabled`.
+ */
+export type FuelProfile = {
+    /**
+     * Whether the person turned fuel targets on.
+     */
+    enabled: boolean;
+    /**
+     * Body weight in kg. Absent until the person saves a profile.
+     */
+    weightKg?: number;
+    sex: FuelSex;
+    /**
+     * Body fat in percent, when the person knows it.
+     */
+    bodyFatPercent?: number;
+    /**
+     * Functional threshold power in watts, when the person knows it.
+     */
+    ftpWatts?: number;
+    goal: FuelGoal;
+    /**
+     * Daily protein in g per kg of body weight.
+     */
+    proteinGPerKg: number;
+};
+
+export type FuelProfileInput = {
+    enabled: boolean;
+    /**
+     * 30 to 250.
+     */
+    weightKg: number;
+    sex: FuelSex;
+    /**
+     * 3 to 60, or absent when unknown.
+     */
+    bodyFatPercent?: number;
+    /**
+     * 50 to 600, or absent when unknown.
+     */
+    ftpWatts?: number;
+    goal: FuelGoal;
+    /**
+     * 1.2 to 3.0. Defaults to the goal's default.
+     */
+    proteinGPerKg?: number;
+};
+
+/**
+ * Where a session came from. Only MANUAL sessions can be deleted.
+ */
+export type TrainingSource = 'MANUAL' | 'INTERVALS_ICU';
+
+export type TrainingKind = 'PLANNED' | 'COMPLETED';
+
+export type TrainingSport = 'RIDE' | 'RUN' | 'SWIM' | 'STRENGTH' | 'OTHER';
+
+/**
+ * How hard a session is, for a session whose work is not known.
+ */
+export type TrainingIntensity = 'EASY' | 'ENDURANCE' | 'HARD';
+
+/**
+ * One training session on one day.
+ */
+export type TrainingSession = {
+    id: string;
+    date: string;
+    source: TrainingSource;
+    kind: TrainingKind;
+    sport: TrainingSport;
+    durationMinutes: number;
+    /**
+     * Mechanical work in kJ, when known.
+     */
+    workKj?: number;
+    intensity?: TrainingIntensity;
+};
+
+export type TrainingSessionInput = {
+    /**
+     * From 1900-01-01 to 9999-12-31.
+     */
+    date: string;
+    kind?: TrainingKind;
+    sport: TrainingSport;
+    /**
+     * 1 to 1440.
+     */
+    durationMinutes: number;
+    intensity: TrainingIntensity;
+    /**
+     * Mechanical work in kJ, when known. 0 to 51840.
+     */
+    workKj?: number;
+};
+
+/**
  * RFC 9457 problem details.
  */
 export type Problem = {
@@ -659,13 +769,13 @@ export type DailyLogSummary = {
 };
 
 /**
- * One person's data, in export format version 4 (ADR-0011, ADR-0019). Any change to this schema, or to what a section holds, bumps the version and adds an upgrade step from the previous one.
+ * One person's data, in export format version 5 (ADR-0011, ADR-0019, ADR-0022). Any change to this schema, or to what a section holds, bumps the version and adds an upgrade step from the previous one.
  *
  */
 export type AccountExport = {
     format: 'mimos.export';
     /**
-     * The format version. This instance exports version 4.
+     * The format version. This instance exports version 5.
      */
     version: number;
     exportedAt: string;
@@ -690,6 +800,37 @@ export type AccountExport = {
      * The exporter's own logged meals.
      */
     mealLogs: Array<ExportedMealLog>;
+    /**
+     * The exporter's fuel profile. Absent when they never saved one.
+     */
+    fuelProfile?: ExportedFuelProfile;
+    /**
+     * The training sessions the exporter entered by hand. Synced sessions are left out; connecting the source again brings them back.
+     *
+     */
+    trainingSessions: Array<ExportedTrainingSession>;
+};
+
+export type ExportedFuelProfile = {
+    enabled: boolean;
+    weightKg: number;
+    sex: FuelSex;
+    bodyFatPercent?: number;
+    ftpWatts?: number;
+    goal: FuelGoal;
+    proteinGPerKg: number;
+};
+
+/**
+ * A training session entered by hand.
+ */
+export type ExportedTrainingSession = {
+    date: string;
+    kind: TrainingKind;
+    sport: TrainingSport;
+    durationMinutes: number;
+    workKj?: number;
+    intensity: TrainingIntensity;
 };
 
 /**
@@ -814,6 +955,14 @@ export type ImportReport = {
      */
     mealLogs: number;
     /**
+     * Whether fuel settings were imported.
+     */
+    fuelProfile: boolean;
+    /**
+     * Hand-entered training sessions imported.
+     */
+    trainingSessions: number;
+    /**
      * Data that could not be carried over as it was, in plain words.
      */
     warnings: Array<string>;
@@ -836,6 +985,8 @@ export type EntryId = string;
 export type ShoppingListItemId = string;
 
 export type LogId = string;
+
+export type SessionId = string;
 
 export type GetMeData = {
     body?: never;
@@ -928,6 +1079,187 @@ export type UpdateMyPluginResponses = {
 };
 
 export type UpdateMyPluginResponse = UpdateMyPluginResponses[keyof UpdateMyPluginResponses];
+
+export type GetMyFuelProfileData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/fuel-profile';
+};
+
+export type GetMyFuelProfileErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type GetMyFuelProfileError = GetMyFuelProfileErrors[keyof GetMyFuelProfileErrors];
+
+export type GetMyFuelProfileResponses = {
+    /**
+     * The caller's fuel profile.
+     */
+    200: FuelProfile;
+};
+
+export type GetMyFuelProfileResponse = GetMyFuelProfileResponses[keyof GetMyFuelProfileResponses];
+
+export type UpdateMyFuelProfileData = {
+    body: FuelProfileInput;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/fuel-profile';
+};
+
+export type UpdateMyFuelProfileErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type UpdateMyFuelProfileError = UpdateMyFuelProfileErrors[keyof UpdateMyFuelProfileErrors];
+
+export type UpdateMyFuelProfileResponses = {
+    /**
+     * The saved profile.
+     */
+    200: FuelProfile;
+};
+
+export type UpdateMyFuelProfileResponse = UpdateMyFuelProfileResponses[keyof UpdateMyFuelProfileResponses];
+
+export type ListMyTrainingData = {
+    body?: never;
+    path?: never;
+    query: {
+        from: string;
+        to: string;
+    };
+    url: '/api/v1/me/training';
+};
+
+export type ListMyTrainingErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type ListMyTrainingError = ListMyTrainingErrors[keyof ListMyTrainingErrors];
+
+export type ListMyTrainingResponses = {
+    /**
+     * The sessions in the range.
+     */
+    200: Array<TrainingSession>;
+};
+
+export type ListMyTrainingResponse = ListMyTrainingResponses[keyof ListMyTrainingResponses];
+
+export type AddMyTrainingData = {
+    body: TrainingSessionInput;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/training';
+};
+
+export type AddMyTrainingErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type AddMyTrainingError = AddMyTrainingErrors[keyof AddMyTrainingErrors];
+
+export type AddMyTrainingResponses = {
+    /**
+     * The added session.
+     */
+    201: TrainingSession;
+};
+
+export type AddMyTrainingResponse = AddMyTrainingResponses[keyof AddMyTrainingResponses];
+
+export type DeleteMyTrainingData = {
+    body?: never;
+    path: {
+        sessionId: string;
+    };
+    query?: never;
+    url: '/api/v1/me/training/{sessionId}';
+};
+
+export type DeleteMyTrainingErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type DeleteMyTrainingError = DeleteMyTrainingErrors[keyof DeleteMyTrainingErrors];
+
+export type DeleteMyTrainingResponses = {
+    /**
+     * Deleted.
+     */
+    204: void;
+};
+
+export type DeleteMyTrainingResponse = DeleteMyTrainingResponses[keyof DeleteMyTrainingResponses];
+
+export type GetMyTrainingSessionData = {
+    body?: never;
+    path: {
+        sessionId: string;
+    };
+    query?: never;
+    url: '/api/v1/me/training/{sessionId}';
+};
+
+export type GetMyTrainingSessionErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type GetMyTrainingSessionError = GetMyTrainingSessionErrors[keyof GetMyTrainingSessionErrors];
+
+export type GetMyTrainingSessionResponses = {
+    /**
+     * The session.
+     */
+    200: TrainingSession;
+};
+
+export type GetMyTrainingSessionResponse = GetMyTrainingSessionResponses[keyof GetMyTrainingSessionResponses];
 
 export type GetHouseholdData = {
     body?: never;

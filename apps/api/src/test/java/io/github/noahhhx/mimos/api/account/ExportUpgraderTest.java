@@ -3,9 +3,12 @@ package io.github.noahhhx.mimos.api.account;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ClassPathResource;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 
@@ -85,7 +88,7 @@ class ExportUpgraderTest {
     }
 
     @Test
-    void versions2And3ComeThroughUnchanged() {
+    void versions2And3KeepTheirData() {
         for (int version = 2; version <= 3; version++) {
             ObjectNode old = document(version);
             old.putArray("recipes").addObject().put("title", "Soup").put("nutritionSource", "INGREDIENTS");
@@ -101,10 +104,27 @@ class ExportUpgraderTest {
 
             ObjectNode upgraded = ExportUpgrader.standard().upgrade(old).document();
 
-            assertThat(upgraded.remove("version").asInt()).isEqualTo(4);
+            assertThat(upgraded.remove("version").asInt()).isEqualTo(5);
+            assertThat(upgraded.remove("trainingSessions")).isEmpty();
             old.remove("version");
             assertThat(upgraded).as("version %d", version).isEqualTo(old);
         }
+    }
+
+    @Test
+    void version4GainsAnEmptyTrainingSectionAndNoFuelProfile() throws IOException {
+        ObjectNode v4;
+        try (InputStream in = new ClassPathResource("export/v4.json").getInputStream()) {
+            v4 = (ObjectNode) MAPPER.readTree(in);
+        }
+
+        ObjectNode upgraded = ExportUpgrader.standard().upgrade(v4).document();
+
+        assertThat(upgraded.remove("version").asInt()).isEqualTo(5);
+        assertThat(upgraded.remove("trainingSessions")).isEmpty();
+        assertThat(upgraded.has("fuelProfile")).isFalse();
+        v4.remove("version");
+        assertThat(upgraded).isEqualTo(v4);
     }
 
     @Test

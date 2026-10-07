@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddMealPlanEntryData, AddMealPlanEntryErrors, AddMealPlanEntryResponses, CreateHouseholdInviteData, CreateHouseholdInviteErrors, CreateHouseholdInviteResponses, CreateIngredientData, CreateIngredientErrors, CreateIngredientResponses, CreateMealLogData, CreateMealLogErrors, CreateMealLogResponses, CreateRecipeData, CreateRecipeErrors, CreateRecipeResponses, DeleteIngredientData, DeleteIngredientErrors, DeleteIngredientResponses, DeleteMealLogData, DeleteMealLogErrors, DeleteMealLogResponses, DeleteMealPlanEntryData, DeleteMealPlanEntryErrors, DeleteMealPlanEntryResponses, DeleteRecipeData, DeleteRecipeErrors, DeleteRecipeResponses, EstimateRecipeNutritionData, EstimateRecipeNutritionErrors, EstimateRecipeNutritionResponses, ExportAccountData, ExportAccountErrors, ExportAccountResponses, GenerateShoppingListData, GenerateShoppingListErrors, GenerateShoppingListResponses, GetHouseholdData, GetHouseholdErrors, GetHouseholdResponses, GetMealPlanData, GetMealPlanErrors, GetMealPlanResponses, GetMeData, GetMeErrors, GetMeResponses, GetMyPlannedTotalsData, GetMyPlannedTotalsErrors, GetMyPlannedTotalsResponses, GetPlanSuggestionsData, GetPlanSuggestionsErrors, GetPlanSuggestionsResponses, GetPublicRecipeData, GetPublicRecipeErrors, GetPublicRecipeResponses, GetRecipeData, GetRecipeErrors, GetRecipeResponses, GetShoppingListData, GetShoppingListErrors, GetShoppingListResponses, GetWeekPanelsData, GetWeekPanelsErrors, GetWeekPanelsResponses, ImportAccountData, ImportAccountErrors, ImportAccountResponses, JoinHouseholdData, JoinHouseholdErrors, JoinHouseholdResponses, LeaveHouseholdData, LeaveHouseholdErrors, LeaveHouseholdResponses, ListIngredientsData, ListIngredientsErrors, ListIngredientsResponses, ListLibraryRecipesData, ListLibraryRecipesErrors, ListLibraryRecipesResponses, ListMealLogsData, ListMealLogsErrors, ListMealLogsResponses, ListMyPluginsData, ListMyPluginsErrors, ListMyPluginsResponses, ListMyRecipesData, ListMyRecipesErrors, ListMyRecipesResponses, ListPublicRecipesData, ListPublicRecipesResponses, PressWeekPanelActionData, PressWeekPanelActionErrors, PressWeekPanelActionResponses, PreviewHouseholdInviteData, PreviewHouseholdInviteErrors, PreviewHouseholdInviteResponses, ReplaceIngredientData, ReplaceIngredientErrors, ReplaceIngredientResponses, ReplaceRecipeData, ReplaceRecipeErrors, ReplaceRecipeResponses, SummarizeMealLogsData, SummarizeMealLogsErrors, SummarizeMealLogsResponses, UpdateMealPlanEntryData, UpdateMealPlanEntryErrors, UpdateMealPlanEntryResponses, UpdateMyPluginData, UpdateMyPluginErrors, UpdateMyPluginResponses, UpdateShoppingListItemData, UpdateShoppingListItemErrors, UpdateShoppingListItemResponses } from './types.gen';
+import type { AddMealPlanEntryData, AddMealPlanEntryErrors, AddMealPlanEntryResponses, AddMyTrainingData, AddMyTrainingErrors, AddMyTrainingResponses, CreateHouseholdInviteData, CreateHouseholdInviteErrors, CreateHouseholdInviteResponses, CreateIngredientData, CreateIngredientErrors, CreateIngredientResponses, CreateMealLogData, CreateMealLogErrors, CreateMealLogResponses, CreateRecipeData, CreateRecipeErrors, CreateRecipeResponses, DeleteIngredientData, DeleteIngredientErrors, DeleteIngredientResponses, DeleteMealLogData, DeleteMealLogErrors, DeleteMealLogResponses, DeleteMealPlanEntryData, DeleteMealPlanEntryErrors, DeleteMealPlanEntryResponses, DeleteMyTrainingData, DeleteMyTrainingErrors, DeleteMyTrainingResponses, DeleteRecipeData, DeleteRecipeErrors, DeleteRecipeResponses, EstimateRecipeNutritionData, EstimateRecipeNutritionErrors, EstimateRecipeNutritionResponses, ExportAccountData, ExportAccountErrors, ExportAccountResponses, GenerateShoppingListData, GenerateShoppingListErrors, GenerateShoppingListResponses, GetHouseholdData, GetHouseholdErrors, GetHouseholdResponses, GetMealPlanData, GetMealPlanErrors, GetMealPlanResponses, GetMeData, GetMeErrors, GetMeResponses, GetMyFuelProfileData, GetMyFuelProfileErrors, GetMyFuelProfileResponses, GetMyPlannedTotalsData, GetMyPlannedTotalsErrors, GetMyPlannedTotalsResponses, GetMyTrainingSessionData, GetMyTrainingSessionErrors, GetMyTrainingSessionResponses, GetPlanSuggestionsData, GetPlanSuggestionsErrors, GetPlanSuggestionsResponses, GetPublicRecipeData, GetPublicRecipeErrors, GetPublicRecipeResponses, GetRecipeData, GetRecipeErrors, GetRecipeResponses, GetShoppingListData, GetShoppingListErrors, GetShoppingListResponses, GetWeekPanelsData, GetWeekPanelsErrors, GetWeekPanelsResponses, ImportAccountData, ImportAccountErrors, ImportAccountResponses, JoinHouseholdData, JoinHouseholdErrors, JoinHouseholdResponses, LeaveHouseholdData, LeaveHouseholdErrors, LeaveHouseholdResponses, ListIngredientsData, ListIngredientsErrors, ListIngredientsResponses, ListLibraryRecipesData, ListLibraryRecipesErrors, ListLibraryRecipesResponses, ListMealLogsData, ListMealLogsErrors, ListMealLogsResponses, ListMyPluginsData, ListMyPluginsErrors, ListMyPluginsResponses, ListMyRecipesData, ListMyRecipesErrors, ListMyRecipesResponses, ListMyTrainingData, ListMyTrainingErrors, ListMyTrainingResponses, ListPublicRecipesData, ListPublicRecipesResponses, PressWeekPanelActionData, PressWeekPanelActionErrors, PressWeekPanelActionResponses, PreviewHouseholdInviteData, PreviewHouseholdInviteErrors, PreviewHouseholdInviteResponses, ReplaceIngredientData, ReplaceIngredientErrors, ReplaceIngredientResponses, ReplaceRecipeData, ReplaceRecipeErrors, ReplaceRecipeResponses, SummarizeMealLogsData, SummarizeMealLogsErrors, SummarizeMealLogsResponses, UpdateMealPlanEntryData, UpdateMealPlanEntryErrors, UpdateMealPlanEntryResponses, UpdateMyFuelProfileData, UpdateMyFuelProfileErrors, UpdateMyFuelProfileResponses, UpdateMyPluginData, UpdateMyPluginErrors, UpdateMyPluginResponses, UpdateShoppingListItemData, UpdateShoppingListItemErrors, UpdateShoppingListItemResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -48,6 +48,65 @@ export const updateMyPlugin = <ThrowOnError extends boolean = false>(options: Op
         ...options.headers
     }
 });
+
+/**
+ * The caller's fuel profile, which their daily fuel targets are calculated from
+ *
+ * Fuel targets are per person and off until the person turns them on (ADR-0022); everyone in a household has their own profile. A caller who never saved a profile gets targets off, goal FUEL, sex UNSPECIFIED, protein 1.6 g/kg, and no weight, never a 404.
+ *
+ */
+export const getMyFuelProfile = <ThrowOnError extends boolean = false>(options?: Options<GetMyFuelProfileData, ThrowOnError>): RequestResult<GetMyFuelProfileResponses, GetMyFuelProfileErrors, ThrowOnError> => (options?.client ?? client).get<GetMyFuelProfileResponses, GetMyFuelProfileErrors, ThrowOnError>({ url: '/api/v1/me/fuel-profile', ...options });
+
+/**
+ * Save the caller's fuel profile
+ *
+ * Replaces the caller's whole profile. Bounds: weightKg 30 to 250, bodyFatPercent 3 to 60, ftpWatts 50 to 600, proteinGPerKg 1.2 to 3.0. Leave proteinGPerKg out to take the goal's default (FUEL 1.6, GRADUAL_LOSS 2.0, FASTER_LOSS 2.2, GAIN 1.8). A 400 names every value that is out of bounds, separated by semicolons.
+ *
+ */
+export const updateMyFuelProfile = <ThrowOnError extends boolean = false>(options: Options<UpdateMyFuelProfileData, ThrowOnError>): RequestResult<UpdateMyFuelProfileResponses, UpdateMyFuelProfileErrors, ThrowOnError> => (options.client ?? client).put<UpdateMyFuelProfileResponses, UpdateMyFuelProfileErrors, ThrowOnError>({
+    url: '/api/v1/me/fuel-profile',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * The caller's training sessions in a date range
+ *
+ * Sessions the caller entered by hand and, once connected, ones synced from intervals.icu, in date order. The range is inclusive and at most 62 days. Dates run from 1900-01-01 to 9999-12-31.
+ *
+ */
+export const listMyTraining = <ThrowOnError extends boolean = false>(options: Options<ListMyTrainingData, ThrowOnError>): RequestResult<ListMyTrainingResponses, ListMyTrainingErrors, ThrowOnError> => (options.client ?? client).get<ListMyTrainingResponses, ListMyTrainingErrors, ThrowOnError>({ url: '/api/v1/me/training', ...options });
+
+/**
+ * Add a training session by hand
+ *
+ * A session the caller did or plans to do: its sport, its length in minutes (1 to 1440), and how hard it is. Send workKj too when the work is known, as from a power meter. kind defaults to PLANNED; on a day with a COMPLETED session, planned ones stop counting toward the day's fuel.
+ *
+ */
+export const addMyTraining = <ThrowOnError extends boolean = false>(options: Options<AddMyTrainingData, ThrowOnError>): RequestResult<AddMyTrainingResponses, AddMyTrainingErrors, ThrowOnError> => (options.client ?? client).post<AddMyTrainingResponses, AddMyTrainingErrors, ThrowOnError>({
+    url: '/api/v1/me/training',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete a training session the caller entered by hand
+ *
+ * Only MANUAL sessions can be deleted (400 otherwise): a synced session changes when its source does.
+ *
+ */
+export const deleteMyTraining = <ThrowOnError extends boolean = false>(options: Options<DeleteMyTrainingData, ThrowOnError>): RequestResult<DeleteMyTrainingResponses, DeleteMyTrainingErrors, ThrowOnError> => (options.client ?? client).delete<DeleteMyTrainingResponses, DeleteMyTrainingErrors, ThrowOnError>({ url: '/api/v1/me/training/{sessionId}', ...options });
+
+/**
+ * One of the caller's training sessions
+ */
+export const getMyTrainingSession = <ThrowOnError extends boolean = false>(options: Options<GetMyTrainingSessionData, ThrowOnError>): RequestResult<GetMyTrainingSessionResponses, GetMyTrainingSessionErrors, ThrowOnError> => (options.client ?? client).get<GetMyTrainingSessionResponses, GetMyTrainingSessionErrors, ThrowOnError>({ url: '/api/v1/me/training/{sessionId}', ...options });
 
 /**
  * The caller's household and who is in it
@@ -106,7 +165,7 @@ export const leaveHousehold = <ThrowOnError extends boolean = false>(options?: O
 /**
  * Export the caller's data
  *
- * One person's data as one versioned document (ADR-0011, ADR-0019): the household's personal recipes, ingredients, and shopping lists, the planned meals the caller eats (other members' meals are left out), and the caller's meal logs. Library recipes are referenced by slug, not included. The response is offered as a file download.
+ * One person's data as one versioned document (ADR-0011, ADR-0019): the household's personal recipes, ingredients, and shopping lists, the planned meals the caller eats (other members' meals are left out), the caller's meal logs, and the caller's fuel profile and the training sessions they entered by hand. Library recipes are referenced by slug, not included. The response is offered as a file download.
  *
  */
 export const exportAccount = <ThrowOnError extends boolean = false>(options?: Options<ExportAccountData, ThrowOnError>): RequestResult<ExportAccountResponses, ExportAccountErrors, ThrowOnError> => (options?.client ?? client).get<ExportAccountResponses, ExportAccountErrors, ThrowOnError>({ url: '/api/v1/account/export', ...options });
@@ -114,7 +173,7 @@ export const exportAccount = <ThrowOnError extends boolean = false>(options?: Op
 /**
  * Import an export into the caller's (empty) account
  *
- * Restores a document produced by `exportAccount`, from this or any other Mimos instance, into the caller's account. Any format version up to the current one is accepted; older ones are upgraded first. The account must be empty: no personal recipes or ingredients, planned meals, logged meals, or shopping list items. It must also be a household of one; a caller who shares a household gets a 409. Every planned meal is restored with the caller as its only diner. The import is all or nothing.
+ * Restores a document produced by `exportAccount`, from this or any other Mimos instance, into the caller's account. Any format version up to the current one is accepted; older ones are upgraded first. The account must be empty: no personal recipes or ingredients, planned meals, logged meals, shopping list items, fuel profile, or training sessions. It must also be a household of one; a caller who shares a household gets a 409. Every planned meal is restored with the caller as its only diner. The import is all or nothing.
  *
  */
 export const importAccount = <ThrowOnError extends boolean = false>(options: Options<ImportAccountData, ThrowOnError>): RequestResult<ImportAccountResponses, ImportAccountErrors, ThrowOnError> => (options.client ?? client).post<ImportAccountResponses, ImportAccountErrors, ThrowOnError>({

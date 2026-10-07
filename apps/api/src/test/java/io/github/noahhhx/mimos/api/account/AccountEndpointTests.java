@@ -8,12 +8,16 @@ import io.github.noahhhx.mimos.api.support.TestRecipes;
 import io.github.noahhhx.mimos.api.support.TestUser;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.sql.Date;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -105,6 +109,8 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
         assertThat(report.get("plannedMeals").asInt()).isEqualTo(3);
         assertThat(report.get("shoppingLists").asInt()).isEqualTo(1);
         assertThat(report.get("mealLogs").asInt()).isEqualTo(3);
+        assertThat(report.get("fuelProfile").asBoolean()).isFalse();
+        assertThat(report.get("trainingSessions").asInt()).isZero();
         assertThat(report.get("warnings")).isEmpty();
 
         JsonNode reexported = exportFrom(api, target);
@@ -156,6 +162,88 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
     }
 
     @Test
+    void theFuelProfileAndHandEnteredTrainingTravelButSyncedTrainingDoesNot() {
+        TestUser source = new TestUser(port, objectMapper, jdbc);
+        source.ok(
+                HttpMethod.PUT,
+                "/api/v1/me/fuel-profile",
+                Map.of("enabled", true, "weightKg", 70, "sex", "MALE", "ftpWatts", 280, "goal", "FUEL"));
+        source.ok(
+                HttpMethod.POST,
+                "/api/v1/me/training",
+                Map.of(
+                        "date",
+                        MONDAY.toString(),
+                        "kind",
+                        "COMPLETED",
+                        "sport",
+                        "RIDE",
+                        "durationMinutes",
+                        90,
+                        "intensity",
+                        "ENDURANCE"));
+        source.ok(
+                HttpMethod.POST,
+                "/api/v1/me/training",
+                Map.of(
+                        "date",
+                        MONDAY.plusDays(5).toString(),
+                        "sport",
+                        "RUN",
+                        "durationMinutes",
+                        45,
+                        "intensity",
+                        "HARD",
+                        "workKj",
+                        600));
+        jdbc.update("""
+                insert into training_session (id, profile_id, session_date, source, kind, sport, duration_minutes,
+                                              external_id)
+                values (?, ?, ?, 'INTERVALS_ICU', 'PLANNED', 'RIDE', 60, 'event-1')
+                """, UUID.randomUUID(), source.profileId, Date.valueOf(MONDAY));
+
+        JsonNode exported = source.ok(HttpMethod.GET, "/api/v1/account/export", null);
+
+        assertThat(exported.get("fuelProfile").get("weightKg").asDouble()).isEqualTo(70);
+        assertThat(exported.get("trainingSessions")).hasSize(2);
+        assertThat(exported.get("trainingSessions").get(0).has("source"))
+                .as("only hand-entered sessions are exported, so none names a source")
+                .isFalse();
+
+        TestUser target = new TestUser(port, objectMapper, jdbc);
+        JsonNode report = target.ok(HttpMethod.POST, "/api/v1/account/import", exported);
+
+        assertThat(report.get("fuelProfile").asBoolean()).isTrue();
+        assertThat(report.get("trainingSessions").asInt()).isEqualTo(2);
+        assertThat(target.ok(HttpMethod.GET, "/api/v1/me/fuel-profile", null))
+                .isEqualTo(source.ok(HttpMethod.GET, "/api/v1/me/fuel-profile", null));
+        String week = "/api/v1/me/training?from=" + MONDAY + "&to=" + MONDAY.plusDays(6);
+        assertThat(target.ok(HttpMethod.GET, week, null)).hasSize(2);
+        assertThat(comparable(target.ok(HttpMethod.GET, "/api/v1/account/export", null)))
+                .isEqualTo(comparable(exported));
+    }
+
+    @Test
+    void aFuelProfileOrATrainingSessionAloneMakesAnAccountNotEmpty() {
+        TestUser withProfile = new TestUser(port, objectMapper, jdbc);
+        withProfile.ok(
+                HttpMethod.PUT,
+                "/api/v1/me/fuel-profile",
+                Map.of("enabled", false, "weightKg", 60, "sex", "FEMALE", "goal", "FUEL"));
+        TestUser withSession = new TestUser(port, objectMapper, jdbc);
+        withSession.ok(
+                HttpMethod.POST,
+                "/api/v1/me/training",
+                Map.of("date", MONDAY.toString(), "sport", "RUN", "durationMinutes", 30, "intensity", "EASY"));
+
+        for (TestUser user : List.of(withProfile, withSession)) {
+            assertThat(user.status(HttpMethod.POST, "/api/v1/account/import", fixture()))
+                    .isEqualTo(409);
+            assertThat(user.ok(HttpMethod.GET, "/api/v1/recipes", null)).isEmpty();
+        }
+    }
+
+    @Test
     void refusesToImportIntoAnAccountWithData() {
         RestClient api = api();
         String token = accessToken(createUser());
@@ -196,6 +284,48 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
         assertThat(get(api, token, "/api/v1/recipes")).isEmpty();
         // The rolled-back attempt left the account empty, so a good import still works.
         importInto(api, token, fixture(), 200);
+    }
+
+    @Test
+    void anInvalidFuelProfileOrSessionIsNamedAndNothingIsWritten() {
+        TestUser user = new TestUser(port, objectMapper, jdbc);
+        Map<String, Consumer<ObjectNode>> breaks = new LinkedHashMap<>();
+        breaks.put(
+                "fuelProfile: weightKg must be between 30 and 250",
+                document -> ((ObjectNode) document.get("fuelProfile")).put("weightKg", 10));
+        breaks.put(
+                "trainingSessions[1]: durationMinutes must be between 1 and 1440",
+                document -> session(document, 1).put("durationMinutes", 0));
+        breaks.put(
+                "The export is malformed at trainingSessions[1].workKj: a value has the wrong type or is not allowed.",
+                document -> session(document, 1).put("workKj", new BigDecimal("1e400")));
+        breaks.put(
+                "trainingSessions[1]: workKj must be between 0 and 51840",
+                document -> session(document, 1).put("workKj", new BigDecimal("51840.1")));
+        breaks.put(
+                "trainingSessions[0]: date must be between 1900-01-01 and 9999-12-31",
+                document -> session(document, 0).put("date", "-5000-01-01"));
+        String week = "/api/v1/me/training?from=" + MONDAY + "&to=" + MONDAY.plusDays(6);
+
+        breaks.forEach((detail, broken) -> {
+            ObjectNode document = fixture("export/v5.json");
+            broken.accept(document);
+
+            TestUser.Response refused = user.send(HttpMethod.POST, "/api/v1/account/import", document);
+
+            assertThat(refused.status()).as(detail).isEqualTo(400);
+            assertThat(requireNonNull(refused.body()).get("detail").asText()).isEqualTo(detail);
+            assertThat(user.ok(HttpMethod.GET, "/api/v1/recipes", null)).isEmpty();
+            assertThat(user.ok(HttpMethod.GET, "/api/v1/me/fuel-profile", null).has("weightKg"))
+                    .as("no profile saved after: %s", detail)
+                    .isFalse();
+            assertThat(user.ok(HttpMethod.GET, week, null)).as(detail).isEmpty();
+        });
+        user.ok(HttpMethod.POST, "/api/v1/account/import", fixture("export/v5.json"));
+    }
+
+    private static ObjectNode session(JsonNode document, int index) {
+        return (ObjectNode) document.get("trainingSessions").get(index);
     }
 
     @Test
@@ -278,7 +408,11 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
     }
 
     private ObjectNode fixture() {
-        try (InputStream in = new ClassPathResource("export/v1.json").getInputStream()) {
+        return fixture("export/v1.json");
+    }
+
+    private ObjectNode fixture(String path) {
+        try (InputStream in = new ClassPathResource(path).getInputStream()) {
             return (ObjectNode) objectMapper.readTree(in);
         } catch (IOException exception) {
             throw new IllegalStateException(exception);

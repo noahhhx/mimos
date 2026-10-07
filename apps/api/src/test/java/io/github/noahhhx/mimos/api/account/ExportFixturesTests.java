@@ -184,6 +184,27 @@ class ExportFixturesTests extends ApiIntegrationTestSupport {
         assertThat(logs.get(0).get("servings").asDouble()).isEqualTo(2);
     }
 
+    @Test
+    void version5RestoresTheFuelProfileAndHandEnteredTraining() {
+        RestClient api = api();
+        String token = accessToken(createUser());
+
+        importFixture(api, token, 5);
+
+        JsonNode profile = get(api, token, "/api/v1/me/fuel-profile");
+        assertThat(profile.get("enabled").asBoolean()).isTrue();
+        assertThat(profile.get("weightKg").asDouble()).isEqualTo(70);
+        assertThat(profile.get("bodyFatPercent").asDouble()).isEqualTo(15);
+        assertThat(profile.get("ftpWatts").asInt()).isEqualTo(280);
+        assertThat(profile.get("goal").asText()).isEqualTo("FUEL");
+        JsonNode sessions = get(api, token, "/api/v1/me/training?from=2026-09-28&to=2026-10-04");
+        assertThat(sessions).hasSize(2);
+        assertThat(sessions.get(0).get("source").asText()).isEqualTo("MANUAL");
+        assertThat(sessions.get(0).get("kind").asText()).isEqualTo("COMPLETED");
+        assertThat(sessions.get(1).get("durationMinutes").asInt()).isEqualTo(240);
+        assertThat(sessions.get(1).get("workKj").asDouble()).isEqualTo(2742);
+    }
+
     private JsonNode importFixture(RestClient api, String token, int version) {
         JsonNode document;
         try (InputStream in = new ClassPathResource(fixturePath(version)).getInputStream()) {

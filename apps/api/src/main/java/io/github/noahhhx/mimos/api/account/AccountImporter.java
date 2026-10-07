@@ -3,6 +3,14 @@ package io.github.noahhhx.mimos.api.account;
 import io.github.noahhhx.mimos.api.household.HouseholdService;
 import io.github.noahhhx.mimos.api.identity.IdentityService;
 import io.github.noahhhx.mimos.api.identity.UserProfileRecord;
+import io.github.noahhhx.mimos.fueling.FuelProfile;
+import io.github.noahhhx.mimos.fueling.FuelService;
+import io.github.noahhhx.mimos.fueling.Goal;
+import io.github.noahhhx.mimos.fueling.Intensity;
+import io.github.noahhhx.mimos.fueling.Kind;
+import io.github.noahhhx.mimos.fueling.Sex;
+import io.github.noahhhx.mimos.fueling.Sport;
+import io.github.noahhhx.mimos.fueling.TrainingSessionDraft;
 import io.github.noahhhx.mimos.planning.logging.MealLogDraft;
 import io.github.noahhhx.mimos.planning.logging.MealLogService;
 import io.github.noahhhx.mimos.planning.plan.MealPlanService;
@@ -36,6 +44,7 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 import org.openapitools.model.AccountExport;
+import org.openapitools.model.ExportedFuelProfile;
 import org.openapitools.model.ExportedIngredient;
 import org.openapitools.model.ExportedMealLog;
 import org.openapitools.model.ExportedMealPlan;
@@ -43,6 +52,7 @@ import org.openapitools.model.ExportedPlanEntry;
 import org.openapitools.model.ExportedRecipe;
 import org.openapitools.model.ExportedShoppingList;
 import org.openapitools.model.ExportedShoppingListItem;
+import org.openapitools.model.ExportedTrainingSession;
 import org.openapitools.model.ImportReport;
 import org.openapitools.model.IngredientQuantity;
 import org.springframework.stereotype.Service;
@@ -72,6 +82,7 @@ public class AccountImporter {
     private final MealPlanService mealPlans;
     private final ShoppingListService shoppingLists;
     private final MealLogService mealLogs;
+    private final FuelService fuel;
     private final ExportUpgrader upgrader = ExportUpgrader.standard();
 
     public AccountImporter(
@@ -82,7 +93,8 @@ public class AccountImporter {
             IngredientService ingredients,
             MealPlanService mealPlans,
             ShoppingListService shoppingLists,
-            MealLogService mealLogs) {
+            MealLogService mealLogs,
+            FuelService fuel) {
         this.objectMapper = objectMapper;
         this.identity = identity;
         this.households = households;
@@ -91,6 +103,7 @@ public class AccountImporter {
         this.mealPlans = mealPlans;
         this.shoppingLists = shoppingLists;
         this.mealLogs = mealLogs;
+        this.fuel = fuel;
     }
 
     /**
@@ -113,9 +126,10 @@ public class AccountImporter {
                 || ingredients.hasOwned(householdId)
                 || mealPlans.hasEntries(householdId)
                 || shoppingLists.hasItems(householdId)
-                || mealLogs.hasLogs(importer.id())) {
+                || mealLogs.hasLogs(importer.id())
+                || fuel.hasData(importer.id())) {
             throw new AccountNotEmptyException("Import needs an empty account, and this one already has recipes,"
-                    + " ingredients, planned meals, shopping lists, or logged meals."
+                    + " ingredients, planned meals, shopping lists, logged meals, fuel settings, or training."
                     + " Import into a fresh account instead.");
         }
 
@@ -125,12 +139,15 @@ public class AccountImporter {
         run.importPlans(present(document.getMealPlans(), "mealPlans"));
         run.importShoppingLists(present(document.getShoppingLists(), "shoppingLists"));
         run.importLogs(present(document.getMealLogs(), "mealLogs"));
+        run.importFuel(document.getFuelProfile(), present(document.getTrainingSessions(), "trainingSessions"));
         return new ImportReport()
                 .sourceVersion(upgraded.sourceVersion())
                 .recipes(run.recipeIds.size())
                 .plannedMeals(run.plannedMeals)
                 .shoppingLists(run.lists)
                 .mealLogs(run.logs)
+                .fuelProfile(run.fuelProfile)
+                .trainingSessions(run.trainingSessions)
                 .warnings(run.warnings());
     }
 
@@ -176,6 +193,8 @@ public class AccountImporter {
         private int plannedMeals;
         private int lists;
         private int logs;
+        private boolean fuelProfile;
+        private int trainingSessions;
 
         Run(UserProfileRecord importer) {
             this.household = importer.householdId();
@@ -316,6 +335,38 @@ public class AccountImporter {
                                 fromApiNutrition(present(log.getNutrition(), "nutrition"))),
                         present(log.getLoggedAt(), "loggedAt").toInstant());
                 logs++;
+            });
+        }
+
+        void importFuel(@Nullable ExportedFuelProfile exported, List<ExportedTrainingSession> sessions) {
+            if (exported != null) {
+                at(
+                        "fuelProfile",
+                        () -> fuel.saveProfile(new FuelProfile(
+                                profile,
+                                present(exported.getEnabled(), "enabled"),
+                                present(exported.getWeightKg(), "weightKg").doubleValue(),
+                                Sex.valueOf(present(exported.getSex(), "sex").name()),
+                                fromBigDecimal(exported.getBodyFatPercent()),
+                                exported.getFtpWatts(),
+                                Goal.valueOf(present(exported.getGoal(), "goal").name()),
+                                present(exported.getProteinGPerKg(), "proteinGPerKg")
+                                        .doubleValue())));
+                fuelProfile = true;
+            }
+            eachAt("trainingSessions", sessions, session -> {
+                fuel.addManual(
+                        profile,
+                        new TrainingSessionDraft(
+                                present(session.getDate(), "date"),
+                                Kind.valueOf(present(session.getKind(), "kind").name()),
+                                Sport.valueOf(
+                                        present(session.getSport(), "sport").name()),
+                                present(session.getDurationMinutes(), "durationMinutes"),
+                                fromBigDecimal(session.getWorkKj()),
+                                Intensity.valueOf(present(session.getIntensity(), "intensity")
+                                        .name())));
+                trainingSessions++;
             });
         }
 

@@ -61,7 +61,7 @@ test("exports an account and imports it into a fresh one", async ({ page }, test
     await page.getByLabel("Export file").setInputFiles(file);
     await page.getByRole("button", { name: "Import" }).click();
     await expect(page.getByRole("status")).toHaveText(
-      "Imported 1 recipe, no planned meals, no shopping lists and no logged meals.",
+      "Imported 1 recipe, no planned meals, no shopping lists, no logged meals, no fuel settings and no training sessions.",
     );
   });
 
