@@ -46,8 +46,9 @@ create another.
 
 ## Join a household
 
-Open the invite link you were sent. If you are not signed in, sign in, or
-register if you are new; Mimos brings you back to the invite.
+Open the invite link you were sent. If you are not signed in, choose
+**Sign in**, or **Create account** if you are new. Mimos brings you back to
+the invite.
 
 The page names whose household it is and says what joining changes for
 you. Choose **Join household** to join, or **Not now** to leave things as

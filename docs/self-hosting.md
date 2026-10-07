@@ -75,11 +75,18 @@ auth.mimos.example.home {
 ## First sign-in
 
 The realm ships with no users. Self-registration is enabled, so the first
-person can use **Register** on the sign-in page. Alternatively, create users in the
+person can choose **Create account** on the home page. Alternatively, create users in the
 Keycloak admin console at `KEYCLOAK_PUBLIC_URL/admin` as `admin` with
 `KEYCLOAK_ADMIN_PASSWORD`. That admin is a temporary bootstrap account:
-create a permanent admin in the `master` realm and delete it. To turn
-self-registration off, use the `mimos` realm's **Realm settings → Login**.
+create a permanent admin in the `master` realm and delete it.
+
+To close sign-up, do both of these:
+
+1. Turn off **User registration** in the `mimos` realm's **Realm settings →
+   Login**. This is what stops new accounts.
+2. Set `SIGNUP=closed` in `.env` and run `docker compose up -d`. This hides
+   **Create account**, which would otherwise lead to Keycloak's
+   "Registration not allowed" page.
 
 ## Changing URLs later
 

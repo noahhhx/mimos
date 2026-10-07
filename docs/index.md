@@ -31,7 +31,7 @@ it on your own hardware. This guide covers both.
 
     ---
 
-    Sign in, find your way around, and plan your first week.
+    Create an account, find your way around, and plan your first week.
 
 -   :material-book-open-variant: **[Recipes](guide/recipes.md)**
 

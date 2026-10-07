@@ -12,14 +12,18 @@ account to keep your own recipes, plan meals, and log what you eat.
 
 ## Create an account and sign in
 
-Choose **Kitchen** at the top of the page, then **Sign in**. If you are new,
-choose **Register** under the sign-in form and fill in your details.
+To create an account, choose **Create account** on the home page and fill
+in your details. Mimos signs you in and opens your Kitchen. Every page that
+needs an account, such as **Kitchen** at the top of the page, also offers
+**Create account** next to **Sign in**.
 
-![The Mimos sign-in page, with a Register link under the form](../assets/screenshots/sign-in.png){ width="420" }
+![The Mimos home page, with Create account first in the row of buttons](../assets/screenshots/home.png)
 
-!!! note "No Register link?"
-    Whoever runs your Mimos can turn registration off. If they have, ask
-    them to create an account for you.
+Once you have an account, choose **Kitchen**, then **Sign in**.
+
+!!! note "No Create account button?"
+    Whoever runs your Mimos can turn sign-up off. If they have, ask them to
+    create an account for you.
 
 Mimos keeps you signed in while you use it. After a long break, such as a
 tab left open overnight, it asks you to sign in again.
