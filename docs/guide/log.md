@@ -21,10 +21,28 @@ share**. **Log** appears only on meals you eat.
 
 ## Logging something else
 
-For anything you didn't plan:
+For anything you didn't plan, log a recipe or describe what you ate.
+
+To log a recipe:
 
 1. In **Log**, choose the day in the week's table.
-2. Under **Log something else**, say what it was and which meal.
+2. Under **Log something else**, start typing the recipe's name in
+   **What**. The list shows your household's recipes and the library's,
+   each with its calories per serving.
+3. Choose the recipe, and choose which meal it was.
+4. In **Servings**, enter how much you ate, from 0.1 to 100. Mimos shows
+   what that comes to.
+5. Choose **Log meal**.
+
+Mimos works out the nutrition from the recipe, as it does for a planned
+meal. If you type over the recipe's name, the entry stops being that
+recipe.
+
+To log something that isn't a recipe:
+
+1. In **Log**, choose the day in the week's table.
+2. Under **Log something else**, type what it was in **What** without
+   choosing from the list, and choose which meal.
 3. Fill in whatever you know of the calories, protein, carbs, and fat.
    Every number is optional.
 4. Choose **Log meal**.
