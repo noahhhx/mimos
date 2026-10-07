@@ -112,4 +112,16 @@ export async function apiAs(page: Page) {
   return call;
 }
 
+/** Today and this week's Monday by the browser's local date, which is what the page uses. */
+export async function browserWeek(page: Page): Promise<{ today: string; monday: string }> {
+  return page.evaluate(() => {
+    const iso = (date: Date) =>
+      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const now = new Date();
+    const start = new Date(now);
+    start.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    return { today: iso(now), monday: iso(start) };
+  });
+}
+
 export { expect };

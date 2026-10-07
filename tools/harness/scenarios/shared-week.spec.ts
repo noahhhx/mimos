@@ -1,15 +1,17 @@
 import type { Page } from "@playwright/test";
 
 import { endpoints } from "../src/config.ts";
-import { apiAs, expect, register, test } from "./fixtures.ts";
+import { apiAs, browserWeek, expect, register, test } from "./fixtures.ts";
 
 /**
  * A week planned by a household of two (ADR-0019, "Plan entries have
  * diners"), each member in their own browser: the host plans a dinner
  * (both eat it by default) and a lunch for themselves, the guest plans a
  * lunch for themselves. Mine hides the other person's lunch and Everyone
- * shows it; the guest logs their share of the dinner. Fresh accounts keep
- * `test` and `test2` out of any household.
+ * shows it; the guest logs their share of the dinner. Then the household
+ * shares one Country of the Week and one shopping list (ROADMAP step 17's
+ * "done when"). Fresh accounts keep `test` and `test2` out of any
+ * household.
  */
 test("a shared week: who eats what, Mine and Everyone, and logging your share", async ({ page, browser }, testInfo) => {
   test.slow();
@@ -128,6 +130,32 @@ test("a shared week: who eats what, Mine and Everyone, and logging your share", 
       await expect(logged).toContainText("(1.5 servings)");
       await expect(logged).toContainText("600 kcal");
       await expect(guestPage.locator(".totals tbody tr").first()).toContainText("600 kcal");
+    });
+
+    const { monday } = await browserWeek(page);
+    const guestApi = await apiAs(guestPage);
+
+    await test.step("the host turns Country of the Week on and chooses Italy; the guest's week is Italy too", async () => {
+      await hostApi("PUT", "/api/v1/me/plugins/country-week", { enabled: true });
+      await hostApi("POST", `/api/v1/plans/${monday}/panels/country-week/actions`, { id: "choose", value: "IT" });
+      await guestPage.goto("/app/plan");
+      await expect(guestPage.getByRole("button", { name: /^Country of the Week/ })).toContainText("Italy", {
+        timeout: 10_000,
+      });
+    });
+
+    await test.step("the host makes the week's shopping list; the guest ticks off the potatoes on it, for both", async () => {
+      await hostApi("POST", `/api/v1/plans/${monday}/shopping-list`);
+      await guestPage.goto("/app/shopping-list");
+      const potatoes = guestPage.getByRole("checkbox", { name: /Potatoes/i });
+      await potatoes.check();
+      await expect(potatoes).toBeChecked();
+      type List = { items: { name: string; checked: boolean }[] };
+      const checked = async (api: typeof hostApi) =>
+        (await api<List>("GET", `/api/v1/plans/${monday}/shopping-list`)).items.find((item) => /potatoes/i.test(item.name))
+          ?.checked;
+      await expect.poll(() => checked(hostApi)).toBe(true);
+      expect(await checked(guestApi)).toBe(true);
     });
   } finally {
     await guestContext.close();

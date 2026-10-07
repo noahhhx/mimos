@@ -1,7 +1,5 @@
-import type { Page } from "@playwright/test";
-
 import { endpoints } from "../src/config.ts";
-import { apiAs, expect, register, test } from "./fixtures.ts";
+import { apiAs, browserWeek, expect, register, test } from "./fixtures.ts";
 
 /**
  * The Kitchen home (docs/design/index.md, "Kitchen home"), on a fresh
@@ -152,18 +150,6 @@ test("in a shared household, Tonight and the week are the meals you eat", async 
     await guestContext.close();
   }
 });
-
-/** Today and this week's Monday by the browser's local date, which is what the page uses. */
-async function browserWeek(page: Page): Promise<{ today: string; monday: string }> {
-  return page.evaluate(() => {
-    const iso = (date: Date) =>
-      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-    const now = new Date();
-    const start = new Date(now);
-    start.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-    return { today: iso(now), monday: iso(start) };
-  });
-}
 
 function nextDay(isoDate: string): string {
   const day = new Date(`${isoDate}T00:00:00Z`);
