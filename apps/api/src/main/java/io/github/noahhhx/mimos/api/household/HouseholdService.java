@@ -20,9 +20,12 @@ import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -76,6 +79,21 @@ public class HouseholdService {
 
     public List<HouseholdMember> members(UUID householdId) {
         return households.members(householdId);
+    }
+
+    /**
+     * The caller's household and its members, held as they are until the
+     * surrounding transaction ends: nobody joins or leaves it meanwhile,
+     * the caller included. A write that names diners takes this first, so
+     * a member who leaves at that moment is never left a diner in the
+     * household they left. Locks profile then household, the order join
+     * and leave lock in.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Membership holdMembership(UserProfileRecord caller) {
+        UUID householdId = households.shareHouseholdOf(caller.id());
+        identity.shareHousehold(householdId);
+        return new Membership(householdId, households.members(householdId));
     }
 
     /** Whether anyone else is in the household. */
@@ -183,6 +201,14 @@ public class HouseholdService {
                     .formatHex(MessageDigest.getInstance("SHA-256").digest(token.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("every Java runtime provides SHA-256", exception);
+        }
+    }
+
+    /** A household and its members, in display order. */
+    public record Membership(UUID householdId, List<HouseholdMember> members) {
+
+        public Set<UUID> memberIds() {
+            return members.stream().map(HouseholdMember::profileId).collect(Collectors.toSet());
         }
     }
 

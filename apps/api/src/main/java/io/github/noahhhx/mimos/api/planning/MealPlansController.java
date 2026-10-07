@@ -2,6 +2,7 @@ package io.github.noahhhx.mimos.api.planning;
 
 import io.github.noahhhx.mimos.api.household.HouseholdMember;
 import io.github.noahhhx.mimos.api.household.HouseholdService;
+import io.github.noahhhx.mimos.api.household.HouseholdService.Membership;
 import io.github.noahhhx.mimos.api.identity.CurrentUserService;
 import io.github.noahhhx.mimos.api.identity.UserProfileRecord;
 import io.github.noahhhx.mimos.planning.plan.MealPlan;
@@ -11,18 +12,22 @@ import io.github.noahhhx.mimos.planning.plan.PlannedMeal;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.openapitools.api.PlanningApi;
 import org.openapitools.model.MealPlanEntry;
 import org.openapitools.model.MealPlanEntryInput;
 import org.openapitools.model.MealPlanEntryPatch;
 import org.openapitools.model.Person;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Meal planning endpoints over the core-planning domain (ADR-0003), with diners from the household (ADR-0019). */
+/**
+ * Meal planning endpoints over the core-planning domain (ADR-0003), with
+ * diners from the household (ADR-0019). A write that names diners holds
+ * the household's membership for its whole transaction, so the diners are
+ * still members when it commits.
+ */
 @RestController
 public class MealPlansController implements PlanningApi {
 
@@ -51,22 +56,24 @@ public class MealPlansController implements PlanningApi {
     }
 
     @Override
+    @Transactional
     public ResponseEntity<MealPlanEntry> addMealPlanEntry(LocalDate startDate, MealPlanEntryInput mealPlanEntryInput) {
         UserProfileRecord caller = currentUser.requireProfile();
-        List<HouseholdMember> members = households.members(caller.householdId());
+        Membership household = households.holdMembership(caller);
         MealType mealType = MealType.valueOf(mealPlanEntryInput.getMealType().name());
         PlannedMeal entry = mealPlanService.addEntry(
-                caller.householdId(),
-                Diners.forNewEntry(mealType, mealPlanEntryInput.getDiners(), memberIds(members), caller.id()),
+                household.householdId(),
+                Diners.forNewEntry(mealType, mealPlanEntryInput.getDiners(), household.memberIds(), caller.id()),
                 startDate,
                 mealPlanEntryInput.getDate(),
                 mealType,
                 mealPlanEntryInput.getRecipeId(),
                 mealPlanEntryInput.getServings().doubleValue());
-        return ResponseEntity.status(201).body(toApiEntry(entry, members, caller.id()));
+        return ResponseEntity.status(201).body(toApiEntry(entry, household.members(), caller.id()));
     }
 
     @Override
+    @Transactional
     public ResponseEntity<MealPlanEntry> updateMealPlanEntry(
             LocalDate startDate, UUID entryId, MealPlanEntryPatch mealPlanEntryPatch) {
         UserProfileRecord caller = currentUser.requireProfile();
@@ -75,14 +82,14 @@ public class MealPlansController implements PlanningApi {
         if (servings == null && diners == null) {
             throw new IllegalArgumentException("Send servings, diners, or both.");
         }
-        List<HouseholdMember> members = households.members(caller.householdId());
+        Membership household = households.holdMembership(caller);
         PlannedMeal entry = mealPlanService.updateEntry(
-                caller.householdId(),
+                household.householdId(),
                 startDate,
                 entryId,
                 servings == null ? null : servings.doubleValue(),
-                diners == null ? null : Diners.requireMembers(diners, memberIds(members)));
-        return ResponseEntity.ok(toApiEntry(entry, members, caller.id()));
+                diners == null ? null : Diners.requireMembers(diners, household.memberIds()));
+        return ResponseEntity.ok(toApiEntry(entry, household.members(), caller.id()));
     }
 
     @Override
@@ -90,10 +97,6 @@ public class MealPlansController implements PlanningApi {
         UUID householdId = currentUser.requireProfile().householdId();
         mealPlanService.removeEntry(householdId, startDate, entryId);
         return ResponseEntity.noContent().build();
-    }
-
-    private static Set<UUID> memberIds(List<HouseholdMember> members) {
-        return members.stream().map(HouseholdMember::profileId).collect(Collectors.toSet());
     }
 
     /** The entry with its diners named, in the household's member order. */

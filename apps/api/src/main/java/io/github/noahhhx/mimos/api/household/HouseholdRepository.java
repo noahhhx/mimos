@@ -43,6 +43,16 @@ class HouseholdRepository {
                 "select household_id from user_profile where id = ? for no key update", UUID.class, profileId));
     }
 
+    /**
+     * The profile's household, with the profile's row share-locked until
+     * the transaction ends: the profile cannot join or leave meanwhile,
+     * since both take {@link #lockHouseholdOf} first.
+     */
+    UUID shareHouseholdOf(UUID profileId) {
+        return Objects.requireNonNull(jdbc.queryForObject(
+                "select household_id from user_profile where id = ? for share", UUID.class, profileId));
+    }
+
     UUID createHousehold() {
         return Objects.requireNonNull(
                 jdbc.queryForObject("insert into household default values returning id", UUID.class));

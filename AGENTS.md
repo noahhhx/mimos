@@ -92,7 +92,9 @@ wire-format contract:
   public services (`moveAll`, `deleteAll`, `removeDiner`,
   `unlinkRecipesOf`), never their tables, and runs a join or leave in one
   transaction that locks the caller's profile row, then the households
-  involved in id order.
+  involved in id order. A plan write that names diners share-locks the
+  same rows in the same order (`holdMembership`), so it never sees a
+  member who is leaving.
 - `apps/api` package `account` — account export/import (ADR-0011): an
   adapter over the core modules' public services, like the controllers.
   It never touches tables, so a migration that keeps the domain's meaning

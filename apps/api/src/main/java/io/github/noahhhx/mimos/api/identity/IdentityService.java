@@ -78,10 +78,20 @@ public class IdentityService {
 
     /**
      * Locks the household row until the surrounding transaction ends, so
-     * household-wide operations (import, ADR-0011) run one at a time.
+     * household-wide operations (joining, leaving, import) run one at a
+     * time.
      */
     public void lockHousehold(UUID householdId) {
         jdbc.queryForList("select id from household where id = ? for update", UUID.class, householdId);
+    }
+
+    /**
+     * Share-locks the household row until the surrounding transaction
+     * ends: {@link #lockHousehold} waits for it, so nobody joins or leaves
+     * meanwhile, but share locks never wait for each other.
+     */
+    public void shareHousehold(UUID householdId) {
+        jdbc.queryForList("select id from household where id = ? for share", UUID.class, householdId);
     }
 
     private static final class ProfileRowMapper implements RowMapper<UserProfileRecord> {
