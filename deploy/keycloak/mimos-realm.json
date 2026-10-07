@@ -1,7 +1,7 @@
 {
   "realm": "mimos",
   "displayName": "Mimos",
-  "displayNameHtml": "Mimos",
+  "displayNameHtml": "<a href=\"${MIMOS_WEB_ORIGIN:http://localhost:3000}/\">Mimos</a>",
   "enabled": true,
   "loginTheme": "mimos",
   "registrationAllowed": true,

@@ -93,7 +93,14 @@ To close sign-up, do both of these:
 The web app and API read their URLs at start, so edit `.env` and
 `docker compose up -d`. Keycloak imports the realm only on the first start,
 so also update the `mimos-web` client's **Valid redirect URIs** and **Web
-origins** in the admin console.
+origins** in the admin console, and the link in the `mimos` realm's **HTML
+Display name** (**Realm settings → General**).
+
+The HTML display name is the Mimos brand above the sign-in and register
+forms, and it links back to the web app's home page. An instance set up
+before that link existed shows plain text there. To add the link, set
+**HTML Display name** to `<a href="WEB_ORIGIN/">Mimos</a>`, with your
+`WEB_ORIGIN` in place of `WEB_ORIGIN`.
 
 ## Upgrades and backups
 

@@ -123,6 +123,12 @@
   text-transform: none;
 }
 
+/* The brand links to the web app's home, as the app's own .brand does. */
+#kc-header-wrapper a {
+  color: inherit;
+  text-decoration: none;
+}
+
 #kc-header-wrapper::before {
   content: "";
   flex: none;

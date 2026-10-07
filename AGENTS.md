@@ -246,7 +246,10 @@ is the contract:
   copied templates, so upstream form ids stay), light only. Compose builds
   `deploy/keycloak/Dockerfile`, which adds the theme and the web app's
   committed fonts to the stock image. Its tokens mirror `globals.css`;
-  the `keycloak-theme` harness scenario checks it.
+  the `keycloak-theme` harness scenario checks it. The brand above the
+  form links to the web app's home through the realm's `displayNameHtml`
+  (an `<a>` to `${MIMOS_WEB_ORIGIN}/`, which Keycloak's sanitizer keeps),
+  not a template override.
 - Spring Security with OIDC resource-server on the API. Authorization roles
   are realm/client roles from Keycloak; no parallel user tables in the app
   beyond a lightweight profile keyed by subject ID and its household

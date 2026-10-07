@@ -58,4 +58,10 @@ test("the sign-in, error, and register pages use the Mimos theme", async ({ page
     await expect(page.locator("#kc-page-title")).toHaveCSS("font-family", /^Newsreader/);
     await shoot("register");
   });
+
+  await test.step("the Mimos brand links back to the app's home page", async () => {
+    await page.locator("#kc-header-wrapper").getByRole("link", { name: "Mimos" }).click();
+    await expect(page).toHaveURL("/");
+    await expect(page.getByRole("button", { name: "Create account" }).first()).toBeVisible();
+  });
 });

@@ -29,7 +29,11 @@ should wear it too, on every deployment, including self-hosted ones.
   deployment (compose today, AWS later) without volume mounts. The realm
   export stays a compose mount.
 - **The realm selects it.** `mimos-realm.json` sets `loginTheme: mimos`
-  and the display name "Mimos" (the brand and the page title).
+  and the display name "Mimos" (the brand and the page title). The HTML
+  display name wraps the brand in a link to the web app's home
+  (`${MIMOS_WEB_ORIGIN}/`), so a signed-out visitor can leave the sign-in
+  and register pages without the browser's back button. Keycloak's
+  sanitizer keeps the link, so no template is copied for it.
 - **Light only.** The app keeps its dark choice in the app origin's
   `localStorage`, which Keycloak's pages cannot read, and the OS setting is
   not followed (ADR-0008), so the theme sets `darkMode=false`.
