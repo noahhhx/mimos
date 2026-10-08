@@ -13,7 +13,7 @@
 openapi: 3.1.0
 info:
   title: Mimos API
-  version: 0.13.0
+  version: 0.14.0
   description: |
     The Mimos recipe companion API. Endpoints require a bearer token issued
     by the instance's Keycloak realm unless they live under `/api/v1/public`
@@ -245,6 +245,52 @@ paths:
         '401':
           $ref: '#/components/responses/Problem'
         '404':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/me/fuel:
+    get:
+      tags: [fuel]
+      operationId: getMyFuel
+      summary: The caller's fuel for each day of a date range, with what they plan to eat and have logged
+      description: >
+        One entry per day from `from` to `to`, both included; the range is
+        at most 62 days, and `from` must not be after `to` (400
+        otherwise). A target is information about how much to eat to fuel
+        the day, not a score: report it next to what is planned and logged,
+        never as a goal met or missed. `target` is present only while the
+        caller's fuel targets are on (see getMyFuelProfile); everything
+        else is always there. Calories are energy availability times
+        fat-free mass plus the day's exercise energy, and carbs follow the
+        day's training minutes (ADR-0022). On a day with a COMPLETED
+        session, planned sessions do not count; `target.basis.sessions`
+        lists the ones that did. `planned` is the caller's own share of the
+        meals they eat, as getMyPlannedTotals counts it; `logged` sums the
+        caller's meal log and is zero on a day without logs; `sessions`
+        lists every training session on the day. All of it is the caller's
+        alone: household members each get their own.
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Each day in the range, in date order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FuelDays'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
           $ref: '#/components/responses/Problem'
 
   /api/v1/household:
@@ -1503,6 +1549,133 @@ components:
         workKj:
           type: number
           description: Mechanical work in kJ, when known. 0 to 51840.
+    FuelDays:
+      type: object
+      required: [from, to, days]
+      properties:
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        days:
+          type: array
+          description: One per day from `from` to `to`, in date order.
+          items:
+            $ref: '#/components/schemas/FuelDay'
+    FuelDay:
+      type: object
+      description: One person's fuel for a day, next to what they plan to eat and have logged.
+      required: [date, planned, logged, sessions]
+      properties:
+        date:
+          type: string
+          format: date
+        target:
+          $ref: '#/components/schemas/FuelTarget'
+        planned:
+          $ref: '#/components/schemas/PlannedDayTotal'
+        logged:
+          $ref: '#/components/schemas/Nutrition'
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrainingSession'
+    FuelTarget:
+      type: object
+      description: >
+        Calories and macros to fuel the day, each rounded to a whole
+        number on its own, so 4 × protein + 4 × carbs + 9 × fat can differ
+        from calories by a few kcal. Information, not a score.
+      required: [calories, proteinG, carbsG, fatG, basis]
+      properties:
+        calories:
+          type: integer
+          description: Kilocalories.
+        proteinG:
+          type: integer
+        carbsG:
+          type: integer
+        fatG:
+          type: integer
+        basis:
+          $ref: '#/components/schemas/FuelTargetBasis'
+    FuelTargetBasis:
+      type: object
+      description: What a target was calculated from.
+      required:
+        - energyAvailabilityKcalPerKgFfm
+        - bodyFatPercent
+        - bodyFatSource
+        - fatFreeMassKg
+        - exerciseKcal
+        - sessions
+        - loadBand
+        - carbsLeftBand
+      properties:
+        energyAvailabilityKcalPerKgFfm:
+          type: integer
+          description: The goal's level, kcal per kg of fat-free mass (FUEL 45, GRADUAL_LOSS 40, FASTER_LOSS 35, GAIN 50).
+        bodyFatPercent:
+          type: number
+        bodyFatSource:
+          $ref: '#/components/schemas/BodyFatSource'
+        fatFreeMassKg:
+          type: number
+          description: Weight times (1 minus body fat), to 0.1 kg.
+        exerciseKcal:
+          type: integer
+          description: The day's exercise energy, the exact sum of `sessions` rounded once.
+        sessions:
+          type: array
+          description: The sessions that counted toward the day.
+          items:
+            $ref: '#/components/schemas/SessionEnergy'
+        loadBand:
+          $ref: '#/components/schemas/LoadBand'
+        carbsLeftBand:
+          type: boolean
+          description: >
+            Carbs are outside the load band's range because keeping them in
+            it would put fat outside 20 to 35% of calories. Carbs leave the
+            band by the least amount that brings fat back inside. When
+            protein alone is over 80% of calories, carbs are 0 and fat,
+            the rest, stays under 20%.
+    BodyFatSource:
+      type: string
+      description: >
+        Where body fat came from: the fuel profile, else intervals.icu,
+        else a default by sex (15% male, 25% female, 20% unspecified).
+      enum: [PROFILE, INTERVALS_ICU, DEFAULT]
+    LoadBand:
+      type: string
+      description: >
+        The day's training by total minutes, with its carbs in g/kg: LIGHT
+        none (3 to 5), MODERATE under 75 (5 to 7), HIGH 75 to 239 (6 to
+        10), VERY_HIGH 240 or more (8 to 12).
+      enum: [LIGHT, MODERATE, HIGH, VERY_HIGH]
+    SessionEnergy:
+      type: object
+      required: [sessionId, kcal, method]
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        kcal:
+          type: integer
+          description: Exercise energy, taken as equal to the work in kJ.
+        method:
+          $ref: '#/components/schemas/EnergyMethod'
+    EnergyMethod:
+      type: string
+      description: >
+        How a session's energy was found, in order of preference: its
+        completed or planned work, FTP times an intensity factor times its
+        duration (rides only; EASY 0.55, ENDURANCE 0.68, HARD 0.85), or an
+        estimate from intensity and weight (EASY 4, ENDURANCE 7, HARD 10
+        METs).
+      enum: [COMPLETED_WORK, PLANNED_WORK, FTP_INTENSITY, ESTIMATE]
     Problem:
       type: object
       description: RFC 9457 problem details.

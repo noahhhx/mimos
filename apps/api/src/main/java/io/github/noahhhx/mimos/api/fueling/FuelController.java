@@ -1,6 +1,10 @@
 package io.github.noahhhx.mimos.api.fueling;
 
+import static java.util.Objects.requireNonNull;
+
 import io.github.noahhhx.mimos.api.identity.CurrentUserService;
+import io.github.noahhhx.mimos.api.identity.UserProfileRecord;
+import io.github.noahhhx.mimos.api.recipes.RecipeApiMapper;
 import io.github.noahhhx.mimos.fueling.FuelProfile;
 import io.github.noahhhx.mimos.fueling.FuelService;
 import io.github.noahhhx.mimos.fueling.Goal;
@@ -10,32 +14,103 @@ import io.github.noahhhx.mimos.fueling.Sex;
 import io.github.noahhhx.mimos.fueling.Sport;
 import io.github.noahhhx.mimos.fueling.TrainingSession;
 import io.github.noahhhx.mimos.fueling.TrainingSessionDraft;
+import io.github.noahhhx.mimos.fueling.targets.DailyTarget;
+import io.github.noahhhx.mimos.fueling.targets.SessionEnergy;
+import io.github.noahhhx.mimos.fueling.targets.TargetBasis;
+import io.github.noahhhx.mimos.fueling.targets.TargetCalculator;
+import io.github.noahhhx.mimos.planning.logging.DailyLogSummary;
+import io.github.noahhhx.mimos.planning.logging.MealLogService;
+import io.github.noahhhx.mimos.planning.plan.MealPlanService;
+import io.github.noahhhx.mimos.planning.plan.PlannedDayTotal;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.openapitools.api.FuelApi;
+import org.openapitools.model.BodyFatSource;
+import org.openapitools.model.EnergyMethod;
+import org.openapitools.model.FuelDay;
+import org.openapitools.model.FuelDays;
 import org.openapitools.model.FuelGoal;
 import org.openapitools.model.FuelProfileInput;
 import org.openapitools.model.FuelSex;
+import org.openapitools.model.FuelTarget;
+import org.openapitools.model.FuelTargetBasis;
+import org.openapitools.model.LoadBand;
+import org.openapitools.model.Nutrition;
 import org.openapitools.model.TrainingIntensity;
 import org.openapitools.model.TrainingKind;
 import org.openapitools.model.TrainingSessionInput;
 import org.openapitools.model.TrainingSource;
 import org.openapitools.model.TrainingSport;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class FuelController implements FuelApi {
 
     private final FuelService fuel;
+    private final MealPlanService mealPlans;
+    private final MealLogService mealLogs;
     private final CurrentUserService currentUser;
 
-    public FuelController(FuelService fuel, CurrentUserService currentUser) {
+    public FuelController(
+            FuelService fuel, MealPlanService mealPlans, MealLogService mealLogs, CurrentUserService currentUser) {
         this.fuel = fuel;
+        this.mealPlans = mealPlans;
+        this.mealLogs = mealLogs;
         this.currentUser = currentUser;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<FuelDays> getMyFuel(LocalDate from, LocalDate to) {
+        UserProfileRecord caller = currentUser.requireProfile();
+        Optional<FuelProfile> profile = fuel.profile(caller.id()).filter(FuelProfile::enabled);
+        Map<LocalDate, List<TrainingSession>> sessions =
+                fuel.sessions(caller.id(), from, to).stream().collect(Collectors.groupingBy(TrainingSession::date));
+        Map<LocalDate, DailyLogSummary> logged = mealLogs.summarize(caller.id(), from, to).stream()
+                .collect(Collectors.toMap(DailyLogSummary::date, Function.identity()));
+        Map<LocalDate, PlannedDayTotal> planned = new HashMap<>();
+        for (LocalDate monday = from.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                !monday.isAfter(to);
+                monday = monday.plusWeeks(1)) {
+            mealPlans
+                    .plannedTotals(caller.householdId(), monday, caller.id())
+                    .forEach(day -> planned.put(day.date(), day));
+        }
+
+        List<FuelDay> days = from.datesUntil(to.plusDays(1))
+                .map(date -> {
+                    List<TrainingSession> day = sessions.getOrDefault(date, List.of());
+                    @Nullable DailyLogSummary log = logged.get(date);
+                    return new FuelDay()
+                            .date(date)
+                            .target(profile.map(
+                                            enabled -> toApiTarget(TargetCalculator.target(date, enabled, day, null)))
+                                    .orElse(null))
+                            .planned(toApiPlanned(
+                                    requireNonNull(planned.get(date), "plannedTotals covers every day of its week")))
+                            .logged(
+                                    log == null
+                                            ? total(0, 0, 0, 0)
+                                            : total(log.calories(), log.proteinG(), log.carbsG(), log.fatG()))
+                            .sessions(day.stream()
+                                    .map(FuelController::toApiSession)
+                                    .toList());
+                })
+                .toList();
+        return ResponseEntity.ok(new FuelDays().from(from).to(to).days(days));
     }
 
     @Override
@@ -129,6 +204,54 @@ public class FuelController implements FuelApi {
                 .durationMinutes(session.durationMinutes())
                 .workKj(workKj == null ? null : BigDecimal.valueOf(workKj))
                 .intensity(intensity == null ? null : TrainingIntensity.valueOf(intensity.name()));
+    }
+
+    private static FuelTarget toApiTarget(DailyTarget target) {
+        TargetBasis basis = target.basis();
+        return new FuelTarget()
+                .calories(whole(target.calories()))
+                .proteinG(whole(target.proteinG()))
+                .carbsG(whole(target.carbsG()))
+                .fatG(whole(target.fatG()))
+                .basis(new FuelTargetBasis()
+                        .energyAvailabilityKcalPerKgFfm(basis.energyAvailabilityKcalPerKgFfm())
+                        .bodyFatPercent(BigDecimal.valueOf(basis.bodyFatPercent()))
+                        .bodyFatSource(
+                                BodyFatSource.valueOf(basis.bodyFatSource().name()))
+                        .fatFreeMassKg(BigDecimal.valueOf(basis.fatFreeMassKg()).setScale(1, RoundingMode.HALF_UP))
+                        .exerciseKcal(whole(basis.exerciseKcal()))
+                        .sessions(basis.countedSessions().stream()
+                                .map(FuelController::toApiSessionEnergy)
+                                .toList())
+                        .loadBand(LoadBand.valueOf(basis.loadBand().name()))
+                        .carbsLeftBand(basis.carbsLeftBand()));
+    }
+
+    private static org.openapitools.model.SessionEnergy toApiSessionEnergy(SessionEnergy energy) {
+        return new org.openapitools.model.SessionEnergy()
+                .sessionId(energy.sessionId())
+                .kcal(whole(energy.kcal()))
+                .method(EnergyMethod.valueOf(energy.method().name()));
+    }
+
+    private static org.openapitools.model.PlannedDayTotal toApiPlanned(PlannedDayTotal day) {
+        return new org.openapitools.model.PlannedDayTotal()
+                .date(day.date())
+                .total(RecipeApiMapper.toApiNutrition(day.total()))
+                .meals(day.meals())
+                .mealsWithoutNutrition(day.mealsWithoutNutrition());
+    }
+
+    private static Nutrition total(double calories, double proteinG, double carbsG, double fatG) {
+        return new Nutrition()
+                .calories(BigDecimal.valueOf(calories))
+                .proteinG(BigDecimal.valueOf(proteinG))
+                .carbsG(BigDecimal.valueOf(carbsG))
+                .fatG(BigDecimal.valueOf(fatG));
+    }
+
+    private static int whole(double value) {
+        return (int) Math.round(value);
     }
 
     private static <T> T present(@Nullable T value, String field) {

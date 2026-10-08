@@ -222,6 +222,98 @@ export type TrainingSessionInput = {
     workKj?: number;
 };
 
+export type FuelDays = {
+    from: string;
+    to: string;
+    /**
+     * One per day from `from` to `to`, in date order.
+     */
+    days: Array<FuelDay>;
+};
+
+/**
+ * One person's fuel for a day, next to what they plan to eat and have logged.
+ */
+export type FuelDay = {
+    date: string;
+    target?: FuelTarget;
+    planned: PlannedDayTotal;
+    logged: Nutrition;
+    sessions: Array<TrainingSession>;
+};
+
+/**
+ * Calories and macros to fuel the day, each rounded to a whole number on its own, so 4 × protein + 4 × carbs + 9 × fat can differ from calories by a few kcal. Information, not a score.
+ *
+ */
+export type FuelTarget = {
+    /**
+     * Kilocalories.
+     */
+    calories: number;
+    proteinG: number;
+    carbsG: number;
+    fatG: number;
+    basis: FuelTargetBasis;
+};
+
+/**
+ * What a target was calculated from.
+ */
+export type FuelTargetBasis = {
+    /**
+     * The goal's level, kcal per kg of fat-free mass (FUEL 45, GRADUAL_LOSS 40, FASTER_LOSS 35, GAIN 50).
+     */
+    energyAvailabilityKcalPerKgFfm: number;
+    bodyFatPercent: number;
+    bodyFatSource: BodyFatSource;
+    /**
+     * Weight times (1 minus body fat), to 0.1 kg.
+     */
+    fatFreeMassKg: number;
+    /**
+     * The day's exercise energy, the exact sum of `sessions` rounded once.
+     */
+    exerciseKcal: number;
+    /**
+     * The sessions that counted toward the day.
+     */
+    sessions: Array<SessionEnergy>;
+    loadBand: LoadBand;
+    /**
+     * Carbs are outside the load band's range because keeping them in it would put fat outside 20 to 35% of calories. Carbs leave the band by the least amount that brings fat back inside. When protein alone is over 80% of calories, carbs are 0 and fat, the rest, stays under 20%.
+     *
+     */
+    carbsLeftBand: boolean;
+};
+
+/**
+ * Where body fat came from: the fuel profile, else intervals.icu, else a default by sex (15% male, 25% female, 20% unspecified).
+ *
+ */
+export type BodyFatSource = 'PROFILE' | 'INTERVALS_ICU' | 'DEFAULT';
+
+/**
+ * The day's training by total minutes, with its carbs in g/kg: LIGHT none (3 to 5), MODERATE under 75 (5 to 7), HIGH 75 to 239 (6 to 10), VERY_HIGH 240 or more (8 to 12).
+ *
+ */
+export type LoadBand = 'LIGHT' | 'MODERATE' | 'HIGH' | 'VERY_HIGH';
+
+export type SessionEnergy = {
+    sessionId: string;
+    /**
+     * Exercise energy, taken as equal to the work in kJ.
+     */
+    kcal: number;
+    method: EnergyMethod;
+};
+
+/**
+ * How a session's energy was found, in order of preference: its completed or planned work, FTP times an intensity factor times its duration (rides only; EASY 0.55, ENDURANCE 0.68, HARD 0.85), or an estimate from intensity and weight (EASY 4, ENDURANCE 7, HARD 10 METs).
+ *
+ */
+export type EnergyMethod = 'COMPLETED_WORK' | 'PLANNED_WORK' | 'FTP_INTENSITY' | 'ESTIMATE';
+
 /**
  * RFC 9457 problem details.
  */
@@ -1260,6 +1352,38 @@ export type GetMyTrainingSessionResponses = {
 };
 
 export type GetMyTrainingSessionResponse = GetMyTrainingSessionResponses[keyof GetMyTrainingSessionResponses];
+
+export type GetMyFuelData = {
+    body?: never;
+    path?: never;
+    query: {
+        from: string;
+        to: string;
+    };
+    url: '/api/v1/me/fuel';
+};
+
+export type GetMyFuelErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type GetMyFuelError = GetMyFuelErrors[keyof GetMyFuelErrors];
+
+export type GetMyFuelResponses = {
+    /**
+     * Each day in the range, in date order.
+     */
+    200: FuelDays;
+};
+
+export type GetMyFuelResponse = GetMyFuelResponses[keyof GetMyFuelResponses];
 
 export type GetHouseholdData = {
     body?: never;

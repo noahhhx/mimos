@@ -116,13 +116,20 @@ wire-format contract:
   no behavior.
 - `core-fueling` — fuel profiles and training sessions (ADR-0022),
   keyed by profile id, with their JDBC persistence (`fuel_profile`,
-  `training_session`); daily fuel targets are planned. Depends on no
+  `training_session`), and daily fuel targets: `targets.TargetCalculator`
+  is a pure function of a profile and a day's sessions, with no clock,
+  I/O, or Spring. Depends on no
   other module and knows nothing about households, plans, or
   intervals.icu; `apps/api` puts a day's target next to the caller's
   planned and logged totals. `FuelService` edits only `MANUAL`
   sessions; a synced one changes only when its source syncs. A profile
   never saved is targets off, never a 404 (`/api/v1/me/fuel-profile`,
   `/api/v1/me/training`; package `fueling` in `apps/api`).
+  `GET /api/v1/me/fuel` reads up to 62 days, counted inclusively; each
+  day carries its target (absent while targets are off), the caller's
+  planned share (`MealPlanService.plannedTotals`), logged totals, and
+  sessions. Never name a package `target`: `.gitignore` and
+  `.dockerignore` drop every `target` directory as build output.
 - `integrations/intervals-icu` — planned (ADR-0022). External API types
   never cross this boundary; translate events, activities, and wellness
   into `core-fueling` training sessions at the edge. A sync replaces a

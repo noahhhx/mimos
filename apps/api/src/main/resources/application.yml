@@ -50,7 +50,9 @@ spring:
           read what is still unchecked. Each planned meal names its diners,
           and the user's own meals are the ones they are a diner of; to log a
           planned meal with createMealLog, log the user's share, its servings
-          divided by its number of diners. Errors come back as RFC 9457 problem
+          divided by its number of diners. getMyFuel gives a person's daily
+          fuel target beside their planned and logged totals; a target is
+          information, never a score to meet. Errors come back as RFC 9457 problem
           details; read the detail and correct the call.
 
 mimos:

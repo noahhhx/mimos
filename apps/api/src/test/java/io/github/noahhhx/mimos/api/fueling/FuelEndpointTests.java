@@ -29,6 +29,7 @@ class FuelEndpointTests extends ApiIntegrationTestSupport {
 
     private static final String PROFILE = "/api/v1/me/fuel-profile";
     private static final String TRAINING = "/api/v1/me/training";
+    private static final String FUEL = "/api/v1/me/fuel";
     private static final LocalDate MONDAY = LocalDate.of(2026, 10, 5);
 
     @LocalServerPort
@@ -299,6 +300,158 @@ class FuelEndpointTests extends ApiIntegrationTestSupport {
         guest.ok(HttpMethod.POST, "/api/v1/household/leave", null);
         assertThat(guest.ok(HttpMethod.GET, PROFILE, null)).isEqualTo(guestProfile);
         assertThat(guest.ok(HttpMethod.GET, range(MONDAY, MONDAY), null)).hasSize(1);
+    }
+
+    @Test
+    void fuelGivesEachDayItsTargetFromTheProfileAndTraining() {
+        TestUser user = user();
+        user.ok(HttpMethod.PUT, PROFILE, sketchProfile(true));
+        String ride = user.ok(HttpMethod.POST, TRAINING, session(MONDAY.plusDays(5), "RIDE", 240, "ENDURANCE"))
+                .get("id")
+                .asText();
+
+        JsonNode fuel = user.ok(HttpMethod.GET, fuel(MONDAY, MONDAY.plusDays(6)), null);
+
+        assertThat(fuel.get("from").asText()).isEqualTo("2026-10-05");
+        assertThat(fuel.get("days")).hasSize(7);
+        JsonNode monday = fuel.get("days").get(0);
+        assertThat(monday.get("date").asText()).isEqualTo("2026-10-05");
+        assertThat(monday.get("target").get("calories").asInt()).isEqualTo(2678);
+        assertThat(monday.get("target").get("carbsG").asInt()).isEqualTo(350);
+        assertThat(monday.get("target").get("proteinG").asInt()).isEqualTo(112);
+        assertThat(monday.get("target").get("basis").get("loadBand").asText()).isEqualTo("LIGHT");
+        assertThat(monday.get("target").get("basis").get("fatFreeMassKg").asDouble())
+                .isEqualTo(59.5);
+        assertThat(monday.get("target").get("basis").get("bodyFatSource").asText())
+                .isEqualTo("PROFILE");
+        assertThat(monday.get("sessions")).isEmpty();
+        JsonNode saturday = fuel.get("days").get(5);
+        assertThat(saturday.get("target").get("calories").asInt()).isEqualTo(5419);
+        assertThat(saturday.get("target").get("carbsG").asInt()).isEqualTo(840);
+        JsonNode basis = saturday.get("target").get("basis");
+        assertThat(basis.get("loadBand").asText()).isEqualTo("VERY_HIGH");
+        assertThat(basis.get("exerciseKcal").asInt()).isEqualTo(2742);
+        assertThat(basis.get("sessions").get(0).get("sessionId").asText()).isEqualTo(ride);
+        assertThat(basis.get("sessions").get(0).get("method").asText()).isEqualTo("FTP_INTENSITY");
+        assertThat(saturday.get("sessions").get(0).get("id").asText()).isEqualTo(ride);
+    }
+
+    @Test
+    void withTargetsOffEveryDayStillHasItsPlannedLoggedAndTraining() {
+        TestUser user = user();
+        assertThat(user.ok(HttpMethod.GET, fuel(MONDAY, MONDAY), null)
+                        .get("days")
+                        .get(0)
+                        .has("target"))
+                .as("a profile never saved has targets off")
+                .isFalse();
+        user.ok(HttpMethod.PUT, PROFILE, sketchProfile(false));
+        user.ok(HttpMethod.POST, TRAINING, session(MONDAY, "RUN", 30, "EASY"));
+        UUID recipe = user.recipe("Off Day Stew");
+        user.ok(
+                HttpMethod.POST,
+                "/api/v1/plans/" + MONDAY + "/entries",
+                Map.of("date", MONDAY.toString(), "mealType", "DINNER", "recipeId", recipe, "servings", 2));
+        user.ok(
+                HttpMethod.POST,
+                "/api/v1/logs",
+                Map.of("date", MONDAY.toString(), "mealType", "DINNER", "recipeId", recipe, "servings", 2));
+
+        JsonNode day = user.ok(HttpMethod.GET, fuel(MONDAY, MONDAY.plusDays(1)), null)
+                .get("days")
+                .get(0);
+
+        assertThat(day.has("target")).isFalse();
+        assertThat(day.get("sessions")).hasSize(1);
+        assertThat(day.get("planned").get("meals").asInt()).isEqualTo(1);
+        assertThat(day.get("planned").get("total").get("calories").asDouble()).isEqualTo(800);
+        assertThat(day.get("logged")).isEqualTo(day.get("planned").get("total"));
+        JsonNode tuesday = user.ok(HttpMethod.GET, fuel(MONDAY, MONDAY.plusDays(1)), null)
+                .get("days")
+                .get(1);
+        assertThat(tuesday.get("logged").get("calories").asDouble()).isZero();
+        assertThat(tuesday.get("planned").get("meals").asInt()).isZero();
+    }
+
+    @Test
+    void fuelCoversAtMostSixtyTwoDaysAcrossWeeks() {
+        TestUser user = user();
+        user.ok(HttpMethod.PUT, PROFILE, sketchProfile(true));
+        LocalDate wednesday = MONDAY.plusDays(2);
+
+        JsonNode longest = user.ok(HttpMethod.GET, fuel(wednesday, wednesday.plusDays(61)), null);
+        assertThat(longest.get("days")).hasSize(62);
+        assertThat(longest.get("days").get(0).get("date").asText()).isEqualTo(wednesday.toString());
+        assertThat(longest.get("days").get(61).get("date").asText())
+                .isEqualTo(wednesday.plusDays(61).toString());
+        assertThat(longest.get("days").get(61).get("planned").get("date").asText())
+                .isEqualTo(wednesday.plusDays(61).toString());
+
+        TestUser.Response tooLong = user.send(HttpMethod.GET, fuel(wednesday, wednesday.plusDays(62)), null);
+        assertThat(tooLong.status()).isEqualTo(400);
+        assertThat(requireNonNull(tooLong.body()).get("detail").asText()).isEqualTo("range must be at most 62 days");
+        assertThat(user.status(HttpMethod.GET, fuel(MONDAY, MONDAY.minusDays(1)), null))
+                .isEqualTo(400);
+    }
+
+    @Test
+    void householdMembersEachGetTheirOwnTargetsAndShareOfADinner() {
+        TestUser host = user();
+        TestUser guest = user();
+        guest.join(host);
+        host.ok(HttpMethod.PUT, PROFILE, profile(82, "MALE", 300, "GAIN"));
+        guest.ok(HttpMethod.PUT, PROFILE, profile(58, "FEMALE", 210, "GRADUAL_LOSS"));
+        host.ok(HttpMethod.POST, TRAINING, session(MONDAY, "RIDE", 90, "HARD"));
+        guest.ok(HttpMethod.POST, TRAINING, session(MONDAY, "RUN", 40, "EASY"));
+        host.ok(
+                HttpMethod.POST,
+                "/api/v1/plans/" + MONDAY + "/entries",
+                Map.of(
+                        "date",
+                        MONDAY.toString(),
+                        "mealType",
+                        "DINNER",
+                        "recipeId",
+                        host.recipe("Shared Dinner"),
+                        "servings",
+                        2));
+
+        JsonNode hostDay =
+                host.ok(HttpMethod.GET, fuel(MONDAY, MONDAY), null).get("days").get(0);
+        JsonNode guestDay =
+                guest.ok(HttpMethod.GET, fuel(MONDAY, MONDAY), null).get("days").get(0);
+
+        assertThat(hostDay.get("target").get("calories").asInt())
+                .as("50 x 69.7 kg + 300 W x 0.85 x 90 min")
+                .isEqualTo(4862);
+        assertThat(guestDay.get("target").get("calories").asInt())
+                .as("40 x 43.5 kg + 4 METs x 58 kg x 40 min")
+                .isEqualTo(1902);
+        assertThat(hostDay.get("planned").get("total").get("calories").asDouble())
+                .isEqualTo(400);
+        assertThat(guestDay.get("planned")).isEqualTo(hostDay.get("planned"));
+        assertThat(describe(hostDay.get("sessions"))).containsExactly("2026-10-05 RIDE 90");
+        assertThat(describe(guestDay.get("sessions"))).containsExactly("2026-10-05 RUN 40");
+    }
+
+    private static Map<String, Object> sketchProfile(boolean enabled) {
+        return Map.of(
+                "enabled",
+                enabled,
+                "weightKg",
+                70,
+                "sex",
+                "MALE",
+                "bodyFatPercent",
+                15,
+                "ftpWatts",
+                280,
+                "goal",
+                "FUEL");
+    }
+
+    private static String fuel(LocalDate from, LocalDate to) {
+        return FUEL + "?from=" + from + "&to=" + to;
     }
 
     private static Map<String, Object> profile(double weightKg, String sex, int ftpWatts, String goal) {
