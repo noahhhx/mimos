@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 
 import {
   addMealPlanEntry,
@@ -9,6 +9,7 @@ import {
   deleteMealPlanEntry,
   getHousehold,
   getMealPlan,
+  getMyPlannedTotals,
   getPlanSuggestions,
   getWeekPanels,
   listLibraryRecipes,
@@ -17,6 +18,7 @@ import {
   type MealPlan,
   type Person,
   type PlanSuggestion,
+  type PlannedDayTotal,
   type RecipeSummary,
   type WeekPanel,
 } from "@mimos/api-client";
@@ -37,6 +39,7 @@ import {
   type PlanView,
 } from "@/lib/diners";
 import { MEAL_TYPES, addDays, dayLabel, formatServings, mealLabel, mondayOf, weekDays } from "@/lib/format";
+import { plannedTotalParts, showsPlannedTotals, withoutNutritionNote } from "@/lib/planned-totals";
 import { applySuggestionEntries } from "@/lib/suggestions";
 
 type Entry = MealPlan["entries"][number];
@@ -54,6 +57,7 @@ export default function PlanPage() {
   const { user } = useAuth();
   const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()));
   const [plan, setPlan] = useState<MealPlan | null>(null);
+  const [totals, setTotals] = useState<{ week: string; days: PlannedDayTotal[] } | null>(null);
   const [suggestions, setSuggestions] = useState<PlanSuggestion[] | null>(null);
   // Tagged with their week, so a slow answer for a week left behind never shows.
   const [panels, setPanels] = useState<{ week: string; list: WeekPanel[] } | null>(null);
@@ -88,8 +92,9 @@ export default function PlanPage() {
   // Panels depend on the week, not on its meals, so only a new week loads them.
   const reload = useCallback(
     async (withPanels = false) => {
-      const [planResult, suggestionsResult, householdResult, panelsResult] = await Promise.all([
+      const [planResult, totalsResult, suggestionsResult, householdResult, panelsResult] = await Promise.all([
         getMealPlan({ client: apiClient, path: { startDate: weekStart } }),
+        getMyPlannedTotals({ client: apiClient, path: { startDate: weekStart } }),
         getPlanSuggestions({ client: apiClient, path: { startDate: weekStart } }),
         getHousehold({ client: apiClient }),
         withPanels ? getWeekPanels({ client: apiClient, path: { startDate: weekStart } }) : undefined,
@@ -106,6 +111,7 @@ export default function PlanPage() {
       }
       setError(null);
       setPlan(planResult.data ?? null);
+      setTotals(totalsResult.data ? { week: weekStart, days: totalsResult.data.days } : null);
       // Suggestions are an enhancement (ADR-0006): a failure here never
       // hurts the plan itself.
       setSuggestions(suggestionsResult.error ? [] : (suggestionsResult.data?.suggestions ?? []));
@@ -156,6 +162,11 @@ export default function PlanPage() {
   const shared = members.length > 1;
   const memberLabels = chipLabels(members.map((member) => member.displayName));
   const shown = shared ? visibleEntries(plan?.entries ?? [], view) : (plan?.entries ?? []);
+  const totalsByDay = new Map(
+    totals !== null && totals.week === weekStart && showsPlannedTotals(shared, view)
+      ? totals.days.map((day) => [day.date, day])
+      : [],
+  );
   const entriesBySlot = new Map<string, Entry[]>();
   for (const day of weekDays(weekStart)) {
     for (const mealType of MEAL_TYPES) {
@@ -396,6 +407,7 @@ export default function PlanPage() {
           {weekDays(weekStart).map((day) => (
             <section key={day} className="card day">
               <h2>{dayLabel(day)}</h2>
+              <PlannedTotal day={totalsByDay.get(day)} />
               {MEAL_TYPES.map((mealType) => {
                 const entries = entriesBySlot.get(`${day}:${mealType}`) ?? [];
                 return (
@@ -545,5 +557,34 @@ export default function PlanPage() {
         </div>
       )}
     </>
+  );
+}
+
+function PlannedTotal({ day }: { day: PlannedDayTotal | undefined }) {
+  if (!day || day.meals === 0) {
+    return null;
+  }
+  const parts = plannedTotalParts(day);
+  const note = withoutNutritionNote(day);
+  return (
+    <div className="meal-slot" role="group" aria-label={`Planned for ${dayLabel(day.date)}`}>
+      <div className="meal-slot-head">
+        <span className="muted">Planned</span>
+      </div>
+      {parts.length > 0 && (
+        <p className="planned-total">
+          {parts.map((part, index) => (
+            <Fragment key={part}>
+              {index > 0 && " "}
+              <span>
+                {part}
+                {index < parts.length - 1 && " ·"}
+              </span>
+            </Fragment>
+          ))}
+        </p>
+      )}
+      {note && <p className="muted">{note}</p>}
+    </div>
   );
 }
