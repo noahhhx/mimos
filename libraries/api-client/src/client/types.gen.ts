@@ -358,6 +358,56 @@ export type MealPlan = {
     entries: Array<MealPlanEntry>;
 };
 
+/**
+ * One person's planned calories and macros for each day of a week.
+ */
+export type PlannedTotals = {
+    startDate: string;
+    /**
+     * Exactly seven days, Monday to Sunday.
+     */
+    days: Array<PlannedDayTotal>;
+};
+
+/**
+ * One person's share of the meals they eat on a day.
+ */
+export type PlannedDayTotal = {
+    date: string;
+    total: NutritionTotal;
+    /**
+     * How many planned meals the person eats that day.
+     */
+    meals: number;
+    /**
+     * How many of those meals have a recipe without all four values. Their unknown values add nothing to `total`; their known values do.
+     *
+     */
+    mealsWithoutNutrition: number;
+};
+
+/**
+ * Calories and macros summed over meals. Every value is known.
+ */
+export type NutritionTotal = {
+    /**
+     * Kilocalories.
+     */
+    calories: number;
+    /**
+     * Protein in grams.
+     */
+    proteinG: number;
+    /**
+     * Carbohydrates in grams.
+     */
+    carbsG: number;
+    /**
+     * Fat in grams.
+     */
+    fatG: number;
+};
+
 export type MealPlanEntryInput = {
     date: string;
     mealType: MealType;
@@ -1559,6 +1609,41 @@ export type GetMealPlanResponses = {
 };
 
 export type GetMealPlanResponse = GetMealPlanResponses[keyof GetMealPlanResponses];
+
+export type GetMyPlannedTotalsData = {
+    body?: never;
+    path: {
+        /**
+         * The Monday that starts the planned week, as an ISO date (2026-10-05). Any other day is rejected with a 400.
+         *
+         */
+        startDate: string;
+    };
+    query?: never;
+    url: '/api/v1/plans/{startDate}/my-totals';
+};
+
+export type GetMyPlannedTotalsErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type GetMyPlannedTotalsError = GetMyPlannedTotalsErrors[keyof GetMyPlannedTotalsErrors];
+
+export type GetMyPlannedTotalsResponses = {
+    /**
+     * The caller's planned totals for each day of the week.
+     */
+    200: PlannedTotals;
+};
+
+export type GetMyPlannedTotalsResponse = GetMyPlannedTotalsResponses[keyof GetMyPlannedTotalsResponses];
 
 export type AddMealPlanEntryData = {
     body: MealPlanEntryInput;

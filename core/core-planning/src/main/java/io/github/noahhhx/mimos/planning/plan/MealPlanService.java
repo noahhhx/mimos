@@ -1,5 +1,6 @@
 package io.github.noahhhx.mimos.planning.plan;
 
+import io.github.noahhhx.mimos.recipes.recipe.Nutrition;
 import io.github.noahhhx.mimos.recipes.recipe.Recipe;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeService;
 import java.time.DayOfWeek;
@@ -11,6 +12,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -111,6 +113,23 @@ public class MealPlanService {
     /** The week's raw entries with their recipes resolved (for shopping lists and logging). */
     public List<PlannedMeal> plannedMeals(UUID ownerId, LocalDate startDate) {
         return hydrate(ownerId, startDate, plans.ensurePlan(ownerId, startDate)).entries();
+    }
+
+    /**
+     * The diner's planned calories and macros for each day of the owner's
+     * week, Monday first (ADR-0022). Reading them creates no plan.
+     */
+    public List<PlannedDayTotal> plannedTotals(UUID ownerId, LocalDate startDate, UUID dinerProfileId) {
+        requireMonday(startDate);
+        List<MealPlanRepository.PlannedMealInput> entries = plans.loadEntryInputs(ownerId, startDate);
+        Map<UUID, Nutrition> perServing = recipes
+                .findByIds(entries.stream()
+                        .map(MealPlanRepository.PlannedMealInput::recipeId)
+                        .toList())
+                .values()
+                .stream()
+                .collect(Collectors.toMap(Recipe::id, Recipe::nutrition));
+        return PlannedDayTotal.forWeek(startDate, dinerProfileId, entries, perServing);
     }
 
     /** Every week the owner has planned meals in, oldest first; weeks without entries are left out. */

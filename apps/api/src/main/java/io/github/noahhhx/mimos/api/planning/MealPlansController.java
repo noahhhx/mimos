@@ -17,7 +17,9 @@ import org.openapitools.api.PlanningApi;
 import org.openapitools.model.MealPlanEntry;
 import org.openapitools.model.MealPlanEntryInput;
 import org.openapitools.model.MealPlanEntryPatch;
+import org.openapitools.model.NutritionTotal;
 import org.openapitools.model.Person;
+import org.openapitools.model.PlannedTotals;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
@@ -53,6 +55,24 @@ public class MealPlansController implements PlanningApi {
         return ResponseEntity.ok(new org.openapitools.model.MealPlan()
                 .startDate(plan.startDate())
                 .entries(entries));
+    }
+
+    @Override
+    public ResponseEntity<PlannedTotals> getMyPlannedTotals(LocalDate startDate) {
+        UserProfileRecord caller = currentUser.requireProfile();
+        List<org.openapitools.model.PlannedDayTotal> days =
+                mealPlanService.plannedTotals(caller.householdId(), startDate, caller.id()).stream()
+                        .map(day -> new org.openapitools.model.PlannedDayTotal()
+                                .date(day.date())
+                                .total(new NutritionTotal()
+                                        .calories(BigDecimal.valueOf(day.total().calories()))
+                                        .proteinG(BigDecimal.valueOf(day.total().proteinG()))
+                                        .carbsG(BigDecimal.valueOf(day.total().carbsG()))
+                                        .fatG(BigDecimal.valueOf(day.total().fatG())))
+                                .meals(day.meals())
+                                .mealsWithoutNutrition(day.mealsWithoutNutrition()))
+                        .toList();
+        return ResponseEntity.ok(new PlannedTotals().startDate(startDate).days(days));
     }
 
     @Override

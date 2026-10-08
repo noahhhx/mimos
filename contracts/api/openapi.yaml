@@ -13,7 +13,7 @@
 openapi: 3.1.0
 info:
   title: Mimos API
-  version: 0.11.0
+  version: 0.12.0
   description: |
     The Mimos recipe companion API. Endpoints require a bearer token issued
     by the instance's Keycloak realm unless they live under `/api/v1/public`
@@ -662,6 +662,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MealPlan'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+  /api/v1/plans/{startDate}/my-totals:
+    parameters:
+      - $ref: '#/components/parameters/PlanWeek'
+    get:
+      tags: [planning]
+      operationId: getMyPlannedTotals
+      summary: The caller's own planned calories and macros for each day of a week
+      description: >
+        Returns seven days, Monday first, for the week starting at
+        `startDate`, which must be a Monday. The totals are the caller's
+        alone: only meals the caller is a diner of count, and each counts
+        the caller's share times the recipe's per-serving nutrition. The
+        share is the meal's servings divided by its number of diners,
+        rounded to 0.1 serving and never below 0.1; a meal the caller eats
+        alone counts all its servings. That is the share logging a planned
+        meal fills in. Other members of the household get different totals
+        for the same week. A value a meal's recipe lacks (calories, protein,
+        carbs, or fat) adds nothing to its total, and the recipe's known
+        values still count, as logging the meal records them. A meal whose
+        recipe lacks any of the four is also counted in
+        `mealsWithoutNutrition`, so a total that leaves values out says so.
+        A day with no meals has zero totals.
+      responses:
+        '200':
+          description: The caller's planned totals for each day of the week.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlannedTotals'
         '400':
           $ref: '#/components/responses/Problem'
         '401':
@@ -1516,6 +1549,55 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MealPlanEntry'
+    PlannedTotals:
+      type: object
+      description: One person's planned calories and macros for each day of a week.
+      required: [startDate, days]
+      properties:
+        startDate:
+          type: string
+          format: date
+        days:
+          type: array
+          description: Exactly seven days, Monday to Sunday.
+          items:
+            $ref: '#/components/schemas/PlannedDayTotal'
+    PlannedDayTotal:
+      type: object
+      description: One person's share of the meals they eat on a day.
+      required: [date, total, meals, mealsWithoutNutrition]
+      properties:
+        date:
+          type: string
+          format: date
+        total:
+          $ref: '#/components/schemas/NutritionTotal'
+        meals:
+          type: integer
+          description: How many planned meals the person eats that day.
+        mealsWithoutNutrition:
+          type: integer
+          description: >
+            How many of those meals have a recipe without all four values.
+            Their unknown values add nothing to `total`; their known values
+            do.
+    NutritionTotal:
+      type: object
+      description: Calories and macros summed over meals. Every value is known.
+      required: [calories, proteinG, carbsG, fatG]
+      properties:
+        calories:
+          type: number
+          description: Kilocalories.
+        proteinG:
+          type: number
+          description: Protein in grams.
+        carbsG:
+          type: number
+          description: Carbohydrates in grams.
+        fatG:
+          type: number
+          description: Fat in grams.
     MealPlanEntryInput:
       type: object
       required: [date, mealType, recipeId, servings]
