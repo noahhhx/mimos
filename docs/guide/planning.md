@@ -34,6 +34,27 @@ both scale each recipe to the servings you planned.
 To swap a meal, take it out with **✕** and add another. The Kitchen's
 **Swap meal** button brings you here for that.
 
+## Your planned total
+
+A day with meals you eat shows a **Planned** line under its name: the
+calories, protein, carbs, and fat you will eat that day if you eat what
+you planned.
+
+![Monday's planned total above its meals](../assets/screenshots/plan-totals.png)
+
+- A meal you eat alone counts every serving planned.
+- A meal you [share](#planning-for-a-household) counts your share: its
+  servings divided by the number of people eating it. **Log** fills in
+  the same share, so a planned day and its logged day agree.
+- If a recipe has no value for calories, protein, carbs, or fat, that
+  value adds nothing to the total. The recipe's other values still
+  count, as they do when you log it. The day says how many of its meals
+  have unknown nutrition, and a day where no meal has any shows only
+  that note. Add the recipe's nutrition to count it.
+
+In a shared household, the total shows in **Mine** only, because it is
+yours alone. **Everyone** shows no totals.
+
 ## Planning for a household
 
 When you [share a household](household.md), everyone in it plans the same
