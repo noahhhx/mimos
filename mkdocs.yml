@@ -78,12 +78,13 @@ markdown_extensions:
       custom_checkbox: true
 
 # The site is the user guide: using Mimos, self-hosting it, and writing
-# plugins. Contributor docs (design, agent harness, ADRs) stay in docs/ for
+# plugins. Contributor docs (design, agent harness, ADRs, build plans) stay in docs/ for
 # the repo but are not published; link to them on GitHub from site pages.
 exclude_docs: |
   /design/
   /harness/
   /decisions/
+  /plans/
   /requirements.txt
 
 nav:

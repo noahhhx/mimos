@@ -136,7 +136,7 @@ Rules for using this file:
     daily calorie and macro targets in core, from energy availability and
     the day's training, with intervals.icu as an optional training
     source. It is not a plugin; ADR-0022 says why. Delivered in this
-    order:
+    order, tracked as small work items in `docs/plans/fuel-targets/`:
     1. *Planned totals.* Each person's planned calories and macros per
        day (entries they eat × servings ÷ diners), in the API and on the
        plan page's Mine view. No targets yet. This closes step 10's
