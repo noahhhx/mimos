@@ -7,10 +7,11 @@ at the top right and choose **Your data**.
 
 ## Exporting
 
-Choose **Download export** to save one file with your recipes, meal plans,
-shopping lists, food log, and fuel settings with the training you added
-by hand. Keep it somewhere safe as a backup, or use it
-to move to another Mimos.
+Choose **Download export** to save one file with your recipes and their
+pictures, meal plans, shopping lists, food log, and fuel settings with the
+training you added by hand. Keep it somewhere safe as a backup, or use it
+to move to another Mimos. Pictures are inside the file, so an export of
+recipes with pictures can be several megabytes.
 
 If you share a [household](household.md), the export is still just yours.
 It has the household's recipes, ingredients, and shopping lists, but only

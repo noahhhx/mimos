@@ -107,7 +107,9 @@ before that link existed shows plain text there. To add the link, set
 `docker compose pull && docker compose up -d --wait` upgrades. Migrations
 run on start and only go forward.
 
-Everything is in the `postgres-data` volume, in two databases:
+Everything is in the `postgres-data` volume, in two databases. Recipe
+pictures are stored in the `mimos` database too, so it grows with them,
+and so do its dumps:
 
 ```bash
 docker compose exec -T postgres pg_dump -U mimos mimos > mimos.sql

@@ -86,7 +86,11 @@ which would show a scrollbar beside its links), `keycloak-theme`
 and follow the app's light or dark choice, ADR-0021; screenshots at
 phone and desktop width), `fuel-profile` (a fresh account saves its fuel
 profile from the Fuel page, protein follows the goal, and each value the
-API refuses gets its own error, ADR-0022), and `account-data` (registers
+API refuses gets its own error, ADR-0022), `recipe-pictures` (a new
+recipe gets two pictures, which load in a row above its description,
+re-encoded as JPEG and shrunk to 1600px; at phone width the row scrolls
+and the page does not; cancelling a removal keeps both, saving one
+leaves one, ADR-0023), and `account-data` (registers
 two fresh accounts: one writes a recipe and downloads its export, which
 it cannot import over its own data; the other imports it, ADR-0011). See [writing a scenario](step-2-browser.md#writing-a-scenario).
 For exploration before a scenario exists, `.mcp.json` registers a

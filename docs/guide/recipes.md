@@ -26,6 +26,11 @@ Tap an ingredient to tick it off as you gather it, and tap a step to tick
 it off as you go. Ticks are only a cooking aid: they stay on this page and
 clear when you leave it.
 
+If one of your recipes has [pictures](#pictures), they show in a row
+above the description. Scroll the row sideways to see them all.
+
+![A recipe with three pictures above its description](../assets/screenshots/recipe-pictures.png)
+
 ## Writing your own recipe
 
 1. In **Recipes**, choose **+ New recipe**.
@@ -99,6 +104,33 @@ delete that recipe, the line stays in the sandwich but no longer counts.
 A recipe can't use itself, or a recipe that already uses it. Your
 shopping list shows the line as it is ("2 servings focaccia"), not the
 focaccia's own ingredients.
+
+## Pictures
+
+Your recipes can have up to 8 pictures. Library recipes have none.
+
+1. Open the recipe and choose **Edit**, or start a new recipe.
+2. Under **Pictures**, choose **Add pictures** and pick one or more JPEG,
+   PNG, or WebP pictures. A phone's camera roll works too.
+3. Choose **Save changes**, or **Create recipe** for a new one.
+
+![The Pictures section of the recipe form](../assets/screenshots/recipe-pictures-form.png)
+
+Mimos shrinks each picture before it sends it, to at most 1600 pixels on
+its longest side, and saves it as a JPEG. This also removes what the
+camera wrote into the file, like where the photo was taken. A new picture
+says **Not saved yet** until you save the recipe. A file the browser
+can't open, like an iPhone HEIC photo copied to a Windows or Linux
+computer, is refused with a message; save it as a JPEG first.
+
+To take a picture out, choose **Remove** under it, then save. Pictures
+appear in the order you added them, and nothing changes until you save:
+**Cancel** keeps the recipe's pictures as they were. If a picture can't
+be saved, the form stays open and says why. Save again to send the
+rest.
+
+Everyone in your [household](household.md) sees the pictures, and they
+travel with the recipe in [your export](your-data.md).
 
 ## Editing and deleting
 
