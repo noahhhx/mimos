@@ -70,7 +70,8 @@ public class FuelController implements FuelApi {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    // Not read-only: a new person's first request may be this one, and it creates their profile.
+    @Transactional
     public ResponseEntity<FuelDays> getMyFuel(LocalDate from, LocalDate to) {
         UserProfileRecord caller = currentUser.requireProfile();
         Optional<FuelProfile> profile = fuel.profile(caller.id()).filter(FuelProfile::enabled);

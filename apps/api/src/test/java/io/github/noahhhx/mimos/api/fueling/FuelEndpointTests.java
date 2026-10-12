@@ -337,6 +337,19 @@ class FuelEndpointTests extends ApiIntegrationTestSupport {
     }
 
     @Test
+    void aNewPersonsFirstRequestCanBeTheFuelRead() {
+        String token = accessToken(createUser());
+        Integer status = RestClient.create("http://localhost:" + port)
+                .get()
+                .uri(fuel(MONDAY, MONDAY.plusDays(6)))
+                .headers(headers -> headers.setBearerAuth(token))
+                .exchange((request, response) -> response.getStatusCode().value());
+        assertThat(status)
+                .as("the read creates the caller's profile on first sight")
+                .isEqualTo(200);
+    }
+
+    @Test
     void withTargetsOffEveryDayStillHasItsPlannedLoggedAndTraining() {
         TestUser user = user();
         assertThat(user.ok(HttpMethod.GET, fuel(MONDAY, MONDAY), null)
