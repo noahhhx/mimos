@@ -40,7 +40,7 @@ branch, not on `main` yet), `done <sha>`.
 | #  | Item | Step | Depends on | Review | Status |
 | -- | ---- | ---- | ---------- | ------ | ------ |
 | 00 | [Clean up the first run](00-clean-up-first-run.md) | – | – | | done 200e3f7 |
-| 01 | [Finish planned totals](01-planned-totals-finish.md) | 14.1 | – | | in progress |
+| 01 | [Finish planned totals](01-planned-totals-finish.md) | 14.1 | – | | on branch cf6d259 |
 | 02 | [Check and land planned totals](02-planned-totals-land.md) | 14.1 | 01 | Review | todo |
 | 03 | [Rebase the fuel profile onto main](03-fuel-profile-rebase.md) | 14.2 | 02 | | on branch |
 | 04 | [Check and land the fuel profile](04-fuel-profile-land.md) | 14.2 | 03 | Review | todo |
@@ -110,7 +110,7 @@ As of 2026-10-08, nothing is on `main` yet. Branches are local only.
 
 | Part | Branch | Head | State |
 | ---- | ------ | ---- | ----- |
-| 14.1 | `ft1-planned-totals` | `15bc002` | Based on `main` `93556b1`. Round 2 review fixes are half done and uncommitted in `.claude/worktrees/ft1`. Item 01. |
+| 14.1 | `ft1-planned-totals` | `cf6d259` | Based on `main` `93556b1`. Round 2 review fixes done and committed (item 01). Item 02 rebases onto `main` and lands. |
 | 14.2 | `ft2-fuel-profile` | `5974023` | Based on `main` `93556b1`. Round 1 review fixes committed; not re-checked. Items 03, 04. |
 | 14.3 | `ft3-fuel-targets` | `40ab9dc` | Its two commits (`48d84ea`, `40ab9dc`) sit on older FT1 and FT2 heads. Items 05, 06. |
 
