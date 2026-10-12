@@ -48,7 +48,7 @@ branch, not on `main` yet), `done <sha>`.
 | 06 | [Check and land the target calculator](06-calculator-land.md) | 14.3 | 05 | Review | done 1cae3ca |
 | 07 | [Tidy the fuel read's ranges](07-fuel-read-ranges.md) | 14.3 | 06 | | done 1fc66f9 |
 | 08 | [Fuel for the day on the plan page](08-plan-fuel-line.md) | 14.4 | 06 | Review | done f293f7c |
-| 09 | [Training on the plan page](09-plan-training.md) | 14.4 | 08 | Review | todo |
+| 09 | [Training on the plan page](09-plan-training.md) | 14.4 | 08 | Review | done cd2f8d0 |
 | 10 | [Targets on the Log page](10-log-targets.md) | 14.4 | 08 | Review | todo |
 | 11 | [The fuel guide](11-fuel-guide.md) | 14.4 | 09, 10 | Review | todo |
 | 12 | [intervals.icu client and translator](12-intervals-client.md) | 14.5 | 06 | | todo |
