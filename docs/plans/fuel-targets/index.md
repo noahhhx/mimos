@@ -50,7 +50,7 @@ branch, not on `main` yet), `done <sha>`.
 | 08 | [Fuel for the day on the plan page](08-plan-fuel-line.md) | 14.4 | 06 | Review | done f293f7c |
 | 09 | [Training on the plan page](09-plan-training.md) | 14.4 | 08 | Review | done cd2f8d0 |
 | 10 | [Targets on the Log page](10-log-targets.md) | 14.4 | 08 | Review | done d5459ae |
-| 11 | [The fuel guide](11-fuel-guide.md) | 14.4 | 09, 10 | Review | todo |
+| 11 | [The fuel guide](11-fuel-guide.md) | 14.4 | 09, 10 | Review | done 4b6615f |
 | 12 | [intervals.icu client and translator](12-intervals-client.md) | 14.5 | 06 | | todo |
 | 13 | [A fake intervals.icu for the stack](13-intervals-fake.md) | 14.5 | 12 | Review | todo |
 | 14 | [Encrypt the API key](14-secret-box.md) | 14.5 | 12 | | todo |
