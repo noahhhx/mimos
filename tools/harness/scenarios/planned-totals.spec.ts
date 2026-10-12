@@ -28,7 +28,7 @@ test("the plan shows each day's planned total", async ({ page }) => {
   const planned = mondayCard.getByRole("group", { name: /^Planned for / });
 
   await test.step("an empty week shows no planned totals", async () => {
-    const totalsLoaded = page.waitForResponse((response) => response.url().endsWith(`/plans/${monday}/my-totals`));
+    const totalsLoaded = page.waitForResponse((response) => response.url().includes(`/me/fuel?from=${monday}&`));
     await page.goto("/app/plan");
     expect((await totalsLoaded).ok(), "the week's totals load").toBe(true);
     await expect(mondayCard.getByRole("heading")).toBeVisible();

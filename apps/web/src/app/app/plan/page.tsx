@@ -9,12 +9,14 @@ import {
   deleteMealPlanEntry,
   getHousehold,
   getMealPlan,
-  getMyPlannedTotals,
+  getMyFuel,
   getPlanSuggestions,
   getWeekPanels,
   listLibraryRecipes,
   listMyRecipes,
   updateMealPlanEntry,
+  type FuelDay,
+  type FuelTarget,
   type MealPlan,
   type Person,
   type PlanSuggestion,
@@ -39,6 +41,7 @@ import {
   type PlanView,
 } from "@/lib/diners";
 import { MEAL_TYPES, addDays, dayLabel, formatServings, mealLabel, mondayOf, weekDays } from "@/lib/format";
+import { FUEL_LABEL, fuelLabelFor, fuelTargetParts } from "@/lib/fuel";
 import { plannedTotalParts, showsPlannedTotals, withoutNutritionNote } from "@/lib/planned-totals";
 import { applySuggestionEntries } from "@/lib/suggestions";
 
@@ -57,7 +60,8 @@ export default function PlanPage() {
   const { user } = useAuth();
   const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()));
   const [plan, setPlan] = useState<MealPlan | null>(null);
-  const [totals, setTotals] = useState<{ week: string; days: PlannedDayTotal[] } | null>(null);
+  // The caller's own fuel for each day: what they plan to eat, and their target while targets are on.
+  const [fuel, setFuel] = useState<{ week: string; days: FuelDay[] } | null>(null);
   const [suggestions, setSuggestions] = useState<PlanSuggestion[] | null>(null);
   // Tagged with their week, so a slow answer for a week left behind never shows.
   const [panels, setPanels] = useState<{ week: string; list: WeekPanel[] } | null>(null);
@@ -92,9 +96,9 @@ export default function PlanPage() {
   // Panels depend on the week, not on its meals, so only a new week loads them.
   const reload = useCallback(
     async (withPanels = false) => {
-      const [planResult, totalsResult, suggestionsResult, householdResult, panelsResult] = await Promise.all([
+      const [planResult, fuelResult, suggestionsResult, householdResult, panelsResult] = await Promise.all([
         getMealPlan({ client: apiClient, path: { startDate: weekStart } }),
-        getMyPlannedTotals({ client: apiClient, path: { startDate: weekStart } }),
+        getMyFuel({ client: apiClient, query: { from: weekStart, to: addDays(weekStart, 6) } }),
         getPlanSuggestions({ client: apiClient, path: { startDate: weekStart } }),
         getHousehold({ client: apiClient }),
         withPanels ? getWeekPanels({ client: apiClient, path: { startDate: weekStart } }) : undefined,
@@ -111,7 +115,7 @@ export default function PlanPage() {
       }
       setError(null);
       setPlan(planResult.data ?? null);
-      setTotals(totalsResult.data ? { week: weekStart, days: totalsResult.data.days } : null);
+      setFuel(fuelResult.data ? { week: weekStart, days: fuelResult.data.days } : null);
       // Suggestions are an enhancement (ADR-0006): a failure here never
       // hurts the plan itself.
       setSuggestions(suggestionsResult.error ? [] : (suggestionsResult.data?.suggestions ?? []));
@@ -162,9 +166,9 @@ export default function PlanPage() {
   const shared = members.length > 1;
   const memberLabels = chipLabels(members.map((member) => member.displayName));
   const shown = shared ? visibleEntries(plan?.entries ?? [], view) : (plan?.entries ?? []);
-  const totalsByDay = new Map(
-    totals !== null && totals.week === weekStart && showsPlannedTotals(shared, view)
-      ? totals.days.map((day) => [day.date, day])
+  const fuelByDay = new Map(
+    fuel !== null && fuel.week === weekStart && showsPlannedTotals(shared, view)
+      ? fuel.days.map((day) => [day.date, day])
       : [],
   );
   const entriesBySlot = new Map<string, Entry[]>();
@@ -407,7 +411,8 @@ export default function PlanPage() {
           {weekDays(weekStart).map((day) => (
             <section key={day} className="card day">
               <h2>{dayLabel(day)}</h2>
-              <PlannedTotal day={totalsByDay.get(day)} />
+              <FuelLine date={day} target={fuelByDay.get(day)?.target} />
+              <PlannedTotal day={fuelByDay.get(day)?.planned} />
               {MEAL_TYPES.map((mealType) => {
                 const entries = entriesBySlot.get(`${day}:${mealType}`) ?? [];
                 return (
@@ -571,20 +576,40 @@ function PlannedTotal({ day }: { day: PlannedDayTotal | undefined }) {
       <div className="meal-slot-head">
         <span className="muted">Planned</span>
       </div>
-      {parts.length > 0 && (
-        <p className="planned-total">
-          {parts.map((part, index) => (
-            <Fragment key={part}>
-              {index > 0 && " "}
-              <span>
-                {part}
-                {index < parts.length - 1 && " ·"}
-              </span>
-            </Fragment>
-          ))}
-        </p>
-      )}
+      {parts.length > 0 && <NutritionParts className="planned-total" parts={parts} />}
       {note && <p className="muted">{note}</p>}
     </div>
+  );
+}
+
+function FuelLine({ date, target }: { date: string; target: FuelTarget | undefined }) {
+  const parts = fuelTargetParts(target);
+  if (parts.length === 0) {
+    return null;
+  }
+  return (
+    <div className="meal-slot" role="group" aria-label={fuelLabelFor(date)}>
+      <div className="meal-slot-head">
+        <span className="muted">{FUEL_LABEL}</span>
+      </div>
+      <NutritionParts className="fuel-target" parts={parts} />
+    </div>
+  );
+}
+
+/** Each value keeps its unit and label on one line, so a narrow card wraps between values only. */
+function NutritionParts({ className, parts }: { className: string; parts: string[] }) {
+  return (
+    <p className={className}>
+      {parts.map((part, index) => (
+        <Fragment key={part}>
+          {index > 0 && " "}
+          <span>
+            {part}
+            {index < parts.length - 1 && " ·"}
+          </span>
+        </Fragment>
+      ))}
+    </p>
   );
 }

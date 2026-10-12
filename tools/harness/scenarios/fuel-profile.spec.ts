@@ -84,11 +84,10 @@ test("a person saves their fuel profile", async ({ page }) => {
     await expect(protein).toHaveValue("2.4");
   });
 
-  await test.step("the plan and log pages show no fuel targets yet", async () => {
+  await test.step("the plan shows the day's fuel, and the log shows none yet", async () => {
     const nav = page.getByRole("navigation", { name: "App" });
     await nav.getByRole("link", { name: "Plan" }).click();
-    await expect(page.locator(".week")).toBeVisible();
-    await expect(page.getByText("Fuel for the day")).toHaveCount(0);
+    await expect(page.getByRole("group", { name: /^Fuel for / })).toHaveCount(7);
     await nav.getByRole("link", { name: "Log" }).click();
     await expect(page.getByRole("heading", { name: "Log", level: 1 })).toBeVisible();
     await expect(page.getByText("Fuel for the day")).toHaveCount(0);

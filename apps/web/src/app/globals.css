@@ -1444,7 +1444,8 @@ label.file-button {
   text-transform: uppercase;
 }
 
-.planned-total span {
+.planned-total span,
+.fuel-target span {
   white-space: nowrap;
 }
 
