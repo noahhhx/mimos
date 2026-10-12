@@ -25,7 +25,8 @@ public final class ExportUpgrader {
             ExportUpgrader::markNutritionManual,
             ExportUpgrader::allowRecipeLinks,
             ExportUpgrader::keepOnlyOwnMeals,
-            ExportUpgrader::addTraining);
+            ExportUpgrader::addTraining,
+            ExportUpgrader::addRecipePictures);
 
     /** The version this instance exports. */
     public static final int CURRENT_VERSION = STEPS.size() + 1;
@@ -111,6 +112,19 @@ public final class ExportUpgrader {
      */
     private static ObjectNode addTraining(ObjectNode document) {
         document.putArray("trainingSessions");
+        return document;
+    }
+
+    /**
+     * Version 6 (ADR-0023): every recipe carries its pictures, base64. Version
+     * 5 had none, so each recipe gets an empty list.
+     */
+    private static ObjectNode addRecipePictures(ObjectNode document) {
+        document.path("recipes").forEach(recipe -> {
+            if (recipe instanceof ObjectNode exported) {
+                exported.putArray("pictures");
+            }
+        });
         return document;
     }
 

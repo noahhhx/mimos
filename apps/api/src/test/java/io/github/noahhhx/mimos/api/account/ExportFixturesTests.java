@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.noahhhx.mimos.api.support.ApiIntegrationTestSupport;
+import io.github.noahhhx.mimos.api.support.TestPictures;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -203,6 +204,39 @@ class ExportFixturesTests extends ApiIntegrationTestSupport {
         assertThat(sessions.get(0).get("kind").asText()).isEqualTo("COMPLETED");
         assertThat(sessions.get(1).get("durationMinutes").asInt()).isEqualTo(240);
         assertThat(sessions.get(1).get("workKj").asDouble()).isEqualTo(2742);
+    }
+
+    @Test
+    void version6RestoresRecipePictures() {
+        RestClient api = api();
+        String token = accessToken(createUser());
+
+        importFixture(api, token, 6);
+
+        JsonNode recipes = get(api, token, "/api/v1/recipes");
+        JsonNode focaccia = null;
+        for (JsonNode recipe : recipes) {
+            JsonNode detail =
+                    get(api, token, "/api/v1/recipes/" + recipe.get("id").asText());
+            if (recipe.get("title").asText().equals("Fixture Focaccia")) {
+                focaccia = detail;
+            } else {
+                assertThat(detail.get("pictures"))
+                        .as(recipe.get("title").asText())
+                        .isEmpty();
+            }
+        }
+        JsonNode pictures = requireNonNull(focaccia, "no focaccia").get("pictures");
+        assertThat(pictures).hasSize(1);
+        byte[] image = api.get()
+                .uri(
+                        "/api/v1/recipes/{recipe}/pictures/{picture}",
+                        focaccia.get("id").asText(),
+                        pictures.get(0).get("id").asText())
+                .headers(headers -> headers.setBearerAuth(token))
+                .retrieve()
+                .body(byte[].class);
+        assertThat(image).isEqualTo(TestPictures.PNG);
     }
 
     private JsonNode importFixture(RestClient api, String token, int version) {

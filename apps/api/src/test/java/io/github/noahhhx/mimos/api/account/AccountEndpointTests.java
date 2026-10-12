@@ -4,14 +4,17 @@ import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.noahhhx.mimos.api.support.ApiIntegrationTestSupport;
+import io.github.noahhhx.mimos.api.support.TestPictures;
 import io.github.noahhhx.mimos.api.support.TestRecipes;
 import io.github.noahhhx.mimos.api.support.TestUser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -66,6 +69,9 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
                 TestRecipes.create(api, source, "Export Toast").get("id").asText();
         String shakshukaId =
                 get(api, null, "/api/v1/public/recipes/shakshuka").get("id").asText();
+        byte[] jpeg = TestPictures.jpeg();
+        TestPictures.add(api, source, UUID.fromString(soupId), TestPictures.PNG);
+        TestPictures.add(api, source, UUID.fromString(soupId), jpeg);
 
         plan(api, source, MONDAY, "DINNER", soupId, 2);
         plan(api, source, MONDAY.plusDays(1), "BREAKFAST", shakshukaId, 1);
@@ -101,6 +107,9 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
                         .asBoolean())
                 .isTrue();
         assertThat(exported.get("mealLogs")).hasSize(3);
+        assertThat(pictureData(recipeTitled(exported, "Export Soup")))
+                .containsExactly(base64(TestPictures.PNG), base64(jpeg));
+        assertThat(pictureData(recipeTitled(exported, "Export Toast"))).isEmpty();
 
         String target = accessToken(createUser());
         JsonNode report = importInto(api, target, exported, 200);
@@ -120,6 +129,54 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
                 .get("recipes")
                 .forEach(recipe -> importedIds.add(recipe.get("id").asText()));
         assertThat(importedIds).doesNotContain(soupId, toastId);
+        String importedSoup = recipeTitled(reexported, "Export Soup").get("id").asText();
+        JsonNode pictures = get(api, target, "/api/v1/recipes/" + importedSoup).get("pictures");
+        assertThat(pictures).hasSize(2);
+        assertThat(api.get()
+                        .uri(
+                                "/api/v1/recipes/{recipe}/pictures/{picture}",
+                                importedSoup,
+                                pictures.get(1).get("id").asText())
+                        .headers(headers -> headers.setBearerAuth(target))
+                        .retrieve()
+                        .body(byte[].class))
+                .isEqualTo(jpeg);
+    }
+
+    @Test
+    void aPictureThatIsNotAnImageIsNamedAndNothingIsWritten() {
+        RestClient api = api();
+        String token = accessToken(createUser());
+        ObjectNode document = fixture("export/v6.json");
+        ArrayNode pictures = ((ObjectNode) document.get("recipes").get(0)).putArray("pictures");
+        pictures.addObject().put("data", base64(TestPictures.PNG));
+        pictures.addObject().put("data", base64("GIF89a\u0001\0\u0001\0".getBytes(StandardCharsets.ISO_8859_1)));
+
+        JsonNode problem = importInto(api, token, document, 400);
+
+        assertThat(problem.get("detail").asText())
+                .isEqualTo("recipes[0].pictures[1]: a picture must be a JPEG, PNG, or WebP image");
+        assertThat(get(api, token, "/api/v1/recipes")).isEmpty();
+        importInto(api, token, fixture("export/v6.json"), 200);
+    }
+
+    private static JsonNode recipeTitled(JsonNode export, String title) {
+        for (JsonNode recipe : export.get("recipes")) {
+            if (recipe.get("title").asText().equals(title)) {
+                return recipe;
+            }
+        }
+        throw new AssertionError("the export has no recipe titled " + title);
+    }
+
+    private static List<String> pictureData(JsonNode recipe) {
+        List<String> data = new ArrayList<>();
+        recipe.get("pictures").forEach(picture -> data.add(picture.get("data").asText()));
+        return data;
+    }
+
+    private static String base64(byte[] bytes) {
+        return Base64.getEncoder().encodeToString(bytes);
     }
 
     @Test

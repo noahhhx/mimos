@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 
@@ -104,8 +105,9 @@ class ExportUpgraderTest {
 
             ObjectNode upgraded = ExportUpgrader.standard().upgrade(old).document();
 
-            assertThat(upgraded.remove("version").asInt()).isEqualTo(5);
+            assertThat(upgraded.remove("version").asInt()).isEqualTo(ExportUpgrader.CURRENT_VERSION);
             assertThat(upgraded.remove("trainingSessions")).isEmpty();
+            assertEveryRecipeGainedNoPictures(upgraded);
             old.remove("version");
             assertThat(upgraded).as("version %d", version).isEqualTo(old);
         }
@@ -120,11 +122,38 @@ class ExportUpgraderTest {
 
         ObjectNode upgraded = ExportUpgrader.standard().upgrade(v4).document();
 
-        assertThat(upgraded.remove("version").asInt()).isEqualTo(5);
+        assertThat(upgraded.remove("version").asInt()).isEqualTo(ExportUpgrader.CURRENT_VERSION);
         assertThat(upgraded.remove("trainingSessions")).isEmpty();
         assertThat(upgraded.has("fuelProfile")).isFalse();
+        assertEveryRecipeGainedNoPictures(upgraded);
         v4.remove("version");
         assertThat(upgraded).isEqualTo(v4);
+    }
+
+    @Test
+    void version5GivesEveryRecipeAnEmptyPictureList() throws IOException {
+        ObjectNode v5;
+        try (InputStream in = new ClassPathResource("export/v5.json").getInputStream()) {
+            v5 = (ObjectNode) MAPPER.readTree(in);
+        }
+
+        ObjectNode upgraded = ExportUpgrader.standard().upgrade(v5).document();
+
+        assertThat(upgraded.remove("version").asInt()).isEqualTo(6);
+        assertThat(upgraded.get("recipes")).hasSize(4);
+        assertEveryRecipeGainedNoPictures(upgraded);
+        v5.remove("version");
+        assertThat(upgraded).isEqualTo(v5);
+    }
+
+    /** Checks each recipe now has an empty pictures list, then takes it off so the rest can be compared. */
+    private static void assertEveryRecipeGainedNoPictures(ObjectNode upgraded) {
+        upgraded.path("recipes").forEach(recipe -> {
+            JsonNode pictures = ((ObjectNode) recipe).remove("pictures");
+            assertThat(pictures).isNotNull();
+            assertThat(pictures.isArray()).isTrue();
+            assertThat(pictures).isEmpty();
+        });
     }
 
     @Test

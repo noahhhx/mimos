@@ -16,6 +16,7 @@ import io.github.noahhhx.mimos.planning.shopping.ShoppingListService;
 import io.github.noahhhx.mimos.recipes.recipe.IngredientService;
 import io.github.noahhhx.mimos.recipes.recipe.Nutrition;
 import io.github.noahhhx.mimos.recipes.recipe.Recipe;
+import io.github.noahhhx.mimos.recipes.recipe.RecipePictureService;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeService;
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -37,6 +38,7 @@ import org.openapitools.model.ExportedMealLog;
 import org.openapitools.model.ExportedMealPlan;
 import org.openapitools.model.ExportedPlanEntry;
 import org.openapitools.model.ExportedRecipe;
+import org.openapitools.model.ExportedRecipePicture;
 import org.openapitools.model.ExportedShoppingList;
 import org.openapitools.model.ExportedShoppingListItem;
 import org.openapitools.model.ExportedTrainingSession;
@@ -56,6 +58,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AccountExporter {
 
     private final RecipeService recipes;
+    private final RecipePictureService pictures;
     private final IngredientService ingredients;
     private final MealPlanService mealPlans;
     private final ShoppingListService shoppingLists;
@@ -65,6 +68,7 @@ public class AccountExporter {
 
     public AccountExporter(
             RecipeService recipes,
+            RecipePictureService pictures,
             IngredientService ingredients,
             MealPlanService mealPlans,
             ShoppingListService shoppingLists,
@@ -72,6 +76,7 @@ public class AccountExporter {
             FuelService fuel,
             Clock clock) {
         this.recipes = recipes;
+        this.pictures = pictures;
         this.ingredients = ingredients;
         this.mealPlans = mealPlans;
         this.shoppingLists = shoppingLists;
@@ -111,7 +116,9 @@ public class AccountExporter {
                                         ingredient.basis().name()))
                                 .nutrition(toApiNutrition(ingredient.nutrition())))
                         .toList())
-                .recipes(owned.stream().map(AccountExporter::toExported).toList())
+                .recipes(owned.stream()
+                        .map(recipe -> toExported(householdId, recipe))
+                        .toList())
                 .mealPlans(plans.stream()
                         .map(plan -> toExported(plan, ownedIds, librarySlugs))
                         .toList())
@@ -150,7 +157,8 @@ public class AccountExporter {
         return slugs;
     }
 
-    private static ExportedRecipe toExported(Recipe recipe) {
+    /** A recipe with its pictures' bytes, read in the export's snapshot so they match its rows. */
+    private ExportedRecipe toExported(UUID householdId, Recipe recipe) {
         return new ExportedRecipe()
                 .id(recipe.id())
                 .title(recipe.title())
@@ -164,6 +172,11 @@ public class AccountExporter {
                 .ingredients(RecipeApiMapper.toApiIngredients(recipe.ingredients()))
                 .steps(recipe.steps().stream()
                         .map(step -> new org.openapitools.model.RecipeStep().instruction(step.instruction()))
+                        .toList())
+                .pictures(pictures.list(recipe.id()).stream()
+                        .map(picture -> new ExportedRecipePicture()
+                                .data(pictures.content(householdId, recipe.id(), picture.id())
+                                        .bytes()))
                         .toList())
                 .createdAt(toOffset(recipe.createdAt()))
                 .updatedAt(toOffset(recipe.updatedAt()));

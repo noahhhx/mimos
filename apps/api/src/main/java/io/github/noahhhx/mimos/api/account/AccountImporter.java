@@ -25,6 +25,7 @@ import io.github.noahhhx.mimos.recipes.recipe.NutritionBasis;
 import io.github.noahhhx.mimos.recipes.recipe.NutritionSource;
 import io.github.noahhhx.mimos.recipes.recipe.Recipe;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeDraft;
+import io.github.noahhhx.mimos.recipes.recipe.RecipePictureService;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeService;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeStep;
 import java.math.BigDecimal;
@@ -78,6 +79,7 @@ public class AccountImporter {
     private final IdentityService identity;
     private final HouseholdService households;
     private final RecipeService recipes;
+    private final RecipePictureService pictures;
     private final IngredientService ingredients;
     private final MealPlanService mealPlans;
     private final ShoppingListService shoppingLists;
@@ -90,6 +92,7 @@ public class AccountImporter {
             IdentityService identity,
             HouseholdService households,
             RecipeService recipes,
+            RecipePictureService pictures,
             IngredientService ingredients,
             MealPlanService mealPlans,
             ShoppingListService shoppingLists,
@@ -99,6 +102,7 @@ public class AccountImporter {
         this.identity = identity;
         this.households = households;
         this.recipes = recipes;
+        this.pictures = pictures;
         this.ingredients = ingredients;
         this.mealPlans = mealPlans;
         this.shoppingLists = shoppingLists;
@@ -278,6 +282,11 @@ public class AccountImporter {
                     present(recipe.getCreatedAt(), "createdAt").toInstant(),
                     present(recipe.getUpdatedAt(), "updatedAt").toInstant());
             recipeIds.put(exportedId, restored.id());
+            // Through the upload's own checks, so an import has no second way to make a picture.
+            eachAt(
+                    "pictures",
+                    present(recipe.getPictures(), "pictures"),
+                    picture -> pictures.add(household, restored.id(), present(picture.getData(), "data")));
         }
 
         void importPlans(List<ExportedMealPlan> exported) {
