@@ -56,7 +56,7 @@ branch, not on `main` yet), `done <sha>`.
 | 14 | [Encrypt the API key](14-secret-box.md) | 14.5 | 12 | | done 83a2475 |
 | 15 | [Connect and disconnect](15-intervals-connect.md) | 14.5 | 13, 14 | | done 884e943 |
 | 16 | [Sync on demand](16-intervals-sync.md) | 14.5 | 15 | | done 7a2945c |
-| 17 | [Scheduled sync](17-intervals-schedule.md) | 14.5 | 16 | | todo |
+| 17 | [Scheduled sync](17-intervals-schedule.md) | 14.5 | 16 | | done da5aaf5 |
 | 18 | [Synced body fat and reported calories](18-intervals-hints.md) | 14.5 | 16 | Review | todo |
 | 19 | [Connect from the Fuel page](19-intervals-ui.md) | 14.5 | 11, 17 | Review | todo |
 | 20 | [Document intervals.icu and try a real account](20-intervals-docs.md) | 14.5 | 18, 19 | Review | todo |
