@@ -5,7 +5,6 @@ import io.github.noahhhx.mimos.api.household.HouseholdService;
 import io.github.noahhhx.mimos.api.household.HouseholdService.Membership;
 import io.github.noahhhx.mimos.api.identity.CurrentUserService;
 import io.github.noahhhx.mimos.api.identity.UserProfileRecord;
-import io.github.noahhhx.mimos.api.recipes.RecipeApiMapper;
 import io.github.noahhhx.mimos.planning.plan.MealPlan;
 import io.github.noahhhx.mimos.planning.plan.MealPlanService;
 import io.github.noahhhx.mimos.planning.plan.MealType;
@@ -62,11 +61,7 @@ public class MealPlansController implements PlanningApi {
         UserProfileRecord caller = currentUser.requireProfile();
         List<org.openapitools.model.PlannedDayTotal> days =
                 mealPlanService.plannedTotals(caller.householdId(), startDate, caller.id()).stream()
-                        .map(day -> new org.openapitools.model.PlannedDayTotal()
-                                .date(day.date())
-                                .total(RecipeApiMapper.toApiNutrition(day.total()))
-                                .meals(day.meals())
-                                .mealsWithoutNutrition(day.mealsWithoutNutrition()))
+                        .map(PlanningApiMapper::toApiPlannedDay)
                         .toList();
         return ResponseEntity.ok(new PlannedTotals().startDate(startDate).days(days));
     }

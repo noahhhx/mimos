@@ -4,7 +4,7 @@ import static java.util.Objects.requireNonNull;
 
 import io.github.noahhhx.mimos.api.identity.CurrentUserService;
 import io.github.noahhhx.mimos.api.identity.UserProfileRecord;
-import io.github.noahhhx.mimos.api.recipes.RecipeApiMapper;
+import io.github.noahhhx.mimos.api.planning.PlanningApiMapper;
 import io.github.noahhhx.mimos.fueling.FuelProfile;
 import io.github.noahhhx.mimos.fueling.FuelService;
 import io.github.noahhhx.mimos.fueling.Goal;
@@ -99,7 +99,7 @@ public class FuelController implements FuelApi {
                             .target(profile.map(
                                             enabled -> toApiTarget(TargetCalculator.target(date, enabled, day, null)))
                                     .orElse(null))
-                            .planned(toApiPlanned(
+                            .planned(PlanningApiMapper.toApiPlannedDay(
                                     requireNonNull(planned.get(date), "plannedTotals covers every day of its week")))
                             .logged(
                                     log == null
@@ -232,14 +232,6 @@ public class FuelController implements FuelApi {
                 .sessionId(energy.sessionId())
                 .kcal(whole(energy.kcal()))
                 .method(EnergyMethod.valueOf(energy.method().name()));
-    }
-
-    private static org.openapitools.model.PlannedDayTotal toApiPlanned(PlannedDayTotal day) {
-        return new org.openapitools.model.PlannedDayTotal()
-                .date(day.date())
-                .total(RecipeApiMapper.toApiNutrition(day.total()))
-                .meals(day.meals())
-                .mealsWithoutNutrition(day.mealsWithoutNutrition());
     }
 
     private static Nutrition total(double calories, double proteinG, double carbsG, double fatG) {
