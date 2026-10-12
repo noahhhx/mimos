@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.github.noahhhx.mimos.api.support.ApiIntegrationTestSupport;
 import io.github.noahhhx.mimos.api.support.TestRecipes;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -155,6 +156,41 @@ class LoggingEndpointTests extends ApiIntegrationTestSupport {
                 .exchange((req, res) -> {
                     assertThat(res.getStatusCode().value()).isEqualTo(400);
                     return null;
+                });
+    }
+
+    @Test
+    void aRangeIsAtMostSixtyTwoDaysCountingBothEnds() {
+        RestClient api = api();
+        String token = accessToken();
+        LocalDate from = LocalDate.of(2026, 3, 4);
+
+        for (String path : List.of("/api/v1/logs", "/api/v1/logs/summary")) {
+            assertThat(rangeStatus(api, token, path, from, from.plusDays(61)))
+                    .as("%s over 62 days", path)
+                    .isEqualTo("200");
+            assertThat(rangeStatus(api, token, path, from, from.plusDays(62)))
+                    .as("%s over 63 days", path)
+                    .isEqualTo("400 range must be at most 62 days");
+        }
+    }
+
+    private String rangeStatus(RestClient api, String token, String path, LocalDate from, LocalDate to) {
+        return api.get()
+                .uri(builder -> builder.path(path)
+                        .queryParam("from", from.toString())
+                        .queryParam("to", to.toString())
+                        .build())
+                .headers(headers -> headers.setBearerAuth(token))
+                .exchange((req, res) -> {
+                    int status = res.getStatusCode().value();
+                    return status == 200
+                            ? "200"
+                            : status + " "
+                                    + objectMapper
+                                            .readTree(res.getBody().readAllBytes())
+                                            .get("detail")
+                                            .asText();
                 });
     }
 

@@ -212,7 +212,7 @@ public class MealLogService {
         if (to.isBefore(from)) {
             throw new IllegalArgumentException("to must not be before from");
         }
-        if (from.plusDays(MAX_RANGE_DAYS).isBefore(to)) {
+        if (from.plusDays(MAX_RANGE_DAYS - 1).isBefore(to)) {
             throw new IllegalArgumentException("range must be at most " + MAX_RANGE_DAYS + " days");
         }
     }
