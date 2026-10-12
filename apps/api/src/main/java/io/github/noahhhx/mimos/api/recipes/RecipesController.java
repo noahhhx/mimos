@@ -5,6 +5,7 @@ import io.github.noahhhx.mimos.api.identity.IdentityService;
 import io.github.noahhhx.mimos.api.identity.UserProfileRecord;
 import io.github.noahhhx.mimos.recipes.recipe.IngredientService;
 import io.github.noahhhx.mimos.recipes.recipe.Recipe;
+import io.github.noahhhx.mimos.recipes.recipe.RecipePictureService;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeService;
 import java.util.List;
 import java.util.Locale;
@@ -32,22 +33,25 @@ import org.springframework.web.bind.annotation.RestController;
  * contract-generated {@link RecipesApi} (ADR-0003); status semantics
  * (404 invisible, 403 read-only library) come from the domain exceptions
  * mapped in {@code ApiExceptionHandler}. Household recipes name who added
- * them (ADR-0019).
+ * them (ADR-0019), and every detail lists its pictures (ADR-0023).
  */
 @RestController
 public class RecipesController implements RecipesApi {
 
     private final RecipeService recipeService;
+    private final RecipePictureService pictures;
     private final IngredientService ingredients;
     private final CurrentUserService currentUser;
     private final IdentityService identity;
 
     public RecipesController(
             RecipeService recipeService,
+            RecipePictureService pictures,
             IngredientService ingredients,
             CurrentUserService currentUser,
             IdentityService identity) {
         this.recipeService = recipeService;
+        this.pictures = pictures;
         this.ingredients = ingredients;
         this.currentUser = currentUser;
         this.identity = identity;
@@ -93,7 +97,7 @@ public class RecipesController implements RecipesApi {
     private RecipeDetail detail(Recipe recipe, UUID callerId) {
         UUID creatorId = recipe.createdByProfileId();
         Map<UUID, String> names = creatorId == null ? Map.of() : identity.displayNames(Set.of(creatorId));
-        return RecipeApiMapper.toDetail(recipe).createdBy(creator(recipe, names, callerId));
+        return RecipeApiMapper.toDetail(recipe, pictures.list(recipe.id())).createdBy(creator(recipe, names, callerId));
     }
 
     /** Who added a household recipe; null for library recipes and when the creator's profile is gone. */

@@ -34,7 +34,7 @@ public class PublicRecipesController implements PublicApi {
     public ResponseEntity<RecipeDetail> getPublicRecipe(String slug) {
         RecipeDetail recipe = recipeService
                 .findBySlug(slug)
-                .map(RecipeApiMapper::toDetail)
+                .map(found -> RecipeApiMapper.toDetail(found, List.of()))
                 .orElseThrow(() -> new NoSuchElementException("no library recipe with slug: " + slug));
         return ResponseEntity.ok(recipe);
     }

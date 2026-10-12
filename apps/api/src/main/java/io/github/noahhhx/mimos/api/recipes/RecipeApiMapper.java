@@ -8,6 +8,7 @@ import io.github.noahhhx.mimos.recipes.recipe.NutritionEstimate;
 import io.github.noahhhx.mimos.recipes.recipe.NutritionSource;
 import io.github.noahhhx.mimos.recipes.recipe.Recipe;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeDraft;
+import io.github.noahhhx.mimos.recipes.recipe.RecipePicture;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeStep;
 import java.math.BigDecimal;
 import java.util.List;
@@ -37,7 +38,8 @@ public final class RecipeApiMapper {
                 .nutrition(toApiNutrition(recipe.nutrition()));
     }
 
-    public static RecipeDetail toDetail(Recipe recipe) {
+    /** A recipe with its pictures, which every detail carries (library recipes have none). */
+    public static RecipeDetail toDetail(Recipe recipe, List<RecipePicture> pictures) {
         return new RecipeDetail()
                 .id(recipe.id())
                 .slug(recipe.slug())
@@ -53,6 +55,9 @@ public final class RecipeApiMapper {
                 .ingredients(toApiIngredients(recipe.ingredients()))
                 .steps(recipe.steps().stream()
                         .map(step -> new org.openapitools.model.RecipeStep().instruction(step.instruction()))
+                        .toList())
+                .pictures(pictures.stream()
+                        .map(picture -> new org.openapitools.model.RecipePicture().id(picture.id()))
                         .toList());
     }
 

@@ -505,6 +505,17 @@ export type RecipeDetail = {
     nutritionSource: NutritionSource;
     ingredients: Array<IngredientQuantity>;
     steps: Array<RecipeStep>;
+    /**
+     * The recipe's pictures in display order. Always empty for library recipes.
+     */
+    pictures: Array<RecipePicture>;
+};
+
+/**
+ * A picture of a recipe. Its image is served by getRecipePicture.
+ */
+export type RecipePicture = {
+    id: string;
 };
 
 /**
@@ -861,13 +872,13 @@ export type DailyLogSummary = {
 };
 
 /**
- * One person's data, in export format version 5 (ADR-0011, ADR-0019, ADR-0022). Any change to this schema, or to what a section holds, bumps the version and adds an upgrade step from the previous one.
+ * One person's data, in export format version 6 (ADR-0011, ADR-0019, ADR-0022, ADR-0023). Any change to this schema, or to what a section holds, bumps the version and adds an upgrade step from the previous one.
  *
  */
 export type AccountExport = {
     format: 'mimos.export';
     /**
-     * The format version. This instance exports version 5.
+     * The format version. This instance exports version 6.
      */
     version: number;
     exportedAt: string;
@@ -951,8 +962,20 @@ export type ExportedRecipe = {
     nutritionSource: NutritionSource;
     ingredients: Array<IngredientQuantity>;
     steps: Array<RecipeStep>;
+    /**
+     * The recipe's pictures in display order.
+     */
+    pictures: Array<ExportedRecipePicture>;
     createdAt: string;
     updatedAt: string;
+};
+
+/**
+ * One picture, its image base64-encoded. Import reads its type from the image and checks it like an upload.
+ *
+ */
+export type ExportedRecipePicture = {
+    data: string;
 };
 
 /**
@@ -1769,6 +1792,119 @@ export type ReplaceRecipeResponses = {
 };
 
 export type ReplaceRecipeResponse = ReplaceRecipeResponses[keyof ReplaceRecipeResponses];
+
+export type AddRecipePictureData = {
+    body: {
+        file: Blob | File;
+    };
+    path: {
+        recipeId: string;
+    };
+    query?: never;
+    url: '/api/v1/recipes/{recipeId}/pictures';
+};
+
+export type AddRecipePictureErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    413: Problem;
+};
+
+export type AddRecipePictureError = AddRecipePictureErrors[keyof AddRecipePictureErrors];
+
+export type AddRecipePictureResponses = {
+    /**
+     * The added picture, last in the recipe's order.
+     */
+    201: RecipePicture;
+};
+
+export type AddRecipePictureResponse = AddRecipePictureResponses[keyof AddRecipePictureResponses];
+
+export type DeleteRecipePictureData = {
+    body?: never;
+    path: {
+        recipeId: string;
+        pictureId: string;
+    };
+    query?: never;
+    url: '/api/v1/recipes/{recipeId}/pictures/{pictureId}';
+};
+
+export type DeleteRecipePictureErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type DeleteRecipePictureError = DeleteRecipePictureErrors[keyof DeleteRecipePictureErrors];
+
+export type DeleteRecipePictureResponses = {
+    /**
+     * Removed.
+     */
+    204: void;
+};
+
+export type DeleteRecipePictureResponse = DeleteRecipePictureResponses[keyof DeleteRecipePictureResponses];
+
+export type GetRecipePictureData = {
+    body?: never;
+    path: {
+        recipeId: string;
+        pictureId: string;
+    };
+    query?: never;
+    url: '/api/v1/recipes/{recipeId}/pictures/{pictureId}';
+};
+
+export type GetRecipePictureErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type GetRecipePictureError = GetRecipePictureErrors[keyof GetRecipePictureErrors];
+
+export type GetRecipePictureResponses = {
+    /**
+     * The image.
+     */
+    200: Blob | File;
+};
+
+export type GetRecipePictureResponse = GetRecipePictureResponses[keyof GetRecipePictureResponses];
 
 export type EstimateRecipeNutritionData = {
     body: NutritionEstimateInput;

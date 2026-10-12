@@ -234,7 +234,8 @@ public class RecipeService {
         return repository.findByIds(recipeIds);
     }
 
-    private Recipe requireOwned(UUID ownerId, UUID recipeId) {
+    /** A personal recipe of the owner: 404 when it is missing or another owner's, 403 for a library recipe. */
+    Recipe requireOwned(UUID ownerId, UUID recipeId) {
         Recipe recipe = repository
                 .findById(recipeId)
                 .orElseThrow(() -> new NoSuchElementException("recipe not found: " + recipeId));

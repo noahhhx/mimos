@@ -13,7 +13,7 @@
 openapi: 3.1.0
 info:
   title: Mimos API
-  version: 0.14.0
+  version: 0.15.0
   description: |
     The Mimos recipe companion API. Endpoints require a bearer token issued
     by the instance's Keycloak realm unless they live under `/api/v1/public`
@@ -570,6 +570,10 @@ paths:
       tags: [recipes]
       operationId: getRecipe
       summary: A recipe the caller may see (their household's or library)
+      description: >
+        The recipe, with its pictures' ids in display order. Pictures are
+        added, read, and removed by the recipe-pictures operations
+        (addRecipePicture, getRecipePicture, deleteRecipePicture).
       responses:
         '200':
           description: The recipe.
@@ -591,7 +595,9 @@ paths:
         owns the recipe may replace it; curated library recipes are
         read-only. A line may not
         link the recipe itself, or a recipe that already uses it (directly
-        or through other recipes): that is a 400.
+        or through other recipes): that is a 400. Pictures are not part of
+        the input: replacing a recipe keeps them, and the recipe-pictures
+        operations manage them.
       requestBody:
         required: true
         content:
@@ -624,6 +630,107 @@ paths:
       responses:
         '204':
           description: Deleted.
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/recipes/{recipeId}/pictures:
+    parameters:
+      - $ref: '#/components/parameters/RecipeId'
+    post:
+      tags: [recipe-pictures]
+      operationId: addRecipePicture
+      x-mcp: false
+      summary: Add a picture to a personal recipe
+      description: >
+        Uploads one picture, sent as the multipart part `file`: a JPEG,
+        PNG, or WebP image of at most 2 MB. Its type is read from its
+        bytes, not from the part's Content-Type. A recipe has at most 8
+        pictures, shown in the order they were added; the new one goes
+        last. Any member of the household that owns the recipe may add
+        one; curated library recipes are read-only. The picture is stored
+        exactly as sent.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: The added picture, last in the recipe's order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipePicture'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '413':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/recipes/{recipeId}/pictures/{pictureId}:
+    parameters:
+      - $ref: '#/components/parameters/RecipeId'
+      - name: pictureId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [recipe-pictures]
+      operationId: getRecipePicture
+      x-mcp: false
+      summary: The image of a recipe picture
+      description: >
+        The image of one picture of a recipe the caller may see, as it was
+        uploaded. A picture never changes once added, so the response may
+        be cached privately for a year.
+      responses:
+        '200':
+          description: The image.
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+    delete:
+      tags: [recipe-pictures]
+      operationId: deleteRecipePicture
+      summary: Remove a picture from a personal recipe
+      description: >
+        Removes one picture (its id is in getRecipe's pictures); the others
+        keep their order. Any member of the household that owns the recipe
+        may remove one; curated library recipes are read-only.
+      responses:
+        '204':
+          description: Removed.
         '401':
           $ref: '#/components/responses/Problem'
         '403':
@@ -1867,7 +1974,7 @@ components:
       type: object
       description: Everything needed to cook a recipe.
       required:
-        [id, title, description, servings, isLibrary, tags, nutrition, nutritionSource, ingredients, steps]
+        [id, title, description, servings, isLibrary, tags, nutrition, nutritionSource, ingredients, steps, pictures]
       properties:
         id:
           type: string
@@ -1912,6 +2019,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RecipeStep'
+        pictures:
+          type: array
+          description: The recipe's pictures in display order. Always empty for library recipes.
+          items:
+            $ref: '#/components/schemas/RecipePicture'
+    RecipePicture:
+      type: object
+      description: A picture of a recipe. Its image is served by getRecipePicture.
+      required: [id]
+      properties:
+        id:
+          type: string
+          format: uuid
     RecipeInput:
       type: object
       description: A personal recipe as submitted by its author.
@@ -2360,7 +2480,7 @@ components:
     AccountExport:
       type: object
       description: >
-        One person's data, in export format version 5 (ADR-0011, ADR-0019, ADR-0022).
+        One person's data, in export format version 6 (ADR-0011, ADR-0019, ADR-0022, ADR-0023).
         Any change to this schema, or to what a section holds, bumps the
         version and adds an upgrade step from the previous one.
       required: [format, version, exportedAt, ingredients, recipes, mealPlans, shoppingLists, mealLogs, trainingSessions]
@@ -2370,7 +2490,7 @@ components:
           enum: [mimos.export]
         version:
           type: integer
-          description: The format version. This instance exports version 5.
+          description: The format version. This instance exports version 6.
         exportedAt:
           type: string
           format: date-time
@@ -2470,7 +2590,7 @@ components:
         a new one. A line's recipeId names another recipe in the document
         by this id.
       required:
-        [id, title, description, servings, tags, nutrition, nutritionSource, ingredients, steps, createdAt, updatedAt]
+        [id, title, description, servings, tags, nutrition, nutritionSource, ingredients, steps, pictures, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -2502,12 +2622,27 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RecipeStep'
+        pictures:
+          type: array
+          description: The recipe's pictures in display order.
+          items:
+            $ref: '#/components/schemas/ExportedRecipePicture'
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
+    ExportedRecipePicture:
+      type: object
+      description: >
+        One picture, its image base64-encoded. Import reads its type from
+        the image and checks it like an upload.
+      required: [data]
+      properties:
+        data:
+          type: string
+          format: byte
     ExportedMealPlan:
       type: object
       description: A week of planned meals, keyed by its Monday.
