@@ -24,10 +24,7 @@ import io.github.noahhhx.mimos.planning.plan.MealPlanService;
 import io.github.noahhhx.mimos.planning.plan.PlannedDayTotal;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.temporal.TemporalAdjusters;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -81,14 +78,9 @@ public class FuelController implements FuelApi {
                 fuel.sessions(caller.id(), from, to).stream().collect(Collectors.groupingBy(TrainingSession::date));
         Map<LocalDate, DailyLogSummary> logged = mealLogs.summarize(caller.id(), from, to).stream()
                 .collect(Collectors.toMap(DailyLogSummary::date, Function.identity()));
-        Map<LocalDate, PlannedDayTotal> planned = new HashMap<>();
-        for (LocalDate monday = from.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-                !monday.isAfter(to);
-                monday = monday.plusWeeks(1)) {
-            mealPlans
-                    .plannedTotals(caller.householdId(), monday, caller.id())
-                    .forEach(day -> planned.put(day.date(), day));
-        }
+        Map<LocalDate, PlannedDayTotal> planned =
+                mealPlans.plannedTotals(caller.householdId(), from, to, caller.id()).stream()
+                        .collect(Collectors.toMap(PlannedDayTotal::date, Function.identity()));
 
         List<FuelDay> days = from.datesUntil(to.plusDays(1))
                 .map(date -> {
@@ -100,7 +92,7 @@ public class FuelController implements FuelApi {
                                             enabled -> toApiTarget(TargetCalculator.target(date, enabled, day, null)))
                                     .orElse(null))
                             .planned(PlanningApiMapper.toApiPlannedDay(
-                                    requireNonNull(planned.get(date), "plannedTotals covers every day of its week")))
+                                    requireNonNull(planned.get(date), "plannedTotals covers every day of its range")))
                             .logged(
                                     log == null
                                             ? total(0, 0, 0, 0)

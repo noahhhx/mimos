@@ -25,7 +25,7 @@ public class MealPlanRepository {
                    array(select d.profile_id from meal_plan_entry_diner d where d.entry_id = e.id) as diners
             from meal_plan_entry e
             join meal_plan p on p.id = e.meal_plan_id
-            where p.household_id = ? and p.start_date = ?
+            where p.household_id = ? and %s
             order by e.entry_date,
                      case e.meal_type
                          when 'BREAKFAST' then 0
@@ -35,6 +35,10 @@ public class MealPlanRepository {
                      end,
                      e.id
             """;
+    private static final String SELECT_WEEK_ENTRIES = SELECT_ENTRIES.formatted("p.start_date = ?");
+    // A plan's Monday is at most six days before its entries; bounding it lets the plan index narrow the read.
+    private static final String SELECT_ENTRIES_BETWEEN =
+            SELECT_ENTRIES.formatted("p.start_date between ? and ? and e.entry_date between ? and ?");
 
     private final JdbcTemplate jdbc;
 
@@ -98,8 +102,20 @@ public class MealPlanRepository {
 
     /** The week's raw entries (used by the shopping list and logging services). */
     public List<PlannedMealInput> loadEntryInputs(UUID ownerId, LocalDate startDate) {
-        return jdbc.query(SELECT_ENTRIES, ENTRY_INPUT_MAPPER, ownerId, Date.valueOf(startDate)).stream()
+        return jdbc.query(SELECT_WEEK_ENTRIES, ENTRY_INPUT_MAPPER, ownerId, Date.valueOf(startDate)).stream()
                 .toList();
+    }
+
+    /** The owner's raw entries dated from {@code from} to {@code to}, both included, in display order. */
+    public List<PlannedMealInput> loadEntryInputsBetween(UUID ownerId, LocalDate from, LocalDate to) {
+        return jdbc.query(
+                SELECT_ENTRIES_BETWEEN,
+                ENTRY_INPUT_MAPPER,
+                ownerId,
+                Date.valueOf(from.minusDays(6)),
+                Date.valueOf(to),
+                Date.valueOf(from),
+                Date.valueOf(to));
     }
 
     /** Every entry the owner has planned, with its week, in week and display order. */

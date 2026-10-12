@@ -5,7 +5,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.IntStream;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -17,13 +16,14 @@ import org.jspecify.annotations.Nullable;
  */
 public record PlannedDayTotal(LocalDate date, Nutrition total, int meals, int mealsWithoutNutrition) {
 
-    static List<PlannedDayTotal> forWeek(
-            LocalDate weekStart,
+    static List<PlannedDayTotal> forRange(
+            LocalDate from,
+            LocalDate to,
             UUID dinerProfileId,
             List<MealPlanRepository.PlannedMealInput> entries,
             Map<UUID, Nutrition> perServingByRecipe) {
-        return IntStream.range(0, 7)
-                .mapToObj(offset -> forDay(weekStart.plusDays(offset), dinerProfileId, entries, perServingByRecipe))
+        return from.datesUntil(to.plusDays(1))
+                .map(date -> forDay(date, dinerProfileId, entries, perServingByRecipe))
                 .toList();
     }
 

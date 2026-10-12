@@ -121,7 +121,16 @@ public class MealPlanService {
      */
     public List<PlannedDayTotal> plannedTotals(UUID ownerId, LocalDate startDate, UUID dinerProfileId) {
         requireMonday(startDate);
-        List<MealPlanRepository.PlannedMealInput> entries = plans.loadEntryInputs(ownerId, startDate);
+        return plannedTotals(ownerId, startDate, startDate.plusDays(6), dinerProfileId);
+    }
+
+    /**
+     * The diner's planned calories and macros for each day from
+     * {@code from} to {@code to}, both included, in date order (ADR-0022).
+     * Reading them creates no plan.
+     */
+    public List<PlannedDayTotal> plannedTotals(UUID ownerId, LocalDate from, LocalDate to, UUID dinerProfileId) {
+        List<MealPlanRepository.PlannedMealInput> entries = plans.loadEntryInputsBetween(ownerId, from, to);
         Map<UUID, Nutrition> perServing = recipes
                 .findByIds(entries.stream()
                         .map(MealPlanRepository.PlannedMealInput::recipeId)
@@ -129,7 +138,7 @@ public class MealPlanService {
                 .values()
                 .stream()
                 .collect(Collectors.toMap(Recipe::id, Recipe::nutrition));
-        return PlannedDayTotal.forWeek(startDate, dinerProfileId, entries, perServing);
+        return PlannedDayTotal.forRange(from, to, dinerProfileId, entries, perServing);
     }
 
     /** Every week the owner has planned meals in, oldest first; weeks without entries are left out. */

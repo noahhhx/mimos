@@ -395,6 +395,39 @@ class FuelEndpointTests extends ApiIntegrationTestSupport {
     }
 
     @Test
+    void plannedDaysAcrossThreeWeeksEqualTheThreeWeeklyReads() {
+        TestUser host = user();
+        TestUser guest = user();
+        guest.join(host);
+        UUID stew = host.recipe("Three Week Stew");
+        List<LocalDate> mondays = List.of(MONDAY, MONDAY.plusWeeks(1), MONDAY.plusWeeks(2));
+        for (LocalDate monday : mondays) {
+            for (int offset : List.of(0, 3, 6)) {
+                LocalDate date = monday.plusDays(offset);
+                host.ok(HttpMethod.POST, "/api/v1/plans/" + monday + "/entries", planned(date, "DINNER", stew, 3));
+                guest.ok(HttpMethod.POST, "/api/v1/plans/" + monday + "/entries", planned(date, "LUNCH", stew, 1.5));
+            }
+        }
+
+        List<JsonNode> weekly = new ArrayList<>();
+        for (LocalDate monday : mondays) {
+            guest.ok(HttpMethod.GET, "/api/v1/plans/" + monday + "/my-totals", null)
+                    .get("days")
+                    .forEach(weekly::add);
+        }
+        List<JsonNode> ranged = new ArrayList<>();
+        guest.ok(HttpMethod.GET, fuel(MONDAY, MONDAY.plusDays(20)), null)
+                .get("days")
+                .forEach(day -> ranged.add(day.get("planned")));
+
+        assertThat(weekly).hasSize(21);
+        assertThat(weekly.get(3).get("meals").asInt())
+                .as("a shared dinner and a lunch")
+                .isEqualTo(2);
+        assertThat(ranged).containsExactlyElementsOf(weekly);
+    }
+
+    @Test
     void householdMembersEachGetTheirOwnTargetsAndShareOfADinner() {
         TestUser host = user();
         TestUser guest = user();
@@ -460,6 +493,10 @@ class FuelEndpointTests extends ApiIntegrationTestSupport {
 
     private static Map<String, Object> session(LocalDate date, String sport, int minutes, String intensity) {
         return Map.of("date", date.toString(), "sport", sport, "durationMinutes", minutes, "intensity", intensity);
+    }
+
+    private static Map<String, Object> planned(LocalDate date, String mealType, UUID recipeId, double servings) {
+        return Map.of("date", date.toString(), "mealType", mealType, "recipeId", recipeId, "servings", servings);
     }
 
     private static Map<String, Object> allDayRide(BigDecimal workKj) {

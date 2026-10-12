@@ -127,26 +127,24 @@ class PlannedDayTotalTest {
     }
 
     @Test
-    void aWeekIsAlwaysSevenDaysFromMonday() {
-        List<PlannedDayTotal> week =
-                PlannedDayTotal.forWeek(MONDAY, ME, List.of(entry(MONDAY.plusDays(6), STEW, 1, ME)), PER_SERVING);
+    void aRangeHasEveryDayFromItsFirstToItsLastAcrossWeeks() {
+        LocalDate saturday = MONDAY.plusDays(5);
+        List<PlannedDayTotal> days = PlannedDayTotal.forRange(
+                saturday,
+                saturday.plusDays(3),
+                ME,
+                List.of(entry(MONDAY, STEW, 1, ME), entry(saturday.plusDays(3), STEW, 1, ME)),
+                PER_SERVING);
 
-        assertThat(week)
+        assertThat(days)
                 .extracting(PlannedDayTotal::date)
-                .containsExactly(
-                        MONDAY,
-                        MONDAY.plusDays(1),
-                        MONDAY.plusDays(2),
-                        MONDAY.plusDays(3),
-                        MONDAY.plusDays(4),
-                        MONDAY.plusDays(5),
-                        MONDAY.plusDays(6));
-        assertThat(week.getFirst()).isEqualTo(new PlannedDayTotal(MONDAY, Nutrition.UNKNOWN, 0, 0));
-        assertThat(week.getLast().total().calories()).isEqualTo(400.0);
+                .containsExactly(saturday, saturday.plusDays(1), saturday.plusDays(2), saturday.plusDays(3));
+        assertThat(days.getFirst()).isEqualTo(new PlannedDayTotal(saturday, Nutrition.UNKNOWN, 0, 0));
+        assertThat(days.getLast().total().calories()).isEqualTo(400.0);
     }
 
     private static PlannedDayTotal monday(MealPlanRepository.PlannedMealInput... entries) {
-        return PlannedDayTotal.forWeek(MONDAY, ME, List.of(entries), PER_SERVING)
+        return PlannedDayTotal.forRange(MONDAY, MONDAY, ME, List.of(entries), PER_SERVING)
                 .getFirst();
     }
 
