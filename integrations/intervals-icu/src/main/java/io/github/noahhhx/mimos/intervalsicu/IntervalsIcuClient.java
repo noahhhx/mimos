@@ -93,7 +93,7 @@ final class IntervalsIcuClient {
                     .exchange((request, response) -> {
                         HttpStatus status =
                                 HttpStatus.resolve(response.getStatusCode().value());
-                        if (status == HttpStatus.UNAUTHORIZED) {
+                        if (status == HttpStatus.UNAUTHORIZED || status == HttpStatus.FORBIDDEN) {
                             return new IcuResult.Unauthorized<>();
                         }
                         if (status == HttpStatus.TOO_MANY_REQUESTS) {

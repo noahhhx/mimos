@@ -58,7 +58,9 @@ class McpEndpointTests extends ApiIntegrationTestSupport {
             "joinHousehold",
             "leaveHousehold",
             "addRecipePicture",
-            "getRecipePicture");
+            "getRecipePicture",
+            "connectMyIntervalsIcu",
+            "disconnectMyIntervalsIcu");
 
     @LocalServerPort
     int port;

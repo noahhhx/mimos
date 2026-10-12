@@ -237,6 +237,17 @@ class FuelEndpointTests extends ApiIntegrationTestSupport {
     }
 
     @Test
+    void intervalsIcuIsNotFoundWithoutASecretKey() {
+        TestUser user = user();
+        String path = "/api/v1/me/intervals-icu";
+
+        assertThat(user.status(HttpMethod.GET, path, null)).isEqualTo(404);
+        assertThat(user.status(HttpMethod.PUT, path, Map.of("athleteId", "i1", "apiKey", "key")))
+                .isEqualTo(404);
+        assertThat(user.status(HttpMethod.DELETE, path, null)).isEqualTo(404);
+    }
+
+    @Test
     void deletesAHandEnteredSessionButNotASyncedOne() {
         TestUser user = user();
         String manual = user.ok(HttpMethod.POST, TRAINING, session(MONDAY, "SWIM", 30, "EASY"))

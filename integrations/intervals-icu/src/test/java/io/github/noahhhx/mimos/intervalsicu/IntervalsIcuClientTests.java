@@ -99,6 +99,13 @@ class IntervalsIcuClientTests {
     }
 
     @Test
+    void aKeyForAnotherAthleteIsUnauthorized() {
+        stub.answer(403, "{\"status\":403,\"error\":\"Forbidden\"}".getBytes(StandardCharsets.UTF_8), Map.of());
+
+        assertThat(client.athlete(CREDENTIALS)).isInstanceOf(IcuResult.Unauthorized.class);
+    }
+
+    @Test
     void aRateLimitCarriesItsRetryAfter() {
         stub.answer(429, new byte[0], Map.of("Retry-After", "120"));
 

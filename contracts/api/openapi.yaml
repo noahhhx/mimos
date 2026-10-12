@@ -13,7 +13,7 @@
 openapi: 3.1.0
 info:
   title: Mimos API
-  version: 0.15.0
+  version: 0.16.0
   description: |
     The Mimos recipe companion API. Endpoints require a bearer token issued
     by the instance's Keycloak realm unless they live under `/api/v1/public`
@@ -291,6 +291,77 @@ paths:
         '400':
           $ref: '#/components/responses/Problem'
         '401':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/me/intervals-icu:
+    get:
+      tags: [intervals-icu]
+      operationId: getMyIntervalsIcu
+      summary: Whether the caller's training syncs from intervals.icu
+      description: >
+        The caller's intervals.icu connection: DISCONNECTED when they never
+        connected (never a 404), CONNECTED, or BROKEN when intervals.icu no
+        longer accepts the saved key or the instance can no longer read it;
+        a broken connection needs the API key entered again. The API key is
+        never returned. A 404 means this instance does not offer
+        intervals.icu; training can still be entered by hand.
+      responses:
+        '200':
+          description: The caller's connection.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntervalsIcuConnection'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+    put:
+      tags: [intervals-icu]
+      operationId: connectMyIntervalsIcu
+      x-mcp: false
+      summary: Connect the caller's intervals.icu account with their athlete id and API key
+      description: >
+        Checks the key against the athlete record first: when intervals.icu
+        does not accept it, a 400 and nothing is saved; when intervals.icu
+        does not answer, a 502 and nothing is saved. Otherwise the key is
+        stored encrypted and replaces any earlier one. Connecting another
+        athlete removes the sessions synced from the previous one.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntervalsIcuConnectionInput'
+      responses:
+        '200':
+          description: The new connection.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntervalsIcuConnection'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '502':
+          $ref: '#/components/responses/Problem'
+    delete:
+      tags: [intervals-icu]
+      operationId: disconnectMyIntervalsIcu
+      x-mcp: false
+      summary: Disconnect intervals.icu and remove the training synced from it
+      description: >
+        Deletes the saved key and every INTERVALS_ICU session; sessions
+        entered by hand stay. Disconnecting when not connected is a 204 too.
+      responses:
+        '204':
+          description: Disconnected.
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
           $ref: '#/components/responses/Problem'
 
   /api/v1/household:
@@ -1598,6 +1669,41 @@ components:
         proteinGPerKg:
           type: number
           description: 1.2 to 3.0. Defaults to the goal's default.
+    IntervalsIcuConnectionStatus:
+      type: string
+      description: >
+        DISCONNECTED: never connected, or disconnected. CONNECTED: the key
+        works. BROKEN: the key needs entering again.
+      enum: [DISCONNECTED, CONNECTED, BROKEN]
+    IntervalsIcuConnection:
+      type: object
+      description: A person's intervals.icu connection. It never holds the API key.
+      required: [status]
+      properties:
+        status:
+          $ref: '#/components/schemas/IntervalsIcuConnectionStatus'
+        athleteId:
+          type: string
+          description: The connected athlete, absent while DISCONNECTED.
+        lastSyncAt:
+          type: string
+          format: date-time
+          description: When training last synced, absent before the first sync.
+        lastError:
+          type: string
+          description: Why the connection is BROKEN or the last sync failed, for the person to read.
+    IntervalsIcuConnectionInput:
+      type: object
+      required: [athleteId, apiKey]
+      properties:
+        athleteId:
+          type: string
+          description: The athlete id from intervals.icu settings, such as i12345. Letters and digits, at most 32.
+        apiKey:
+          type: string
+          format: password
+          writeOnly: true
+          description: The personal API key from intervals.icu settings. At most 200 characters.
     TrainingSource:
       type: string
       description: Where a session came from. Only MANUAL sessions can be deleted.

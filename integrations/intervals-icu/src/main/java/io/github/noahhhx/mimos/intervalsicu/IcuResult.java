@@ -12,7 +12,7 @@ sealed interface IcuResult<T> {
 
     record Ok<T>(T value) implements IcuResult<T> {}
 
-    /** A 401: the key or the athlete id is wrong, or the key was revoked. */
+    /** A 401 or 403: the key is wrong or revoked, or it does not belong to that athlete. */
     record Unauthorized<T>() implements IcuResult<T> {}
 
     /** A 429, with its {@code Retry-After} when it gave one in seconds. */

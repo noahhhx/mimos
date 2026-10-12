@@ -174,6 +174,38 @@ export type FuelProfileInput = {
 };
 
 /**
+ * DISCONNECTED: never connected, or disconnected. CONNECTED: the key works. BROKEN: the key needs entering again.
+ *
+ */
+export type IntervalsIcuConnectionStatus = 'DISCONNECTED' | 'CONNECTED' | 'BROKEN';
+
+/**
+ * A person's intervals.icu connection. It never holds the API key.
+ */
+export type IntervalsIcuConnection = {
+    status: IntervalsIcuConnectionStatus;
+    /**
+     * The connected athlete, absent while DISCONNECTED.
+     */
+    athleteId?: string;
+    /**
+     * When training last synced, absent before the first sync.
+     */
+    lastSyncAt?: string;
+    /**
+     * Why the connection is BROKEN or the last sync failed, for the person to read.
+     */
+    lastError?: string;
+};
+
+export type IntervalsIcuConnectionInput = {
+    /**
+     * The athlete id from intervals.icu settings, such as i12345. Letters and digits, at most 32.
+     */
+    athleteId: string;
+};
+
+/**
  * Where a session came from. Only MANUAL sessions can be deleted.
  */
 export type TrainingSource = 'MANUAL' | 'INTERVALS_ICU';
@@ -1083,6 +1115,17 @@ export type ImportReport = {
     warnings: Array<string>;
 };
 
+export type IntervalsIcuConnectionInputWritable = {
+    /**
+     * The athlete id from intervals.icu settings, such as i12345. Letters and digits, at most 32.
+     */
+    athleteId: string;
+    /**
+     * The personal API key from intervals.icu settings. At most 200 characters.
+     */
+    apiKey: string;
+};
+
 export type RecipeId = string;
 
 export type RecipeSlug = string;
@@ -1407,6 +1450,101 @@ export type GetMyFuelResponses = {
 };
 
 export type GetMyFuelResponse = GetMyFuelResponses[keyof GetMyFuelResponses];
+
+export type DisconnectMyIntervalsIcuData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/intervals-icu';
+};
+
+export type DisconnectMyIntervalsIcuErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type DisconnectMyIntervalsIcuError = DisconnectMyIntervalsIcuErrors[keyof DisconnectMyIntervalsIcuErrors];
+
+export type DisconnectMyIntervalsIcuResponses = {
+    /**
+     * Disconnected.
+     */
+    204: void;
+};
+
+export type DisconnectMyIntervalsIcuResponse = DisconnectMyIntervalsIcuResponses[keyof DisconnectMyIntervalsIcuResponses];
+
+export type GetMyIntervalsIcuData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/intervals-icu';
+};
+
+export type GetMyIntervalsIcuErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type GetMyIntervalsIcuError = GetMyIntervalsIcuErrors[keyof GetMyIntervalsIcuErrors];
+
+export type GetMyIntervalsIcuResponses = {
+    /**
+     * The caller's connection.
+     */
+    200: IntervalsIcuConnection;
+};
+
+export type GetMyIntervalsIcuResponse = GetMyIntervalsIcuResponses[keyof GetMyIntervalsIcuResponses];
+
+export type ConnectMyIntervalsIcuData = {
+    body: IntervalsIcuConnectionInputWritable;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/intervals-icu';
+};
+
+export type ConnectMyIntervalsIcuErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    502: Problem;
+};
+
+export type ConnectMyIntervalsIcuError = ConnectMyIntervalsIcuErrors[keyof ConnectMyIntervalsIcuErrors];
+
+export type ConnectMyIntervalsIcuResponses = {
+    /**
+     * The new connection.
+     */
+    200: IntervalsIcuConnection;
+};
+
+export type ConnectMyIntervalsIcuResponse = ConnectMyIntervalsIcuResponses[keyof ConnectMyIntervalsIcuResponses];
 
 export type GetHouseholdData = {
     body?: never;

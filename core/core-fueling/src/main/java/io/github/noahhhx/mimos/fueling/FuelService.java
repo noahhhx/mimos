@@ -80,4 +80,9 @@ public class FuelService {
         }
         repository.deleteSession(profileId, sessionId);
     }
+
+    /** Deletes every session this person's training source synced, for a source they disconnected. */
+    public void deleteSynced(UUID profileId) {
+        repository.deleteSynced(profileId);
+    }
 }

@@ -108,6 +108,10 @@ public class FuelRepository {
         jdbc.update("delete from training_session where profile_id = ? and id = ?", profileId, sessionId);
     }
 
+    public void deleteSynced(UUID profileId) {
+        jdbc.update("delete from training_session where profile_id = ? and source <> 'MANUAL'", profileId);
+    }
+
     private static final RowMapper<FuelProfile> PROFILE_MAPPER = (rs, rowNum) -> new FuelProfile(
             rs.getObject("profile_id", UUID.class),
             rs.getBoolean("enabled"),

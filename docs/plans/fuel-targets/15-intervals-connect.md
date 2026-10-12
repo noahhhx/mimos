@@ -4,7 +4,7 @@
 
 ## Build
 
-- `V16__intervals_icu.sql`: `intervals_icu_connection` with profile id
+- `V17__intervals_icu.sql` (V16 went to recipe pictures): `intervals_icu_connection` with profile id
   (primary key, cascading from `user_profile`), athlete id, ciphertext,
   nonce, status, last sync time, and last error.
 - `GET /api/v1/me/intervals-icu`: athlete id, status, last sync time, last

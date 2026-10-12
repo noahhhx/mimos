@@ -141,7 +141,17 @@ wire-format contract:
   distinct from other failures), `IntervalsIcuTranslator`, and `SecretBox`
   (AES-256-GCM under `MIMOS_SECRET_KEY`, a fresh 96-bit nonce from the
   injected `SecureRandom` per encryption; a value that does not open under
-  the current key throws `UnreadableSecretException`). External API
+  the current key throws `UnreadableSecretException`), and
+  `IntervalsIcuConnections`, which owns `intervals_icu_connection` (one
+  row per person: athlete id, the key sealed by `SecretBox`, status, last
+  sync, last error) and exists only while the feature is active. Connect
+  checks the key against the athlete record before saving it (a 401 or
+  403 is a 400, no answer a 502 through `IntervalsIcuUnavailableException`);
+  a key that no longer opens reads as `BROKEN`; disconnect deletes the row
+  and the person's synced sessions (`FuelService.deleteSynced`). API:
+  `/api/v1/me/intervals-icu` (package `fueling` in `apps/api`), a 404 on
+  every route while the feature is off; `PUT` and `DELETE` are
+  `x-mcp: false`. External API
   types are package-private and never cross this boundary; events,
   activities, wellness, and the athlete record become `core-fueling`
   training sessions and `ProfileHints` at the edge. A synced session's id
@@ -305,7 +315,7 @@ is the contract:
 - Security failures (401/403) are RFC 9457 problem-details, as are API errors
   generally. Domain errors map once in `ApiExceptionHandler`:
   `IllegalArgumentException` → 400, `NoSuchElementException` → 404,
-  `ReadOnlyRecipeException` and `ReadOnlyIngredientException` → 403, `AccountNotEmptyException` and `MembershipConflictException` → 409, `InviteNoLongerValidException` → 410. It extends Spring's
+  `ReadOnlyRecipeException` and `ReadOnlyIngredientException` → 403, `AccountNotEmptyException` and `MembershipConflictException` → 409, `InviteNoLongerValidException` → 410, `PluginActionFailedException` and `IntervalsIcuUnavailableException` → 502. It extends Spring's
   `ResponseEntityExceptionHandler`, so Spring MVC's own errors (415, 405,
   unknown-path 404, 406, 413 for an upload over the multipart limit,
   malformed input) are problem-details too; anything
@@ -355,7 +365,7 @@ mimos/
 │   └── core-fueling/     # fuel profiles, training sessions, daily targets (ADR-0022)
 ├── integrations/
 │   ├── plugins/          # plugin runtime: registry, extension-API client, card validation (ADR-0006)
-│   └── intervals-icu/    # training sync from intervals.icu (ADR-0022): client, translator, and key encryption so far
+│   └── intervals-icu/    # training sync from intervals.icu (ADR-0022): client, translator, key encryption, and connections so far
 ├── libraries/            # shared contracts: OpenAPI-generated clients, plugin SDK
 │   ├── api-client/       # @mimos/api-client — generated TypeScript client (committed)
 │   └── plugin-sdk/       # @mimos/plugin-sdk — generated TypeScript types for the plugin API (committed)
