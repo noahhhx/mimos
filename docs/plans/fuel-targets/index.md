@@ -54,7 +54,7 @@ branch, not on `main` yet), `done <sha>`.
 | 12 | [intervals.icu client and translator](12-intervals-client.md) | 14.5 | 06 | | done e180843 |
 | 13 | [A fake intervals.icu for the stack](13-intervals-fake.md) | 14.5 | 12 | Review | done 5f14fb1 |
 | 14 | [Encrypt the API key](14-secret-box.md) | 14.5 | 12 | | done 83a2475 |
-| 15 | [Connect and disconnect](15-intervals-connect.md) | 14.5 | 13, 14 | | todo |
+| 15 | [Connect and disconnect](15-intervals-connect.md) | 14.5 | 13, 14 | | done 884e943 |
 | 16 | [Sync on demand](16-intervals-sync.md) | 14.5 | 15 | | todo |
 | 17 | [Scheduled sync](17-intervals-schedule.md) | 14.5 | 16 | | todo |
 | 18 | [Synced body fat and reported calories](18-intervals-hints.md) | 14.5 | 16 | Review | todo |
