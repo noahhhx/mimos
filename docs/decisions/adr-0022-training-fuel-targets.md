@@ -118,10 +118,12 @@ order of preference, Mimos uses:
 
 1. Completed work (`icu_joules`).
 2. Planned work (`joules`).
-3. FTP × intensity × duration.
+3. FTP × intensity × duration, for a ride when FTP is set. FTP is a
+   cycling measure, so it prices rides only; a run or swim with FTP set
+   falls through to the estimate.
 4. An activity's reported `calories`.
-5. For a manual session without FTP, a per-minute estimate by intensity
-   and weight.
+5. Otherwise (a non-ride, or a ride with no FTP), a per-minute estimate
+   by intensity and weight.
 
 For a day, completed sessions replace planned ones.
 

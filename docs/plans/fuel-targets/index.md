@@ -44,8 +44,8 @@ branch, not on `main` yet), `done <sha>`.
 | 02 | [Check and land planned totals](02-planned-totals-land.md) | 14.1 | 01 | Review | done 5338bf8 |
 | 03 | [Rebase the fuel profile onto main](03-fuel-profile-rebase.md) | 14.2 | 02 | | done b8ef07e |
 | 04 | [Check and land the fuel profile](04-fuel-profile-land.md) | 14.2 | 03 | Review | done b8ef07e |
-| 05 | [Rebase the target calculator onto main](05-calculator-rebase.md) | 14.3 | 04 | | on branch 5b8f82e |
-| 06 | [Check and land the target calculator](06-calculator-land.md) | 14.3 | 05 | Review | todo |
+| 05 | [Rebase the target calculator onto main](05-calculator-rebase.md) | 14.3 | 04 | | done 1cae3ca |
+| 06 | [Check and land the target calculator](06-calculator-land.md) | 14.3 | 05 | Review | done 1cae3ca |
 | 07 | [Tidy the fuel read's ranges](07-fuel-read-ranges.md) | 14.3 | 06 | | todo |
 | 08 | [Fuel for the day on the plan page](08-plan-fuel-line.md) | 14.4 | 06 | Review | todo |
 | 09 | [Training on the plan page](09-plan-training.md) | 14.4 | 08 | Review | todo |
@@ -112,7 +112,7 @@ As of 2026-10-08, nothing is on `main` yet. Branches are local only.
 | ---- | ------ | ---- | ----- |
 | 14.1 | `ft1-planned-totals` | `cf6d259` | Landed on `main` at `5338bf8` (item 02): rebased clean, all gates and scenarios green, planned-totals perf within budget. |
 | 14.2 | `ft2-fuel-profile` | `5f06f76` | Landed on `main` at `b8ef07e` (item 04): cherry-picked onto `main` conflict-free. All six live checks green (export unchanged but version 4→5 + empty `trainingSessions`; save/reload, per-field 400 errors, training API + MCP tools, import round-trip, mobile 390px light and dark with no sideways scroll); export p95 9.1 ms vs main's 10.9 ms, fuel-profile p95 3.9 ms. |
-| 14.3 | `ft3-fuel-targets` | `5b8f82e` | Rebased onto `main` (item 05): two commits, `e260159` (calculator) and `5b8f82e` (read endpoint); the FT1, FT2, and docs copies dropped. `FuelController` follows 14.1's nullable `Nutrition` (`NutritionTotal` is gone, `logged` and `planned.total` both map through `RecipeApiMapper.toApiNutrition`), and the endpoint's own 62-day guard is dropped now that `FuelService.sessions` rejects 63 with the same message. Contract 0.14.0, client regenerated. All gates green (verify 185 tests, web typecheck, mkdocs strict, client regen no-diff) and all 19 scenarios pass. Item 06 lands it. |
+| 14.3 | `ft3-fuel-targets` | `5b8f82e` | Landed on `main` at `1cae3ca` (item 06): the two commits re-based onto main's docs head (`b373375` calculator, `1cae3ca` read); clean, code byte-identical to `5b8f82e`. All gates green at the head (verify 185 api tests + TargetCalculator 50 + FuelEndpoint 15, web 145, client regen no-diff, mkdocs strict) and all 19 scenarios pass. Live checks 1–4 green against the stack (golden week 2678/350 Mon, 5419/840 Sat; body-fat DEFAULT→PROFILE 59.5→61.6 kg; targets off keeps planned/logged/sessions; MCP `getMyFuel` equals HTTP); check 5 proven structurally (no planning/logging Java, contract schema, or shared config touched). Perf at the head: plan read p95 6.7 ms, 7-day fuel p95 6.3 ms, 62-day fuel p95 7.6 ms (budgets 120/400 ms). Owner confirmed all four decisions as built; ADR-0022's FTP step tightened to rides-only. |
 
 The run's notes live outside the repo in `~/.claude/orchestrate/fuel-targets/`
 (`prs/` holds each part's description and review findings; `decisions.tsv`
