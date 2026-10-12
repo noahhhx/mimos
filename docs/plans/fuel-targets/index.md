@@ -52,7 +52,7 @@ branch, not on `main` yet), `done <sha>`.
 | 10 | [Targets on the Log page](10-log-targets.md) | 14.4 | 08 | Review | done d5459ae |
 | 11 | [The fuel guide](11-fuel-guide.md) | 14.4 | 09, 10 | Review | done 4b6615f |
 | 12 | [intervals.icu client and translator](12-intervals-client.md) | 14.5 | 06 | | done e180843 |
-| 13 | [A fake intervals.icu for the stack](13-intervals-fake.md) | 14.5 | 12 | Review | todo |
+| 13 | [A fake intervals.icu for the stack](13-intervals-fake.md) | 14.5 | 12 | Review | done 5f14fb1 |
 | 14 | [Encrypt the API key](14-secret-box.md) | 14.5 | 12 | | todo |
 | 15 | [Connect and disconnect](15-intervals-connect.md) | 14.5 | 13, 14 | | todo |
 | 16 | [Sync on demand](16-intervals-sync.md) | 14.5 | 15 | | todo |

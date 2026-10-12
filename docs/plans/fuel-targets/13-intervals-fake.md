@@ -38,3 +38,30 @@ Every later item checks itself against this fake, so it comes first.
 there or in `compose.debug.yml` (which CI does not boot, so the
 intervals.icu scenario would not run in CI). Land on `main`; set row 13 to
 `done`.
+
+## Built
+
+- The fake is part of the `@mimos/harness` package (`tools/harness/fakes/intervals-icu/src`),
+  not a workspace of its own: the harness gate typechecks and tests it, and
+  no Dockerfile has to copy a new workspace manifest. Its image copies only
+  `src`, as `plugins/country-week` does.
+- Control routes are reached on `127.0.0.1:8090` (`INTERVALS_ICU_FAKE_PORT`),
+  not through `docker compose exec`. Scenarios are Node code on the host that
+  already call the API over HTTP; `exec` would start a docker process per
+  call and need an HTTP client in the image. Loopback-only matches how
+  `compose.debug.yml` publishes its ports.
+- `harness up` adds `compose.fakes.yml` with or without `--debug`, so a plain
+  `harness up` is the stack CI's scenarios run against.
+- CI adds the overlay after the devenv-free smoke tests, so those still run
+  on `compose.yml` alone, then restarts the API with the fake's base URL
+  before the scenarios.
+- `tools/harness/test/compose.test.ts` fails if `compose.yml` ever builds a
+  fake.
+
+Checks at the working tree: harness typecheck and 95 tests (13 for the fake);
+`harness up --debug` healthy with `intervals-icu-fake` healthy and the API's
+`mimos.intervals-icu.base-url` bound to it; `harness diag` no problems; all
+21 scenarios pass; `compose.yml` alone boots healthy with the default base
+URL; the self-host compose file resolves.
+
+Owner chose `compose.fakes.yml` over `compose.debug.yml` on 2026-10-12. Landed at 5f14fb1.
