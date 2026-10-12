@@ -56,6 +56,9 @@ you planned.
 In a shared household, the total shows in **Mine** only, because it is
 yours alone. **Everyone** shows no totals.
 
+With [fuel targets](fuel.md) on, the day also shows your training and its
+**Fuel for the day** above the **Planned** line.
+
 ## Planning for a household
 
 When you [share a household](household.md), everyone in it plans the same

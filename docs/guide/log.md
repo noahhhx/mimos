@@ -2,7 +2,9 @@
 
 Open **Log** to see what you've eaten, with calories, protein, carbs, and
 fat added up for each day of the week. The numbers are information for you,
-nothing more: there are no goals to miss and no streaks to keep.
+nothing more: there are no streaks to keep, and no goals unless you turn on
+[fuel targets](fuel.md). Even then, each day's target sits beside what you
+logged with no score.
 
 ![The food log: a week of daily totals, and one day's meals](../assets/screenshots/log.png)
 

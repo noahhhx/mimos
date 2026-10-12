@@ -56,7 +56,8 @@ The square with a person icon, at the top right, opens your profile menu:
   invites someone new. See [Household](household.md).
 - **Plugins** turns add-ons on and off. See [Plugins](plugins.md).
 - **Fuel** turns on daily fuel targets and holds what they are worked out
-  from: your weight, your goal, and your training.
+  from: your weight, your goal, and your training. See
+  [Fuel targets](fuel.md).
 - **Your data** downloads everything you've added, or restores it. See
   [Your data](your-data.md).
 - **Sign out** signs you out on this device.
