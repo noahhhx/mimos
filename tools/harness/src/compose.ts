@@ -2,15 +2,15 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 import { HarnessError } from "./args.ts";
-import { COMPOSE_FILE, DEBUG_OVERLAY, REPO_ROOT } from "./config.ts";
+import { COMPOSE_FILE, DEBUG_OVERLAY, FAKES_OVERLAY, REPO_ROOT } from "./config.ts";
 import { exec, execInteractive, execOk, type ExecOptions, type ExecResult } from "./exec.ts";
 import { redactText } from "./redact.ts";
 import { writeRunFile, type Run } from "./run.ts";
 
-/** Thin wrapper over `docker compose` for the product stack (plus the debug overlay when asked). */
+/** Thin wrapper over `docker compose` for the product stack, its fakes, and the debug overlay when asked. */
 
 export function composeFiles(debug: boolean): string[] {
-  const files = [join(REPO_ROOT, COMPOSE_FILE)];
+  const files = [join(REPO_ROOT, COMPOSE_FILE), join(REPO_ROOT, FAKES_OVERLAY)];
   if (debug) {
     const overlay = join(REPO_ROOT, DEBUG_OVERLAY);
     if (!existsSync(overlay)) {

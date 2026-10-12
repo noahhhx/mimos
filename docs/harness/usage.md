@@ -52,7 +52,7 @@ narrowing the recipe 415.
 
 | Command | What it does |
 | --- | --- |
-| `harness up [--no-build] [--debug [--sql-log]]` | `compose build`, then `up -d --wait`. `--debug` adds `deploy/docker/compose.debug.yml`: JSON API logs, actuator diagnostics, JDWP on `127.0.0.1:5005`, and the Node inspector on `127.0.0.1:9229`. `--sql-log` makes Postgres log every statement. If the stack is not healthy, the unhealthy services' last log lines go into `summary.md`. |
+| `harness up [--no-build] [--debug [--sql-log]]` | `compose build`, then `up -d --wait`, always with the [fakes](#fakes-of-third-party-services) in `deploy/docker/compose.fakes.yml`. `--debug` adds `deploy/docker/compose.debug.yml`: JSON API logs, actuator diagnostics, JDWP on `127.0.0.1:5005`, and the Node inspector on `127.0.0.1:9229`. `--sql-log` makes Postgres log every statement. If the stack is not healthy, the unhealthy services' last log lines go into `summary.md`. |
 | `harness down` | `compose down`. The database volume survives. |
 | `harness reset` | `compose down -v --remove-orphans`, which wipes the database. |
 | `harness status` | Each service's state and health, and whether its image is `fresh` or `stale` (with the changed file named). It only prints, without a run folder. |
@@ -116,6 +116,40 @@ Playwright MCP browser ([step 2](step-2-browser.md#exploring-with-the-mcp-browse
 For attaching IntelliJ, VS Code, or Chrome DevTools instead, see
 [attaching a human debugger](step-5-debugger.md#attaching-a-human-debugger).
 
+### Fakes of third-party services
+
+Mimos talks to some outside services (intervals.icu, ADR-0022). The stack
+the harness runs replaces each with a fake: a zero-dependency `node:http`
+service in `tools/harness/fakes/<service>/`, run by
+`deploy/docker/compose.fakes.yml`, never by `compose.yml`. The overlay
+points the API at the fake and publishes the fake on `127.0.0.1` only, so
+a scenario drives its control routes over HTTP as it drives the API. Each
+fake keeps its state in memory; a restart or `POST /_fake/reset` puts its
+fixtures back. Its unit tests run with the harness's own (`npm test -w
+@mimos/harness`).
+
+**intervals.icu** (`intervals-icu-fake`, `http://127.0.0.1:8090`, or
+`INTERVALS_ICU_FAKE_PORT`). It serves the four reads the client in
+`integrations/intervals-icu` makes, for athlete `i1` and the key
+`fake-intervals-icu-key` (both exported from `src/fixtures.ts`): the
+athlete record, planned workouts (a ride with `joules` today, one without
+in two days), activities (a ride yesterday), and wellness (body fat on two
+of the last three days). A wrong or missing key is a 401, another athlete
+a 403, and a list read without `oldest` and `newest` a 400.
+
+| Control route | What it does |
+| --- | --- |
+| `PUT /_fake/events/{id}` | Adds or replaces a planned workout (`start_date_local` required; `category` defaults to `WORKOUT`). |
+| `DELETE /_fake/events/{id}` | Removes one. |
+| `PUT /_fake/activities/{id}` | Adds or replaces a completed activity (`start_date_local` required). |
+| `DELETE /_fake/activities/{id}` | Removes one. |
+| `PUT /_fake/wellness/{date}` | Merges fields (`bodyFat`, `weight`) into that day's record. |
+| `PUT /_fake/fault` | `{"status": 429, "retryAfter": 30, "times": 1}` or `{"status": 401}`: every read gets that answer, `times` reads in a row or until cleared. |
+| `DELETE /_fake/fault` | Clears it. |
+| `GET /_fake/requests` | Every read it answered: path, query, status, and whether the key was `good`, `wrong`, or `missing` (never the key). |
+| `POST /_fake/reset` | Fixtures back, fault and log cleared. |
+| `GET /_fake/health` | The compose healthcheck. |
+
 ### Run folders
 
 Every evidence-producing command creates `.harness/runs/<UTC
@@ -130,8 +164,9 @@ before anything is written. The full layout is in the
 ## In CI
 
 The `compose` job in `.github/workflows/ci.yml` boots the stack and runs
-its devenv-free smoke tests, which are the self-host parity check. Then
-it installs Nix and devenv, runs `devenv shell -- npm ci`, and runs every
+its devenv-free smoke tests, which are the self-host parity check, on
+`compose.yml` alone. Then it adds `compose.fakes.yml`, installs Nix and
+devenv, runs `devenv shell -- npm ci`, and runs every
 scenario in `tools/harness/scenarios/` with `devenv shell -- harness ui
 <name>`, all into one run folder. That run's `summary.md` is appended to
 the job summary. When the job fails, `.harness/runs/` is uploaded as the
@@ -143,6 +178,6 @@ until the scenario is removed from the list, so a fix also turns its
 reproduction into a regression test. The list is empty: `create-recipe`
 left it when step 7 fixed the recipe 415.
 
-To reproduce a CI failure locally: `harness up` (CI's stack runs without
-the debug overlay), then `harness ui <name>`. Or download the artifact
+To reproduce a CI failure locally: `harness up` (CI's stack runs the
+fakes but not the debug overlay), then `harness ui <name>`. Or download the artifact
 and start from its `summary.md`.

@@ -198,6 +198,12 @@ jobs:
           curl -fsS -X POST -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
             -d '{"id":"change"}' "$actions" -o /dev/null
 
+      # Fakes of third-party services for the scenarios (AGENTS.md "Agent
+      # harness"). Added only now, so the parity check above runs compose.yml
+      # alone. The API restarts to pick up the fakes' base URLs.
+      - name: Start the third-party fakes
+        run: docker compose -f deploy/docker/compose.yml -f deploy/docker/compose.fakes.yml up -d --wait
+
       # Browser scenarios (docs/harness/step-6-skill-docs-ci.md). The steps above
       # are the devenv-free self-host parity check; from here on the agent
       # harness runs through devenv, which provides Node and the browsers.
@@ -256,7 +262,7 @@ jobs:
 
       - name: Tear down
         if: always()
-        run: docker compose -f deploy/docker/compose.yml down -v --remove-orphans
+        run: docker compose -f deploy/docker/compose.yml -f deploy/docker/compose.fakes.yml down -v --remove-orphans
 
   # Images for self-hosting (ADR-0012, deploy/selfhost): only what passed
   # every job above. main publishes `main` and `sha-<commit>`; a release tag

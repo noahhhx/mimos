@@ -1,7 +1,7 @@
 import { displayCommand, HarnessError, parseCommandArgs, UsageError } from "../args.ts";
 import { fenced, finishRun, RUN_OPTION, RUN_USAGE, startRun, type Command } from "../command.ts";
 import { captureLogs, compose, composeEnv, isHealthy, ps, type ServiceState } from "../compose.ts";
-import { COMPOSE_FILE, composeProject, DEBUG_OVERLAY } from "../config.ts";
+import { COMPOSE_FILE, composeProject, DEBUG_OVERLAY, FAKES_OVERLAY } from "../config.ts";
 import { exec } from "../exec.ts";
 import { redactText } from "../redact.ts";
 import { appendSummary, writeRunFile } from "../run.ts";
@@ -47,7 +47,8 @@ export const upCommand: Command = {
   --sql-log    with --debug: Postgres logs every statement and its duration
 ${RUN_USAGE}
 
-Runs \`docker compose build\` then \`up -d --wait\` on ${COMPOSE_FILE}. Output is
+Runs \`docker compose build\` then \`up -d --wait\` on ${COMPOSE_FILE} plus
+${FAKES_OVERLAY} (fakes of third-party services, as CI's scenarios run). Output is
 kept in compose/; when the stack does not become healthy, every service's logs
 are captured and the unhealthy ones are summarized in summary.md.`,
   async run(argv) {

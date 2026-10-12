@@ -9,7 +9,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "node --test test/*.test.ts",
+    "test": "node --test test/*.test.ts fakes/*/src/*.test.ts",
     "harness": "node src/cli.ts"
   },
   "devDependencies": {

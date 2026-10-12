@@ -54,7 +54,7 @@ change** — an out-of-date AGENTS.md is worse than none.
 | Account data | Per-person export/import as one versioned JSON document (`GET /api/v1/account/export`, `POST /api/v1/account/import`): domain-shaped, never a table dump; the household's recipes (with their pictures as base64, imported through the upload's own checks), ingredients, and shopping lists, only the plan entries the exporter eats (weeks with none are left out), the exporter's own logs, and their fuel profile and hand-entered training sessions (synced sessions and the intervals.icu key never); library recipes by slug; recipe links by the linked recipe's id within the document, restored linked-first; import only into an empty household of one (no recipes, own ingredients, planned meals, list items, logs, fuel profile, or training sessions, and no other member; 409 otherwise), atomically, through domain validation, with the importer as every entry's only diner. Current format: version 6. Format changes, including a change to what a section holds, bump the version, add an `ExportUpgrader` step and a frozen `export/v<N>.json` test fixture. See ADR-0011, ADR-0018, ADR-0019, ADR-0022, ADR-0023. |
 | Plugins    | HTTP sidecar plugins, pull-only in v1: config registry (`mimos.plugins.*`), manifest at `GET /manifest`, two capabilities (`plan-suggestions` cards, `week-panel` declarative panels with buttons), library-only context, households named by a per-plugin pseudonym (`subject`) the plugin may keep its own data against. See ADR-0006, ADR-0017. Registered means available; each household opts in from the Plugins page (`/app/plugins`, linked from the profile menu; API `/api/v1/me/plugins`), and every plugin starts off. See ADR-0013. |
 | Agent access | MCP server inside `mimos-api` at `/mcp` (Spring AI 2.0.x MCP server starter, stateless Streamable HTTP; Spring AI's model layer excluded). Tools are derived from `contracts/api/openapi.yaml` at startup: every `/api/v1` operation is a tool unless it declares `x-mcp: false`, and a call loops back through the HTTP API with the caller's token. Agents sign in as the public Keycloak client `mimos-agent` (Authorization Code + PKCE), found through Protected Resource Metadata (RFC 9728). See ADR-0014. |
-| Agent harness | `tools/harness` (`@mimos/harness`, TypeScript on Node type stripping) behind a devenv `harness` script; all agent tooling from devenv/nixpkgs; Playwright pinned to nixpkgs' `playwright-driver`; `.mcp.json` committed; debug-only behavior in `deploy/docker/compose.debug.yml`; scenarios run in CI via devenv. Plan and decisions in `docs/harness/`. |
+| Agent harness | `tools/harness` (`@mimos/harness`, TypeScript on Node type stripping) behind a devenv `harness` script; all agent tooling from devenv/nixpkgs; Playwright pinned to nixpkgs' `playwright-driver`; `.mcp.json` committed; debug-only behavior in `deploy/docker/compose.debug.yml`; fakes of third-party services in `tools/harness/fakes/`, run by `deploy/docker/compose.fakes.yml`; scenarios run in CI via devenv. Plan and decisions in `docs/harness/`. |
 
 ## Open decisions — resolve with the owner before building against them
 
@@ -354,9 +354,9 @@ mimos/
 ├── plugins/
 │   └── country-week/     # reference plugin (build early to prove the API)
 ├── tools/
-│   └── harness/          # agent harness: deploy, drive, observe, debug the stack (docs/harness)
+│   └── harness/          # agent harness: deploy, drive, observe, debug the stack (docs/harness); fakes/ of third-party services
 └── deploy/
-    ├── docker/           # compose: postgres, keycloak, api, web, plugin, (minio); compose.debug.yml overlay (harness only)
+    ├── docker/           # compose: postgres, keycloak, api, web, plugin, (minio); compose.debug.yml and compose.fakes.yml overlays (harness only)
     ├── selfhost/         # compose + .env.example for servers, from the published images (ADR-0012)
     ├── keycloak/         # realm export, mimos login theme, Keycloak image (ADR-0010)
     └── aws/              # IaC (tool TBD)
@@ -407,7 +407,15 @@ mimos/
   exploration. `@playwright/test` is pinned to nixpkgs' `playwright-driver`
   version — bump both together. Debug-only behavior goes in
   `deploy/docker/compose.debug.yml` (`harness up --debug`), never in
-  `compose.yml`, and debug ports bind to loopback only. The plan and one
+  `compose.yml`, and debug ports bind to loopback only. A third-party
+  service Mimos calls (intervals.icu) gets a fake for scenarios: a
+  zero-dependency `node:http` service in `tools/harness/fakes/<service>/`
+  with in-memory state, fixtures, and `/_fake/` control routes, tested
+  with the harness's own tests and run by `deploy/docker/compose.fakes.yml`,
+  which points the API at it and publishes it on loopback only. Never in
+  `compose.yml` or `deploy/selfhost`. `harness up` always adds that
+  overlay; CI adds it after the self-host smoke tests, before the
+  scenarios. The plan and one
   page per step are in `docs/harness/`, the command reference in
   `docs/harness/usage.md`; read them before building harness pieces, and
   keep them current as the harness changes.

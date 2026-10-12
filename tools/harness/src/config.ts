@@ -12,6 +12,8 @@ export const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 export const COMPOSE_FILE = "deploy/docker/compose.yml";
 /** Opt-in debug overlay (introduced in step 3); never part of the product stack. */
 export const DEBUG_OVERLAY = "deploy/docker/compose.debug.yml";
+/** Fakes of third-party services (sources in tools/harness/fakes/); the harness always adds it, as CI's scenarios do. */
+export const FAKES_OVERLAY = "deploy/docker/compose.fakes.yml";
 
 /** Evidence lives here (gitignored, dockerignored). */
 export const RUNS_DIR = ".harness/runs";
@@ -87,5 +89,9 @@ export const BUILD_INPUTS: Readonly<Record<string, { dockerfile: string; paths: 
   "country-week": {
     dockerfile: "plugins/country-week/Dockerfile",
     paths: ["package.json", "package-lock.json", "libraries/plugin-sdk", "plugins/country-week"],
+  },
+  "intervals-icu-fake": {
+    dockerfile: "tools/harness/fakes/intervals-icu/Dockerfile",
+    paths: ["tools/harness/fakes/intervals-icu/src"],
   },
 };
