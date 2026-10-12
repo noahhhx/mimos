@@ -1445,8 +1445,31 @@ label.file-button {
 }
 
 .planned-total span,
-.fuel-target span {
+.fuel-target span,
+.training-parts span {
   white-space: nowrap;
+}
+
+.training-session {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.training-parts {
+  margin: 0;
+}
+
+.training-form label {
+  margin: 8px 0;
+}
+
+.training-form-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
 }
 
 .planned-meal {

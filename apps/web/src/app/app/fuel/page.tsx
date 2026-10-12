@@ -144,7 +144,7 @@ export default function FuelPage() {
       setSaved(true);
       return;
     }
-    const named = namedFields((result.error as { detail?: string } | undefined)?.detail);
+    const named = namedFields((result.error as { detail?: string } | undefined)?.detail, FIELD_ERRORS);
     setFieldErrors(named);
     if (named.length === 0) {
       setError("Could not save your fuel settings.");

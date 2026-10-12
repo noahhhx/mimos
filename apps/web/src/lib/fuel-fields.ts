@@ -7,9 +7,16 @@ export const FIELD_ERRORS: Record<FuelField, string> = {
   proteinGPerKg: "Enter protein from 1.2 to 3.0 g per kg.",
 };
 
-export function namedFields(detail: string | undefined): FuelField[] {
+export type TrainingField = "durationMinutes";
+
+export const TRAINING_FIELD_ERRORS: Record<TrainingField, string> = {
+  durationMinutes: "Enter a whole number of minutes from 1 to 1440.",
+};
+
+/** The fields of `errors` that a 400's detail ("field message; field message") names. */
+export function namedFields<F extends string>(detail: string | undefined, errors: Record<F, string>): F[] {
   return (detail ?? "")
     .split("; ")
     .map((part) => part.split(" ")[0])
-    .filter((name): name is FuelField => Object.hasOwn(FIELD_ERRORS, name));
+    .filter((name): name is F => Object.hasOwn(errors, name));
 }
