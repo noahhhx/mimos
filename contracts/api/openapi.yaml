@@ -364,6 +364,33 @@ paths:
         '404':
           $ref: '#/components/responses/Problem'
 
+  /api/v1/me/intervals-icu/sync:
+    post:
+      tags: [intervals-icu]
+      operationId: syncMyIntervalsIcu
+      summary: Sync the caller's training from intervals.icu now
+      description: >
+        Reads planned workouts and completed activities from 7 days before
+        today to 14 days after it and replaces the caller's INTERVALS_ICU
+        sessions in that range; sessions entered by hand stay. Answers at
+        once with the connection: lastSyncAt moves when the sync worked,
+        lastError says why it did not. When intervals.icu refuses the key
+        the connection becomes BROKEN. When intervals.icu asks to wait,
+        retryAt says until when, and a sync before then calls nothing. A
+        BROKEN or DISCONNECTED connection is returned unchanged, and so is
+        one with a sync already running.
+      responses:
+        '200':
+          description: The connection after the sync.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntervalsIcuConnection'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+
   /api/v1/household:
     get:
       tags: [household]
@@ -1692,6 +1719,12 @@ components:
         lastError:
           type: string
           description: Why the connection is BROKEN or the last sync failed, for the person to read.
+        retryAt:
+          type: string
+          format: date-time
+          description: >
+            Set while intervals.icu has asked Mimos to wait: no sync calls it
+            for this person before this time.
     IntervalsIcuConnectionInput:
       type: object
       required: [athleteId, apiKey]

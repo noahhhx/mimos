@@ -1,8 +1,15 @@
 package io.github.noahhhx.mimos.intervalsicu;
 
 import io.github.noahhhx.mimos.fueling.FuelService;
+import io.github.noahhhx.mimos.fueling.Source;
+import io.github.noahhhx.mimos.fueling.TrainingSession;
+import java.security.SecureRandom;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,6 +36,9 @@ public class IntervalsIcuConnections {
     static final int MAX_KEY_LENGTH = 200;
     static final String UNREADABLE_KEY = "This instance can no longer read the saved API key. Enter it again.";
 
+    /** Longer than a sync can take (two calls, each within the client's timeouts), so a claim outlives its sync. */
+    static final Duration CLAIM_LEASE = Duration.ofMinutes(2);
+
     private static final Logger log = LoggerFactory.getLogger(IntervalsIcuConnections.class);
 
     private final JdbcTemplate jdbc;
@@ -36,25 +46,28 @@ public class IntervalsIcuConnections {
     private final IntervalsIcuClient client;
     private final SecretBox secretBox;
     private final FuelService fuel;
+    private final SecureRandom random;
 
     IntervalsIcuConnections(
             JdbcTemplate jdbc,
             TransactionOperations transactions,
             IntervalsIcuClient client,
             SecretBox secretBox,
-            FuelService fuel) {
+            FuelService fuel,
+            SecureRandom random) {
         this.jdbc = jdbc;
         this.transactions = transactions;
         this.client = client;
         this.secretBox = secretBox;
         this.fuel = fuel;
+        this.random = random;
     }
 
     public Optional<IntervalsIcuConnection> connection(UUID profileId) {
         return jdbc.query("""
-                        select athlete_id, key_ciphertext, key_nonce, status, last_sync_at, last_error
+                        select athlete_id, key_ciphertext, key_nonce, status, last_sync_at, last_error, retry_at
                         from intervals_icu_connection where profile_id = ?
-                        """, ROW_MAPPER, profileId).stream().findFirst().map(this::asSeen);
+                        """, ROW_MAPPER, profileId).stream().findFirst().map(row -> asSeen(profileId, row));
     }
 
     /**
@@ -84,7 +97,7 @@ public class IntervalsIcuConnections {
                 throw new IntervalsIcuUnavailableException("intervals.icu could not be reached. Try again later.");
             }
         }
-        SecretBox.Sealed sealed = secretBox.seal(key);
+        SecretBox.Sealed sealed = secretBox.seal(key, owner(profileId));
         return Objects.requireNonNull(transactions.execute(status -> {
             @Nullable
             String previous = jdbc
@@ -99,14 +112,17 @@ public class IntervalsIcuConnections {
             if (previous != null && !sameAthlete) {
                 fuel.deleteSynced(profileId);
             }
+            // Clearing the claim makes a sync that started before this one store nothing.
             jdbc.update("""
                     insert into intervals_icu_connection (profile_id, athlete_id, key_ciphertext, key_nonce, status)
                     values (?, ?, ?, ?, 'CONNECTED')
                     on conflict (profile_id) do update
                     set athlete_id = excluded.athlete_id, key_ciphertext = excluded.key_ciphertext,
                         key_nonce = excluded.key_nonce, status = excluded.status, last_error = null,
-                        last_sync_at = case when ? then intervals_icu_connection.last_sync_at end
-                    """, profileId, athlete, sealed.ciphertext(), sealed.nonce(), sameAthlete);
+                        sync_claim = null, sync_claimed_at = null,
+                        last_sync_at = case when ? then intervals_icu_connection.last_sync_at end,
+                        retry_at = case when ? then intervals_icu_connection.retry_at end
+                    """, profileId, athlete, sealed.ciphertext(), sealed.nonce(), sameAthlete, sameAthlete);
             return connection(profileId).orElseThrow();
         }));
     }
@@ -119,14 +135,131 @@ public class IntervalsIcuConnections {
         });
     }
 
-    private IntervalsIcuConnection asSeen(Row row) {
+    /** A sync's right to call intervals.icu for a person and store what it read. */
+    record SyncClaim(UUID token, IcuCredentials credentials) {}
+
+    /** What a sync found. */
+    sealed interface Outcome {
+
+        /** intervals.icu answered: these sessions are the person's synced training from {@code from} to {@code to}. */
+        record Synced(LocalDate from, LocalDate to, List<TrainingSession> sessions) implements Outcome {}
+
+        /** intervals.icu no longer accepts the key. */
+        record Refused(String error) implements Outcome {}
+
+        /** The sync did not work, but the connection still does; no call before {@code retryAt} when set. */
+        record Failed(String error, @Nullable Instant retryAt) implements Outcome {}
+    }
+
+    /**
+     * Claims the person's next sync, or nothing when they are not connected,
+     * their connection is broken, intervals.icu asked to wait until after
+     * {@code now}, or another sync holds a claim that has not lapsed.
+     */
+    Optional<SyncClaim> claimSync(UUID profileId, Instant now) {
+        UUID token = new UUID(random.nextLong(), random.nextLong());
+        Optional<SyncClaim> claim = jdbc
+                .query(
+                        """
+                        update intervals_icu_connection set sync_claim = ?, sync_claimed_at = ?
+                        where profile_id = ? and status = 'CONNECTED'
+                          and (retry_at is null or retry_at <= ?)
+                          and (sync_claimed_at is null or sync_claimed_at <= ?)
+                        returning athlete_id, key_ciphertext, key_nonce
+                        """,
+                        (rs, rowNum) -> credentials(
+                                profileId,
+                                rs.getString("athlete_id"),
+                                new SecretBox.Sealed(rs.getBytes("key_ciphertext"), rs.getBytes("key_nonce"))),
+                        token,
+                        timestamp(now),
+                        profileId,
+                        timestamp(now),
+                        timestamp(now.minus(CLAIM_LEASE)))
+                .stream()
+                .flatMap(Optional::stream)
+                .findFirst()
+                .map(credentials -> new SyncClaim(token, credentials));
+        if (claim.isEmpty()) {
+            jdbc.update(
+                    "update intervals_icu_connection set sync_claim = null, sync_claimed_at = null"
+                            + " where profile_id = ? and sync_claim = ?",
+                    profileId,
+                    token);
+        }
+        return claim;
+    }
+
+    /**
+     * Stores a sync's outcome and ends its claim, in one transaction. Stores
+     * nothing when the claim no longer stands: the person disconnected or
+     * connected again while the sync ran, and that wins.
+     */
+    void record(UUID profileId, SyncClaim claim, Outcome outcome, Instant now) {
+        transactions.executeWithoutResult(status -> {
+            boolean stands = !jdbc.query(
+                            "select 1 from intervals_icu_connection where profile_id = ? and sync_claim = ? for update",
+                            (rs, rowNum) -> 1,
+                            profileId,
+                            claim.token())
+                    .isEmpty();
+            if (!stands) {
+                return;
+            }
+            switch (outcome) {
+                case Outcome.Synced synced -> {
+                    fuel.replaceSynced(profileId, Source.INTERVALS_ICU, synced.from(), synced.to(), synced.sessions());
+                    jdbc.update("""
+                            update intervals_icu_connection
+                            set last_sync_at = ?, last_error = null, retry_at = null
+                            where profile_id = ?
+                            """, timestamp(now), profileId);
+                }
+                case Outcome.Refused refused -> jdbc.update("""
+                            update intervals_icu_connection set status = 'BROKEN', last_error = ?, retry_at = null
+                            where profile_id = ?
+                            """, refused.error(), profileId);
+                case Outcome.Failed failed -> {
+                    Instant retryAt = failed.retryAt();
+                    jdbc.update("""
+                            update intervals_icu_connection set last_error = ?, retry_at = ?
+                            where profile_id = ?
+                            """, failed.error(), retryAt == null ? null : timestamp(retryAt), profileId);
+                }
+            }
+            jdbc.update(
+                    "update intervals_icu_connection set sync_claim = null, sync_claimed_at = null where profile_id = ?",
+                    profileId);
+        });
+    }
+
+    private Optional<IcuCredentials> credentials(UUID profileId, String athleteId, SecretBox.Sealed sealed) {
         try {
-            secretBox.open(row.sealed());
+            return Optional.of(new IcuCredentials(athleteId, secretBox.open(sealed, owner(profileId))));
+        } catch (UnreadableSecretException e) {
+            return Optional.empty();
+        }
+    }
+
+    private IntervalsIcuConnection asSeen(UUID profileId, Row row) {
+        try {
+            secretBox.open(row.sealed(), owner(profileId));
         } catch (UnreadableSecretException e) {
             return new IntervalsIcuConnection(
-                    row.athleteId(), ConnectionStatus.BROKEN, row.lastSyncAt(), UNREADABLE_KEY);
+                    row.athleteId(), ConnectionStatus.BROKEN, row.lastSyncAt(), UNREADABLE_KEY, null);
         }
-        return new IntervalsIcuConnection(row.athleteId(), row.status(), row.lastSyncAt(), row.lastError());
+        return new IntervalsIcuConnection(
+                row.athleteId(), row.status(), row.lastSyncAt(), row.lastError(), row.retryAt());
+    }
+
+    /** Binds a sealed key to its row, so a key copied to another person's row does not open. */
+    private static String owner(UUID profileId) {
+        return profileId.toString();
+    }
+
+    /** Postgres keeps microseconds, so a time is stored as it will be read back. */
+    private static Timestamp timestamp(Instant instant) {
+        return Timestamp.from(instant.truncatedTo(ChronoUnit.MICROS));
     }
 
     private record Row(
@@ -134,15 +267,18 @@ public class IntervalsIcuConnections {
             SecretBox.Sealed sealed,
             ConnectionStatus status,
             @Nullable Instant lastSyncAt,
-            @Nullable String lastError) {}
+            @Nullable String lastError,
+            @Nullable Instant retryAt) {}
 
-    private static final RowMapper<Row> ROW_MAPPER = (rs, rowNum) -> {
-        @Nullable Timestamp lastSync = rs.getTimestamp("last_sync_at");
-        return new Row(
-                rs.getString("athlete_id"),
-                new SecretBox.Sealed(rs.getBytes("key_ciphertext"), rs.getBytes("key_nonce")),
-                ConnectionStatus.valueOf(rs.getString("status")),
-                lastSync == null ? null : lastSync.toInstant(),
-                rs.getString("last_error"));
-    };
+    private static final RowMapper<Row> ROW_MAPPER = (rs, rowNum) -> new Row(
+            rs.getString("athlete_id"),
+            new SecretBox.Sealed(rs.getBytes("key_ciphertext"), rs.getBytes("key_nonce")),
+            ConnectionStatus.valueOf(rs.getString("status")),
+            instant(rs.getTimestamp("last_sync_at")),
+            rs.getString("last_error"),
+            instant(rs.getTimestamp("retry_at")));
+
+    private static @Nullable Instant instant(@Nullable Timestamp timestamp) {
+        return timestamp == null ? null : timestamp.toInstant();
+    }
 }

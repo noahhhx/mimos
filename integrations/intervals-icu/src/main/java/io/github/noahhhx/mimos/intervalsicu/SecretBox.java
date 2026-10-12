@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Base64;
-import javax.crypto.AEADBadTagException;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
@@ -35,27 +34,38 @@ public final class SecretBox {
     /** What {@link #seal} returns; both parts are needed to open it. */
     public record Sealed(byte[] ciphertext, byte[] nonce) {}
 
-    public Sealed seal(String plaintext) {
+    /**
+     * Seals {@code plaintext} bound to {@code owner}, authenticated but not
+     * encrypted: it opens only under the same owner, so a sealed value
+     * copied to another row does not.
+     */
+    public Sealed seal(String plaintext, String owner) {
         byte[] nonce = new byte[NONCE_BYTES];
         random.nextBytes(nonce);
         try {
             Cipher cipher = Cipher.getInstance(TRANSFORMATION);
             cipher.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(TAG_BITS, nonce));
+            cipher.updateAAD(owner.getBytes(StandardCharsets.UTF_8));
             return new Sealed(cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8)), nonce);
         } catch (GeneralSecurityException e) {
             throw new IllegalStateException("AES-GCM is unavailable", e);
         }
     }
 
-    public String open(Sealed sealed) {
+    /** Opens what {@link #seal} sealed for {@code owner}; anything else, including a malformed nonce, is unreadable. */
+    public String open(Sealed sealed, String owner) {
+        Cipher cipher;
         try {
-            Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-            cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(TAG_BITS, sealed.nonce()));
-            return new String(cipher.doFinal(sealed.ciphertext()), StandardCharsets.UTF_8);
-        } catch (AEADBadTagException e) {
-            throw new UnreadableSecretException(e);
+            cipher = Cipher.getInstance(TRANSFORMATION);
         } catch (GeneralSecurityException e) {
             throw new IllegalStateException("AES-GCM is unavailable", e);
+        }
+        try {
+            cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(TAG_BITS, sealed.nonce()));
+            cipher.updateAAD(owner.getBytes(StandardCharsets.UTF_8));
+            return new String(cipher.doFinal(sealed.ciphertext()), StandardCharsets.UTF_8);
+        } catch (GeneralSecurityException | IllegalArgumentException e) {
+            throw new UnreadableSecretException(e);
         }
     }
 

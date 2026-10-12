@@ -14,21 +14,22 @@ class SecretBoxTests {
     static final String KEY = base64Key(1);
     private static final String OTHER_KEY = base64Key(2);
     private static final String API_KEY = "5u4m9xq0intervalskey";
+    private static final String OWNER = "0f8e2c1a-person";
 
     private final SecretBox box = new SecretBox(KEY, new SecureRandom());
 
     @Test
     void opensWhatItSealed() {
-        SecretBox.Sealed sealed = box.seal(API_KEY);
+        SecretBox.Sealed sealed = box.seal(API_KEY, OWNER);
 
-        assertThat(box.open(sealed)).isEqualTo(API_KEY);
+        assertThat(box.open(sealed, OWNER)).isEqualTo(API_KEY);
         assertThat(new String(sealed.ciphertext(), StandardCharsets.ISO_8859_1)).doesNotContain(API_KEY);
     }
 
     @Test
     void sealsUnderAFreshNonceEveryTime() {
-        SecretBox.Sealed first = box.seal(API_KEY);
-        SecretBox.Sealed second = box.seal(API_KEY);
+        SecretBox.Sealed first = box.seal(API_KEY, OWNER);
+        SecretBox.Sealed second = box.seal(API_KEY, OWNER);
 
         assertThat(first.nonce()).hasSize(12);
         assertThat(first.nonce()).isNotEqualTo(second.nonce());
@@ -44,7 +45,7 @@ class SecretBoxTests {
             }
         };
 
-        SecretBox.Sealed sealed = new SecretBox(KEY, sevens).seal(API_KEY);
+        SecretBox.Sealed sealed = new SecretBox(KEY, sevens).seal(API_KEY, OWNER);
 
         byte[] expected = new byte[12];
         Arrays.fill(expected, (byte) 7);
@@ -53,19 +54,34 @@ class SecretBoxTests {
 
     @Test
     void aDifferentKeyFailsInsteadOfOpeningAsGarbage() {
-        SecretBox.Sealed sealed = box.seal(API_KEY);
+        SecretBox.Sealed sealed = box.seal(API_KEY, OWNER);
         SecretBox rotated = new SecretBox(OTHER_KEY, new SecureRandom());
 
-        assertThatThrownBy(() -> rotated.open(sealed)).isInstanceOf(UnreadableSecretException.class);
+        assertThatThrownBy(() -> rotated.open(sealed, OWNER)).isInstanceOf(UnreadableSecretException.class);
     }
 
     @Test
     void anAlteredCiphertextFails() {
-        SecretBox.Sealed sealed = box.seal(API_KEY);
+        SecretBox.Sealed sealed = box.seal(API_KEY, OWNER);
         byte[] altered = sealed.ciphertext().clone();
         altered[0] ^= 1;
 
-        assertThatThrownBy(() -> box.open(new SecretBox.Sealed(altered, sealed.nonce())))
+        assertThatThrownBy(() -> box.open(new SecretBox.Sealed(altered, sealed.nonce()), OWNER))
+                .isInstanceOf(UnreadableSecretException.class);
+    }
+
+    @Test
+    void aValueSealedForOneOwnerDoesNotOpenForAnother() {
+        SecretBox.Sealed sealed = box.seal(API_KEY, OWNER);
+
+        assertThatThrownBy(() -> box.open(sealed, "someone-else")).isInstanceOf(UnreadableSecretException.class);
+    }
+
+    @Test
+    void aMalformedNonceIsUnreadableRatherThanAnError() {
+        SecretBox.Sealed sealed = box.seal(API_KEY, OWNER);
+
+        assertThatThrownBy(() -> box.open(new SecretBox.Sealed(sealed.ciphertext(), new byte[0]), OWNER))
                 .isInstanceOf(UnreadableSecretException.class);
     }
 

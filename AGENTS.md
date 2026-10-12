@@ -144,14 +144,31 @@ wire-format contract:
   the current key throws `UnreadableSecretException`), and
   `IntervalsIcuConnections`, which owns `intervals_icu_connection` (one
   row per person: athlete id, the key sealed by `SecretBox`, status, last
-  sync, last error) and exists only while the feature is active. Connect
+  sync, last error, `retry_at` after a 429, and the running sync's
+  claim) and exists only while the feature is active, and
+  `IntervalsIcuSync`. Connect
   checks the key against the athlete record before saving it (a 401 or
   403 is a 400, no answer a 502 through `IntervalsIcuUnavailableException`);
   a key that no longer opens reads as `BROKEN`; disconnect deletes the row
   and the person's synced sessions (`FuelService.deleteSynced`). API:
   `/api/v1/me/intervals-icu` (package `fueling` in `apps/api`), a 404 on
   every route while the feature is off; `PUT` and `DELETE` are
-  `x-mcp: false`. External API
+  `x-mcp: false`. A sync (`POST /api/v1/me/intervals-icu/sync`, an MCP
+  tool) first claims the connection row (`sync_claim`, a token with a
+  two-minute lease), so one sync runs per person at a time; it then reads
+  planned workouts and activities from 7 days back to 14 ahead of today
+  by the injected `Clock`, and stores the outcome only while its claim
+  stands, so a disconnect or a reconnect during a sync wins. A good read
+  goes to `FuelService.replaceSynced`, which swaps that source's sessions
+  in the range, and any of the incoming sessions' rows wherever they are
+  dated, in one transaction. It always answers at once: a 401 or 403
+  marks the connection `BROKEN`, a 429 stores `retry_at` from
+  `Retry-After` in seconds (15 minutes without one, 24 hours at most; a
+  same-athlete reconnect keeps it), a failure to store is a `lastError`,
+  and nothing calls intervals.icu for a broken connection or before
+  `retry_at`. `SecretBox` binds each sealed key to its profile id (GCM
+  associated data), so a key copied to another row does not open. No
+  page load calls intervals.icu. External API
   types are package-private and never cross this boundary; events,
   activities, wellness, and the athlete record become `core-fueling`
   training sessions and `ProfileHints` at the edge. A synced session's id
@@ -365,7 +382,7 @@ mimos/
 │   └── core-fueling/     # fuel profiles, training sessions, daily targets (ADR-0022)
 ├── integrations/
 │   ├── plugins/          # plugin runtime: registry, extension-API client, card validation (ADR-0006)
-│   └── intervals-icu/    # training sync from intervals.icu (ADR-0022): client, translator, key encryption, and connections so far
+│   └── intervals-icu/    # training sync from intervals.icu (ADR-0022): client, translator, key encryption, connections, and sync so far
 ├── libraries/            # shared contracts: OpenAPI-generated clients, plugin SDK
 │   ├── api-client/       # @mimos/api-client — generated TypeScript client (committed)
 │   └── plugin-sdk/       # @mimos/plugin-sdk — generated TypeScript types for the plugin API (committed)

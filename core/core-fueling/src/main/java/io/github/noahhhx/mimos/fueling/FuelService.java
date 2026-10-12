@@ -85,4 +85,37 @@ public class FuelService {
     public void deleteSynced(UUID profileId) {
         repository.deleteSynced(profileId);
     }
+
+    /**
+     * Replaces this person's sessions from {@code source} dated {@code from} to {@code to}, inclusive,
+     * with {@code sessions}, in one transaction: a repeated sync leaves the same rows, and one that fails
+     * partway leaves the old ones. A session that moved into the range from outside it replaces its old
+     * row. Sessions entered by hand, and other sessions outside the range, stay.
+     */
+    @Transactional
+    public void replaceSynced(
+            UUID profileId, Source source, LocalDate from, LocalDate to, List<TrainingSession> sessions) {
+        if (source == Source.MANUAL) {
+            throw new IllegalArgumentException("only synced sessions are replaced");
+        }
+        if (to.isBefore(from)) {
+            throw new IllegalArgumentException("to must not be before from");
+        }
+        for (TrainingSession session : sessions) {
+            if (!session.profileId().equals(profileId)
+                    || session.source() != source
+                    || session.date().isBefore(from)
+                    || session.date().isAfter(to)) {
+                throw new IllegalArgumentException(
+                        "replaceSynced takes this person's " + source + " sessions within the range: " + session.id());
+            }
+        }
+        repository.deleteSynced(
+                profileId,
+                source,
+                from,
+                to,
+                sessions.stream().map(TrainingSession::id).toList());
+        sessions.forEach(repository::insertSession);
+    }
 }

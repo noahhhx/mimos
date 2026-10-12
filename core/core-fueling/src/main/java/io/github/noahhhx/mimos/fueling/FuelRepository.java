@@ -1,6 +1,7 @@
 package io.github.noahhhx.mimos.fueling;
 
 import java.sql.Date;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -110,6 +111,22 @@ public class FuelRepository {
 
     public void deleteSynced(UUID profileId) {
         jdbc.update("delete from training_session where profile_id = ? and source <> 'MANUAL'", profileId);
+    }
+
+    /** Deletes the source's sessions dated in the range, and any of {@code ids} wherever they are dated. */
+    public void deleteSynced(UUID profileId, Source source, LocalDate from, LocalDate to, List<UUID> ids) {
+        jdbc.update(connection -> {
+            PreparedStatement statement = connection.prepareStatement("""
+                    delete from training_session
+                    where profile_id = ? and source = ? and (session_date between ? and ? or id = any(?))
+                    """);
+            statement.setObject(1, profileId);
+            statement.setString(2, source.name());
+            statement.setDate(3, Date.valueOf(from));
+            statement.setDate(4, Date.valueOf(to));
+            statement.setArray(5, connection.createArrayOf("uuid", ids.toArray()));
+            return statement;
+        });
     }
 
     private static final RowMapper<FuelProfile> PROFILE_MAPPER = (rs, rowNum) -> new FuelProfile(

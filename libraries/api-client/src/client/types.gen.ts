@@ -196,6 +196,11 @@ export type IntervalsIcuConnection = {
      * Why the connection is BROKEN or the last sync failed, for the person to read.
      */
     lastError?: string;
+    /**
+     * Set while intervals.icu has asked Mimos to wait: no sync calls it for this person before this time.
+     *
+     */
+    retryAt?: string;
 };
 
 export type IntervalsIcuConnectionInput = {
@@ -1545,6 +1550,35 @@ export type ConnectMyIntervalsIcuResponses = {
 };
 
 export type ConnectMyIntervalsIcuResponse = ConnectMyIntervalsIcuResponses[keyof ConnectMyIntervalsIcuResponses];
+
+export type SyncMyIntervalsIcuData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/intervals-icu/sync';
+};
+
+export type SyncMyIntervalsIcuErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type SyncMyIntervalsIcuError = SyncMyIntervalsIcuErrors[keyof SyncMyIntervalsIcuErrors];
+
+export type SyncMyIntervalsIcuResponses = {
+    /**
+     * The connection after the sync.
+     */
+    200: IntervalsIcuConnection;
+};
+
+export type SyncMyIntervalsIcuResponse = SyncMyIntervalsIcuResponses[keyof SyncMyIntervalsIcuResponses];
 
 export type GetHouseholdData = {
     body?: never;
