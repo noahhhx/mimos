@@ -39,7 +39,7 @@ branch, not on `main` yet), `done <sha>`.
 
 | #  | Item | Step | Depends on | Review | Status |
 | -- | ---- | ---- | ---------- | ------ | ------ |
-| 00 | [Clean up the first run](00-clean-up-first-run.md) | – | – | | todo |
+| 00 | [Clean up the first run](00-clean-up-first-run.md) | – | – | | done 925aad3 |
 | 01 | [Finish planned totals](01-planned-totals-finish.md) | 14.1 | – | | in progress |
 | 02 | [Check and land planned totals](02-planned-totals-land.md) | 14.1 | 01 | Review | todo |
 | 03 | [Rebase the fuel profile onto main](03-fuel-profile-rebase.md) | 14.2 | 02 | | on branch |
