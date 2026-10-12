@@ -68,10 +68,13 @@ mimos:
   #   - id: country-week
   #     url: http://country-week:8080
   # Training from intervals.icu (ADR-0022). The base URL points at the real
-  # service; tests and the compose fake point it elsewhere.
+  # service; tests and the compose fake point it elsewhere. People's API
+  # keys are encrypted under MIMOS_SECRET_KEY (32 bytes in base64); without
+  # it the feature is off, and a malformed one fails startup.
   intervals-icu:
     enabled: true
     base-url: https://intervals.icu
+    secret-key: ${MIMOS_SECRET_KEY:}
 
 server:
   port: 8080

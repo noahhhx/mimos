@@ -63,6 +63,9 @@ services:
       # and the country-week service.
       MIMOS_PLUGINS_0_ID: country-week
       MIMOS_PLUGINS_0_URL: http://country-week:8080
+      # Encrypts people's intervals.icu API keys (ADR-0022). A development
+      # value, public in this repo: never reuse it on a server.
+      MIMOS_SECRET_KEY: ${MIMOS_SECRET_KEY:-xOJN05c6LaDocRjs0yBVTPyTaEUqLPvHGM27+bPV1/0=}
     ports:
       - "${API_PORT:-8080}:8080"
     depends_on:

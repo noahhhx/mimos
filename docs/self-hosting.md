@@ -36,7 +36,12 @@ Set the tag with `MIMOS_VERSION` in `.env`.
     | `KEYCLOAK_PUBLIC_URL` | `https://auth.mimos.example.home` | `KEYCLOAK_PORT`  |
 
 3. Generate `POSTGRES_PASSWORD` and `KEYCLOAK_ADMIN_PASSWORD`, for example
-   with `openssl rand -base64 24`.
+   with `openssl rand -base64 24`, and `MIMOS_SECRET_KEY` with
+   `openssl rand -base64 32`. Mimos encrypts the intervals.icu API keys
+   people connect under `MIMOS_SECRET_KEY`. Keep it: if it changes, each
+   connected person enters their key again. Leave it empty to turn
+   intervals.icu off. A value that is not 32 bytes in base64 stops the API
+   from starting.
 4. If the repository's packages are private, log in once with a GitHub
    token that has `read:packages`:
    `docker login ghcr.io -u <github-user>`.

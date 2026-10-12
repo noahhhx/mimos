@@ -84,6 +84,9 @@ services:
       # two lines and the country-week service.
       MIMOS_PLUGINS_0_ID: country-week
       MIMOS_PLUGINS_0_URL: http://country-week:8080
+      # Encrypts people's intervals.icu API keys. Empty turns intervals.icu
+      # off; see .env.example.
+      MIMOS_SECRET_KEY: ${MIMOS_SECRET_KEY:-}
     ports:
       - "${BIND_ADDRESS:-127.0.0.1}:${API_PORT:-8080}:8080"
     depends_on:
