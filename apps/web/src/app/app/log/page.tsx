@@ -5,11 +5,13 @@ import { useCallback, useEffect, useState } from "react";
 import {
   createMealLog,
   deleteMealLog,
+  getMyFuel,
   listLibraryRecipes,
   listMealLogs,
   listMyRecipes,
   summarizeMealLogs,
   type DailyLogSummary,
+  type FuelDay,
   type MealLog,
   type RecipeSummary,
 } from "@mimos/api-client";
@@ -27,10 +29,12 @@ import {
   formatServings,
   mealLabel,
   mondayOf,
+  nutritionCells,
   todayIso,
   weekDays,
   type MealTypeValue,
 } from "@/lib/format";
+import { FUEL_LABEL } from "@/lib/fuel";
 import { describeRecipe, searchRecipes } from "@/lib/ingredient-links";
 import {
   EMPTY_NUTRITION,
@@ -57,6 +61,8 @@ export default function LogPage() {
   const [selectedDay, setSelectedDay] = useState(todayIso());
   const [logs, setLogs] = useState<MealLog[] | null>(null);
   const [summary, setSummary] = useState<DailyLogSummary[] | null>(null);
+  // Each day's target shows only while the person's targets are on (ADR-0022).
+  const [fuel, setFuel] = useState<FuelDay[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [recipes, setRecipes] = useState<RecipeSummary[]>([]);
   const [what, setWhat] = useState<LogWhat>(EMPTY_WHAT);
@@ -66,9 +72,10 @@ export default function LogPage() {
 
   const reload = useCallback(async () => {
     const to = addDays(weekStart, 6);
-    const [logsResult, summaryResult] = await Promise.all([
+    const [logsResult, summaryResult, fuelResult] = await Promise.all([
       listMealLogs({ client: apiClient, query: { from: weekStart, to } }),
       summarizeMealLogs({ client: apiClient, query: { from: weekStart, to } }),
+      getMyFuel({ client: apiClient, query: { from: weekStart, to } }),
     ]);
     if (logsResult.error || summaryResult.error) {
       setError("Could not load your log.");
@@ -77,6 +84,8 @@ export default function LogPage() {
     setError(null);
     setLogs(logsResult.data ?? []);
     setSummary(summaryResult.data ?? []);
+    // Targets sit beside the log; when they fail to load, the log still shows.
+    setFuel(fuelResult.data?.days ?? []);
   }, [weekStart]);
 
   useEffect(() => {
@@ -113,6 +122,7 @@ export default function LogPage() {
   }
 
   const summaryByDay = new Map((summary ?? []).map((day) => [day.date, day]));
+  const targetByDay = new Map(fuel.flatMap((day) => (day.target ? [[day.date, day.target] as const] : [])));
   const dayLogs = (logs ?? []).filter((log) => log.date === selectedDay);
   const body = logBody(what, selectedDay, mealType, servings, nutrition);
   const parsedServings = parseServings(servings);
@@ -195,21 +205,31 @@ export default function LogPage() {
                 </tr>
               </thead>
               <tbody>
-                {weekDays(weekStart).map((day) => {
-                  const totals = summaryByDay.get(day);
-                  return (
+                {weekDays(weekStart).flatMap((day) => {
+                  const target = targetByDay.get(day);
+                  const rows = [
+                    {
+                      key: day,
+                      kind: target ? "with-fuel" : "",
+                      label: dayLabel(day),
+                      cells: nutritionCells(summaryByDay.get(day)),
+                    },
+                    ...(target
+                      ? [{ key: `${day}-fuel`, kind: "fuel-row", label: FUEL_LABEL, cells: nutritionCells(target) }]
+                      : []),
+                  ];
+                  return rows.map((row) => (
                     <tr
-                      key={day}
-                      className={day === selectedDay ? "selected" : undefined}
+                      key={row.key}
+                      className={`${row.kind} ${day === selectedDay ? "selected" : ""}`.trim() || undefined}
                       onClick={() => setSelectedDay(day)}
                     >
-                      <td>{dayLabel(day)}</td>
-                      <td>{formatKcal(totals?.calories)}</td>
-                      <td>{totals?.proteinG != null ? `${Math.round(totals.proteinG)} g` : "–"}</td>
-                      <td>{totals?.carbsG != null ? `${Math.round(totals.carbsG)} g` : "–"}</td>
-                      <td>{totals?.fatG != null ? `${Math.round(totals.fatG)} g` : "–"}</td>
+                      <td>{row.label}</td>
+                      {row.cells.map((cell, index) => (
+                        <td key={index}>{cell}</td>
+                      ))}
                     </tr>
-                  );
+                  ));
                 })}
               </tbody>
             </table>

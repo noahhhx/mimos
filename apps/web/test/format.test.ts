@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { formatQuantity, formatServings, hasNutrition, todayIso } from "../src/lib/format.ts";
+import { formatQuantity, formatServings, hasNutrition, nutritionCells, todayIso } from "../src/lib/format.ts";
 
 describe("formatQuantity", () => {
   it("formats an amount with its unit", () => {
@@ -68,5 +68,24 @@ describe("formatServings", () => {
     assert.equal(formatServings(2), "2 servings");
     assert.equal(formatServings(0.5), "0.5 servings");
     assert.equal(formatServings(1.5), "1.5 servings");
+  });
+});
+
+describe("nutritionCells", () => {
+  it("formats calories and each macro in the Log table's column order", () => {
+    assert.deepEqual(nutritionCells({ calories: 2678.4, proteinG: 112, carbsG: 349.6, fatG: 83 }), [
+      "2678 kcal",
+      "112 g",
+      "350 g",
+      "83 g",
+    ]);
+  });
+
+  it("shows a dash for each unknown value and a zero as a zero", () => {
+    assert.deepEqual(nutritionCells({ calories: 0, carbsG: 40 }), ["0 kcal", "–", "40 g", "–"]);
+  });
+
+  it("shows four dashes for a day with nothing logged", () => {
+    assert.deepEqual(nutritionCells(undefined), ["–", "–", "–", "–"]);
   });
 });

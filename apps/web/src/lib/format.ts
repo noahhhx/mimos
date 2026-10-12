@@ -99,3 +99,16 @@ export function hasNutrition<T extends { calories?: number; proteinG?: number; c
 export function formatKcal(value: number | null | undefined): string {
   return value != null ? `${Math.round(value)} kcal` : "–";
 }
+
+/** The Log table's calories, protein, carbs, and fat cells; an unknown value is a dash. */
+export function nutritionCells(
+  nutrition: { calories?: number; proteinG?: number; carbsG?: number; fatG?: number } | undefined,
+): string[] {
+  const grams = (value: number | undefined) => (value != null ? `${Math.round(value)} g` : "–");
+  return [
+    formatKcal(nutrition?.calories),
+    grams(nutrition?.proteinG),
+    grams(nutrition?.carbsG),
+    grams(nutrition?.fatG),
+  ];
+}

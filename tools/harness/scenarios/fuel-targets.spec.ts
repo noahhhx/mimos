@@ -95,6 +95,47 @@ test("the plan shows each day's fuel once targets are on", async ({ page }) => {
     await expect(tuesdayFuel).toHaveText(restDayText);
     expect((await tuesdayDay(page, api)).target).toEqual(tuesday.target);
   });
+
+  await test.step("the Log page shows each day's fuel under what was logged", async () => {
+    const { monday } = await browserWeek(page);
+    const meal = (calories: number, proteinG: number, carbsG: number, fatG: number) => ({
+      date: monday,
+      mealType: "LUNCH",
+      description: `Logged ${calories}`,
+      nutrition: { calories, proteinG, carbsG, fatG },
+    });
+    await api("POST", "/api/v1/logs", meal(600, 30, 80, 20));
+    await api("POST", "/api/v1/logs", meal(450, 25, 50, 15));
+
+    await nav.getByRole("link", { name: "Log" }).click();
+    const rows = page.getByRole("table").locator("tbody tr");
+    await expect(rows, "each day has its logged row and its fuel row").toHaveCount(14);
+    const days = await weekDays(page, api);
+    for (const [index, day] of days.entries()) {
+      const { calories, proteinG, carbsG, fatG } = day.target!;
+      await expect(rows.nth(2 * index + 1).getByRole("cell")).toHaveText([
+        "Fuel for the day",
+        `${calories} kcal`,
+        `${proteinG} g`,
+        `${carbsG} g`,
+        `${fatG} g`,
+      ]);
+    }
+    await expect(rows.nth(0).getByRole("cell"), "Monday's two meals").toHaveText([
+      /\S/,
+      "1050 kcal",
+      "55 g",
+      "130 g",
+      "35 g",
+    ]);
+    await expect(rows.nth(2).getByRole("cell"), "a day with nothing logged keeps its dashes").toHaveText([
+      /\S/,
+      "–",
+      "–",
+      "–",
+      "–",
+    ]);
+  });
 });
 
 test("Everyone hides fuel in a shared household, and Mine shows only the viewer's", async ({ page, browser }) => {
@@ -159,8 +200,7 @@ async function tuesdayDay(page: Page, api: Awaited<ReturnType<typeof apiAs>>): P
   return days[0]!;
 }
 
-async function expectLinesMatchApi(page: Page, api: Awaited<ReturnType<typeof apiAs>>): Promise<void> {
-  const week = page.locator(".week .day");
+async function weekDays(page: Page, api: Awaited<ReturnType<typeof apiAs>>): Promise<Day[]> {
   const { monday } = await browserWeek(page);
   const sunday = new Date(`${monday}T00:00:00Z`);
   sunday.setUTCDate(sunday.getUTCDate() + 6);
@@ -169,6 +209,12 @@ async function expectLinesMatchApi(page: Page, api: Awaited<ReturnType<typeof ap
     `/api/v1/me/fuel?from=${monday}&to=${sunday.toISOString().slice(0, 10)}`,
   );
   expect(days).toHaveLength(7);
+  return days;
+}
+
+async function expectLinesMatchApi(page: Page, api: Awaited<ReturnType<typeof apiAs>>): Promise<void> {
+  const week = page.locator(".week .day");
+  const days = await weekDays(page, api);
   for (const [index, day] of days.entries()) {
     await expect(week.nth(index).getByRole("group", { name: /^Fuel for / }).locator(".fuel-target")).toHaveText(
       targetText(day.target!),

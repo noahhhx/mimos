@@ -1716,6 +1716,23 @@ label.file-button {
   padding-left: 12px;
 }
 
+/* A day's fuel reads as part of the day above it, not a row of its own. */
+.totals tr.with-fuel td {
+  border-bottom: none;
+  padding-bottom: 2px;
+}
+
+.totals tbody tr.with-fuel:hover + tr.fuel-row,
+.totals tbody tr.with-fuel:has(+ tr.fuel-row:hover) {
+  background: var(--hover);
+}
+
+.totals tr.fuel-row td {
+  padding-top: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 .log-entries {
   margin-bottom: 16px;
 }
