@@ -1175,6 +1175,110 @@ input[type="search"]:focus {
   margin: 32px 0 0;
 }
 
+/* ---------- Recipe pictures (components/recipe-pictures.tsx, ADR-0023) ---------- */
+
+/* One row at one height, scrolling sideways in its own box, so the page
+   never does. overflow-x: auto makes overflow-y auto too, so it is hidden
+   explicitly (see .app-nav). */
+.picture-row {
+  display: flex;
+  gap: 12px;
+  min-width: 0;
+  margin: 0 0 32px;
+  padding: 0 0 8px;
+  list-style: none;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+}
+
+.picture-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A very wide picture is cropped, so the next one still shows. */
+.picture {
+  flex: none;
+  height: 240px;
+  max-width: 85%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--hover);
+}
+
+/* A picture whose image has not arrived holds a 4:3 box. */
+.picture:empty {
+  aspect-ratio: 4 / 3;
+}
+
+.picture img {
+  display: block;
+  width: auto;
+  height: 100%;
+}
+
+/* In the recipe form: smaller, each with its Remove underneath. */
+.picture-row.compact {
+  margin: 0 0 12px;
+}
+
+.picture-slot {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 85%;
+}
+
+.picture-row.compact .picture {
+  height: 120px;
+  max-width: none;
+}
+
+.picture-slot-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  font-size: 14px;
+}
+
+/* A label that looks like a button, not like a field's caption. */
+label.file-button {
+  display: inline-flex;
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--fg);
+}
+
+/* The file input is hidden inside its button, so the button shows its focus. */
+.file-button:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.file-button.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 879px) {
+  .picture-row {
+    scroll-snap-type: x mandatory;
+  }
+
+  .picture {
+    height: 180px;
+  }
+
+  .picture-row > li {
+    scroll-snap-align: start;
+  }
+}
+
 .per-serving {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -7,6 +7,7 @@ import type { RecipeDetail } from "@mimos/api-client";
 
 import { PerServing } from "@/components/per-serving";
 import { Quantity } from "@/components/quantity";
+import { RecipePictures } from "@/components/recipe-pictures";
 import { SplitPage } from "@/components/split-page";
 import { hasNutrition } from "@/lib/format";
 
@@ -16,6 +17,7 @@ import { hasNutrition } from "@/lib/format";
  * the main column holds the method, whose steps are ticked off by tapping
  * them. Ticks are local state only — the flour-on-your-hands view.
  * An ingredient that is one of your recipes links to it (ADR-0018).
+ * Pictures, when it has any, open the main column (ADR-0023).
  * `children` go under the method.
  */
 export function RecipeView({ recipe, children }: { recipe: RecipeDetail; children?: React.ReactNode }) {
@@ -89,6 +91,7 @@ export function RecipeView({ recipe, children }: { recipe: RecipeDetail; childre
   return (
     <article className="recipe">
       <SplitPage rail={rail}>
+        <RecipePictures recipe={recipe} />
         <p className="lede">{recipe.description}</p>
         <section>
           <h2>Method</h2>

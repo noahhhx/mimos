@@ -4,8 +4,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  addRecipePicture,
   createRecipe,
+  deleteRecipePicture,
   estimateRecipeNutrition,
+  getRecipe,
   listIngredients,
   listMyRecipes,
   replaceRecipe,
@@ -20,6 +23,7 @@ import {
 import { IngredientPicker } from "@/components/ingredient-picker";
 import { NewIngredient } from "@/components/new-ingredient";
 import { PerServing } from "@/components/per-serving";
+import { PicturesField } from "@/components/pictures-field";
 import { apiClient } from "@/lib/api";
 import { basisForUnit } from "@/lib/catalog-match";
 import {
@@ -41,6 +45,7 @@ import {
   type IngredientRow,
   type RecipeFormValues,
 } from "@/lib/recipe-input";
+import { draftOf, hasChanges, syncPictures, type PictureApi, type PictureResult } from "@/lib/recipe-pictures";
 
 type TextField = Exclude<keyof RecipeFormValues, "ingredients" | "steps" | "nutritionSource">;
 
@@ -48,10 +53,39 @@ type TextField = Exclude<keyof RecipeFormValues, "ingredients" | "steps" | "nutr
 type Estimate = { nutrition: Nutrition; statuses: Map<number, IngredientLineStatus> } | "failed";
 
 
-function problemDetail(result: { error?: { detail?: string } | unknown }): string {
+function problemDetail(result: { error?: { detail?: string } | unknown }, fallback = "The API rejected the recipe."): string {
   const error = result.error as { detail?: string } | undefined;
-  return error?.detail ?? "The API rejected the recipe.";
+  return error?.detail ?? fallback;
 }
+
+/** Turns a client call into a PictureResult, so a thrown network error stops the save like a rejected call. */
+async function pictureCall<T>(
+  call: () => Promise<{ data?: T; error?: unknown; response?: Response }>,
+  fallback: string,
+): Promise<PictureResult<T>> {
+  try {
+    const result = await call();
+    if (result.error === undefined && result.response?.ok) {
+      return { ok: true, value: result.data as T };
+    }
+    return { ok: false, status: result.response?.status, message: problemDetail(result, fallback) };
+  } catch {
+    return { ok: false, message: fallback };
+  }
+}
+
+const pictureApi: PictureApi = {
+  remove: (recipeId, pictureId) =>
+    pictureCall(
+      () => deleteRecipePicture({ client: apiClient, path: { recipeId, pictureId } }),
+      "A picture could not be removed. Save again to retry.",
+    ),
+  upload: (recipeId, blob) =>
+    pictureCall(
+      () => addRecipePicture({ client: apiClient, path: { recipeId }, body: { file: blob } }),
+      "A picture could not be saved. Save again to retry.",
+    ),
+};
 
 /**
  * Create/edit form for personal recipes. Same richness as the library:
@@ -62,6 +96,10 @@ function problemDetail(result: { error?: { detail?: string } | unknown }): strin
  * Without `onSaved`, a save navigates to the recipe's page; an editor
  * already on that page passes `onSaved` instead, since navigating to the
  * current URL would leave it in edit mode.
+ *
+ * Save sends the fields, then the picture changes (ADR-0023). If a picture
+ * fails, the form stays open with the rest still to send, now editing the
+ * recipe it saved, so saving again never creates the recipe twice.
  */
 export function RecipeForm({
   initial,
@@ -74,6 +112,8 @@ export function RecipeForm({
 }) {
   const router = useRouter();
   const [values, setValues] = useState<RecipeFormValues>(() => formValuesOf(initial));
+  const [pictures, setPictures] = useState(() => draftOf(initial));
+  const [savedId, setSavedId] = useState(initial?.id);
   const [errors, setErrors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [catalog, setCatalog] = useState<CatalogIngredient[]>([]);
@@ -135,18 +175,32 @@ export function RecipeForm({
     }
     setSaving(true);
     setErrors([]);
-    const result = initial
-      ? await replaceRecipe({ client: apiClient, path: { recipeId: initial.id }, body: checked.input })
+    const result = savedId
+      ? await replaceRecipe({ client: apiClient, path: { recipeId: savedId }, body: checked.input })
       : await createRecipe({ client: apiClient, body: checked.input });
-    setSaving(false);
     if (result.error || !result.data) {
+      setSaving(false);
       setErrors([problemDetail(result)]);
       return;
     }
+    let saved = result.data;
+    setSavedId(saved.id);
+    if (hasChanges(pictures)) {
+      const synced = await syncPictures(pictureApi, saved.id, pictures);
+      setPictures(synced.draft);
+      if (synced.error) {
+        setSaving(false);
+        setErrors([synced.error]);
+        return;
+      }
+      const fresh = await getRecipe({ client: apiClient, path: { recipeId: saved.id } });
+      saved = fresh.data ?? saved;
+    }
+    setSaving(false);
     if (onSaved) {
-      onSaved(result.data);
+      onSaved(saved);
     } else {
-      router.push(`/app/recipes/${result.data.id}`);
+      router.push(`/app/recipes/${saved.id}`);
     }
   };
 
@@ -192,6 +246,14 @@ export function RecipeForm({
         Tags (comma-separated)
         <input {...field("tags")} placeholder="dinner, vegetarian" />
       </label>
+
+      <PicturesField
+        recipeId={savedId}
+        title={values.title}
+        draft={pictures}
+        onChange={setPictures}
+        disabled={saving}
+      />
 
       <h2>Ingredients</h2>
       <p className="muted">
@@ -343,7 +405,7 @@ export function RecipeForm({
 
       <p className="actions">
         <button type="submit" className="button" disabled={saving}>
-          {saving ? "Saving…" : initial ? "Save changes" : "Create recipe"}
+          {saving ? "Saving…" : savedId ? "Save changes" : "Create recipe"}
         </button>
         {onCancel && (
           <button type="button" className="button secondary" onClick={onCancel} disabled={saving}>
