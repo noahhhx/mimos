@@ -167,16 +167,21 @@ wire-format contract:
   same-athlete reconnect keeps it), a failure to store is a `lastError`,
   and nothing calls intervals.icu for a broken connection or before
   `retry_at`. `SecretBox` binds each sealed key to its profile id (GCM
-  associated data), so a key copied to another row does not open. No
-  page load calls intervals.icu. External API
+  associated data), so a key copied to another row does not open.
+  `IntervalsIcuScheduledSync` runs the same sync for every connected
+  person in turn every `mimos.intervals-icu.sync-interval` (default
+  `30m`, at least a minute; `@EnableScheduling` only while the feature is
+  active), skipping broken connections and people inside a `retry_at`,
+  and moving on from one person's failure. No page load calls
+  intervals.icu. External API
   types are package-private and never cross this boundary; events,
   activities, wellness, and the athlete record become `core-fueling`
   training sessions and `ProfileHints` at the edge. A synced session's id
   is derived from its person, kind, and intervals.icu id, so it keeps its
   id across syncs. Config: `mimos.intervals-icu.enabled`,
-  `mimos.intervals-icu.base-url` (default `https://intervals.icu`), and
+  `mimos.intervals-icu.base-url` (default `https://intervals.icu`),
   `mimos.intervals-icu.secret-key` (`MIMOS_SECRET_KEY`, 32 bytes in
-  base64). The feature is on only when enabled and a key is set
+  base64), and `mimos.intervals-icu.sync-interval`. The feature is on only when enabled and a key is set
   (`IntervalsIcuProperties.active()`); the `SecretBox` bean exists only
   then, and a malformed key fails startup. Compose ships a development
   key; the self-host `.env.example` asks for a generated one. A
@@ -382,7 +387,7 @@ mimos/
 │   └── core-fueling/     # fuel profiles, training sessions, daily targets (ADR-0022)
 ├── integrations/
 │   ├── plugins/          # plugin runtime: registry, extension-API client, card validation (ADR-0006)
-│   └── intervals-icu/    # training sync from intervals.icu (ADR-0022): client, translator, key encryption, connections, and sync so far
+│   └── intervals-icu/    # training sync from intervals.icu (ADR-0022): client, translator, key encryption, connections, and on-demand and scheduled sync
 ├── libraries/            # shared contracts: OpenAPI-generated clients, plugin SDK
 │   ├── api-client/       # @mimos/api-client — generated TypeScript client (committed)
 │   └── plugin-sdk/       # @mimos/plugin-sdk — generated TypeScript types for the plugin API (committed)

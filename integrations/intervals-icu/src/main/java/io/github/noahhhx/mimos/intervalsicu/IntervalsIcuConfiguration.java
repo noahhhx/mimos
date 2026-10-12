@@ -10,6 +10,7 @@ import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.type.AnnotatedTypeMetadata;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Configuration
 @EnableConfigurationProperties(IntervalsIcuProperties.class)
@@ -26,6 +27,12 @@ public class IntervalsIcuConfiguration {
     SecretBox secretBox(IntervalsIcuProperties properties, SecureRandom random) {
         return new SecretBox(Objects.requireNonNull(properties.secretKey()), random);
     }
+
+    /** The scheduled sync's trigger, only while the feature is active. */
+    @Configuration
+    @Conditional(Active.class)
+    @EnableScheduling
+    static class Scheduling {}
 
     static final class Active implements Condition {
 

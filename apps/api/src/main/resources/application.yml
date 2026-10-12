@@ -70,11 +70,13 @@ mimos:
   # Training from intervals.icu (ADR-0022). The base URL points at the real
   # service; tests and the compose fake point it elsewhere. People's API
   # keys are encrypted under MIMOS_SECRET_KEY (32 bytes in base64); without
-  # it the feature is off, and a malformed one fails startup.
+  # it the feature is off, and a malformed one fails startup. Connected
+  # people's training syncs every sync-interval (at least a minute).
   intervals-icu:
     enabled: true
     base-url: https://intervals.icu
     secret-key: ${MIMOS_SECRET_KEY:}
+    sync-interval: 30m
 
 server:
   port: 8080

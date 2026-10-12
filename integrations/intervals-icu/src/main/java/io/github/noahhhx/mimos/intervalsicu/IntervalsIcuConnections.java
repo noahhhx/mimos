@@ -135,6 +135,18 @@ public class IntervalsIcuConnections {
         });
     }
 
+    /**
+     * The people a scheduled sync should try at {@code now}: connected, and
+     * not waiting on intervals.icu. Those synced longest ago come first.
+     */
+    List<UUID> due(Instant now) {
+        return jdbc.queryForList("""
+                select profile_id from intervals_icu_connection
+                where status = 'CONNECTED' and (retry_at is null or retry_at <= ?)
+                order by last_sync_at nulls first, profile_id
+                """, UUID.class, timestamp(now));
+    }
+
     /** A sync's right to call intervals.icu for a person and store what it read. */
     record SyncClaim(UUID token, IcuCredentials credentials) {}
 

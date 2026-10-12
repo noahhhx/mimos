@@ -378,7 +378,9 @@ paths:
         the connection becomes BROKEN. When intervals.icu asks to wait,
         retryAt says until when, and a sync before then calls nothing. A
         BROKEN or DISCONNECTED connection is returned unchanged, and so is
-        one with a sync already running.
+        one with a sync already running. Training also syncs on a schedule
+        (every 30 minutes by default), so this is only needed to see a
+        change made in intervals.icu at once.
       responses:
         '200':
           description: The connection after the sync.
