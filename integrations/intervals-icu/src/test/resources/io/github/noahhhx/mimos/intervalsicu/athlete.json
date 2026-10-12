@@ -1,0 +1,10 @@
+{
+  "id": "i1",
+  "name": "Test Rider",
+  "sex": "M",
+  "weight": 72.0,
+  "sportSettings": [
+    { "id": 1, "types": ["Run", "VirtualRun", "TrailRun"], "ftp": null, "lthr": 172 },
+    { "id": 2, "types": ["Ride", "VirtualRide", "GravelRide"], "ftp": 282, "indoor_ftp": 270 }
+  ]
+}

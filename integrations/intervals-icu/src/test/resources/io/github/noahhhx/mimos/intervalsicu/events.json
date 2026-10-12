@@ -1,0 +1,24 @@
+[
+  {
+    "id": 41870231,
+    "start_date_local": "2026-10-13T00:00:00",
+    "category": "WORKOUT",
+    "type": "Ride",
+    "name": "Sweet spot 3x15",
+    "moving_time": 5400,
+    "joules": 1360800,
+    "icu_intensity": 84.0,
+    "icu_training_load": 105,
+    "carbs_per_hour": 80
+  },
+  {
+    "id": 41870232,
+    "start_date_local": "2026-10-15T00:00:00",
+    "category": "WORKOUT",
+    "type": "VirtualRide",
+    "name": "Endurance by heart rate",
+    "moving_time": 7200,
+    "icu_intensity": 68.5,
+    "icu_training_load": 82
+  }
+]

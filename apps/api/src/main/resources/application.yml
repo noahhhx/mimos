@@ -67,6 +67,11 @@ mimos:
   # plugins:
   #   - id: country-week
   #     url: http://country-week:8080
+  # Training from intervals.icu (ADR-0022). The base URL points at the real
+  # service; tests and the compose fake point it elsewhere.
+  intervals-icu:
+    enabled: true
+    base-url: https://intervals.icu
 
 server:
   port: 8080

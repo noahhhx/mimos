@@ -1,0 +1,14 @@
+[
+  {
+    "id": "i98765432",
+    "start_date_local": "2026-10-11T08:42:10",
+    "type": "GravelRide",
+    "name": "Sunday gravel",
+    "moving_time": 11130,
+    "icu_joules": 2203560,
+    "calories": 2410,
+    "icu_training_load": 168,
+    "icu_intensity": 71.2,
+    "carbs_used": 312
+  }
+]

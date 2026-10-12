@@ -135,11 +135,18 @@ wire-format contract:
   planned share (`MealPlanService.plannedTotals`), logged totals, and
   sessions. Never name a package `target`: `.gitignore` and
   `.dockerignore` drop every `target` directory as build output.
-- `integrations/intervals-icu` — planned (ADR-0022). External API types
-  never cross this boundary; translate events, activities, and wellness
-  into `core-fueling` training sessions at the edge. A sync replaces a
-  person's synced sessions in its date range, so a repeated or
-  interrupted sync converges. Feature-gated and optional at runtime
+- `integrations/intervals-icu` — training from intervals.icu (ADR-0022).
+  Built so far: `IntervalsIcuClient` (HTTP Basic as `API_KEY` with a
+  person's key; every call answers an `IcuResult`, with a 401 and a 429
+  distinct from other failures) and `IntervalsIcuTranslator`. External API
+  types are package-private and never cross this boundary; events,
+  activities, wellness, and the athlete record become `core-fueling`
+  training sessions and `ProfileHints` at the edge. A synced session's id
+  is derived from its person, kind, and intervals.icu id, so it keeps its
+  id across syncs. Config: `mimos.intervals-icu.enabled` and
+  `mimos.intervals-icu.base-url` (default `https://intervals.icu`). A
+  sync replaces a person's synced sessions in its date range, so a
+  repeated or interrupted sync converges. Feature-gated and optional at runtime
   (self-hosters must not need it).
 - `plugins` — see below.
 - Modules communicate through their public interfaces only; no reaching into
@@ -340,7 +347,7 @@ mimos/
 │   └── core-fueling/     # fuel profiles, training sessions, daily targets (ADR-0022)
 ├── integrations/
 │   ├── plugins/          # plugin runtime: registry, extension-API client, card validation (ADR-0006)
-│   └── intervals-icu/    # training sync from intervals.icu (ADR-0022, planned)
+│   └── intervals-icu/    # training sync from intervals.icu (ADR-0022): client and translator so far
 ├── libraries/            # shared contracts: OpenAPI-generated clients, plugin SDK
 │   ├── api-client/       # @mimos/api-client — generated TypeScript client (committed)
 │   └── plugin-sdk/       # @mimos/plugin-sdk — generated TypeScript types for the plugin API (committed)

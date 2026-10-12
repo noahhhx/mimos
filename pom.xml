@@ -22,6 +22,7 @@
         <module>core/core-planning</module>
         <module>core/core-fueling</module>
         <module>integrations/plugins</module>
+        <module>integrations/intervals-icu</module>
         <module>apps/api</module>
     </modules>
 
