@@ -129,7 +129,7 @@ public final class RecipeApiMapper {
                 .toList();
     }
 
-    private static org.openapitools.model.Nutrition toApiNutrition(Nutrition nutrition) {
+    public static org.openapitools.model.Nutrition toApiNutrition(Nutrition nutrition) {
         return new org.openapitools.model.Nutrition()
                 .calories(toBigDecimal(nutrition.calories()))
                 .proteinG(toBigDecimal(nutrition.proteinG()))

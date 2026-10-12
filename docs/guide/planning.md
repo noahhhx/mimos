@@ -49,8 +49,9 @@ you planned.
 - If a recipe has no value for calories, protein, carbs, or fat, that
   value adds nothing to the total. The recipe's other values still
   count, as they do when you log it. The day says how many of its meals
-  have unknown nutrition, and a day where no meal has any shows only
-  that note. Add the recipe's nutrition to count it.
+  have unknown nutrition. A value that no meal that day has is left out
+  rather than shown as 0, so a day where no meal has any known value
+  shows only that note. Add the recipe's nutrition to count it.
 
 In a shared household, the total shows in **Mine** only, because it is
 yours alone. **Everyone** shows no totals.

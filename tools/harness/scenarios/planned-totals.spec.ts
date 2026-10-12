@@ -6,7 +6,7 @@ import { apiAs, browserWeek, expect, register, test } from "./fixtures.ts";
 type Nutrition = { calories?: number; proteinG?: number; carbsG?: number; fatG?: number };
 type PlannedTotals = {
   startDate: string;
-  days: { date: string; total: Required<Nutrition>; meals: number; mealsWithoutNutrition: number }[];
+  days: { date: string; total: Nutrition; meals: number; mealsWithoutNutrition: number }[];
 };
 
 test("the plan shows each day's planned total", async ({ page }) => {
@@ -24,6 +24,7 @@ test("the plan shows each day's planned total", async ({ page }) => {
   const kcal = (servings: number) => `${Math.round(Math.round(nutrition!.calories! * servings * 10) / 10)} kcal`;
   const mondayCard = day(page, 0);
   const tuesdayCard = day(page, 1);
+  const wednesdayCard = day(page, 2);
   const planned = mondayCard.getByRole("group", { name: /^Planned for / });
 
   await test.step("an empty week shows no planned totals", async () => {
@@ -63,8 +64,18 @@ test("the plan shows each day's planned total", async ({ page }) => {
     await expect(planned).toContainText("Unknown nutrition in 1 meal is not counted.");
     await expect(planned).toContainText(kcal(2.5));
     const after = await mondayTotal();
-    expect(after.proteinG).toBeCloseTo(before.proteinG + 10, 5);
+    expect(after.proteinG).toBeCloseTo(before.proteinG! + 10, 5);
     expect(after.calories).toBe(before.calories);
+  });
+
+  await test.step("a day whose only meal lacks calories shows its other values and no calories", async () => {
+    await planOn(wednesdayCard, "Lunch", mystery);
+    const wednesday = wednesdayCard.getByRole("group", { name: /^Planned for / });
+    await expect(wednesday).toContainText("10 g protein · 24 g carbs · 6 g fat");
+    await expect(wednesday).toContainText("Unknown nutrition in 1 meal is not counted.");
+    await expect(wednesday).not.toContainText("kcal");
+    const totals = await api<PlannedTotals>("GET", `/api/v1/plans/${monday}/my-totals`);
+    expect(totals.days[2]?.total, "calories are absent, not zero").toEqual({ proteinG: 10, carbsG: 24, fatG: 6 });
   });
 
   await test.step("a day whose meals have no nutrition at all shows only the note", async () => {
@@ -72,10 +83,13 @@ test("the plan shows each day's planned total", async ({ page }) => {
     await planOn(tuesdayCard, "Dinner", unknown);
     const tuesday = tuesdayCard.getByRole("group", { name: /^Planned for / });
     await expect(tuesday).toContainText("Unknown nutrition in 1 meal is not counted.");
-    await expect(tuesday).not.toContainText("kcal");
+    await expect(tuesday.locator(".planned-total")).toHaveCount(0);
+    const totals = await api<PlannedTotals>("GET", `/api/v1/plans/${monday}/my-totals`);
+    expect(totals.days[1]?.total, "no value is known").toEqual({});
   });
 
   await test.step("each value stays with its unit and label at every phone width", async () => {
+    await expect(planned.locator(".planned-total span")).toHaveCount(4);
     for (let width = 320; width <= 640; width += 8) {
       await page.setViewportSize({ width, height: 900 });
       const broken = await planned.locator(".planned-total span").evaluateAll((parts) =>

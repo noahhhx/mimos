@@ -564,7 +564,7 @@ function PlannedTotal({ day }: { day: PlannedDayTotal | undefined }) {
   if (!day || day.meals === 0) {
     return null;
   }
-  const parts = plannedTotalParts(day);
+  const parts = plannedTotalParts(day.total);
   const note = withoutNutritionNote(day);
   return (
     <div className="meal-slot" role="group" aria-label={`Planned for ${dayLabel(day.date)}`}>

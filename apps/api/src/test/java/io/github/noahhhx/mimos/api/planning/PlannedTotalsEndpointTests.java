@@ -66,7 +66,7 @@ class PlannedTotalsEndpointTests extends ApiIntegrationTestSupport {
         TestUser guest = user();
         guest.join(host);
         UUID odd = recipe(host, "Odd Stew", List.of(333.33, 12.34, 45.67, 8.91));
-        UUID partial = recipeWithoutCalories(host, "Odd Broth", 0.05, 4.21, 2.33);
+        UUID partial = recipe(host, "Odd Broth", Map.of("proteinG", 0.05, "carbsG", 4.21, "fatG", 2.33));
         host.ok(HttpMethod.POST, entries(MONDAY), entry(MONDAY, "DINNER", odd, 3));
         guest.ok(HttpMethod.POST, entries(MONDAY), entry(MONDAY, "LUNCH", odd, 1.25));
         guest.ok(HttpMethod.POST, entries(MONDAY), entry(MONDAY, "BREAKFAST", partial, 1));
@@ -88,7 +88,7 @@ class PlannedTotalsEndpointTests extends ApiIntegrationTestSupport {
     }
 
     @Test
-    void aWeekIsSevenDaysAndAnEmptyDayIsZero() {
+    void aWeekIsSevenDaysAndAnEmptyDayHasNoValues() {
         TestUser cook = user();
         UUID stew = recipe(cook, "Sunday Stew", STEW);
         cook.ok(HttpMethod.POST, entries(MONDAY), entry(MONDAY.plusDays(6), "DINNER", stew, 2));
@@ -107,24 +107,43 @@ class PlannedTotalsEndpointTests extends ApiIntegrationTestSupport {
                         "2026-04-10",
                         "2026-04-11",
                         "2026-04-12");
-        assertThat(nutrition(days.getFirst())).containsExactly(0.0, 0.0, 0.0, 0.0);
+        assertThat(days.getFirst().get("total").size()).isZero();
         assertThat(days.getFirst().get("meals").asInt()).isZero();
         assertThat(nutrition(days.getLast())).containsExactlyElementsOf(times(STEW, 2));
     }
 
     @Test
-    void aMealWithoutCaloriesIsCountedApartAndAddsOnlyItsKnownValues() {
+    void aMealLackingAnyValueIsCountedApartAndAddsOnlyItsKnownValues() {
         TestUser cook = user();
         UUID stew = recipe(cook, "Known Stew", STEW);
-        UUID soupId = recipeWithoutCalories(cook, "Mystery Soup", 5, 12, 3);
+        UUID soup = recipe(cook, "Mystery Soup", Map.of("proteinG", 5.0, "carbsG", 12.0, "fatG", 3.0));
+        UUID lean = recipe(cook, "Lean Fish", Map.of("calories", 250.0, "proteinG", 30.0, "carbsG", 5.0));
+        UUID rice = recipe(cook, "Plain Rice", Map.of("calories", 150.0, "carbsG", 20.0, "fatG", 4.0));
         cook.ok(HttpMethod.POST, entries(MONDAY), entry(MONDAY, "DINNER", stew, 1));
-        cook.ok(HttpMethod.POST, entries(MONDAY), entry(MONDAY, "LUNCH", soupId, 2));
+        cook.ok(HttpMethod.POST, entries(MONDAY), entry(MONDAY, "LUNCH", soup, 2));
+        cook.ok(HttpMethod.POST, entries(MONDAY), entry(MONDAY, "BREAKFAST", lean, 1));
+        cook.ok(HttpMethod.POST, entries(MONDAY), entry(MONDAY, "SNACK", rice, 1));
 
         JsonNode monday = days(cook.ok(HttpMethod.GET, totals(MONDAY), null)).getFirst();
 
-        assertThat(monday.get("meals").asInt()).isEqualTo(2);
-        assertThat(monday.get("mealsWithoutNutrition").asInt()).isEqualTo(1);
-        assertThat(nutrition(monday)).containsExactly(400.0, 30.0, 64.0, 16.0);
+        assertThat(monday.get("meals").asInt()).isEqualTo(4);
+        assertThat(monday.get("mealsWithoutNutrition").asInt()).isEqualTo(3);
+        assertThat(nutrition(monday)).containsExactly(800.0, 60.0, 89.0, 20.0);
+    }
+
+    @Test
+    void aValueNoMealThatDayKnowsIsLeftOutRatherThanZero() {
+        TestUser cook = user();
+        UUID soup = recipe(cook, "Mystery Soup", Map.of("proteinG", 5.0, "carbsG", 0.0, "fatG", 3.0));
+        cook.ok(HttpMethod.POST, entries(MONDAY), entry(MONDAY, "LUNCH", soup, 2));
+
+        JsonNode total =
+                days(cook.ok(HttpMethod.GET, totals(MONDAY), null)).getFirst().get("total");
+
+        assertThat(total.has("calories")).isFalse();
+        assertThat(total.get("proteinG").asDouble()).isEqualTo(10.0);
+        assertThat(total.get("carbsG").asDouble()).isZero();
+        assertThat(total.get("fatG").asDouble()).isEqualTo(6.0);
     }
 
     @Test
@@ -173,16 +192,12 @@ class PlannedTotalsEndpointTests extends ApiIntegrationTestSupport {
     }
 
     private static UUID recipe(TestUser owner, String title, List<Double> perServing) {
-        Map<String, Object> input = recipeInput(title);
-        input.put("nutrition", nutritionInput(perServing));
-        return UUID.fromString(
-                owner.ok(HttpMethod.POST, "/api/v1/recipes", input).get("id").asText());
+        return recipe(owner, title, nutritionInput(perServing));
     }
 
-    private static UUID recipeWithoutCalories(
-            TestUser owner, String title, double proteinG, double carbsG, double fatG) {
+    private static UUID recipe(TestUser owner, String title, Map<String, Double> nutrition) {
         Map<String, Object> input = recipeInput(title);
-        input.put("nutrition", Map.of("proteinG", proteinG, "carbsG", carbsG, "fatG", fatG));
+        input.put("nutrition", nutrition);
         return UUID.fromString(
                 owner.ok(HttpMethod.POST, "/api/v1/recipes", input).get("id").asText());
     }

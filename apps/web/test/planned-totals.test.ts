@@ -3,8 +3,6 @@ import { describe, it } from "node:test";
 
 import { plannedTotalParts, showsPlannedTotals, withoutNutritionNote } from "../src/lib/planned-totals.ts";
 
-const zeros = { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 };
-
 describe("showsPlannedTotals", () => {
   it("always shows them to a household of one", () => {
     assert.equal(showsPlannedTotals(false, "mine"), true);
@@ -19,14 +17,16 @@ describe("showsPlannedTotals", () => {
 
 describe("plannedTotalParts", () => {
   it("names calories and each macro, rounded to whole numbers", () => {
-    assert.deepEqual(
-      plannedTotalParts({ total: { calories: 1199.6, proteinG: 60.4, carbsG: 120, fatG: 29.5 }, meals: 2, mealsWithoutNutrition: 0 }),
-      ["1200 kcal", "60 g protein", "120 g carbs", "30 g fat"],
-    );
+    assert.deepEqual(plannedTotalParts({ calories: 1199.6, proteinG: 60.4, carbsG: 120, fatG: 29.5 }), [
+      "1200 kcal",
+      "60 g protein",
+      "120 g carbs",
+      "30 g fat",
+    ]);
   });
 
   it("shows known zeros as zeros", () => {
-    assert.deepEqual(plannedTotalParts({ total: zeros, meals: 1, mealsWithoutNutrition: 0 }), [
+    assert.deepEqual(plannedTotalParts({ calories: 0, proteinG: 0, carbsG: 0, fatG: 0 }), [
       "0 kcal",
       "0 g protein",
       "0 g carbs",
@@ -34,21 +34,12 @@ describe("plannedTotalParts", () => {
     ]);
   });
 
-  it("shows what is known when some meals lack values", () => {
-    assert.deepEqual(plannedTotalParts({ total: { ...zeros, proteinG: 10 }, meals: 1, mealsWithoutNutrition: 1 }), [
-      "0 kcal",
-      "10 g protein",
-      "0 g carbs",
-      "0 g fat",
-    ]);
+  it("leaves out a value no meal that day knows, never showing it as zero", () => {
+    assert.deepEqual(plannedTotalParts({ proteinG: 15, carbsG: 0, fatG: 6 }), ["15 g protein", "0 g carbs", "6 g fat"]);
   });
 
-  it("shows nothing when no meal that day has a known value", () => {
-    assert.deepEqual(plannedTotalParts({ total: zeros, meals: 2, mealsWithoutNutrition: 2 }), []);
-  });
-
-  it("still shows a zero total when another meal that day is fully known", () => {
-    assert.equal(plannedTotalParts({ total: zeros, meals: 2, mealsWithoutNutrition: 1 }).length, 4);
+  it("shows nothing when no value is known", () => {
+    assert.deepEqual(plannedTotalParts({}), []);
   });
 });
 

@@ -687,7 +687,8 @@ paths:
         values still count, as logging the meal records them. A meal whose
         recipe lacks any of the four is also counted in
         `mealsWithoutNutrition`, so a total that leaves values out says so.
-        A day with no meals has zero totals.
+        A value no meal that day knows is absent from `total`, never zero,
+        so a day with no meals has an empty `total`.
       responses:
         '200':
           description: The caller's planned totals for each day of the week.
@@ -1252,7 +1253,7 @@ components:
           format: uri
     Nutrition:
       type: object
-      description: Per-serving nutrition for a recipe, or totals for a logged meal. Absent values are unknown, not zero.
+      description: Per-serving nutrition for a recipe, totals for a logged meal, or a planned day's total. Absent values are unknown, not zero.
       properties:
         calories:
           type: number
@@ -1564,14 +1565,17 @@ components:
             $ref: '#/components/schemas/PlannedDayTotal'
     PlannedDayTotal:
       type: object
-      description: One person's share of the meals they eat on a day.
+      description: >
+        One person's share of the meals they eat on a day. Each value in
+        `total` sums the meals whose recipe knows it, and is absent when no
+        meal that day does, so an absent value is unknown, never zero.
       required: [date, total, meals, mealsWithoutNutrition]
       properties:
         date:
           type: string
           format: date
         total:
-          $ref: '#/components/schemas/NutritionTotal'
+          $ref: '#/components/schemas/Nutrition'
         meals:
           type: integer
           description: How many planned meals the person eats that day.
@@ -1581,23 +1585,6 @@ components:
             How many of those meals have a recipe without all four values.
             Their unknown values add nothing to `total`; their known values
             do.
-    NutritionTotal:
-      type: object
-      description: Calories and macros summed over meals. Every value is known.
-      required: [calories, proteinG, carbsG, fatG]
-      properties:
-        calories:
-          type: number
-          description: Kilocalories.
-        proteinG:
-          type: number
-          description: Protein in grams.
-        carbsG:
-          type: number
-          description: Carbohydrates in grams.
-        fatG:
-          type: number
-          description: Fat in grams.
     MealPlanEntryInput:
       type: object
       required: [date, mealType, recipeId, servings]

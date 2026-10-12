@@ -5,6 +5,7 @@ import io.github.noahhhx.mimos.api.household.HouseholdService;
 import io.github.noahhhx.mimos.api.household.HouseholdService.Membership;
 import io.github.noahhhx.mimos.api.identity.CurrentUserService;
 import io.github.noahhhx.mimos.api.identity.UserProfileRecord;
+import io.github.noahhhx.mimos.api.recipes.RecipeApiMapper;
 import io.github.noahhhx.mimos.planning.plan.MealPlan;
 import io.github.noahhhx.mimos.planning.plan.MealPlanService;
 import io.github.noahhhx.mimos.planning.plan.MealType;
@@ -17,7 +18,6 @@ import org.openapitools.api.PlanningApi;
 import org.openapitools.model.MealPlanEntry;
 import org.openapitools.model.MealPlanEntryInput;
 import org.openapitools.model.MealPlanEntryPatch;
-import org.openapitools.model.NutritionTotal;
 import org.openapitools.model.Person;
 import org.openapitools.model.PlannedTotals;
 import org.springframework.http.ResponseEntity;
@@ -64,11 +64,7 @@ public class MealPlansController implements PlanningApi {
                 mealPlanService.plannedTotals(caller.householdId(), startDate, caller.id()).stream()
                         .map(day -> new org.openapitools.model.PlannedDayTotal()
                                 .date(day.date())
-                                .total(new NutritionTotal()
-                                        .calories(BigDecimal.valueOf(day.total().calories()))
-                                        .proteinG(BigDecimal.valueOf(day.total().proteinG()))
-                                        .carbsG(BigDecimal.valueOf(day.total().carbsG()))
-                                        .fatG(BigDecimal.valueOf(day.total().fatG())))
+                                .total(RecipeApiMapper.toApiNutrition(day.total()))
                                 .meals(day.meals())
                                 .mealsWithoutNutrition(day.mealsWithoutNutrition()))
                         .toList();

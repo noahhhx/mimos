@@ -12,10 +12,10 @@ import org.jspecify.annotations.Nullable;
  * One person's planned calories and macros for a day (ADR-0022): their
  * share of each meal they eat. {@code meals} counts every meal they eat
  * that day; {@code mealsWithoutNutrition} counts those whose recipe lacks
- * any value. A value the recipe lacks adds nothing to {@code total} and its
- * known values still count, as Log records them.
+ * any value. Each value in {@code total} sums the meals that know it, as
+ * Log records them, and is unknown when none does.
  */
-public record PlannedDayTotal(LocalDate date, NutritionTotal total, int meals, int mealsWithoutNutrition) {
+public record PlannedDayTotal(LocalDate date, Nutrition total, int meals, int mealsWithoutNutrition) {
 
     static List<PlannedDayTotal> forWeek(
             LocalDate weekStart,
@@ -36,10 +36,7 @@ public record PlannedDayTotal(LocalDate date, NutritionTotal total, int meals, i
             UUID dinerProfileId,
             List<MealPlanRepository.PlannedMealInput> entries,
             Map<UUID, Nutrition> perServingByRecipe) {
-        double calories = 0;
-        double proteinG = 0;
-        double carbsG = 0;
-        double fatG = 0;
+        Nutrition total = Nutrition.UNKNOWN;
         int meals = 0;
         int mealsWithoutNutrition = 0;
         for (MealPlanRepository.PlannedMealInput entry : entries) {
@@ -55,17 +52,21 @@ public record PlannedDayTotal(LocalDate date, NutritionTotal total, int meals, i
                 mealsWithoutNutrition++;
             }
             double share = shareOf(entry.servings(), entry.dinerProfileIds().size());
-            calories += scaled(perServing.calories(), share);
-            proteinG += scaled(perServing.proteinG(), share);
-            carbsG += scaled(perServing.carbsG(), share);
-            fatG += scaled(perServing.fatG(), share);
+            total = new Nutrition(
+                    plus(total.calories(), perServing.calories(), share),
+                    plus(total.proteinG(), perServing.proteinG(), share),
+                    plus(total.carbsG(), perServing.carbsG(), share),
+                    plus(total.fatG(), perServing.fatG(), share));
         }
-        NutritionTotal total = new NutritionTotal(tenth(calories), tenth(proteinG), tenth(carbsG), tenth(fatG));
         return new PlannedDayTotal(date, total, meals, mealsWithoutNutrition);
     }
 
-    private static double scaled(@Nullable Double perServing, double share) {
-        return perServing == null ? 0 : tenth(perServing * share);
+    private static @Nullable Double plus(@Nullable Double sum, @Nullable Double perServing, double share) {
+        if (perServing == null) {
+            return sum;
+        }
+        double meal = tenth(perServing * share);
+        return sum == null ? meal : tenth(sum + meal);
     }
 
     private static double tenth(double value) {

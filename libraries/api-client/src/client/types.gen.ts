@@ -124,7 +124,7 @@ export type Problem = {
 };
 
 /**
- * Per-serving nutrition for a recipe, or totals for a logged meal. Absent values are unknown, not zero.
+ * Per-serving nutrition for a recipe, totals for a logged meal, or a planned day's total. Absent values are unknown, not zero.
  */
 export type Nutrition = {
     /**
@@ -370,11 +370,12 @@ export type PlannedTotals = {
 };
 
 /**
- * One person's share of the meals they eat on a day.
+ * One person's share of the meals they eat on a day. Each value in `total` sums the meals whose recipe knows it, and is absent when no meal that day does, so an absent value is unknown, never zero.
+ *
  */
 export type PlannedDayTotal = {
     date: string;
-    total: NutritionTotal;
+    total: Nutrition;
     /**
      * How many planned meals the person eats that day.
      */
@@ -384,28 +385,6 @@ export type PlannedDayTotal = {
      *
      */
     mealsWithoutNutrition: number;
-};
-
-/**
- * Calories and macros summed over meals. Every value is known.
- */
-export type NutritionTotal = {
-    /**
-     * Kilocalories.
-     */
-    calories: number;
-    /**
-     * Protein in grams.
-     */
-    proteinG: number;
-    /**
-     * Carbohydrates in grams.
-     */
-    carbsG: number;
-    /**
-     * Fat in grams.
-     */
-    fatG: number;
 };
 
 export type MealPlanEntryInput = {
