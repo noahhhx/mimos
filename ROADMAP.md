@@ -222,10 +222,8 @@ Rules for using this file:
 18. **Fuel follow-ups.** Each its own decision before it is built: carbs
     per hour on the bike, writing logged intake back to intervals.icu,
     training-aware recipe suggestions, and OAuth to intervals.icu on a
-    hosted instance. Before any of them, the owner connects their own
-    intervals.icu account to answer ADR-0022's open questions: which
-    planned workouts carry `joules`, and whether `icu_intensity` is a
-    percentage of FTP.
+    hosted instance. ADR-0022's open questions about intervals.icu's
+    fields were answered on the owner's account on 2026-10-13.
 
 19. **Small fixes found while building step 14.** None blocks anything.
     - At 320px wide, every signed-in page scrolls sideways by 31px: the

@@ -124,17 +124,23 @@ Moved to ROADMAP step 19 when step 14 closed (item 21).
 
 ## Open questions
 
-These stay unproven after the prototypes that settled the macro rule.
+All answered on 2026-10-13, after step 14 closed; ADR-0022 records each
+answer and its evidence.
 
-- Which intervals.icu planned workouts carry `joules`, and whether
-  `icu_intensity` is a percentage of FTP (its OpenAPI spec says only
-  "float"; the translator assumes a percentage when it picks easy,
-  endurance, or hard). Both wait for the owner to connect their own
-  account on a local stack; item 20 records why they do not block step
-  14. Record the answers in ADR-0022.
-- Whether level 50 suits weight gain. It has no published source.
-- How far the default body-fat values move a person's targets from their
-  measured ones.
+- `icu_intensity` is a percentage of FTP, on planned workouts and
+  activities alike, as the translator assumed. Planned workouts carry no
+  `joules`, even with power targets, so a planned ride counts by FTP ×
+  intensity. Measured on the owner's account with a probe and two test
+  workouts, deleted afterwards.
+- Level 50 for weight gain stays: it is about a 300 kcal surplus over
+  energy balance, at the cautious start Slater et al. 2019 advise.
+- The default body fat moves calories by level × weight / 100 per
+  percentage point, about 31 kcal for a 70 kg rider; the defaults stay.
+
+The account also showed that a completed ride without power counted by
+FTP × an assumed intensity ahead of its device's calories; reported
+calories now come first. And activities synced to intervals.icu from
+Strava never reach its API; the user guide says so.
 
 ## Rejected alternatives
 

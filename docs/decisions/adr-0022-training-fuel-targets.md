@@ -52,8 +52,27 @@ The fields Mimos needs:
 | `GET /api/v1/athlete/{id}/wellness` | `weight`, `bodyFat` |
 | `GET /api/v1/athlete/{id}` | `sex`, `weight`, `sportSettings[].ftp` |
 
-Which planned workouts carry `joules` is unconfirmed; power-target rides
-likely do and others likely do not.
+What these fields hold, checked against a real account on 2026-10-13 (the
+owner's, after the decision below was built):
+
+- `icu_intensity` is a percentage of FTP (75.36, not 0.7536), on planned
+  workouts and on completed activities alike. On every record with a
+  training load, `icu_intensity` / 100 equals the intensity factor the
+  load implies (load = hours × IF² × 100) to three places.
+- Planned workouts carry no `joules`, even one with power targets: the
+  events list (with or without `resolve=true`) and the single-event read
+  all return `null`. Only the single read has the planned average power,
+  in `workout_doc.average_watts`. A planned ride therefore counts by FTP ×
+  intensity; for the test workout that gave 713 kJ against its own
+  722 kJ. A workout synced from another planner may differ; none was
+  tried.
+- A ride recorded without a power meter has no `icu_joules`, but its
+  device's `calories` come through.
+- Activities that reach intervals.icu from Strava come back as stubs:
+  `id`, `start_date_local`, `source: STRAVA`, and the `_note` "STRAVA
+  activities are not available via the API". They have no duration, so
+  the translator leaves them out. The user guide tells people to connect
+  their device to intervals.icu directly.
 
 ## Decision
 
@@ -99,7 +118,13 @@ Each goal is a level and a default protein:
 | Gain weight | 50 | 1.8 |
 
 45, 40, and 35 match TrainerRoad's nutrition calculator. 50 for gain is
-our estimate and has no published source; revisit it with users. No goal
+derived, not published. Energy balance sits near 45 in healthy young
+adults (Loucks 2011), so 50 is a surplus of 5 × fat-free mass: about
+300 kcal a day for a 70 kg rider at 15% body fat, and 250 to 360 kcal
+across typical riders. Slater et al. 2019 advise starting a gain
+conservatively at about 1,500 to 2,000 kJ (358 to 478 kcal) a day, so 50
+sits at or just under that start. Kept at 50 on 2026-10-13; revisit it
+with users. No goal
 goes below 35, which keeps a margin over the low-availability threshold
 of 30. Protein is adjustable from 1.2 to 3.0 g/kg.
 
@@ -112,18 +137,39 @@ profile, else the latest intervals.icu `bodyFat`, else a default by sex
 (15% male, 25% female, 20% unspecified). The target shows which one it
 used.
 
+How far the default moves a target was measured on 2026-10-13: each
+percentage point of body fat moves calories by level × weight / 100,
+about 31 kcal a day for a 70 kg rider under "Fuel my training". A lean
+rider on the default is under-fuelled: a 70 kg man at 8% gets 220 kcal
+less than with his measured value, and a 58 kg woman at 16% 234 kcal
+less, close to the gap between two goal levels. At the extreme it
+crosses the floor above: a 58 kg woman at 12% on "Lose weight faster"
+with the default gets 1523 kcal on a rest day, an energy availability of
+about 29.8. The defaults were kept as they are on 2026-10-13. The Fuel
+page names them under the body-fat field, and entering a measured value
+removes the gap.
+
 Exercise energy in kcal is taken as equal to work in kJ. At a gross
 efficiency near 24%, the factor of 4.184 kJ per kcal cancels out. In
 order of preference, Mimos uses:
 
 1. Completed work (`icu_joules`).
 2. Planned work (`joules`).
-3. FTP × intensity × duration, for a ride when FTP is set. FTP is a
+3. An activity's reported `calories`. Only synced completed activities
+   carry them, so this step never touches a planned or hand-entered
+   session.
+4. FTP × intensity × duration, for a ride when FTP is set. FTP is a
    cycling measure, so it prices rides only; a run or swim with FTP set
    falls through to the estimate.
-4. An activity's reported `calories`.
 5. Otherwise (a non-ride, or a ride with no FTP), a per-minute estimate
    by intensity and weight.
+
+Steps 3 and 4 were the other way round until 2026-10-13. On the owner's
+account, a 145-minute ride without a power meter was 1732 kcal by the
+device and 1846 by FTP × an assumed endurance intensity, because a
+completed activity passes no intensity. A device's figure for a session
+that happened beats a guess at how hard it was, so reported calories now
+come first.
 
 For a day, completed sessions replace planned ones.
 

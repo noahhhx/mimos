@@ -122,6 +122,13 @@ again.
   the field with **Use it**, which copies it in. Choose **Save** to keep
   it.
 
+Activities that reach intervals.icu from Strava don't come across.
+intervals.icu doesn't pass them on to other apps, so Mimos never sees
+them, and they don't count toward your targets. Connect your watch or
+bike computer to intervals.icu directly (in intervals.icu's
+**Settings**, for example with Garmin Connect), and the activities it
+brings in come across in full.
+
 Mimos checks intervals.icu for changes on its own, every half hour unless
 your instance says otherwise. To see a change at once, choose **Refresh**.
 The Fuel page says when training last came across.
@@ -165,18 +172,20 @@ assumes 15% for men, 25% for women, and 20% if you'd rather not say.
 **Training energy** is worked out for each session, from the first of
 these that it has:
 
-- **The work you did, or plan to do.** An activity or planned workout
-  from intervals.icu with power data carries its work in kilojoules, and
-  Mimos uses it as it is (see below for why kilojoules count as
-  kilocalories).
-- **A ride, with your FTP set.** Your FTP times a share of it for the
-  intensity (55% for easy, 68% for endurance, 85% for hard), times the
-  minutes, gives the work you do in kilojoules. Mimos counts that as the
-  same number of kilocalories: the body turns about a quarter of the energy
-  it burns into work on the pedals, and that quarter almost exactly cancels
-  the 4.184 kilojoules in a kilocalorie.
+- **The work you did.** An activity from intervals.icu recorded with a
+  power meter carries its work in kilojoules, and Mimos uses it as it is
+  (see below for why kilojoules count as kilocalories).
 - **The calories intervals.icu reported** for an activity without power
-  data, such as a run with a heart rate strap.
+  data, such as a run, or a ride without a power meter. These come from
+  your watch or bike computer, which measured the session; Mimos prefers
+  them to a guess at how hard it was.
+- **A ride, with your FTP set.** This is how planned rides count. Your
+  FTP times a share of it for the intensity (55% for easy, 68% for
+  endurance, 85% for hard), times the minutes, gives the work you do in
+  kilojoules. Mimos counts that as the same number of kilocalories: the
+  body turns about a quarter of the energy it burns into work on the
+  pedals, and that quarter almost exactly cancels the 4.184 kilojoules in
+  a kilocalorie.
 - **Anything else**: an estimate from your weight, the minutes, and the
   intensity, using typical values from the Compendium of Physical
   Activities. A session from intervals.icu with no intensity counts as
@@ -230,8 +239,13 @@ of fat, 25% of the calories.
   Committee's 2023 consensus statement on Relative Energy Deficiency in
   Sport (REDs), *British Journal of Sports Medicine* 57 (2023).
 - **The levels 45, 40, and 35** match TrainerRoad's nutrition calculator.
-  The level 50 for **Gain weight** is Mimos's own estimate and has no
-  published source yet.
+  The level 50 for **Gain weight** is Mimos's own, worked out from two
+  sources: energy balance sits near 45 in healthy young adults (Loucks
+  and colleagues, above), so 50 adds about 300 kcal a day for a 70 kg
+  rider; and Slater and colleagues advise starting a gain at about 360 to
+  480 kcal a day ("Is an energy surplus required to maximize skeletal
+  muscle hypertrophy associated with resistance training", *Frontiers in
+  Nutrition* 6, 2019), so 50 is a cautious start.
 - **Carb ranges**: Burke, Hawley, Wong, and Jeukendrup, "Carbohydrates for
   training and competition", *Journal of Sports Sciences* 29, supplement 1
   (2011); and Thomas, Erdman, and Burke, "Nutrition and Athletic
