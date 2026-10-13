@@ -367,7 +367,7 @@ export type SessionEnergy = {
 };
 
 /**
- * How a session's energy was found, in order of preference: its completed or planned work, FTP times an intensity factor times its duration (rides only; EASY 0.55, ENDURANCE 0.68, HARD 0.85), the calories intervals.icu reported for an activity, or an estimate from intensity and weight (EASY 4, ENDURANCE 7, HARD 10 METs).
+ * How a session's energy was found, in order of preference: its completed or planned work, the calories intervals.icu reported for an activity, FTP times an intensity factor times its duration (rides only; EASY 0.55, ENDURANCE 0.68, HARD 0.85), or an estimate from intensity and weight (EASY 4, ENDURANCE 7, HARD 10 METs).
  *
  */
 export type EnergyMethod = 'COMPLETED_WORK' | 'PLANNED_WORK' | 'FTP_INTENSITY' | 'REPORTED_CALORIES' | 'ESTIMATE';

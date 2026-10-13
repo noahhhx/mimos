@@ -167,14 +167,16 @@ class TargetCalculatorTest {
     }
 
     @Test
-    void reportedCaloriesNeverComeAheadOfWorkOrFtp() {
+    void reportedCaloriesComeAfterWorkAndAheadOfFtp() {
         TrainingSession withWork = synced(Sport.RIDE, 900.0, 640);
-        TrainingSession rideWithFtp = synced(Sport.RIDE, null, 640);
-        FuelProfile withoutFtp = profile(Goal.FUEL, 70, Sex.MALE, 15.0, null);
+        TrainingSession rideWithoutPower = synced(Sport.RIDE, null, 640);
+        TrainingSession rideWithoutCalories = synced(Sport.RIDE, null, null);
 
         assertThat(onlySession(goldenRider(Goal.FUEL), withWork).method()).isEqualTo(EnergyMethod.COMPLETED_WORK);
-        assertThat(onlySession(goldenRider(Goal.FUEL), rideWithFtp).method()).isEqualTo(EnergyMethod.FTP_INTENSITY);
-        assertThat(onlySession(withoutFtp, rideWithFtp).method()).isEqualTo(EnergyMethod.REPORTED_CALORIES);
+        assertThat(onlySession(goldenRider(Goal.FUEL), rideWithoutPower))
+                .isEqualTo(new SessionEnergy(rideWithoutPower.id(), 640, EnergyMethod.REPORTED_CALORIES));
+        assertThat(onlySession(goldenRider(Goal.FUEL), rideWithoutCalories).method())
+                .isEqualTo(EnergyMethod.FTP_INTENSITY);
     }
 
     private static TrainingSession synced(Sport sport, @Nullable Double workKj, @Nullable Integer reportedKcal) {

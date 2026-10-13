@@ -175,7 +175,11 @@ wire-format contract:
   feeds `TargetCalculator` when the profile has none, and the rest are
   suggestions the Fuel page offers, never applied on their own. An
   activity's reported `calories` become a synced session's `reportedKcal`
-  (`REPORTED_CALORIES`, after FTP and before the estimate).
+  (`REPORTED_CALORIES`, after work and before FTP: a device's figure for
+  a session that happened beats a guess at its intensity). Activities
+  that reach intervals.icu from Strava arrive as stubs (id, date,
+  `source: STRAVA`, no duration) and are left out, as is any record
+  without `moving_time`.
   `IntervalsIcuScheduledSync` runs the same sync for every connected
   person in turn every `mimos.intervals-icu.sync-interval` (default
   `30m`, at least a minute; `@EnableScheduling` only while the feature is

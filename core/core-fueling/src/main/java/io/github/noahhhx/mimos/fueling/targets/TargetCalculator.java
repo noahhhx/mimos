@@ -104,16 +104,16 @@ public final class TargetCalculator {
                     kcalFromWorkKj(workKj),
                     session.kind() == Kind.COMPLETED ? EnergyMethod.COMPLETED_WORK : EnergyMethod.PLANNED_WORK);
         }
+        Integer reportedKcal = session.reportedKcal();
+        if (reportedKcal != null) {
+            return new SessionEnergy(session.id(), reportedKcal, EnergyMethod.REPORTED_CALORIES);
+        }
         Intensity sessionIntensity = session.intensity();
         Intensity intensity = sessionIntensity == null ? Intensity.ENDURANCE : sessionIntensity;
         Integer ftpWatts = profile.ftpWatts();
         if (ftpWatts != null && session.sport() == Sport.RIDE) {
             double workKjAtFtp = ftpWatts * intensityFactor(intensity) * session.durationMinutes() * 60 / 1000;
             return new SessionEnergy(session.id(), kcalFromWorkKj(workKjAtFtp), EnergyMethod.FTP_INTENSITY);
-        }
-        Integer reportedKcal = session.reportedKcal();
-        if (reportedKcal != null) {
-            return new SessionEnergy(session.id(), reportedKcal, EnergyMethod.REPORTED_CALORIES);
         }
         double kcalPerMinute = mets(intensity) * 3.5 * profile.weightKg() / 200;
         return new SessionEnergy(session.id(), kcalPerMinute * session.durationMinutes(), EnergyMethod.ESTIMATE);
