@@ -25,8 +25,10 @@ Once you have an account, choose **Kitchen**, then **Sign in**.
     Whoever runs your Mimos can turn sign-up off. If they have, ask them to
     create an account for you.
 
-Mimos keeps you signed in while you use it. After a long break, such as a
-tab left open overnight, it asks you to sign in again.
+Mimos keeps you signed in on each device you use, in new tabs and after
+you close the browser. It asks you to sign in again only after 30 days
+without a visit, or a year after you signed in. On a shared computer,
+choose **Sign out** when you finish.
 
 ## Find your way around
 

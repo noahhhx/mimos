@@ -44,7 +44,8 @@ sign-in.
 
 ## Consequences
 
-- Tokens live in the browser (session storage). That is standard for public
+- Tokens live in the browser (session storage; local storage since
+  [ADR-0024](adr-0024-stay-signed-in.md)). That is standard for public
   clients, but it means the web app is not the place for long-lived or
   high-privilege sessions; anything sensitive later (admin surfaces, the
   plugin API) should get its own confidential-client/BFF treatment.

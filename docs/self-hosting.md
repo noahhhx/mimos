@@ -93,6 +93,20 @@ To close sign-up, do both of these:
    **Create account**, which would otherwise lead to Keycloak's
    "Registration not allowed" page.
 
+## How long people stay signed in
+
+The realm keeps a session for 30 days without use and for a year at most,
+so people sign in once per device. To change either, open the `mimos`
+realm's **Realm settings → Sessions** and set **SSO Session Idle** and
+**SSO Session Max**.
+
+Keycloak imports the realm only on the first start. An instance set up
+before these values were in the realm keeps Keycloak's defaults of 30
+minutes and 10 hours, so people are asked to sign in on almost every
+visit. Set the two values by hand to fix that: 30 days and 365 days match
+a new instance. After the upgrade that brought these values, everyone
+signs in once more, and from then on stays signed in.
+
 ## Changing URLs later
 
 The web app and API read their URLs at start, so edit `.env` and

@@ -32,6 +32,16 @@ test("a reopened browser is signed in", async ({ loggedInPage: page, browser }) 
   }
 });
 
+test("signing out ends it in every tab", async ({ loggedInPage: page }) => {
+  const other = await page.context().newPage();
+  await expectSignedIn(other);
+  await page.getByRole("banner").getByRole("button", { name: "Profile" }).click();
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await other.goto(`${endpoints().web}/app/plan`);
+  await expect(other.getByText("You need to sign in to plan meals.")).toBeVisible();
+});
+
 test("the session outlasts a month away", async ({ loggedInPage: page }) => {
   const refreshToken = await page.evaluate(() => {
     const key = Object.keys(localStorage).find((name) => name.startsWith("oidc.user:"));

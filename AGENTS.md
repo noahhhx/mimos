@@ -270,7 +270,10 @@ is the contract:
 - Authentication happens in the browser via `oidc-client-ts` as the public
   `mimos-web` client (Authorization Code + PKCE); the app calls the API
   directly with bearer tokens and the API allows CORS for the web origin
-  (ADR-0004). No server-side sessions, no Next-auth.
+  (ADR-0004). No server-side sessions, no Next-auth. The user is kept in
+  `localStorage`, and the realm keeps a session 30 days unused and a year
+  at most, so people stay signed in across tabs and browser restarts
+  (ADR-0024); no Remember me, no offline tokens for the browser.
 - Public URLs (API, Keycloak, app) and the sign-up policy are runtime env
   (`MIMOS_API_URL`, `MIMOS_OIDC_AUTHORITY`, `MIMOS_OIDC_CLIENT_ID`,
   `MIMOS_APP_URL`, `MIMOS_SIGNUP`), never build args (ADR-0012,

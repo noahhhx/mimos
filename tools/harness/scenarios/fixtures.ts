@@ -18,8 +18,7 @@ export interface HarnessFixtures {
   consoleLog: void;
   /**
    * A page on the app shell (`/app`), signed in through the real Keycloak
-   * form. oidc-client-ts keeps tokens in sessionStorage, which Playwright's
-   * storageState does not persist, so every test signs in afresh.
+   * form. Every test signs in afresh, so none inherits another's session.
    */
   loggedInPage: Page;
 }
@@ -93,11 +92,11 @@ export async function fillRegistration(page: Page, username: string): Promise<vo
   await page.getByRole("button", { name: "Register" }).click();
 }
 
-/** The API, called as the signed-in user with the token oidc-client-ts keeps in sessionStorage. */
+/** The API, called as the signed-in user with the token oidc-client-ts keeps in localStorage. */
 export async function apiAs(page: Page) {
   const token = await page.evaluate(() => {
-    const key = Object.keys(sessionStorage).find((name) => name.startsWith("oidc.user:"));
-    return key ? (JSON.parse(sessionStorage.getItem(key) ?? "{}") as { access_token?: string }).access_token : undefined;
+    const key = Object.keys(localStorage).find((name) => name.startsWith("oidc.user:"));
+    return key ? (JSON.parse(localStorage.getItem(key) ?? "{}") as { access_token?: string }).access_token : undefined;
   });
   expect(token, "the signed-in page holds an access token").toBeTruthy();
   const call = async <T>(method: string, path: string, data?: unknown): Promise<T> => {

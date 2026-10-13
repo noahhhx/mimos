@@ -29,6 +29,7 @@ right at the time.
 | [ADR-0021](adr-0021-keycloak-follows-app-theme.md)                 | Keycloak pages follow the app theme |
 | [ADR-0022](adr-0022-training-fuel-targets.md)                      | Training-aware fuel targets |
 | [ADR-0023](adr-0023-recipe-pictures.md)                            | Recipe pictures |
+| [ADR-0024](adr-0024-stay-signed-in.md)                             | Stay signed in |
 
 New ADRs are sequential: `adr-NNNN-title.md`, with the numbering in this
 index. Once accepted, an ADR is never rewritten — superseding decisions get

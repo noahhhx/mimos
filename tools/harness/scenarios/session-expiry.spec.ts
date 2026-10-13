@@ -8,18 +8,18 @@ import { expect, test } from "./fixtures.ts";
  * (the reported bug: a stale session in a browser tab). An expired token
  * with a live refresh token is renewed instead.
  *
- * Each test edits the oidc-client-ts user in sessionStorage, then reloads
+ * Each test edits the oidc-client-ts user in localStorage, then reloads
  * the plan page.
  */
 
 /** Rewrites the stored OIDC user's fields. */
 async function editStoredUser(page: Page, changes: Record<string, unknown>): Promise<void> {
   await page.evaluate((fields) => {
-    const key = Object.keys(sessionStorage).find((name) => name.startsWith("oidc.user:"));
+    const key = Object.keys(localStorage).find((name) => name.startsWith("oidc.user:"));
     if (!key) {
       throw new Error("no stored OIDC user");
     }
-    sessionStorage.setItem(key, JSON.stringify({ ...JSON.parse(sessionStorage.getItem(key)!), ...fields }));
+    localStorage.setItem(key, JSON.stringify({ ...JSON.parse(localStorage.getItem(key)!), ...fields }));
   }, changes);
 }
 

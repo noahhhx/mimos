@@ -6,6 +6,8 @@
   "loginTheme": "mimos",
   "registrationAllowed": true,
   "loginWithEmailAllowed": true,
+  "ssoSessionIdleTimeout": 2592000,
+  "ssoSessionMaxLifespan": 31536000,
   "clients": [
     {
       "clientId": "mimos-web",
