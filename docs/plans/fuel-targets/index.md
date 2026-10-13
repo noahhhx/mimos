@@ -120,20 +120,7 @@ the trail). The items below copy what matters from them.
 
 ## Found along the way
 
-Defects on `main` that the first run surfaced. None blocks step 14; promote
-one to an item when you pick it up.
-
-- At 320px wide, every signed-in page scrolls sideways by 31px: the site
-  header's profile button sits past the right edge. The Log page's totals
-  table reaches 376px.
-- The Kitchen home and the plan page request
-  `GET /api/v1/plans/{monday}/shopping-list` for an account without a list
-  and get a 404 on every load. Harmless, but noisy in logs and HARs.
-- The share rule (servings ÷ diners, to 0.1) exists twice:
-  `PlannedDayTotal.shareOf` in core-planning and `shareOf` in
-  `apps/web/src/lib/diners.ts`. Tests pin them to the same cases. One
-  source (the API returns each entry's share for the caller) would remove
-  the copy.
+Moved to ROADMAP step 19 when step 14 closed (item 21).
 
 ## Open questions
 

@@ -152,13 +152,31 @@ Rules for using this file:
     5. *intervals.icu sync.* `integrations/intervals-icu`: connect with an
        athlete id and API key, encrypted at rest; scheduled and on-demand
        sync from 7 days back to 14 ahead; weight and body-fat hints.
-    6. *Later, each its own decision.* On-bike carbs per hour, writing
-       logged intake back to intervals.icu, training-aware recipe
-       suggestions, and OAuth on a hosted instance.
+    6. *Later, each its own decision.* Now step 18.
     *Done when: a self-hoster without intervals.icu can enter training by
     hand and see targets, a connected person's targets follow their
     planned and completed workouts, and a person with targets off sees
     no change.*
+    **Done.** ADR-0022, built as the 22 items in `docs/plans/fuel-targets/`.
+    A person turns targets on in the Fuel page and sees "Fuel for the
+    day" beside what they planned on the plan page (Mine view) and what
+    they logged on the Log page. Targets are energy availability times
+    fat-free mass plus the day's training energy, with carbs by load band
+    and fat kept within 20 to 35%, worked out on every read in
+    `core/core-fueling`. Training is entered by hand on the plan page or
+    comes from intervals.icu (`integrations/intervals-icu`): a personal
+    API key sealed under `MIMOS_SECRET_KEY`, synced every 30 minutes and
+    on Refresh, one sync per person at a time, a 429 waited out and a
+    refused key shown as broken. Synced body fat feeds the targets, and
+    weight, sex, and FTP are offered as suggestions. Export format
+    version 6 carries the fuel profile and hand-entered sessions. Checked
+    on a fresh stack: with no secret key, a 90-minute ride entered by
+    hand took a day from 2678 to 3706 kcal; connected to the fake
+    intervals.icu, planned work, FTP, and completed work each priced
+    their day, and riding today's workout replaced its planned energy;
+    with targets off, the fuel read carries no target and no page shows
+    one. The `fuel-profile`, `fuel-targets`, and `intervals-icu`
+    scenarios keep it so.
 
 15. **AWS deployment.** Resolve the deferred decisions (compute, IaC tool),
     stand up `deploy/aws`, with the self-hosted path still the CI-checked
@@ -198,3 +216,29 @@ Rules for using this file:
     The `shared-week` harness scenario proves the done-when with two
     fresh accounts: a shared dinner and separate lunches, each logging
     their share, one Country of the Week, and one shopping list.
+
+## Phase 6 — After fuel targets
+
+18. **Fuel follow-ups.** Each its own decision before it is built: carbs
+    per hour on the bike, writing logged intake back to intervals.icu,
+    training-aware recipe suggestions, and OAuth to intervals.icu on a
+    hosted instance. Before any of them, the owner connects their own
+    intervals.icu account to answer ADR-0022's open questions: which
+    planned workouts carry `joules`, and whether `icu_intensity` is a
+    percentage of FTP.
+
+19. **Small fixes found while building step 14.** None blocks anything.
+    - At 320px wide, every signed-in page scrolls sideways by 31px: the
+      site header's profile button sits past the right edge. The Log
+      page's totals table reaches 376px.
+    - The Kitchen home and the plan page request
+      `GET /api/v1/plans/{monday}/shopping-list` for an account without a
+      list and get a 404 on every load: noisy in logs and HARs.
+    - The share rule (servings ÷ diners, to 0.1) exists twice:
+      `PlannedDayTotal.shareOf` in core-planning and `shareOf` in
+      `apps/web/src/lib/diners.ts`, pinned to the same cases by tests.
+      The API returning each entry's share for the caller would remove
+      the copy.
+    - An intervals.icu sync takes "today" as the server's UTC date and
+      reads a `Retry-After` given as an HTTP date as the 15-minute
+      default (item 16 of `docs/plans/fuel-targets/`).
