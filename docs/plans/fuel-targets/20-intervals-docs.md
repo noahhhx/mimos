@@ -26,4 +26,26 @@ questions" in the index.
 
 - `devenv shell -- mkdocs build --strict`.
 
+## Result
+
+- `docs/guide/fuel.md` gains "Bring in training from intervals.icu":
+  where the athlete id and key are, what comes across (sessions, body
+  fat, and weight, sex, and FTP as suggestions), how often, Refresh, the
+  three things that can go wrong, and Disconnect. "Where the numbers
+  come from" now lists all five energy sources in order and synced body
+  fat. A new screenshot, `fuel-intervals.png`; `fuel-plan.png` retaken
+  with the source label, from the same week and meals.
+- `docs/self-hosting.md` gains an intervals.icu section: turning it on
+  and off, `MIMOS_SECRET_KEY` and what rotating it does, and
+  `MIMOS_INTERVALSICU_SYNCINTERVAL`.
+- AGENTS.md describes `integrations/intervals-icu` as built.
+
+**The owner check did not happen in this session:** the owner was
+asleep, and it needs their account. Decision: it does not block closing
+step 14. The code already handles both answers (a planned ride with
+`joules` counts its work; one without falls back to FTP or the
+estimate), so the answer changes what ADR-0022 records, not what ships.
+The two questions stay under "Open questions" in the index until the
+owner connects their account.
+
 Land on `main`; set row 20 to `done`.

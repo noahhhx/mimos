@@ -136,7 +136,7 @@ wire-format contract:
   sessions. Never name a package `target`: `.gitignore` and
   `.dockerignore` drop every `target` directory as build output.
 - `integrations/intervals-icu` — training from intervals.icu (ADR-0022).
-  Built so far: `IntervalsIcuClient` (HTTP Basic as `API_KEY` with a
+  Its pieces: `IntervalsIcuClient` (HTTP Basic as `API_KEY` with a
   person's key; every call answers an `IcuResult`, with a 401 and a 429
   distinct from other failures), `IntervalsIcuTranslator`, and `SecretBox`
   (AES-256-GCM under `MIMOS_SECRET_KEY`, a fresh 96-bit nonce from the
@@ -395,7 +395,7 @@ mimos/
 │   └── core-fueling/     # fuel profiles, training sessions, daily targets (ADR-0022)
 ├── integrations/
 │   ├── plugins/          # plugin runtime: registry, extension-API client, card validation (ADR-0006)
-│   └── intervals-icu/    # training sync from intervals.icu (ADR-0022): client, translator, key encryption, connections, and on-demand and scheduled sync
+│   └── intervals-icu/    # training sync from intervals.icu (ADR-0022): client, translator, key encryption, connections, and sync
 ├── libraries/            # shared contracts: OpenAPI-generated clients, plugin SDK
 │   ├── api-client/       # @mimos/api-client — generated TypeScript client (committed)
 │   └── plugin-sdk/       # @mimos/plugin-sdk — generated TypeScript types for the plugin API (committed)

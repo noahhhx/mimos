@@ -139,11 +139,12 @@ one to an item when you pick it up.
 
 These stay unproven after the prototypes that settled the macro rule.
 
-- Which intervals.icu planned workouts carry `joules`. Item 20 asks the
-  owner to check with a real account.
-- Whether `icu_intensity` is a percentage of FTP. Its OpenAPI spec says
-  only "float", and the translator (item 12) assumes a percentage when it
-  picks easy, endurance, or hard. Item 20 checks it with a real account.
+- Which intervals.icu planned workouts carry `joules`, and whether
+  `icu_intensity` is a percentage of FTP (its OpenAPI spec says only
+  "float"; the translator assumes a percentage when it picks easy,
+  endurance, or hard). Both wait for the owner to connect their own
+  account on a local stack; item 20 records why they do not block step
+  14. Record the answers in ADR-0022.
 - Whether level 50 suits weight gain. It has no published source.
 - How far the default body-fat values move a person's targets from their
   measured ones.

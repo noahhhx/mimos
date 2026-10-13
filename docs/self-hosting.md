@@ -161,6 +161,33 @@ never does: it logs a warning and contributes nothing until it's back.
 Delete the `country-week` service, its `country-week-data` volume, and
 the two `MIMOS_PLUGINS_0_*` lines from `compose.yml`.
 
+## intervals.icu
+
+People can connect their own intervals.icu account on the Fuel page, so
+their planned workouts and completed activities feed their fuel targets
+(see [Bring in training from intervals.icu](guide/fuel.md#bring-in-training-from-intervalsicu)).
+Each person uses a personal API key from their intervals.icu settings, so
+there is no app to register. The API reaches `https://intervals.icu`, so
+the server needs outbound HTTPS.
+
+- **Turning it on.** It is on whenever `MIMOS_SECRET_KEY` is set. Leave
+  the key empty, or add `MIMOS_INTERVALSICU_ENABLED: "false"` to the `api`
+  service's environment, and the Fuel page offers training entered by
+  hand only.
+- **The key.** Mimos encrypts each person's intervals.icu API key under
+  `MIMOS_SECRET_KEY` (AES-256-GCM) and never shows it again. Generate it
+  once with `openssl rand -base64 32` and back it up with your `.env`. If
+  it changes, no stored key opens any more: every connection reads as
+  needing its key again, and each person re-enters theirs on the Fuel
+  page. Training already synced stays until they do.
+- **How often it syncs.** Every 30 minutes, each connected person in
+  turn; their Refresh button syncs them at once. Set
+  `MIMOS_INTERVALSICU_SYNCINTERVAL` on the `api` service (such as `15m`,
+  at least `1m`) to change it. A sync makes four requests to
+  intervals.icu, well inside the 5,000 a day it allows each key. When
+  intervals.icu asks Mimos to slow down, Mimos waits as long as it says
+  before that person's next sync.
+
 ## AI agents
 
 Users can connect AI agents such as Claude Code to Mimos over MCP, at your

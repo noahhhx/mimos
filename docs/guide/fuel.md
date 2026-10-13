@@ -51,7 +51,9 @@ harm health and performance.
 With targets on, each day on the [plan](planning.md) shows three lines
 above its meals:
 
-- **Training**: the sessions you've added for that day.
+- **Training**: the sessions you've added for that day, and any that
+  came from [intervals.icu](#bring-in-training-from-intervalsicu). Each
+  says where it came from: **By hand** or **intervals.icu**.
 - **Fuel for the day**: the day's target.
 - **Planned**: what you'll eat if you eat what you planned. See
   [Your planned total](planning.md#your-planned-total).
@@ -86,6 +88,63 @@ Mimos counts the training you add to a day.
 The day's fuel for the day changes at once. A day can hold several
 sessions, and they add up. To take one out, choose **✕** next to it.
 
+## Bring in training from intervals.icu
+
+If you plan or record your training in [intervals.icu](https://intervals.icu),
+Mimos can bring it in, so you don't add it by hand. Your planned workouts
+count until you do them; once an activity is recorded for a day, it counts
+instead.
+
+1. In intervals.icu, open **Settings** and find the **Developer
+   Settings** section. Copy your **Athlete ID** (it starts with `i`, such
+   as `i12345`) and your **API key**.
+2. In Mimos, open the profile menu, choose **Fuel**, and find
+   **intervals.icu** below your settings.
+3. Enter the **Athlete ID** and **API key**, and choose **Connect**.
+
+Mimos checks the key with intervals.icu before it saves it, then brings in
+your training straight away. It keeps the key encrypted and never shows it
+again.
+
+![The Fuel page's intervals.icu section: connected as i1, with the last sync time, Refresh, and Disconnect](../assets/screenshots/fuel-intervals.png)
+
+### What comes across
+
+- Your planned workouts and completed activities from a week ago to two
+  weeks ahead. They show on the plan marked **intervals.icu**, without
+  **✕**: to change or remove one, change it in intervals.icu, and Mimos
+  follows.
+- Your body fat, if you log it in intervals.icu. While **Body fat (%)**
+  is empty in your fuel settings, your targets use it, and the Fuel page
+  says so.
+- Your weight, sex, and cycling FTP. Mimos never changes your settings
+  with these on its own: where one differs, the Fuel page shows it beside
+  the field with **Use it**, which copies it in. Choose **Save** to keep
+  it.
+
+Mimos checks intervals.icu for changes on its own, every half hour unless
+your instance says otherwise. To see a change at once, choose **Refresh**.
+The Fuel page says when training last came across.
+
+### When something goes wrong
+
+- **intervals.icu asked Mimos to wait.** intervals.icu limits how often
+  it can be asked. Mimos waits until the time it shows, then carries on by
+  itself.
+- **intervals.icu could not be reached.** Mimos tries again at the next
+  check. Your training so far stays.
+- **intervals.icu no longer accepts this API key.** The key was changed
+  or removed in intervals.icu, or this Mimos instance can no longer read
+  the saved one. Enter your API key again and choose **Connect**. Until
+  you do, nothing new comes across, and the training already brought in
+  stays.
+
+### Disconnect
+
+Choose **Disconnect**, then **Yes, disconnect**. Mimos forgets your API
+key and removes the training that came from intervals.icu. Training you
+added by hand stays.
+
 ## Where the numbers come from
 
 Every target is worked out from your settings and that day's training each
@@ -99,20 +158,29 @@ calories = goal level × fat-free mass + training energy
 ```
 
 **Fat-free mass** is your weight minus your body fat. If you leave
-**Body fat (%)** empty, Mimos assumes 15% for men, 25% for women, and 20%
-if you'd rather not say.
+**Body fat (%)** empty, Mimos uses your latest body fat from
+intervals.icu, if you've connected it and log it there; otherwise it
+assumes 15% for men, 25% for women, and 20% if you'd rather not say.
 
-**Training energy** is worked out for each session:
+**Training energy** is worked out for each session, from the first of
+these that it has:
 
+- **The work you did, or plan to do.** An activity or planned workout
+  from intervals.icu with power data carries its work in kilojoules, and
+  Mimos uses it as it is (see below for why kilojoules count as
+  kilocalories).
 - **A ride, with your FTP set.** Your FTP times a share of it for the
   intensity (55% for easy, 68% for endurance, 85% for hard), times the
   minutes, gives the work you do in kilojoules. Mimos counts that as the
   same number of kilocalories: the body turns about a quarter of the energy
   it burns into work on the pedals, and that quarter almost exactly cancels
   the 4.184 kilojoules in a kilocalorie.
-- **Anything else**, or a ride without an FTP: an estimate from your weight,
-  the minutes, and the intensity, using typical values from the Compendium
-  of Physical Activities.
+- **The calories intervals.icu reported** for an activity without power
+  data, such as a run with a heart rate strap.
+- **Anything else**: an estimate from your weight, the minutes, and the
+  intensity, using typical values from the Compendium of Physical
+  Activities. A session from intervals.icu with no intensity counts as
+  endurance.
 
 For example, a 70 kg rider with 15% body fat who chooses **Fuel my
 training** has 59.5 kg of fat-free mass, so a rest day comes to 45 × 59.5,
