@@ -44,3 +44,49 @@
 
 Post the screenshots and wait for the go. Land on `main`; set row 19 to
 `done`.
+
+## Result
+
+Landed without waiting for the go: the owner was asleep and had asked for
+the remaining items to be worked through, with decisions made as needed.
+The screenshots are for review after the fact, and anything they turn up
+becomes a follow-up item.
+
+- `IntervalsIcuSection` (`apps/web/src/components/intervals-icu-section.tsx`)
+  sits under the profile form, which is now the form named "Fuel
+  profile". Connecting syncs at once. A broken connection shows its
+  error and the form, with the athlete id kept. Disconnect asks once,
+  inline. The copy lives in `apps/web/src/lib/intervals-icu.ts`, with
+  unit tests.
+- Suggestions: "intervals.icu has 70.8 kg." with a Use it button beside
+  weight, sex, and FTP where they differ from the form. Body fat's hint
+  reads "While this is empty, your targets use 13.6% from intervals.icu."
+- Every session on the plan page names its source: "By hand" or
+  "intervals.icu". Synced ones have no remove control.
+- Scenario `intervals-icu` (pinned in `args.test.ts`). `fuel-profile`
+  and `fuel-targets` now find "Saved." inside the profile form, since the
+  section has its own status line, and `fuel-targets` expects the source
+  label.
+
+Live checks, as test2 against the fake, screenshots in
+`.harness/mcp/item19/` (local, gitignored):
+
+1. Connect, then the Fuel page reads "Connected as i1. Last synced …"
+   (`connected.png`).
+2. A wrong key: the scenario sees the API's 400 and the plain error, and
+   the section stays "Not connected."
+3. Changing today's workout from 90 to 120 minutes in the fake, then
+   Refresh: the plan shows "Ride · 120 min · Hard · Planned ·
+   intervals.icu" (`refresh.png`).
+4. A 429 with `Retry-After: 600`: "intervals.icu asked Mimos to wait.
+   Training syncs again after …", and the plan still lists the 3 synced
+   sessions. Then a 401: "intervals.icu no longer accepts this API key.
+   Enter it again." with the form, and the plan still lists them
+   (`errors.png`).
+5. Disconnect (scenario): synced sessions are gone. `McpEndpointTests`
+   pins connect and disconnect as the only opt-outs, so status and sync
+   are tools.
+6. `MIMOS_INTERVALSICU_ENABLED=false`: the GET is a 404, the section and
+   suggestions are absent, and Add training still shows on the plan.
+7. 390px, light and dark, Fuel and Plan: no sideways scroll
+   (`fuel-390-light.png`, `fuel-390-dark.png`).

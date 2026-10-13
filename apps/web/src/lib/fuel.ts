@@ -1,4 +1,11 @@
-import type { FuelTarget, TrainingIntensity, TrainingKind, TrainingSession, TrainingSport } from "@mimos/api-client";
+import type {
+  FuelTarget,
+  TrainingIntensity,
+  TrainingKind,
+  TrainingSession,
+  TrainingSource,
+  TrainingSport,
+} from "@mimos/api-client";
 
 import { dayLabel } from "./format.ts";
 import { plannedTotalParts } from "./planned-totals.ts";
@@ -53,13 +60,22 @@ const KINDS: Record<TrainingKind, string> = {
   COMPLETED: "Completed",
 };
 
-/** "Ride", "90 min", "Endurance", "Planned": a session's sport, length, intensity when known, and kind. */
+const SOURCES: Record<TrainingSource, string> = {
+  MANUAL: "By hand",
+  INTERVALS_ICU: "intervals.icu",
+};
+
+/**
+ * "Ride", "90 min", "Endurance", "Planned", "intervals.icu": a session's
+ * sport, length, intensity when known, kind, and where it came from.
+ */
 export function sessionParts(session: TrainingSession): string[] {
   return [
     SPORTS[session.sport],
     `${session.durationMinutes} min`,
     ...(session.intensity ? [INTENSITIES[session.intensity]] : []),
     KINDS[session.kind],
+    SOURCES[session.source],
   ];
 }
 

@@ -28,7 +28,7 @@ test("a person saves their fuel profile", async ({ page }) => {
     await ftp.fill("280");
     await page.getByRole("radio", { name: "Fuel my training" }).check();
     await save.click();
-    await expect(page.getByRole("status")).toHaveText("Saved.");
+    await expect(page.getByRole("form", { name: "Fuel profile" }).getByRole("status")).toHaveText("Saved.");
 
     await page.reload();
     await expect(enabled).toBeChecked();
@@ -55,7 +55,7 @@ test("a person saves their fuel profile", async ({ page }) => {
     await expect(protein).toHaveValue("2.2");
     await protein.fill("2.4");
     await save.click();
-    await expect(page.getByRole("status")).toHaveText("Saved.");
+    await expect(page.getByRole("form", { name: "Fuel profile" }).getByRole("status")).toHaveText("Saved.");
     await page.reload();
     await expect(page.getByRole("radio", { name: "Lose weight faster" })).toBeChecked();
     await expect(protein).toHaveValue("2.4");

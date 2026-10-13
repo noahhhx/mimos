@@ -28,7 +28,7 @@ test("the plan shows each day's fuel once targets are on", async ({ page }) => {
     await page.getByRole("spinbutton", { name: "FTP (watts)" }).fill("280");
     await page.getByRole("radio", { name: "Fuel my training" }).check();
     await page.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByRole("status")).toHaveText("Saved.");
+    await expect(page.getByRole("form", { name: "Fuel profile" }).getByRole("status")).toHaveText("Saved.");
   });
 
   await test.step("Monday reads Fuel for the day: 2678 kcal and 350 g carbs", async () => {
@@ -73,7 +73,7 @@ test("the plan shows each day's fuel once targets are on", async ({ page }) => {
     await form.getByRole("combobox", { name: "Intensity" }).selectOption({ label: "Endurance" });
     await form.getByRole("button", { name: "Add", exact: true }).click();
     await expect(form).toHaveCount(0);
-    await expect(tuesdayTraining.locator(".training-parts")).toHaveText("Ride · 90 min · Endurance · Planned");
+    await expect(tuesdayTraining.locator(".training-parts")).toHaveText("Ride · 90 min · Endurance · Planned · By hand");
 
     const ridden = await tuesdayDay(page, api);
     const { calories, carbsG, basis } = ridden.target!;

@@ -59,21 +59,23 @@ const ride: TrainingSession = {
 };
 
 describe("sessionParts", () => {
-  it("names the sport, minutes, intensity, and kind", () => {
-    assert.deepEqual(sessionParts(ride), ["Ride", "90 min", "Endurance", "Planned"]);
+  it("names the sport, minutes, intensity, kind, and source", () => {
+    assert.deepEqual(sessionParts(ride), ["Ride", "90 min", "Endurance", "Planned", "By hand"]);
     assert.deepEqual(sessionParts({ ...ride, sport: "STRENGTH", durationMinutes: 45, intensity: "HARD", kind: "COMPLETED" }), [
       "Strength",
       "45 min",
       "Hard",
       "Completed",
+      "By hand",
     ]);
   });
 
-  it("leaves out an intensity the session does not have", () => {
+  it("leaves out an intensity the session does not have, and names intervals.icu", () => {
     assert.deepEqual(sessionParts({ ...ride, source: "INTERVALS_ICU", intensity: undefined, workKj: 900 }), [
       "Ride",
       "90 min",
       "Planned",
+      "intervals.icu",
     ]);
   });
 });
