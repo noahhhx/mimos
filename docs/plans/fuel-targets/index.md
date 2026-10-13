@@ -60,7 +60,7 @@ branch, not on `main` yet), `done <sha>`.
 | 18 | [Synced body fat and reported calories](18-intervals-hints.md) | 14.5 | 16 | Review | done 68a1e1c |
 | 19 | [Connect from the Fuel page](19-intervals-ui.md) | 14.5 | 11, 17 | Review | done 0dbed36 |
 | 20 | [Document intervals.icu and try a real account](20-intervals-docs.md) | 14.5 | 18, 19 | Review | done 12abb21 |
-| 21 | [Close step 14](21-close-step-14.md) | 14 | all | | todo |
+| 21 | [Close step 14](21-close-step-14.md) | 14 | all | | done 5374d9a |
 
 Items 07, 08, and 12 only need 06, so they can go in any order after it.
 Phase 5 (12 onward) is independent of phase 4 until item 19.
