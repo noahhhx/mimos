@@ -58,6 +58,8 @@ class IntervalsIcuSyncEndpointTests extends ApiIntegrationTestSupport {
 
     private static volatile String events = "[]";
     private static volatile String activities = "[]";
+    private static volatile String wellness = "[]";
+    private static volatile String athlete = "{\"id\":\"i1\",\"sex\":\"M\"}";
     private static volatile int forcedStatus;
     private static volatile @Nullable String retryAfter;
     private static final List<String> requests = new CopyOnWriteArrayList<>();
@@ -88,7 +90,7 @@ class IntervalsIcuSyncEndpointTests extends ApiIntegrationTestSupport {
             }
             String body = path.endsWith("/events")
                     ? events
-                    : path.endsWith("/activities") ? activities : "{\"id\":\"i1\",\"sex\":\"M\"}";
+                    : path.endsWith("/activities") ? activities : path.endsWith("/wellness") ? wellness : athlete;
             int status = forcedStatus != 0 ? forcedStatus : 200;
             String header = retryAfter;
             if (header != null) {
@@ -138,6 +140,8 @@ class IntervalsIcuSyncEndpointTests extends ApiIntegrationTestSupport {
     void reset() {
         events = "[]";
         activities = "[]";
+        wellness = "[]";
+        athlete = "{\"id\":\"i1\",\"sex\":\"M\"}";
         forcedStatus = 0;
         retryAfter = null;
         requests.clear();
@@ -160,7 +164,9 @@ class IntervalsIcuSyncEndpointTests extends ApiIntegrationTestSupport {
         assertThat(requests)
                 .containsExactly(
                         "/api/v1/athlete/i1/events?" + range + "&category=WORKOUT",
-                        "/api/v1/athlete/i1/activities?" + range);
+                        "/api/v1/athlete/i1/activities?" + range,
+                        "/api/v1/athlete/i1/wellness?oldest=" + today().minusDays(30) + "&newest=" + today(),
+                        "/api/v1/athlete/i1?null");
         assertThat(sessions(user))
                 .containsExactlyInAnyOrder(
                         today() + " PLANNED RIDE 60 900.0 101",
@@ -314,6 +320,65 @@ class IntervalsIcuSyncEndpointTests extends ApiIntegrationTestSupport {
     }
 
     @Test
+    void keepsTheLatestHintsAndFeedsSyncedBodyFatToTargetsWithoutAProfileValue() {
+        TestUser user = connected();
+        user.ok(
+                HttpMethod.PUT,
+                "/api/v1/me/fuel-profile",
+                Map.of("enabled", true, "weightKg", 70, "sex", "MALE", "goal", "FUEL"));
+        wellness = "[{\"id\":\"" + today().minusDays(3) + "\",\"weight\":71.4,\"bodyFat\":14.0}," + "{\"id\":\""
+                + today().minusDays(1) + "\",\"weight\":70.8,\"bodyFat\":12.0}]";
+        athlete = "{\"id\":\"i1\",\"sex\":\"M\",\"weight\":72.0,"
+                + "\"sportSettings\":[{\"types\":[\"Ride\"],\"ftp\":282}]}";
+
+        JsonNode synced = user.ok(HttpMethod.POST, SYNC, null);
+
+        JsonNode hints = synced.get("hints");
+        assertThat(hints.get("weightKg").asDouble()).isEqualTo(70.8);
+        assertThat(hints.get("bodyFatPercent").asDouble()).isEqualTo(12.0);
+        assertThat(hints.get("sex").asText()).isEqualTo("MALE");
+        assertThat(hints.get("ftpWatts").asInt()).isEqualTo(282);
+        JsonNode basis = targetBasis(user);
+        assertThat(basis.get("bodyFatSource").asText()).isEqualTo("INTERVALS_ICU");
+        assertThat(basis.get("bodyFatPercent").asDouble()).isEqualTo(12.0);
+        assertThat(basis.get("fatFreeMassKg").asDouble()).isEqualTo(61.6);
+
+        wellness = "[]";
+        user.ok(HttpMethod.POST, SYNC, null);
+        assertThat(user.ok(HttpMethod.GET, CONNECTION, null)
+                        .get("hints")
+                        .get("bodyFatPercent")
+                        .asDouble())
+                .as("a sync without wellness keeps the last body fat found")
+                .isEqualTo(12.0);
+
+        user.ok(
+                HttpMethod.PUT,
+                "/api/v1/me/fuel-profile",
+                Map.of("enabled", true, "weightKg", 70, "sex", "MALE", "bodyFatPercent", 20, "goal", "FUEL"));
+        assertThat(targetBasis(user).get("bodyFatSource").asText())
+                .as("the profile's own body fat wins")
+                .isEqualTo("PROFILE");
+    }
+
+    @Test
+    void anActivityWithOnlyReportedCaloriesCountsThem() {
+        TestUser user = connected();
+        user.ok(
+                HttpMethod.PUT,
+                "/api/v1/me/fuel-profile",
+                Map.of("enabled", true, "weightKg", 70, "sex", "MALE", "goal", "FUEL"));
+        activities = "[{\"id\":\"i301\",\"start_date_local\":\"" + today()
+                + "T07:00:00\",\"type\":\"Run\",\"moving_time\":2700,\"calories\":512}]";
+
+        user.ok(HttpMethod.POST, SYNC, null);
+
+        JsonNode session = targetBasis(user).get("sessions").get(0);
+        assertThat(session.get("method").asText()).isEqualTo("REPORTED_CALORIES");
+        assertThat(session.get("kcal").asInt()).isEqualTo(512);
+    }
+
+    @Test
     void aRateLimitRecordsWhenToTryAgainAndNothingCallsBeforeThen() {
         TestUser user = connected();
         synced(user, today(), "kept");
@@ -339,7 +404,7 @@ class IntervalsIcuSyncEndpointTests extends ApiIntegrationTestSupport {
         JsonNode synced = user.ok(HttpMethod.POST, SYNC, null);
         assertThat(synced.has("retryAt")).isFalse();
         assertThat(synced.has("lastError")).isFalse();
-        assertThat(requests).hasSize(3);
+        assertThat(requests).hasSize(5);
     }
 
     @Test
@@ -431,6 +496,14 @@ class IntervalsIcuSyncEndpointTests extends ApiIntegrationTestSupport {
         if (release != null) {
             release.countDown();
         }
+    }
+
+    private JsonNode targetBasis(TestUser user) {
+        return user.ok(HttpMethod.GET, "/api/v1/me/fuel?from=" + today() + "&to=" + today(), null)
+                .get("days")
+                .get(0)
+                .get("target")
+                .get("basis");
     }
 
     private TestUser connected() {

@@ -66,6 +66,7 @@ public class FuelService {
                 draft.durationMinutes(),
                 draft.workKj(),
                 draft.intensity(),
+                null,
                 null);
         repository.insertSession(session);
         return session;

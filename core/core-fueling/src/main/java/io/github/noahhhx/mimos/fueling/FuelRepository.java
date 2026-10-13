@@ -18,7 +18,7 @@ public class FuelRepository {
 
     private static final String SELECT_SESSION = """
             select id, profile_id, session_date, source, kind, sport, duration_minutes,
-                   work_kj, intensity, external_id
+                   work_kj, intensity, external_id, reported_kcal
             from training_session
             """;
 
@@ -69,8 +69,8 @@ public class FuelRepository {
         jdbc.update(
                 """
                 insert into training_session (id, profile_id, session_date, source, kind, sport, duration_minutes,
-                                              work_kj, intensity, external_id)
-                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                              work_kj, intensity, external_id, reported_kcal)
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 session.id(),
                 session.profileId(),
@@ -81,7 +81,8 @@ public class FuelRepository {
                 session.durationMinutes(),
                 session.workKj(),
                 session.intensity() == null ? null : session.intensity().name(),
-                session.externalId());
+                session.externalId(),
+                session.reportedKcal());
     }
 
     public List<TrainingSession> findSessions(UUID profileId, LocalDate from, LocalDate to) {
@@ -151,7 +152,8 @@ public class FuelRepository {
                 rs.getInt("duration_minutes"),
                 nullableDouble(rs, "work_kj"),
                 intensity == null ? null : Intensity.valueOf(intensity),
-                rs.getString("external_id"));
+                rs.getString("external_id"),
+                rs.getObject("reported_kcal", Integer.class));
     };
 
     private static @Nullable Double nullableDouble(ResultSet rs, String column) throws SQLException {

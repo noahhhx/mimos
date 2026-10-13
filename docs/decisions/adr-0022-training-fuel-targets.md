@@ -179,6 +179,12 @@ the edge; intervals.icu types never cross into `core-fueling`.
   repeating it, or a crash partway through, converges on the same rows.
   A 401 from intervals.icu marks the connection broken and the Fuel page
   says so; it never fails a page load.
+- **Profile hints.** Each sync keeps the latest weight, body fat, sex,
+  and cycling FTP that intervals.icu has, from wellness and the athlete
+  record. Body fat feeds the targets when the fuel profile has none.
+  The others never change a profile on their own: the Fuel page shows
+  them as suggestions the person may copy into their profile and save.
+  (Decided 2026-10-12, plan item 18.)
 - **Manual training.** A person can enter sessions by hand: sport,
   duration, and an intensity of easy, endurance, or hard. A self-hoster
   without intervals.icu loses nothing but the sync.

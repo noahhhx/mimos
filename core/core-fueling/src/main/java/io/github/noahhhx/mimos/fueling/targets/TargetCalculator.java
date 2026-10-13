@@ -111,6 +111,10 @@ public final class TargetCalculator {
             double workKjAtFtp = ftpWatts * intensityFactor(intensity) * session.durationMinutes() * 60 / 1000;
             return new SessionEnergy(session.id(), kcalFromWorkKj(workKjAtFtp), EnergyMethod.FTP_INTENSITY);
         }
+        Integer reportedKcal = session.reportedKcal();
+        if (reportedKcal != null) {
+            return new SessionEnergy(session.id(), reportedKcal, EnergyMethod.REPORTED_CALORIES);
+        }
         double kcalPerMinute = mets(intensity) * 3.5 * profile.weightKg() / 200;
         return new SessionEnergy(session.id(), kcalPerMinute * session.durationMinutes(), EnergyMethod.ESTIMATE);
     }

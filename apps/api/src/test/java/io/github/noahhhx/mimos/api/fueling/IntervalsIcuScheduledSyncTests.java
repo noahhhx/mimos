@@ -58,7 +58,7 @@ class IntervalsIcuScheduledSyncTests extends ApiIntegrationTestSupport {
             String body = path.endsWith("/events")
                     ? "[{\"id\":7,\"start_date_local\":\"" + today
                             + "T00:00:00\",\"type\":\"Ride\",\"moving_time\":3600}]"
-                    : path.endsWith("/activities") ? "[]" : "{}";
+                    : path.endsWith("/activities") || path.endsWith("/wellness") ? "[]" : "{}";
             byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().set("Content-Type", "application/json");
             exchange.sendResponseHeaders(200, bytes.length);

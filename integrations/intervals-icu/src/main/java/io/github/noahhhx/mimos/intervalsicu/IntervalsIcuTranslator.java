@@ -4,6 +4,7 @@ import static java.util.Comparator.comparing;
 import static java.util.Comparator.naturalOrder;
 import static java.util.Comparator.nullsFirst;
 
+import io.github.noahhhx.mimos.fueling.FuelProfile;
 import io.github.noahhhx.mimos.fueling.Intensity;
 import io.github.noahhhx.mimos.fueling.Kind;
 import io.github.noahhhx.mimos.fueling.Sex;
@@ -74,7 +75,8 @@ final class IntervalsIcuTranslator {
                     event.type(),
                     event.movingTime(),
                     event.joules(),
-                    intensity(event.icuIntensity()));
+                    intensity(event.icuIntensity()),
+                    null);
             if (session != null) {
                 sessions.add(session);
             }
@@ -93,7 +95,8 @@ final class IntervalsIcuTranslator {
                     activity.type(),
                     activity.movingTime(),
                     activity.icuJoules(),
-                    null);
+                    null,
+                    reportedKcal(activity.calories()));
             if (session != null) {
                 sessions.add(session);
             }
@@ -101,19 +104,37 @@ final class IntervalsIcuTranslator {
         return List.copyOf(sessions);
     }
 
-    /** The latest wellness value of each kind wins over the athlete record's. */
+    /**
+     * The latest wellness value of each kind wins over the athlete record's.
+     * A value a fuel profile would refuse is left out.
+     */
     static ProfileHints hints(List<IcuJson.Wellness> wellness, IcuJson.Athlete athlete) {
         List<IcuJson.Wellness> newestFirst = wellness.stream()
                 .sorted(comparing(IcuJson.Wellness::id, nullsFirst(naturalOrder()))
                         .reversed())
                 .toList();
         Double weightKg = latest(newestFirst, IcuJson.Wellness::weight);
-        Double athleteWeight = athlete.weight();
-        if (weightKg == null && athleteWeight != null && athleteWeight > 0) {
-            weightKg = athleteWeight;
+        if (weightKg == null) {
+            weightKg = athlete.weight();
         }
+        Integer ftp = rideFtp(athlete);
         return new ProfileHints(
-                weightKg, latest(newestFirst, IcuJson.Wellness::bodyFat), sex(athlete.sex()), rideFtp(athlete));
+                within(weightKg, FuelProfile.MIN_WEIGHT_KG, FuelProfile.MAX_WEIGHT_KG),
+                within(
+                        latest(newestFirst, IcuJson.Wellness::bodyFat),
+                        FuelProfile.MIN_BODY_FAT_PERCENT,
+                        FuelProfile.MAX_BODY_FAT_PERCENT),
+                sex(athlete.sex()),
+                ftp != null && ftp >= FuelProfile.MIN_FTP_WATTS && ftp <= FuelProfile.MAX_FTP_WATTS ? ftp : null);
+    }
+
+    private static @Nullable Double within(@Nullable Double value, double min, double max) {
+        return value != null && value >= min && value <= max ? value : null;
+    }
+
+    /** An activity's reported calories; zero, which intervals.icu sends for no estimate, or a wild value is none. */
+    private static @Nullable Integer reportedKcal(@Nullable Integer calories) {
+        return calories != null && calories > 0 && calories <= TrainingSession.MAX_REPORTED_KCAL ? calories : null;
     }
 
     private static @Nullable TrainingSession session(
@@ -124,7 +145,8 @@ final class IntervalsIcuTranslator {
             @Nullable String type,
             @Nullable Integer movingSeconds,
             @Nullable Long joules,
-            @Nullable Intensity intensity) {
+            @Nullable Intensity intensity,
+            @Nullable Integer reportedKcal) {
         if (externalId == null || startDateLocal == null || movingSeconds == null) {
             return null;
         }
@@ -139,7 +161,8 @@ final class IntervalsIcuTranslator {
                     Math.round(movingSeconds / 60f),
                     joules == null ? null : joules / 1000.0,
                     intensity,
-                    externalId);
+                    externalId,
+                    reportedKcal);
         } catch (IllegalArgumentException | DateTimeException e) {
             log.debug("Left out intervals.icu {} session {}: {}", kind, externalId, e.getMessage());
             return null;

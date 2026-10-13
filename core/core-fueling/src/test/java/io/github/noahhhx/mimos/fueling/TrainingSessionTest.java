@@ -58,6 +58,31 @@ class TrainingSessionTest {
         assertThatThrownBy(() -> session(Source.MANUAL, "e123")).isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    void onlyASyncedSessionCarriesReportedCaloriesWithinBounds() {
+        assertThatCode(() -> reported(Source.INTERVALS_ICU, "i1", 0)).doesNotThrowAnyException();
+        assertThatCode(() -> reported(Source.INTERVALS_ICU, "i1", 20_000)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> reported(Source.INTERVALS_ICU, "i1", -1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> reported(Source.INTERVALS_ICU, "i1", 20_001))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> reported(Source.MANUAL, null, 500)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    private static TrainingSession reported(Source source, @Nullable String externalId, int kcal) {
+        return new TrainingSession(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                MONDAY,
+                source,
+                Kind.COMPLETED,
+                Sport.RUN,
+                45,
+                null,
+                null,
+                externalId,
+                kcal);
+    }
+
     private static TrainingSession manual(LocalDate date, int durationMinutes, @Nullable Double workKj) {
         return new TrainingSession(
                 UUID.randomUUID(),
@@ -69,6 +94,7 @@ class TrainingSessionTest {
                 durationMinutes,
                 workKj,
                 Intensity.ENDURANCE,
+                null,
                 null);
     }
 
@@ -83,6 +109,7 @@ class TrainingSessionTest {
                 45,
                 null,
                 null,
-                externalId);
+                externalId,
+                null);
     }
 }

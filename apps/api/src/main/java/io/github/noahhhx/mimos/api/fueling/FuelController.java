@@ -18,6 +18,7 @@ import io.github.noahhhx.mimos.fueling.targets.DailyTarget;
 import io.github.noahhhx.mimos.fueling.targets.SessionEnergy;
 import io.github.noahhhx.mimos.fueling.targets.TargetBasis;
 import io.github.noahhhx.mimos.fueling.targets.TargetCalculator;
+import io.github.noahhhx.mimos.intervalsicu.IntervalsIcuConnections;
 import io.github.noahhhx.mimos.planning.logging.DailyLogSummary;
 import io.github.noahhhx.mimos.planning.logging.MealLogService;
 import io.github.noahhhx.mimos.planning.plan.MealPlanService;
@@ -49,6 +50,7 @@ import org.openapitools.model.TrainingKind;
 import org.openapitools.model.TrainingSessionInput;
 import org.openapitools.model.TrainingSource;
 import org.openapitools.model.TrainingSport;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
@@ -60,13 +62,19 @@ public class FuelController implements FuelApi {
     private final MealPlanService mealPlans;
     private final MealLogService mealLogs;
     private final CurrentUserService currentUser;
+    private final ObjectProvider<IntervalsIcuConnections> intervalsIcu;
 
     public FuelController(
-            FuelService fuel, MealPlanService mealPlans, MealLogService mealLogs, CurrentUserService currentUser) {
+            FuelService fuel,
+            MealPlanService mealPlans,
+            MealLogService mealLogs,
+            CurrentUserService currentUser,
+            ObjectProvider<IntervalsIcuConnections> intervalsIcu) {
         this.fuel = fuel;
         this.mealPlans = mealPlans;
         this.mealLogs = mealLogs;
         this.currentUser = currentUser;
+        this.intervalsIcu = intervalsIcu;
     }
 
     @Override
@@ -75,6 +83,11 @@ public class FuelController implements FuelApi {
     public ResponseEntity<FuelDays> getMyFuel(LocalDate from, LocalDate to) {
         UserProfileRecord caller = currentUser.requireProfile();
         Optional<FuelProfile> profile = fuel.profile(caller.id()).filter(FuelProfile::enabled);
+        @Nullable
+        Double syncedBodyFat = profile.filter(enabled -> enabled.bodyFatPercent() == null)
+                .flatMap(enabled -> Optional.ofNullable(intervalsIcu.getIfAvailable()))
+                .flatMap(connections -> connections.syncedBodyFatPercent(caller.id()))
+                .orElse(null);
         Map<LocalDate, List<TrainingSession>> sessions =
                 fuel.sessions(caller.id(), from, to).stream().collect(Collectors.groupingBy(TrainingSession::date));
         Map<LocalDate, DailyLogSummary> logged = mealLogs.summarize(caller.id(), from, to).stream()
@@ -89,8 +102,8 @@ public class FuelController implements FuelApi {
                     @Nullable DailyLogSummary log = logged.get(date);
                     return new FuelDay()
                             .date(date)
-                            .target(profile.map(
-                                            enabled -> toApiTarget(TargetCalculator.target(date, enabled, day, null)))
+                            .target(profile.map(enabled ->
+                                            toApiTarget(TargetCalculator.target(date, enabled, day, syncedBodyFat)))
                                     .orElse(null))
                             .planned(PlanningApiMapper.toApiPlannedDay(
                                     requireNonNull(planned.get(date), "plannedTotals covers every day of its range")))

@@ -1727,6 +1727,28 @@ components:
           description: >
             Set while intervals.icu has asked Mimos to wait: no sync calls it
             for this person before this time.
+        hints:
+          $ref: '#/components/schemas/IntervalsIcuHints'
+    IntervalsIcuHints:
+      type: object
+      description: >
+        What the syncs so far found in intervals.icu for the fuel profile,
+        each the latest value found and absent until one is. Body fat
+        feeds the targets when the fuel profile has none; the others are
+        suggestions the person may copy into their profile. Values outside
+        what a fuel profile allows are left out.
+      properties:
+        weightKg:
+          type: number
+          description: The latest wellness weight, else the athlete record's.
+        bodyFatPercent:
+          type: number
+          description: The latest wellness body fat.
+        sex:
+          $ref: '#/components/schemas/FuelSex'
+        ftpWatts:
+          type: integer
+          description: The FTP of the athlete's cycling settings.
     IntervalsIcuConnectionInput:
       type: object
       required: [athleteId, apiKey]
@@ -1920,10 +1942,10 @@ components:
       description: >
         How a session's energy was found, in order of preference: its
         completed or planned work, FTP times an intensity factor times its
-        duration (rides only; EASY 0.55, ENDURANCE 0.68, HARD 0.85), or an
-        estimate from intensity and weight (EASY 4, ENDURANCE 7, HARD 10
-        METs).
-      enum: [COMPLETED_WORK, PLANNED_WORK, FTP_INTENSITY, ESTIMATE]
+        duration (rides only; EASY 0.55, ENDURANCE 0.68, HARD 0.85), the
+        calories intervals.icu reported for an activity, or an estimate
+        from intensity and weight (EASY 4, ENDURANCE 7, HARD 10 METs).
+      enum: [COMPLETED_WORK, PLANNED_WORK, FTP_INTENSITY, REPORTED_CALORIES, ESTIMATE]
     Problem:
       type: object
       description: RFC 9457 problem details.

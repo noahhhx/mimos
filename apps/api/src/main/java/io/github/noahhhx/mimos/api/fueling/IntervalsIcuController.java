@@ -1,9 +1,12 @@
 package io.github.noahhhx.mimos.api.fueling;
 
 import io.github.noahhhx.mimos.api.identity.CurrentUserService;
+import io.github.noahhhx.mimos.fueling.Sex;
 import io.github.noahhhx.mimos.intervalsicu.IntervalsIcuConnection;
 import io.github.noahhhx.mimos.intervalsicu.IntervalsIcuConnections;
 import io.github.noahhhx.mimos.intervalsicu.IntervalsIcuSync;
+import io.github.noahhhx.mimos.intervalsicu.ProfileHints;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -12,8 +15,10 @@ import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.openapitools.api.IntervalsIcuApi;
+import org.openapitools.model.FuelSex;
 import org.openapitools.model.IntervalsIcuConnectionInput;
 import org.openapitools.model.IntervalsIcuConnectionStatus;
+import org.openapitools.model.IntervalsIcuHints;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -86,7 +91,19 @@ public class IntervalsIcuController implements IntervalsIcuApi {
                 .athleteId(connection.athleteId())
                 .lastSyncAt(utc(connection.lastSyncAt()))
                 .lastError(connection.lastError())
-                .retryAt(utc(connection.retryAt()));
+                .retryAt(utc(connection.retryAt()))
+                .hints(toApi(connection.hints()));
+    }
+
+    private static IntervalsIcuHints toApi(ProfileHints hints) {
+        Double weightKg = hints.weightKg();
+        Double bodyFatPercent = hints.bodyFatPercent();
+        Sex sex = hints.sex();
+        return new IntervalsIcuHints()
+                .weightKg(weightKg == null ? null : BigDecimal.valueOf(weightKg))
+                .bodyFatPercent(bodyFatPercent == null ? null : BigDecimal.valueOf(bodyFatPercent))
+                .sex(sex == null ? null : FuelSex.valueOf(sex.name()))
+                .ftpWatts(hints.ftpWatts());
     }
 
     private static @Nullable OffsetDateTime utc(@Nullable Instant instant) {

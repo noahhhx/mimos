@@ -8,7 +8,13 @@
   status, last sync time, Refresh, and Disconnect. A broken connection
   says plainly that it needs a new key. With the feature off the section is
   absent and manual training still works.
-- The profile hints, if item 18's decision wants them shown.
+- The profile hints, as suggestions (item 18's decision): where
+  `hints` on `GET /api/v1/me/intervals-icu` has a weight, sex, or FTP
+  that differs from the form, the Fuel page names each value from
+  intervals.icu next to its field with a control that copies it into the
+  form. Nothing saves until the person presses Save. Body fat from
+  intervals.icu needs no control: it already counts while the profile's
+  field is empty, and the page says so.
 - The plan page labels each session with its source; synced sessions have
   no remove control.
 - Copy rules as item 08.

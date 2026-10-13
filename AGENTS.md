@@ -168,6 +168,14 @@ wire-format contract:
   and nothing calls intervals.icu for a broken connection or before
   `retry_at`. `SecretBox` binds each sealed key to its profile id (GCM
   associated data), so a key copied to another row does not open.
+  Each sync also reads 30 days of wellness and the athlete record into
+  `ProfileHints` (weight, body fat, sex, cycling FTP; a value a fuel
+  profile would refuse is left out), kept on the connection, each until a
+  later sync finds a new one, and returned as `hints`: synced body fat
+  feeds `TargetCalculator` when the profile has none, and the rest are
+  suggestions the Fuel page offers, never applied on their own. An
+  activity's reported `calories` become a synced session's `reportedKcal`
+  (`REPORTED_CALORIES`, after FTP and before the estimate).
   `IntervalsIcuScheduledSync` runs the same sync for every connected
   person in turn every `mimos.intervals-icu.sync-interval` (default
   `30m`, at least a minute; `@EnableScheduling` only while the feature is

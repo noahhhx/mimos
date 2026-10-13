@@ -152,9 +152,44 @@ class TargetCalculatorTest {
                 60,
                 null,
                 null,
-                "i1");
+                "i1",
+                null);
 
         assertThat(onlySession(goldenRider(Goal.FUEL), run).kcal()).isCloseTo(7 * 3.5 * 70 / 200 * 60, within(1e-9));
+    }
+
+    @Test
+    void reportedCaloriesPriceASessionWithNoWorkAndNoFtpForIt() {
+        TrainingSession run = synced(Sport.RUN, null, 640);
+
+        assertThat(onlySession(goldenRider(Goal.FUEL), run))
+                .isEqualTo(new SessionEnergy(run.id(), 640, EnergyMethod.REPORTED_CALORIES));
+    }
+
+    @Test
+    void reportedCaloriesNeverComeAheadOfWorkOrFtp() {
+        TrainingSession withWork = synced(Sport.RIDE, 900.0, 640);
+        TrainingSession rideWithFtp = synced(Sport.RIDE, null, 640);
+        FuelProfile withoutFtp = profile(Goal.FUEL, 70, Sex.MALE, 15.0, null);
+
+        assertThat(onlySession(goldenRider(Goal.FUEL), withWork).method()).isEqualTo(EnergyMethod.COMPLETED_WORK);
+        assertThat(onlySession(goldenRider(Goal.FUEL), rideWithFtp).method()).isEqualTo(EnergyMethod.FTP_INTENSITY);
+        assertThat(onlySession(withoutFtp, rideWithFtp).method()).isEqualTo(EnergyMethod.REPORTED_CALORIES);
+    }
+
+    private static TrainingSession synced(Sport sport, @Nullable Double workKj, @Nullable Integer reportedKcal) {
+        return new TrainingSession(
+                UUID.randomUUID(),
+                PROFILE_ID,
+                DAY,
+                Source.INTERVALS_ICU,
+                Kind.COMPLETED,
+                sport,
+                60,
+                workKj,
+                null,
+                "i" + UUID.randomUUID(),
+                reportedKcal);
     }
 
     @Test
@@ -302,6 +337,6 @@ class TargetCalculatorTest {
     private static TrainingSession session(
             Kind kind, Sport sport, int minutes, @Nullable Double workKj, @Nullable Intensity intensity) {
         return new TrainingSession(
-                UUID.randomUUID(), PROFILE_ID, DAY, Source.MANUAL, kind, sport, minutes, workKj, intensity, null);
+                UUID.randomUUID(), PROFILE_ID, DAY, Source.MANUAL, kind, sport, minutes, workKj, intensity, null, null);
     }
 }

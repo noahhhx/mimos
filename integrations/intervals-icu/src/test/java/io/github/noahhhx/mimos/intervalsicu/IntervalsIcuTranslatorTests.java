@@ -58,7 +58,33 @@ class IntervalsIcuTranslatorTests {
             assertThat(gravel.durationMinutes()).isEqualTo(186);
             assertThat(gravel.workKj()).isEqualTo(2203.56);
             assertThat(gravel.externalId()).isEqualTo("i98765432");
+            assertThat(gravel.reportedKcal()).isEqualTo(2410);
         });
+    }
+
+    @Test
+    void aRunWithOnlyCaloriesCarriesThemAsReported() {
+        List<TrainingSession> sessions = IntervalsIcuTranslator.completed(
+                PROFILE, List.of(new IcuJson.Activity("i5", "2026-10-11T07:00:00", "Run", 2700, null, 512)));
+
+        assertThat(sessions).singleElement().satisfies(run -> {
+            assertThat(run.sport()).isEqualTo(Sport.RUN);
+            assertThat(run.workKj()).isNull();
+            assertThat(run.reportedKcal()).isEqualTo(512);
+        });
+    }
+
+    @Test
+    void zeroOrWildCaloriesAreNoReport() {
+        List<TrainingSession> sessions = IntervalsIcuTranslator.completed(
+                PROFILE,
+                List.of(
+                        new IcuJson.Activity("i5", "2026-10-11T07:00:00", "Run", 2700, null, 0),
+                        new IcuJson.Activity("i6", "2026-10-11T08:00:00", "Run", 2700, null, 99_999)));
+
+        assertThat(sessions)
+                .hasSize(2)
+                .allSatisfy(run -> assertThat(run.reportedKcal()).isNull());
     }
 
     @Test
@@ -76,6 +102,15 @@ class IntervalsIcuTranslatorTests {
                 IntervalsIcuTranslator.hints(List.of(), Fixtures.read("athlete.json", IcuJson.Athlete.class));
 
         assertThat(hints).isEqualTo(new ProfileHints(72.0, null, Sex.MALE, 282));
+    }
+
+    @Test
+    void hintsAFuelProfileWouldRefuseAreLeftOut() {
+        ProfileHints hints = IntervalsIcuTranslator.hints(
+                List.of(new IcuJson.Wellness("2026-10-11", 400.0, 1.5)),
+                new IcuJson.Athlete("X", null, List.of(new IcuJson.SportSettings(List.of("Ride"), 2000))));
+
+        assertThat(hints).isEqualTo(new ProfileHints(null, null, null, null));
     }
 
     @Test

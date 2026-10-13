@@ -1,9 +1,12 @@
 package io.github.noahhhx.mimos.intervalsicu;
 
 import io.github.noahhhx.mimos.fueling.FuelService;
+import io.github.noahhhx.mimos.fueling.Sex;
 import io.github.noahhhx.mimos.fueling.Source;
 import io.github.noahhhx.mimos.fueling.TrainingSession;
 import java.security.SecureRandom;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
@@ -65,7 +68,8 @@ public class IntervalsIcuConnections {
 
     public Optional<IntervalsIcuConnection> connection(UUID profileId) {
         return jdbc.query("""
-                        select athlete_id, key_ciphertext, key_nonce, status, last_sync_at, last_error, retry_at
+                        select athlete_id, key_ciphertext, key_nonce, status, last_sync_at, last_error, retry_at,
+                               synced_weight_kg, synced_body_fat_percent, synced_sex, synced_ftp_watts
                         from intervals_icu_connection where profile_id = ?
                         """, ROW_MAPPER, profileId).stream().findFirst().map(row -> asSeen(profileId, row));
     }
@@ -135,6 +139,18 @@ public class IntervalsIcuConnections {
         });
     }
 
+    /** The body fat the person's syncs last found, for their targets when their profile has none. */
+    public Optional<Double> syncedBodyFatPercent(UUID profileId) {
+        return jdbc
+                .query(
+                        "select synced_body_fat_percent from intervals_icu_connection where profile_id = ?",
+                        (rs, rowNum) -> Optional.ofNullable(nullableDouble(rs, "synced_body_fat_percent")),
+                        profileId)
+                .stream()
+                .flatMap(Optional::stream)
+                .findFirst();
+    }
+
     /**
      * The people a scheduled sync should try at {@code now}: connected, and
      * not waiting on intervals.icu. Those synced longest ago come first.
@@ -153,8 +169,12 @@ public class IntervalsIcuConnections {
     /** What a sync found. */
     sealed interface Outcome {
 
-        /** intervals.icu answered: these sessions are the person's synced training from {@code from} to {@code to}. */
-        record Synced(LocalDate from, LocalDate to, List<TrainingSession> sessions) implements Outcome {}
+        /**
+         * intervals.icu answered: these sessions are the person's synced training from {@code from} to
+         * {@code to}, and these hints what it knows for their fuel profile.
+         */
+        record Synced(LocalDate from, LocalDate to, List<TrainingSession> sessions, ProfileHints hints)
+                implements Outcome {}
 
         /** intervals.icu no longer accepts the key. */
         record Refused(String error) implements Outcome {}
@@ -221,11 +241,25 @@ public class IntervalsIcuConnections {
             switch (outcome) {
                 case Outcome.Synced synced -> {
                     fuel.replaceSynced(profileId, Source.INTERVALS_ICU, synced.from(), synced.to(), synced.sessions());
-                    jdbc.update("""
+                    ProfileHints hints = synced.hints();
+                    Sex sex = hints.sex();
+                    // A value missing from this sync keeps the last one found.
+                    jdbc.update(
+                            """
                             update intervals_icu_connection
-                            set last_sync_at = ?, last_error = null, retry_at = null
+                            set last_sync_at = ?, last_error = null, retry_at = null,
+                                synced_weight_kg = coalesce(?, synced_weight_kg),
+                                synced_body_fat_percent = coalesce(?, synced_body_fat_percent),
+                                synced_sex = coalesce(?, synced_sex),
+                                synced_ftp_watts = coalesce(?, synced_ftp_watts)
                             where profile_id = ?
-                            """, timestamp(now), profileId);
+                            """,
+                            timestamp(now),
+                            hints.weightKg(),
+                            hints.bodyFatPercent(),
+                            sex == null ? null : sex.name(),
+                            hints.ftpWatts(),
+                            profileId);
                 }
                 case Outcome.Refused refused -> jdbc.update("""
                             update intervals_icu_connection set status = 'BROKEN', last_error = ?, retry_at = null
@@ -258,10 +292,10 @@ public class IntervalsIcuConnections {
             secretBox.open(row.sealed(), owner(profileId));
         } catch (UnreadableSecretException e) {
             return new IntervalsIcuConnection(
-                    row.athleteId(), ConnectionStatus.BROKEN, row.lastSyncAt(), UNREADABLE_KEY, null);
+                    row.athleteId(), ConnectionStatus.BROKEN, row.lastSyncAt(), UNREADABLE_KEY, null, row.hints());
         }
         return new IntervalsIcuConnection(
-                row.athleteId(), row.status(), row.lastSyncAt(), row.lastError(), row.retryAt());
+                row.athleteId(), row.status(), row.lastSyncAt(), row.lastError(), row.retryAt(), row.hints());
     }
 
     /** Binds a sealed key to its row, so a key copied to another person's row does not open. */
@@ -280,15 +314,29 @@ public class IntervalsIcuConnections {
             ConnectionStatus status,
             @Nullable Instant lastSyncAt,
             @Nullable String lastError,
-            @Nullable Instant retryAt) {}
+            @Nullable Instant retryAt,
+            ProfileHints hints) {}
 
-    private static final RowMapper<Row> ROW_MAPPER = (rs, rowNum) -> new Row(
-            rs.getString("athlete_id"),
-            new SecretBox.Sealed(rs.getBytes("key_ciphertext"), rs.getBytes("key_nonce")),
-            ConnectionStatus.valueOf(rs.getString("status")),
-            instant(rs.getTimestamp("last_sync_at")),
-            rs.getString("last_error"),
-            instant(rs.getTimestamp("retry_at")));
+    private static final RowMapper<Row> ROW_MAPPER = (rs, rowNum) -> {
+        @Nullable String sex = rs.getString("synced_sex");
+        return new Row(
+                rs.getString("athlete_id"),
+                new SecretBox.Sealed(rs.getBytes("key_ciphertext"), rs.getBytes("key_nonce")),
+                ConnectionStatus.valueOf(rs.getString("status")),
+                instant(rs.getTimestamp("last_sync_at")),
+                rs.getString("last_error"),
+                instant(rs.getTimestamp("retry_at")),
+                new ProfileHints(
+                        nullableDouble(rs, "synced_weight_kg"),
+                        nullableDouble(rs, "synced_body_fat_percent"),
+                        sex == null ? null : Sex.valueOf(sex),
+                        rs.getObject("synced_ftp_watts", Integer.class)));
+    };
+
+    private static @Nullable Double nullableDouble(ResultSet rs, String column) throws SQLException {
+        double value = rs.getDouble(column);
+        return rs.wasNull() ? null : value;
+    }
 
     private static @Nullable Instant instant(@Nullable Timestamp timestamp) {
         return timestamp == null ? null : timestamp.toInstant();

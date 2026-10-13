@@ -201,6 +201,27 @@ export type IntervalsIcuConnection = {
      *
      */
     retryAt?: string;
+    hints?: IntervalsIcuHints;
+};
+
+/**
+ * What the syncs so far found in intervals.icu for the fuel profile, each the latest value found and absent until one is. Body fat feeds the targets when the fuel profile has none; the others are suggestions the person may copy into their profile. Values outside what a fuel profile allows are left out.
+ *
+ */
+export type IntervalsIcuHints = {
+    /**
+     * The latest wellness weight, else the athlete record's.
+     */
+    weightKg?: number;
+    /**
+     * The latest wellness body fat.
+     */
+    bodyFatPercent?: number;
+    sex?: FuelSex;
+    /**
+     * The FTP of the athlete's cycling settings.
+     */
+    ftpWatts?: number;
 };
 
 export type IntervalsIcuConnectionInput = {
@@ -346,10 +367,10 @@ export type SessionEnergy = {
 };
 
 /**
- * How a session's energy was found, in order of preference: its completed or planned work, FTP times an intensity factor times its duration (rides only; EASY 0.55, ENDURANCE 0.68, HARD 0.85), or an estimate from intensity and weight (EASY 4, ENDURANCE 7, HARD 10 METs).
+ * How a session's energy was found, in order of preference: its completed or planned work, FTP times an intensity factor times its duration (rides only; EASY 0.55, ENDURANCE 0.68, HARD 0.85), the calories intervals.icu reported for an activity, or an estimate from intensity and weight (EASY 4, ENDURANCE 7, HARD 10 METs).
  *
  */
-export type EnergyMethod = 'COMPLETED_WORK' | 'PLANNED_WORK' | 'FTP_INTENSITY' | 'ESTIMATE';
+export type EnergyMethod = 'COMPLETED_WORK' | 'PLANNED_WORK' | 'FTP_INTENSITY' | 'REPORTED_CALORIES' | 'ESTIMATE';
 
 /**
  * RFC 9457 problem details.

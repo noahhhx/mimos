@@ -22,7 +22,8 @@ import org.springframework.stereotype.Service;
 /**
  * Syncs one person's training from intervals.icu (ADR-0022): planned
  * workouts and activities from {@value #DAYS_BACK} days back to
- * {@value #DAYS_AHEAD} ahead replace their synced sessions in that range.
+ * {@value #DAYS_AHEAD} ahead replace their synced sessions in that range,
+ * and wellness and the athlete record give their fuel profile hints.
  * A sync never waits for intervals.icu to allow it: a refused key breaks
  * the connection, and a 429 records when to try again.
  */
@@ -32,6 +33,9 @@ public class IntervalsIcuSync {
 
     static final int DAYS_BACK = 7;
     static final int DAYS_AHEAD = 14;
+
+    /** Body fat and weight are measured less often than people train, so their window reaches further back. */
+    static final int WELLNESS_DAYS_BACK = 30;
 
     /** How long to wait after a 429 that names no {@code Retry-After} in seconds, and the most any may ask. */
     static final Duration DEFAULT_WAIT = Duration.ofMinutes(15);
@@ -87,6 +91,15 @@ public class IntervalsIcuSync {
         if (!(activities instanceof IcuResult.Ok<List<IcuJson.Activity>>(List<IcuJson.Activity> completed))) {
             return failure(activities);
         }
+        IcuResult<List<IcuJson.Wellness>> wellness =
+                client.wellness(credentials, today.minusDays(WELLNESS_DAYS_BACK), today);
+        if (!(wellness instanceof IcuResult.Ok<List<IcuJson.Wellness>>(List<IcuJson.Wellness> records))) {
+            return failure(wellness);
+        }
+        IcuResult<IcuJson.Athlete> athlete = client.athlete(credentials);
+        if (!(athlete instanceof IcuResult.Ok<IcuJson.Athlete>(IcuJson.Athlete record))) {
+            return failure(athlete);
+        }
         Map<UUID, TrainingSession> sessions = new LinkedHashMap<>();
         Stream.concat(
                         IntervalsIcuTranslator.planned(profileId, planned).stream(),
@@ -94,7 +107,8 @@ public class IntervalsIcuSync {
                 .filter(session ->
                         !session.date().isBefore(from) && !session.date().isAfter(to))
                 .forEach(session -> sessions.putIfAbsent(session.id(), session));
-        return new Outcome.Synced(from, to, List.copyOf(sessions.values()));
+        return new Outcome.Synced(
+                from, to, List.copyOf(sessions.values()), IntervalsIcuTranslator.hints(records, record));
     }
 
     private Outcome failure(IcuResult<?> result) {
