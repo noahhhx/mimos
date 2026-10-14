@@ -23,6 +23,7 @@
         <module>core/core-fueling</module>
         <module>integrations/plugins</module>
         <module>integrations/intervals-icu</module>
+        <module>integrations/open-food-facts</module>
         <module>apps/api</module>
     </modules>
 
