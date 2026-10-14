@@ -1400,6 +1400,10 @@ label.file-button {
   flex: 0 1 8rem;
 }
 
+.field-row label.log-unit {
+  flex: 0 1 7rem;
+}
+
 /* Level with the servings input beside it: the label's bottom margin, and the input's padding and border. */
 .log-total {
   flex: 1 1 12rem;

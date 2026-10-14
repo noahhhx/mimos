@@ -6,10 +6,12 @@ import {
   createMealLog,
   deleteMealLog,
   getMyFuel,
+  listIngredients,
   listLibraryRecipes,
   listMealLogs,
   listMyRecipes,
   summarizeMealLogs,
+  type CatalogIngredient,
   type DailyLogSummary,
   type FuelDay,
   type MealLog,
@@ -35,24 +37,35 @@ import {
   type MealTypeValue,
 } from "@/lib/format";
 import { FUEL_LABEL } from "@/lib/fuel";
-import { describeRecipe, searchRecipes } from "@/lib/ingredient-links";
+import { describeRecipe } from "@/lib/ingredient-links";
 import {
   EMPTY_NUTRITION,
   EMPTY_WHAT,
+  defaultAmount,
+  describeIngredient,
   describeTotal,
   logBody,
+  measuredOf,
+  measuredTotal,
+  parseAmount,
   parseServings,
   recipeTotal,
+  searchWhat,
   typeWhat,
+  unitLabel,
+  unitsFor,
   whatText,
+  type AmountFields,
   type LogWhat,
   type NutritionFields,
+  type UnitSymbol,
+  type WhatOption,
 } from "@/lib/log-entry";
 
 /**
  * The food diary: per-day calorie and macro totals for the week, the
  * selected day's meals, and a log for the unplanned ones: a recipe, in
- * servings, or anything else counted by hand.
+ * servings, an ingredient, by amount, or anything else counted by hand.
  * Information, not judgement — no streaks, no scolding.
  */
 export default function LogPage() {
@@ -65,10 +78,12 @@ export default function LogPage() {
   const [fuel, setFuel] = useState<FuelDay[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [recipes, setRecipes] = useState<RecipeSummary[]>([]);
+  const [ingredients, setIngredients] = useState<CatalogIngredient[]>([]);
   const [what, setWhat] = useState<LogWhat>(EMPTY_WHAT);
   const [mealType, setMealType] = useState<MealTypeValue>("SNACK");
   const [servings, setServings] = useState("1");
   const [nutrition, setNutrition] = useState<NutritionFields>(EMPTY_NUTRITION);
+  const [amount, setAmount] = useState<AmountFields>(defaultAmount("PER_100_G"));
 
   const reload = useCallback(async () => {
     const to = addDays(weekStart, 6);
@@ -94,19 +109,22 @@ export default function LogPage() {
     }
   }, [user, reload]);
 
-  // Recipes only make logging quicker: when they fail to load, the form still logs anything by hand.
+  // Recipes and ingredients only make logging quicker: when they fail to load, the form still logs anything by hand.
   useEffect(() => {
     if (!user) {
       return;
     }
     let cancelled = false;
-    void Promise.all([listMyRecipes({ client: apiClient }), listLibraryRecipes({ client: apiClient })]).then(
-      ([mine, library]) => {
-        if (!cancelled) {
-          setRecipes([...(mine.data ?? []), ...(library.data ?? [])]);
-        }
-      },
-    );
+    void Promise.all([
+      listMyRecipes({ client: apiClient }),
+      listLibraryRecipes({ client: apiClient }),
+      listIngredients({ client: apiClient }),
+    ]).then(([mine, library, catalog]) => {
+      if (!cancelled) {
+        setRecipes([...(mine.data ?? []), ...(library.data ?? [])]);
+        setIngredients(catalog.data ?? []);
+      }
+    });
     return () => {
       cancelled = true;
     };
@@ -124,8 +142,10 @@ export default function LogPage() {
   const summaryByDay = new Map((summary ?? []).map((day) => [day.date, day]));
   const targetByDay = new Map(fuel.flatMap((day) => (day.target ? [[day.date, day.target] as const] : [])));
   const dayLogs = (logs ?? []).filter((log) => log.date === selectedDay);
-  const body = logBody(what, selectedDay, mealType, servings, nutrition);
+  const body = logBody(what, selectedDay, mealType, servings, nutrition, amount);
   const parsedServings = parseServings(servings);
+  const measured = measuredOf(what);
+  const parsedAmount = parseAmount(amount.quantity);
 
   const addLog = async () => {
     if (!body) {
@@ -264,21 +284,32 @@ export default function LogPage() {
                 label="What"
                 ariaLabel="What"
                 value={whatText(what)}
-                placeholder="Search your recipes, or type anything"
+                placeholder="Search recipes and ingredients, or type anything"
                 className="log-what"
-                options={searchRecipes(whatText(what), recipes, 6)}
-                keyOf={(recipe) => recipe.id}
+                options={searchWhat(whatText(what), recipes, ingredients)}
+                keyOf={optionKey}
                 onType={(text) => setWhat(typeWhat(text))}
-                onChoose={(recipe) => {
-                  setWhat({ kind: "recipe", recipe });
-                  setServings("1");
+                onChoose={(option) => {
+                  setWhat(option);
+                  if (option.kind === "recipe") {
+                    setServings("1");
+                  } else {
+                    setAmount(defaultAmount(option.entry.basis));
+                  }
                 }}
-                renderOption={(recipe) => (
-                  <>
-                    <span>{recipe.title}</span>
-                    <span className="muted">{describeRecipe(recipe)}</span>
-                  </>
-                )}
+                renderOption={(option) =>
+                  option.kind === "recipe" ? (
+                    <>
+                      <span>{option.recipe.title}</span>
+                      <span className="muted">{describeRecipe(option.recipe)}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{option.entry.name}</span>
+                      <span className="muted">{describeIngredient(option.entry)}</span>
+                    </>
+                  )
+                }
               />
               <label>
                 Meal
@@ -310,6 +341,37 @@ export default function LogPage() {
                     : describeTotal(recipeTotal(what.recipe, parsedServings))}
                 </p>
               </div>
+            ) : measured ? (
+              <div className="field-row">
+                <label className="log-servings">
+                  Amount
+                  <input
+                    type="number"
+                    min={0}
+                    step="any"
+                    value={amount.quantity}
+                    onChange={(e) => setAmount({ ...amount, quantity: e.target.value })}
+                  />
+                </label>
+                <label className="log-unit">
+                  Unit
+                  <select
+                    value={amount.unit}
+                    onChange={(e) => setAmount({ ...amount, unit: e.target.value as UnitSymbol })}
+                  >
+                    {unitsFor(measured.basis).map((unit) => (
+                      <option key={unit} value={unit}>
+                        {unitLabel(unit)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="muted log-total" role="status">
+                  {parsedAmount === undefined
+                    ? "Enter an amount more than 0."
+                    : describeTotal(measuredTotal(measured, parsedAmount, amount.unit))}
+                </p>
+              </div>
             ) : (
               <div className="field-row">
                 {nutritionField("calories", "Calories")}
@@ -328,4 +390,8 @@ export default function LogPage() {
       )}
     </>
   );
+}
+
+function optionKey(option: WhatOption): string {
+  return option.kind === "recipe" ? `recipe:${option.recipe.id}` : `ingredient:${option.entry.slug}`;
 }

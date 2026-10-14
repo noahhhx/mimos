@@ -23,7 +23,8 @@ share**. **Log** appears only on meals you eat.
 
 ## Logging something else
 
-For anything you didn't plan, log a recipe or describe what you ate.
+For anything you didn't plan, log a recipe, log an ingredient, or
+describe what you ate.
 
 To log a recipe:
 
@@ -40,7 +41,24 @@ Mimos works out the nutrition from the recipe, as it does for a planned
 meal. If you type over the recipe's name, the entry stops being that
 recipe.
 
-To log something that isn't a recipe:
+To log a single ingredient, such as sugar in your coffee or a banana:
+
+1. In **Log**, choose the day in the week's table.
+2. Under **Log something else**, start typing the ingredient's name in
+   **What**. The list shows the shared ingredients and your household's
+   own, each with its calories per 100 g, per 100 ml, or each.
+3. Choose the ingredient, and choose which meal it was.
+4. Enter the **Amount** and choose its **Unit**. Mimos offers only the
+   units that fit the ingredient: weights (g, kg), volumes (ml, l, tsp,
+   tbsp), or pieces. It starts at 100 g, 100 ml, or 1 piece, and shows
+   what the amount comes to.
+5. Choose **Log meal**.
+
+The entry is named with the amount, like "Sugar, 15 g", and keeps the
+nutrition Mimos showed you, so a later fix to the ingredient doesn't
+change what you logged.
+
+To log something that isn't a recipe or an ingredient:
 
 1. In **Log**, choose the day in the week's table.
 2. Under **Log something else**, type what it was in **What** without
