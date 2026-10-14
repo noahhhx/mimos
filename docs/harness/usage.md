@@ -90,7 +90,11 @@ API refuses gets its own error, ADR-0022), `recipe-pictures` (a new
 recipe gets two pictures, which load in a row above its description,
 re-encoded as JPEG and shrunk to 1600px; at phone width the row scrolls
 and the page does not; cancelling a removal keeps both, saving one
-leaves one, ADR-0023), and `account-data` (registers
+leaves one, ADR-0023), `log-barcode` (logs 15 g of sugar by ingredient
+search, then products from the scan dialog by typed barcode against the
+fake Open Food Facts: an unknown barcode, an outage, a serving size, and
+30 g of Nutella, ADR-0025; headless Chromium has no `BarcodeDetector`,
+so the camera is not covered), and `account-data` (registers
 two fresh accounts: one writes a recipe and downloads its export, which
 it cannot import over its own data; the other imports it, ADR-0011). See [writing a scenario](step-2-browser.md#writing-a-scenario).
 For exploration before a scenario exists, `.mcp.json` registers a
