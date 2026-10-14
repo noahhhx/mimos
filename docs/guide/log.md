@@ -23,8 +23,8 @@ share**. **Log** appears only on meals you eat.
 
 ## Logging something else
 
-For anything you didn't plan, log a recipe, log an ingredient, or
-describe what you ate.
+For anything you didn't plan, log a recipe, an ingredient, or a packaged
+food by its barcode, or describe what you ate.
 
 To log a recipe:
 
@@ -58,7 +58,35 @@ The entry is named with the amount, like "Sugar, 15 g", and keeps the
 nutrition Mimos showed you, so a later fix to the ingredient doesn't
 change what you logged.
 
-To log something that isn't a recipe or an ingredient:
+To log a packaged food by its barcode:
+
+1. In **Log**, choose the day in the week's table.
+2. Under **Log something else**, choose **Scan a barcode**.
+3. Hold the barcode on the pack up to the camera, or type its number
+   under the bars in **Barcode number** and choose **Look up**. Spaces
+   and dashes in the number don't matter.
+4. Mimos looks the product up in [Open Food Facts](https://world.openfoodfacts.org),
+   an open database of packaged food, and puts it in **What** with its
+   brand, like "Yeast Extract (Marmite)". Choose which meal it was.
+5. Enter the **Amount** and choose its **Unit**, as for an ingredient.
+   It starts at one serving when the product says how big one is (Mimos
+   shows "One serving is 8 g."), and at 100 g or 100 ml otherwise.
+6. Check what the amount comes to, then choose **Log meal**.
+
+The camera scans in browsers with the Barcode Detection API, such as
+Chrome and Edge on Android. Other browsers, Safari on iPhone and iPad
+among them, show only the **Barcode number** field; typing the digits
+works everywhere. The first time, your browser asks whether Mimos may
+use the camera. If you say no, type the number instead.
+
+If Open Food Facts doesn't know the barcode, or doesn't answer, Mimos
+says so and the dialog stays open: try another number, or close it and
+log the food by hand. Open Food Facts is written by its users, so check
+the numbers Mimos shows before you log; **From Open Food Facts** links to
+the product's page there. The entry is named with the amount, like
+"Yeast Extract (Marmite), 8 g", and keeps the nutrition you saw.
+
+To log something that isn't a recipe, an ingredient, or a product:
 
 1. In **Log**, choose the day in the week's table.
 2. Under **Log something else**, type what it was in **What** without
