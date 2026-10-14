@@ -53,7 +53,8 @@ The browser signs in with Authorization Code + PKCE, and PKCE uses the Web
 Crypto API, which browsers only offer on `https://` pages and
 `http://localhost`. A page served as `http://192.168.1.10:3000` cannot sign
 in. A certificate from your proxy's internal CA works, as long as the
-devices you use trust that CA.
+devices you use trust that CA. The same rule covers the camera: the Log
+page's barcode scanner can use it only on an `https://` page.
 
 ### Reverse proxy
 
@@ -218,6 +219,10 @@ outbound HTTPS to `world.openfoodfacts.org`.
 - **Limits.** Open Food Facts allows 100 product lookups a minute from
   one address. Past that, or while it is down, a lookup fails and can be
   tried again.
+- **Scanning.** Browsers without their own barcode reader (Safari,
+  Firefox) read barcodes with a reader that the web image serves itself,
+  so reading a barcode calls no outside service. Only the lookup leaves
+  your server.
 
 ## AI agents
 

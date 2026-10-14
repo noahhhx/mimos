@@ -73,11 +73,12 @@ To log a packaged food by its barcode:
    shows "One serving is 8 g."), and at 100 g or 100 ml otherwise.
 6. Check what the amount comes to, then choose **Log meal**.
 
-The camera scans in browsers with the Barcode Detection API, such as
-Chrome and Edge on Android. Other browsers, Safari on iPhone and iPad
-among them, show only the **Barcode number** field; typing the digits
-works everywhere. The first time, your browser asks whether Mimos may
-use the camera. If you say no, type the number instead.
+The camera scans in any browser that lets a web page use the camera:
+Safari on iPhone and iPad, Chrome and Edge on Android and on computers,
+and Firefox. Browsers allow this only on pages served over `https://`
+(or from `localhost`). Typing the digits in **Barcode number** works
+everywhere, camera or not. The first time, your browser asks whether
+Mimos may use the camera. If you say no, type the number instead.
 
 If Open Food Facts doesn't know the barcode, or doesn't answer, Mimos
 says so and the dialog stays open: try another number, or close it and

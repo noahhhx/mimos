@@ -60,6 +60,48 @@ change adds the scanner to the Log page on top of it.
   an HTTP client. The API maps it to the contract's `NutritionBasis` and
   `Nutrition` like every other controller.
 
+### Camera scanning without the native API
+
+Only Chromium on Android ships a `BarcodeDetector` that reads EAN and
+UPC codes. Safari (every iPhone browser), Firefox, and Chrome on desktop
+Linux have none, so on them the scan dialog fell back to typing. The web
+app now depends on `barcode-detector` (Sec-ant's Barcode Detection API
+polyfill, MIT), pinned to 3.2.2, which reads barcodes with `zxing-wasm`
+3.1.3 (MIT), a WebAssembly build of zxing-cpp (Apache-2.0). It is a
+dependency of `@mimos/web` only.
+
+- **Native first.** `foodBarcodeDetector` in
+  `apps/web/src/components/barcode-camera.tsx` asks the browser's own
+  `BarcodeDetector` for its formats, and `chooseDetector`
+  (`apps/web/src/lib/barcode.ts`) keeps it when it reads any food
+  format. Otherwise the dialog imports `src/lib/barcode-polyfill.ts`
+  with a dynamic `import()`: the ponyfill entry, which patches no
+  global. Chrome on Android downloads none of it, and no page but an
+  open scan dialog without a native detector does.
+- **The wasm comes from Mimos's own origin.** Left to its defaults,
+  `zxing-wasm` fetches its reader `.wasm` from jsDelivr. That would break
+  scanning on offline and firewalled instances and hand a third party
+  every scan, so `barcode-polyfill.ts` passes `prepareZXingModule` a
+  `locateFile` that answers
+  `new URL("zxing-wasm/reader/zxing_reader.wasm", import.meta.url)`.
+  Next's bundler copies that file from `node_modules` into
+  `.next/static/media/` under a content hash, so the served binary is
+  always the installed one, is cached as immutable, and ships in the
+  standalone image with no Dockerfile change. A unit test checks that
+  the web resolves the same `zxing-wasm` the polyfill does, so a second
+  copy in `node_modules` cannot pair the glue code with another
+  version's wasm.
+- **Sizes.** The polyfill chunk is 42 KB (14 KB gzipped) and the reader
+  wasm 1.09 MB (461 KB gzipped, as the web server sends it). The
+  ponyfill starts fetching the wasm when the detector is made, as the
+  dialog opens, so it downloads while the browser asks for the camera;
+  a refused camera has still paid for both.
+- **Tested through a fake camera.** The `log-barcode` scenario feeds
+  Chromium a generated video of an EAN-13 as its camera, scans it with
+  the polyfill, and checks that the wasm came from the web origin and
+  nothing came from any other host. A stubbed native detector checks
+  that zxing stays unloaded where the browser has its own.
+
 ### What the live API answers
 
 Checked with curl against `https://world.openfoodfacts.org` on
