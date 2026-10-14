@@ -30,6 +30,7 @@ right at the time.
 | [ADR-0022](adr-0022-training-fuel-targets.md)                      | Training-aware fuel targets |
 | [ADR-0023](adr-0023-recipe-pictures.md)                            | Recipe pictures |
 | [ADR-0024](adr-0024-stay-signed-in.md)                             | Stay signed in |
+| [ADR-0025](adr-0025-food-product-lookup.md)                        | Food product lookup by barcode |
 
 New ADRs are sequential: `adr-NNNN-title.md`, with the numbering in this
 index. Once accepted, an ADR is never rewritten — superseding decisions get

@@ -202,6 +202,23 @@ the server needs outbound HTTPS.
   intervals.icu asks Mimos to slow down, Mimos waits as long as it says
   before that person's next sync.
 
+## Open Food Facts
+
+Mimos looks packaged food up by its barcode in
+[Open Food Facts](https://world.openfoodfacts.org), the open product
+database, so people can log it from its name and nutrition. It needs no
+key or account. The API sends Open Food Facts the barcode and nothing
+else: not who asked, not their address, since the API makes the request
+rather than the browser. Nothing it answers is stored. The server needs
+outbound HTTPS to `world.openfoodfacts.org`.
+
+- **Turning it off.** It is on by default. Set
+  `MIMOS_OPENFOODFACTS_ENABLED=false` in `.env` and every barcode lookup
+  answers "not found" without leaving your server.
+- **Limits.** Open Food Facts allows 100 product lookups a minute from
+  one address. Past that, or while it is down, a lookup fails and can be
+  tried again.
+
 ## AI agents
 
 Users can connect AI agents such as Claude Code to Mimos over MCP, at your

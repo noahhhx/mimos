@@ -45,6 +45,7 @@ change** — an out-of-date AGENTS.md is worse than none.
 | Deploy     | Build-from-source and CI parity via `deploy/docker` (compose); servers run the published images via `deploy/selfhost` (compose, production-mode Keycloak, operator's TLS proxy); AWS via IaC in `deploy/aws`. No click-ops. |
 | Images     | CI publishes `ghcr.io/noahhhx/mimos-{api,web,keycloak,country-week}` (amd64) after every other job passes: `main` + `sha-*` from main, semver + `latest` from `v*` tags. Images carry no deployment-specific config. See ADR-0012. |
 | Training and fuel | Per-person daily fuel targets in `core/core-fueling`, off until a person turns them on. Calories are an energy-availability level times fat-free mass plus exercise energy (45 kcal/kg FFM to fuel training, 40 and 35 to lose weight, 50 to gain). Carbs follow published g/kg ranges by the day's training duration, protein is set in g/kg, and fat takes the remainder within 20–35% of calories. Targets are calculated when read, never stored. Training comes from intervals.icu (`integrations/intervals-icu`: a personal API key encrypted under `MIMOS_SECRET_KEY`, polled, feature-gated by `mimos.intervals-icu.enabled`; connected, refreshed, and disconnected in the Fuel page's intervals.icu section, which also offers its weight, sex, and FTP as suggestions for the profile) or is entered by hand. Shown as "Fuel for the day" with no scoring: on the plan page, each day of the Mine view (and of a household of one) shows its training, then it, then Planned, all read in one `GET /api/v1/me/fuel` for the week; sessions are added and removed there, and every change reloads that read. On the Log page, the week's totals table puts it under each day's logged totals, from the same read. Plugins never see any of it. Built as ROADMAP step 14 (done). See ADR-0022. |
+| Food products | Packaged food by barcode from Open Food Facts (open data, ODbL, no key): `GET /api/v1/food-products/{barcode}` (`lookUpFoodProduct`, an MCP tool), 8 to 14 digits or a 400, answers a name (`product_name`, else `generic_name`; none is a 404), the first brand, nutrition per 100 g or per 100 ml (each value absent when Open Food Facts lacks it), and a serving size in that unit when it has one. The API looks it up, never the browser, so Open Food Facts sees the server and the barcode only; `integrations/open-food-facts`, on by default and switched off by `mimos.open-food-facts.enabled` (a 404, and no call ever made). Nothing is cached or stored; a product is logged as an ad-hoc meal log. Open Food Facts not answering is a 502. The web shows a looked-up product as "From Open Food Facts". See ADR-0025. |
 | Library content | Seed file `core/core-recipes/src/main/resources/library/library-seed.json`, loaded by an idempotent startup seeder (`mimos.library.seed-enabled`, default on). Content fixes ship with a restart; never via Flyway migrations. See ADR-0005. |
 | Ingredient catalog | One shared catalog seeded read-only from `core/core-recipes/src/main/resources/library/ingredient-seed.json` (always on, by slug, never deleted), plus each household's own ingredients, private to it and editable (`/api/v1/ingredients`, ADR-0016, ADR-0019). Recipe lines link to either by `catalogSlug` and carry prep in an optional `note`; the form's ingredient name is a search over both and the household's recipes. A line may instead link one of its owner's own recipes (`recipeId`, never both, never itself or a cycle), counted in `servings` of it (ADR-0018). A recipe's `nutritionSource` is `MANUAL` (typed) or `INGREDIENTS` (calculated when read, so catalog fixes and edits to a linked recipe reach every recipe that uses them). Metric units only: `g`, `kg`, `ml`, `l`, `tsp` (5 ml), `tbsp` (15 ml), or none for pieces, plus `servings` for a recipe link. Library recipes are calculated and link no recipes. The Log page's What search offers ingredients too: one logs as an ordinary ad-hoc entry (`Sugar, 15 g`, one serving) carrying the nutrition the browser calculated and previewed from the same units (`apps/web/src/lib/log-entry.ts`), a snapshot like every log, so no API change. See ADR-0015, ADR-0016, ADR-0018. |
 | Recipe pictures | Up to 8 per personal recipe, at most 2 MB each, JPEG, PNG, or WebP read from the bytes (`RecipePictureService` in `core-recipes`, the one owner of picture rules; `MAX_PICTURES` and `MAX_PICTURE_BYTES` are the only source of the limits, and the API's `MultipartConfigElement` is built from them). A sub-resource, never part of `RecipeInput`: `POST /api/v1/recipes/{recipeId}/pictures` (multipart part `file`; over 2 MB is Spring's 413 problem), `GET` and `DELETE …/pictures/{pictureId}`; `RecipeDetail.pictures` lists ids in upload order (always empty for library recipes). The GET is cached `private, max-age=31536000, immutable` with `nosniff`: a picture never changes. Upload and GET are `x-mcp: false`. Bytes live in Postgres (`recipe_picture_data`) behind the `PictureStore` seam (put and get by picture id, no delete: a non-Postgres store owes an orphan sweep). The web fetches images through the API client as Blobs (`BlobImage` owns object URLs), and the recipe form shrinks each pick to 1600 px and re-encodes it as JPEG, stripping its metadata, before Save sends fields, then removals, then uploads (`apps/web/src/lib/recipe-pictures.ts`). See ADR-0023. |
@@ -200,6 +201,25 @@ wire-format contract:
   sync replaces a person's synced sessions in its date range, so a
   repeated or interrupted sync converges. Feature-gated and optional at runtime
   (self-hosters must not need it).
+- `integrations/open-food-facts` — packaged food by barcode (ADR-0025).
+  `OpenFoodFactsClient` makes one GET of
+  `{base-url}/api/v2/product/{barcode}?fields=…` per lookup, with a
+  `User-Agent` naming Mimos and its version, and a 5-second connect and
+  read timeout. A 404 or `status: 0` is not found; any other non-2xx
+  (a 429 included), unreadable JSON, or no answer throws
+  `OpenFoodFactsUnavailableException`. `OpenFoodFactsTranslator` reads
+  only the `_100g` nutriments (never `_serving` or
+  `nutriments_estimated`) into `FoodProduct`, deriving kcal from
+  kilojoules when it is missing, and calls a product per 100 ml when
+  `nutrition_data_per`, `product_quantity_unit`, or
+  `serving_quantity_unit` says ml (Open Food Facts says `100g` for most
+  drinks). `Barcode` (8 to 14 digits) is the only way a value reaches
+  the URL. Depends on no other module; Open Food Facts' JSON types are
+  package-private. Config: `mimos.open-food-facts.enabled` (default
+  true; the client bean exists only then) and
+  `mimos.open-food-facts.base-url` (default
+  `https://world.openfoodfacts.org`). API: `FoodProductsController` in
+  package `food` of `apps/api`. No table, no cache.
 - `plugins` — see below.
 - Modules communicate through their public interfaces only; no reaching into
   another module's internals or tables. Cross-module FKs (e.g.
@@ -352,7 +372,7 @@ is the contract:
 - Security failures (401/403) are RFC 9457 problem-details, as are API errors
   generally. Domain errors map once in `ApiExceptionHandler`:
   `IllegalArgumentException` → 400, `NoSuchElementException` → 404,
-  `ReadOnlyRecipeException` and `ReadOnlyIngredientException` → 403, `AccountNotEmptyException` and `MembershipConflictException` → 409, `InviteNoLongerValidException` → 410, `PluginActionFailedException` and `IntervalsIcuUnavailableException` → 502. It extends Spring's
+  `ReadOnlyRecipeException` and `ReadOnlyIngredientException` → 403, `AccountNotEmptyException` and `MembershipConflictException` → 409, `InviteNoLongerValidException` → 410, `PluginActionFailedException`, `IntervalsIcuUnavailableException`, and `OpenFoodFactsUnavailableException` → 502. It extends Spring's
   `ResponseEntityExceptionHandler`, so Spring MVC's own errors (415, 405,
   unknown-path 404, 406, 413 for an upload over the multipart limit,
   malformed input) are problem-details too; anything
@@ -402,7 +422,8 @@ mimos/
 │   └── core-fueling/     # fuel profiles, training sessions, daily targets (ADR-0022)
 ├── integrations/
 │   ├── plugins/          # plugin runtime: registry, extension-API client, card validation (ADR-0006)
-│   └── intervals-icu/    # training sync from intervals.icu (ADR-0022): client, translator, key encryption, connections, and sync
+│   ├── intervals-icu/    # training sync from intervals.icu (ADR-0022): client, translator, key encryption, connections, and sync
+│   └── open-food-facts/  # packaged food by barcode from Open Food Facts (ADR-0025): client and translator
 ├── libraries/            # shared contracts: OpenAPI-generated clients, plugin SDK
 │   ├── api-client/       # @mimos/api-client — generated TypeScript client (committed)
 │   └── plugin-sdk/       # @mimos/plugin-sdk — generated TypeScript types for the plugin API (committed)
@@ -463,7 +484,7 @@ mimos/
   version — bump both together. Debug-only behavior goes in
   `deploy/docker/compose.debug.yml` (`harness up --debug`), never in
   `compose.yml`, and debug ports bind to loopback only. A third-party
-  service Mimos calls (intervals.icu) gets a fake for scenarios: a
+  service Mimos calls (intervals.icu, Open Food Facts) gets a fake for scenarios: a
   zero-dependency `node:http` service in `tools/harness/fakes/<service>/`
   with in-memory state, fixtures, and `/_fake/` control routes, tested
   with the harness's own tests and run by `deploy/docker/compose.fakes.yml`,

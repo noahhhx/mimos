@@ -87,6 +87,9 @@ services:
       # Encrypts people's intervals.icu API keys. Empty turns intervals.icu
       # off; see .env.example.
       MIMOS_SECRET_KEY: ${MIMOS_SECRET_KEY:-}
+      # Looks packaged food up by barcode in Open Food Facts; false turns it
+      # off. See .env.example.
+      MIMOS_OPENFOODFACTS_ENABLED: ${MIMOS_OPENFOODFACTS_ENABLED:-true}
     ports:
       - "${BIND_ADDRESS:-127.0.0.1}:${API_PORT:-8080}:8080"
     depends_on:

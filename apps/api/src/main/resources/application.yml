@@ -80,10 +80,10 @@ mimos:
     secret-key: ${MIMOS_SECRET_KEY:}
     sync-interval: 30m
   # Packaged food by barcode from Open Food Facts (ADR-0025). No key needed,
-  # so it is on by default; enabled: false (MIMOS_OPEN_FOOD_FACTS_ENABLED)
+  # so it is on by default; enabled: false (MIMOS_OPENFOODFACTS_ENABLED)
   # stops every lookup, and no barcode is sent anywhere. The base URL
-  # (MIMOS_OPEN_FOOD_FACTS_BASE_URL) points at the real service; tests and
-  # the compose fake point it elsewhere.
+  # (MIMOS_OPENFOODFACTS_BASEURL) points at the real service; tests and the
+  # compose fake point it elsewhere.
   open-food-facts:
     enabled: true
     base-url: https://world.openfoodfacts.org
