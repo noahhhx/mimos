@@ -25,8 +25,11 @@ public abstract class ApiIntegrationTestSupport {
 
     private static final DockerImageName KEYCLOAK_IMAGE = DockerImageName.parse("quay.io/keycloak/keycloak:26.5");
 
-    static final PostgreSQLContainer<?> postgres =
-            new PostgreSQLContainer<>(DockerImageName.parse("postgres:18-alpine"));
+    // Every test configuration Spring caches keeps its own pool of 10
+    // connections open, and the suite has outgrown Postgres' default 100.
+    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
+                    DockerImageName.parse("postgres:18-alpine"))
+            .withCommand("postgres", "-c", "max_connections=300");
 
     static final KeycloakContainer keycloak =
             new KeycloakContainer(KEYCLOAK_IMAGE).withRealmImportFile("mimos-realm.json");
