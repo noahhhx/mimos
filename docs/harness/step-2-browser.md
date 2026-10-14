@@ -65,6 +65,13 @@ scenario started follow.
   where there is one (see `create-recipe`); the HAR then says why.
 - Scope `role=alert` queries to `main`: Next.js's route announcer is an
   alert too.
+- A scenario that needs a camera sets `channel: "chromium"` with
+  `test.use` (Chromium's headless shell answers `getUserMedia` with
+  `NotSupportedError`) and feeds Chromium a video with
+  `--use-fake-device-for-media-stream` and
+  `--use-file-for-fake-video-capture`; the camera then works only in a
+  context granted the `camera` permission. `log-barcode` films a barcode
+  that `src/fake-camera.ts` draws.
 
 ### Exploring with the MCP browser
 

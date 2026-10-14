@@ -93,8 +93,13 @@ and the page does not; cancelling a removal keeps both, saving one
 leaves one, ADR-0023), `log-barcode` (logs 15 g of sugar by ingredient
 search, then products from the scan dialog by typed barcode against the
 fake Open Food Facts: an unknown barcode, an outage, a serving size, and
-30 g of Nutella, ADR-0025; headless Chromium has no `BarcodeDetector`,
-so the camera is not covered), and `account-data` (registers
+30 g of Nutella, while the camera is refused; then, with the camera
+allowed, Chromium's fake camera films Nutella's barcode
+(`src/fake-camera.ts` draws it as a Y4M) and the zxing polyfill reads it,
+with its wasm from the web origin and no request to any other host, and
+a stubbed native `BarcodeDetector` reads it with none of zxing loaded,
+ADR-0025; this scenario runs the full Chromium, since the headless shell
+has no camera), and `account-data` (registers
 two fresh accounts: one writes a recipe and downloads its export, which
 it cannot import over its own data; the other imports it, ADR-0011). See [writing a scenario](step-2-browser.md#writing-a-scenario).
 For exploration before a scenario exists, `.mcp.json` registers a
