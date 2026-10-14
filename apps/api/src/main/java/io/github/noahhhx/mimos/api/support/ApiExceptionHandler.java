@@ -4,6 +4,7 @@ import io.github.noahhhx.mimos.api.account.AccountNotEmptyException;
 import io.github.noahhhx.mimos.api.household.InviteNoLongerValidException;
 import io.github.noahhhx.mimos.api.household.MembershipConflictException;
 import io.github.noahhhx.mimos.intervalsicu.IntervalsIcuUnavailableException;
+import io.github.noahhhx.mimos.openfoodfacts.OpenFoodFactsUnavailableException;
 import io.github.noahhhx.mimos.plugins.PluginActionFailedException;
 import io.github.noahhhx.mimos.recipes.recipe.ReadOnlyIngredientException;
 import io.github.noahhhx.mimos.recipes.recipe.ReadOnlyRecipeException;
@@ -30,8 +31,9 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
  * 403 read-only curated content, 409 import into a non-empty account or a
  * join or leave that contradicts the caller's membership, 410 an expired or
  * used household invite, 502 a
- * plugin that failed to answer a button press or an intervals.icu that did
- * not answer a connect), Spring MVC's own errors (unsupported or
+ * plugin that failed to answer a button press, an intervals.icu that did
+ * not answer a connect, or an Open Food Facts that did not answer a barcode
+ * lookup), Spring MVC's own errors (unsupported or
  * unacceptable media type, unsupported method, unknown path, malformed
  * input), which {@link ResponseEntityExceptionHandler} renders, and anything
  * unexpected as a 500. Security failures are handled by the security chain
@@ -85,6 +87,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(IntervalsIcuUnavailableException.class)
     ProblemDetail badGateway(IntervalsIcuUnavailableException exception) {
         return problem(HttpStatus.BAD_GATEWAY, "intervals.icu unavailable", exception.getMessage());
+    }
+
+    @ExceptionHandler(OpenFoodFactsUnavailableException.class)
+    ProblemDetail badGateway(OpenFoodFactsUnavailableException exception) {
+        return problem(HttpStatus.BAD_GATEWAY, "Open Food Facts unavailable", exception.getMessage());
     }
 
     /**

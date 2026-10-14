@@ -39,6 +39,11 @@
             <artifactId>integrations-intervals-icu</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.github.noahhhx.mimos</groupId>
+            <artifactId>integrations-open-food-facts</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

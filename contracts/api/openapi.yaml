@@ -13,7 +13,7 @@
 openapi: 3.1.0
 info:
   title: Mimos API
-  version: 0.16.0
+  version: 0.17.0
   description: |
     The Mimos recipe companion API. Endpoints require a bearer token issued
     by the instance's Keycloak realm unless they live under `/api/v1/public`
@@ -1468,6 +1468,46 @@ paths:
         '401':
           $ref: '#/components/responses/Problem'
 
+  /api/v1/food-products/{barcode}:
+    get:
+      tags: [food-products]
+      operationId: lookUpFoodProduct
+      summary: Look a packaged food up by its barcode in Open Food Facts
+      description: >
+        Asks Open Food Facts, the open product database, for the product
+        with this barcode and returns its name, first brand, and nutrition
+        per 100 g, or per 100 ml for a drink, with one serving's size in
+        that unit when Open Food Facts knows it. A nutrition value Open Food
+        Facts lacks is absent, never zero. Nothing is saved: to log the
+        product, scale its nutrition to the amount eaten (amount / 100) and
+        send it to createMealLog as an ad-hoc log. A 404 means no product
+        has this barcode, the product has no name, or this instance does
+        not use Open Food Facts; a 502 means Open Food Facts did not answer,
+        so try again later. Show the result as "From Open Food Facts".
+      parameters:
+        - name: barcode
+          in: path
+          required: true
+          description: The barcode's digits, 8 to 14 of them (EAN-8, UPC-A, EAN-13, or GTIN-14). Anything else is a 400.
+          schema:
+            type: string
+            pattern: '^[0-9]{8,14}$'
+      responses:
+        '200':
+          description: The product.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FoodProduct'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '502':
+          $ref: '#/components/responses/Problem'
+
 components:
   parameters:
     RecipeId:
@@ -2045,6 +2085,31 @@ components:
         nutrition:
           allOf:
             - $ref: '#/components/schemas/Nutrition'
+    FoodProduct:
+      type: object
+      description: A packaged food from Open Food Facts (ADR-0025), looked up by barcode and never stored.
+      required: [barcode, name, basis, nutrition]
+      properties:
+        barcode:
+          type: string
+          description: The barcode as it was looked up.
+        name:
+          type: string
+          description: The product's name, or its generic name when it has none.
+        brand:
+          type: string
+          description: The product's first brand; absent when Open Food Facts has none.
+        basis:
+          description: What the nutrition is for, PER_100_G or PER_100_ML (drinks); never PER_PIECE.
+          allOf:
+            - $ref: '#/components/schemas/NutritionBasis'
+        nutrition:
+          description: Nutrition per basis. A value Open Food Facts lacks is absent.
+          allOf:
+            - $ref: '#/components/schemas/Nutrition'
+        servingSize:
+          type: number
+          description: One serving in grams (PER_100_G) or millilitres (PER_100_ML); absent when Open Food Facts gives none in that unit.
     IngredientInput:
       type: object
       description: One of the household's own ingredients as submitted; nutrition needs all four values.

@@ -52,7 +52,9 @@ spring:
           planned meal with createMealLog, log the user's share, its servings
           divided by its number of diners. getMyFuel gives a person's daily
           fuel target beside their planned and logged totals; a target is
-          information, never a score to meet. Errors come back as RFC 9457 problem
+          information, never a score to meet. lookUpFoodProduct reads a
+          packaged food's nutrition from its barcode, to log it as an ad-hoc
+          meal. Errors come back as RFC 9457 problem
           details; read the detail and correct the call.
 
 mimos:
@@ -77,6 +79,14 @@ mimos:
     base-url: https://intervals.icu
     secret-key: ${MIMOS_SECRET_KEY:}
     sync-interval: 30m
+  # Packaged food by barcode from Open Food Facts (ADR-0025). No key needed,
+  # so it is on by default; enabled: false (MIMOS_OPEN_FOOD_FACTS_ENABLED)
+  # stops every lookup, and no barcode is sent anywhere. The base URL
+  # (MIMOS_OPEN_FOOD_FACTS_BASE_URL) points at the real service; tests and
+  # the compose fake point it elsewhere.
+  open-food-facts:
+    enabled: true
+    base-url: https://world.openfoodfacts.org
 
 server:
   port: 8080

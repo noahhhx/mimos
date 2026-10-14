@@ -464,6 +464,36 @@ export type CatalogIngredient = {
 };
 
 /**
+ * A packaged food from Open Food Facts (ADR-0025), looked up by barcode and never stored.
+ */
+export type FoodProduct = {
+    /**
+     * The barcode as it was looked up.
+     */
+    barcode: string;
+    /**
+     * The product's name, or its generic name when it has none.
+     */
+    name: string;
+    /**
+     * The product's first brand; absent when Open Food Facts has none.
+     */
+    brand?: string;
+    /**
+     * What the nutrition is for, PER_100_G or PER_100_ML (drinks); never PER_PIECE.
+     */
+    basis: NutritionBasis;
+    /**
+     * Nutrition per basis. A value Open Food Facts lacks is absent.
+     */
+    nutrition: Nutrition;
+    /**
+     * One serving in grams (PER_100_G) or millilitres (PER_100_ML); absent when Open Food Facts gives none in that unit.
+     */
+    servingSize?: number;
+};
+
+/**
  * One of the household's own ingredients as submitted; nutrition needs all four values.
  */
 export type IngredientInput = {
@@ -2886,3 +2916,45 @@ export type SummarizeMealLogsResponses = {
 };
 
 export type SummarizeMealLogsResponse = SummarizeMealLogsResponses[keyof SummarizeMealLogsResponses];
+
+export type LookUpFoodProductData = {
+    body?: never;
+    path: {
+        /**
+         * The barcode's digits, 8 to 14 of them (EAN-8, UPC-A, EAN-13, or GTIN-14). Anything else is a 400.
+         */
+        barcode: string;
+    };
+    query?: never;
+    url: '/api/v1/food-products/{barcode}';
+};
+
+export type LookUpFoodProductErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    502: Problem;
+};
+
+export type LookUpFoodProductError = LookUpFoodProductErrors[keyof LookUpFoodProductErrors];
+
+export type LookUpFoodProductResponses = {
+    /**
+     * The product.
+     */
+    200: FoodProduct;
+};
+
+export type LookUpFoodProductResponse = LookUpFoodProductResponses[keyof LookUpFoodProductResponses];
