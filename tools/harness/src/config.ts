@@ -94,4 +94,8 @@ export const BUILD_INPUTS: Readonly<Record<string, { dockerfile: string; paths: 
     dockerfile: "tools/harness/fakes/intervals-icu/Dockerfile",
     paths: ["tools/harness/fakes/intervals-icu/src"],
   },
+  "open-food-facts-fake": {
+    dockerfile: "tools/harness/fakes/open-food-facts/Dockerfile",
+    paths: ["tools/harness/fakes/open-food-facts/src"],
+  },
 };

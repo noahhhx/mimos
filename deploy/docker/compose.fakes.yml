@@ -24,6 +24,23 @@ services:
       retries: 12
       start_period: 5s
 
+  # Open Food Facts (ADR-0025): a solid, a drink, and a product without fat
+  # by barcode; any other barcode is not found. See
+  # tools/harness/fakes/open-food-facts.
+  open-food-facts-fake:
+    build:
+      context: ../..
+      dockerfile: tools/harness/fakes/open-food-facts/Dockerfile
+    ports:
+      - "127.0.0.1:${OPEN_FOOD_FACTS_FAKE_PORT:-8091}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/_fake/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
   api:
     environment:
       MIMOS_INTERVALS_ICU_BASE_URL: http://intervals-icu-fake:8080
+      MIMOS_OPEN_FOOD_FACTS_BASE_URL: http://open-food-facts-fake:8080

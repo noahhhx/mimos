@@ -118,9 +118,9 @@ For attaching IntelliJ, VS Code, or Chrome DevTools instead, see
 
 ### Fakes of third-party services
 
-Mimos talks to some outside services (intervals.icu, ADR-0022). The stack
-the harness runs replaces each with a fake: a zero-dependency `node:http`
-service in `tools/harness/fakes/<service>/`, run by
+Mimos talks to some outside services (intervals.icu, ADR-0022; Open Food
+Facts, ADR-0025). The stack the harness runs replaces each with a fake: a
+zero-dependency `node:http` service in `tools/harness/fakes/<service>/`, run by
 `deploy/docker/compose.fakes.yml`, never by `compose.yml`. The overlay
 points the API at the fake and publishes the fake on `127.0.0.1` only, so
 a scenario drives its control routes over HTTP as it drives the API. Each
@@ -147,6 +147,26 @@ a 403, and a list read without `oldest` and `newest` a 400.
 | `PUT /_fake/fault` | `{"status": 429, "retryAfter": 30, "times": 1}` or `{"status": 401}`: every read gets that answer, `times` reads in a row or until cleared. |
 | `DELETE /_fake/fault` | Clears it. |
 | `GET /_fake/requests` | Every read it answered: path, query, status, and whether the key was `good`, `wrong`, or `missing` (never the key). |
+| `POST /_fake/reset` | Fixtures back, fault and log cleared. |
+| `GET /_fake/health` | The compose healthcheck. |
+
+**Open Food Facts** (`open-food-facts-fake`, `http://127.0.0.1:8091`, or
+`OPEN_FOOD_FACTS_FAKE_PORT`). It serves the one read the client in
+`integrations/open-food-facts` makes, `GET /api/v2/product/{barcode}`,
+cut to the `fields` it asks for, with three products recorded from the
+live API (barcodes exported from `src/fixtures.ts`): Nutella
+`3017620422003` (per 100 g, no serving size), Coca-Cola `5449000000996`
+(a drink: its serving is 330 ml, though Open Food Facts says `100g`), and
+Marmite `50184453` (no fat value). Any other barcode is a 404 with
+`status: 0`, as the live API answers it.
+
+| Control route | What it does |
+| --- | --- |
+| `PUT /_fake/products/{barcode}` | Adds or replaces a product (the body is its `product` object). |
+| `DELETE /_fake/products/{barcode}` | Removes one. |
+| `PUT /_fake/fault` | `{"status": 503, "times": 1}`: every read gets that status (429, 500, or 503), `times` reads in a row or until cleared. |
+| `DELETE /_fake/fault` | Clears it. |
+| `GET /_fake/requests` | Every read it answered: barcode, `fields`, `User-Agent`, and status. |
 | `POST /_fake/reset` | Fixtures back, fault and log cleared. |
 | `GET /_fake/health` | The compose healthcheck. |
 
