@@ -17,9 +17,24 @@ export function parseBarcode(text: string): string | undefined {
   return /^\d{8,14}$/.test(digits) ? digits : undefined;
 }
 
-/** The food formats among those a browser's detector reads; none means the camera cannot scan food. */
-export function foodFormatsAmong(supported: readonly string[]): string[] {
+export type FoodBarcodeFormat = (typeof FOOD_BARCODE_FORMATS)[number];
+
+/** The food formats among those a browser's detector reads. */
+export function foodFormatsAmong(supported: readonly string[]): FoodBarcodeFormat[] {
   return FOOD_BARCODE_FORMATS.filter((format) => supported.includes(format));
+}
+
+/**
+ * Which detector the camera reads with: the browser's own when it reads a
+ * food format, or else the bundled zxing one, which reads them all.
+ * `nativeFormats` is undefined when the browser has no Barcode Detection
+ * API (Safari, Firefox, Chrome on desktop Linux).
+ */
+export type DetectorChoice = { use: "native"; formats: FoodBarcodeFormat[] } | { use: "polyfill" };
+
+export function chooseDetector(nativeFormats: readonly string[] | undefined): DetectorChoice {
+  const formats = foodFormatsAmong(nativeFormats ?? []);
+  return formats.length > 0 ? { use: "native", formats } : { use: "polyfill" };
 }
 
 /** The product's page on Open Food Facts, which the attribution links to. */

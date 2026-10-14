@@ -4,23 +4,26 @@ import { useEffect, useRef, useState } from "react";
 
 import { lookUpFoodProduct, type FoodProduct } from "@mimos/api-client";
 
-import { BarcodeCamera, cameraFoodFormats } from "@/components/barcode-camera";
+import { BarcodeCamera, foodBarcodeDetector, type FoodBarcodeDetector } from "@/components/barcode-camera";
 import { apiClient } from "@/lib/api";
 import { lookupFailure, parseBarcode } from "@/lib/barcode";
 
 /**
- * Where the camera stands: still asking the browser, unable to scan food
- * (the typed field is all there is), looking, or stopped after a read so
- * its result can be looked up.
+ * Where the camera stands: still finding a detector, unable to scan (the
+ * typed field is all there is), looking, or stopped after a read so its
+ * result can be looked up.
  */
-type Camera = { state: "checking" } | { state: "none" } | { state: "scanning" | "stopped"; formats: string[] };
+type Camera =
+  | { state: "checking" }
+  | { state: "none" }
+  | { state: "scanning" | "stopped"; detector: FoodBarcodeDetector };
 
 type Lookup = { state: "idle" } | { state: "looking" } | { state: "failed"; message: string };
 
 /**
  * "Scan a barcode": a dialog that finds a packaged food in Open Food Facts
- * (ADR-0025) by its barcode, from the camera where the browser can read
- * one, or typed. A found product goes to `onFound` and closes the dialog;
+ * (ADR-0025) by its barcode, from the camera where the browser gives
+ * access to one, or typed. A found product goes to `onFound` and closes the dialog;
  * an unknown one or no answer keeps it open with a message.
  */
 export function ScanBarcode({ onFound }: { onFound: (product: FoodProduct) => void }) {
@@ -59,9 +62,9 @@ function ScanDialog({ onClose, onFound }: { onClose: () => void; onFound: (produ
 
   useEffect(() => {
     let cancelled = false;
-    void cameraFoodFormats().then((formats) => {
+    void foodBarcodeDetector().then((detector) => {
       if (!cancelled) {
-        setCamera(formats.length > 0 ? { state: "scanning", formats } : { state: "none" });
+        setCamera(detector ? { state: "scanning", detector } : { state: "none" });
       }
     });
     return () => {
@@ -95,9 +98,9 @@ function ScanDialog({ onClose, onFound }: { onClose: () => void; onFound: (produ
       {camera.state === "scanning" && (
         <>
           <BarcodeCamera
-            formats={camera.formats}
+            detector={camera.detector}
             onDetect={(code) => {
-              setCamera({ state: "stopped", formats: camera.formats });
+              setCamera({ state: "stopped", detector: camera.detector });
               setTyped(code);
               void lookUp(code);
             }}
@@ -112,7 +115,7 @@ function ScanDialog({ onClose, onFound }: { onClose: () => void; onFound: (produ
             className="button secondary"
             onClick={() => {
               setLookup({ state: "idle" });
-              setCamera({ state: "scanning", formats: camera.formats });
+              setCamera({ state: "scanning", detector: camera.detector });
             }}
           >
             Scan again

@@ -2,30 +2,39 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { foodFormatsAmong, parseBarcode } from "@/lib/barcode";
+import { FOOD_BARCODE_FORMATS, chooseDetector, parseBarcode, type FoodBarcodeFormat } from "@/lib/barcode";
 
-/** The slice of the Barcode Detection API this reads; TypeScript's DOM types do not have it yet. */
-type BarcodeDetectorInstance = { detect(source: HTMLVideoElement): Promise<{ rawValue: string }[]> };
-type BarcodeDetectorClass = {
-  new (options: { formats: string[] }): BarcodeDetectorInstance;
+/** What the camera needs of a barcode detector, native or polyfilled. */
+export type FoodBarcodeDetector = { detect(source: HTMLVideoElement): Promise<{ rawValue: string }[]> };
+
+/** The slice of the native Barcode Detection API this reads; TypeScript's DOM types do not have it yet. */
+type NativeBarcodeDetector = {
+  new (options: { formats: FoodBarcodeFormat[] }): FoodBarcodeDetector;
   getSupportedFormats(): Promise<string[]>;
 };
 
 const DETECT_EVERY_MS = 250;
 
 /**
- * The food formats this browser's camera can read, or none: no Barcode
- * Detection API (Safari, Firefox), no food formats in it, or no camera access.
+ * A detector that reads food barcodes, or none when the browser has no
+ * camera access. The browser's own `BarcodeDetector` comes first; without
+ * one that reads food formats (Safari, Firefox, desktop Chrome on Linux),
+ * the zxing polyfill loads now, so only an open scan dialog pays for it.
  */
-export async function cameraFoodFormats(): Promise<string[]> {
-  const Detector = detectorClass();
-  if (Detector === undefined || typeof navigator.mediaDevices?.getUserMedia !== "function") {
-    return [];
+export async function foodBarcodeDetector(): Promise<FoodBarcodeDetector | undefined> {
+  if (typeof navigator.mediaDevices?.getUserMedia !== "function") {
+    return undefined;
   }
+  const Native = (window as unknown as { BarcodeDetector?: NativeBarcodeDetector }).BarcodeDetector;
+  const choice = chooseDetector(await Native?.getSupportedFormats().catch(() => undefined));
   try {
-    return foodFormatsAmong(await Detector.getSupportedFormats());
+    if (choice.use === "native" && Native !== undefined) {
+      return new Native({ formats: choice.formats });
+    }
+    const { BarcodeDetector } = await import("@/lib/barcode-polyfill");
+    return new BarcodeDetector({ formats: [...FOOD_BARCODE_FORMATS] });
   } catch {
-    return [];
+    return undefined;
   }
 }
 
@@ -35,7 +44,13 @@ export async function cameraFoodFormats(): Promise<string[]> {
  * stops then, and when this unmounts, so the camera is on only while it
  * shows.
  */
-export function BarcodeCamera({ formats, onDetect }: { formats: string[]; onDetect: (barcode: string) => void }) {
+export function BarcodeCamera({
+  detector,
+  onDetect,
+}: {
+  detector: FoodBarcodeDetector;
+  onDetect: (barcode: string) => void;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const onDetectRef = useRef(onDetect);
   const [problem, setProblem] = useState<string | null>(null);
@@ -45,11 +60,6 @@ export function BarcodeCamera({ formats, onDetect }: { formats: string[]; onDete
   }, [onDetect]);
 
   useEffect(() => {
-    const Detector = detectorClass();
-    if (Detector === undefined) {
-      return;
-    }
-    const detector = new Detector({ formats });
     let stream: MediaStream | undefined;
     let timer: ReturnType<typeof setInterval> | undefined;
     let stopped = false;
@@ -105,7 +115,7 @@ export function BarcodeCamera({ formats, onDetect }: { formats: string[]; onDete
       });
 
     return stop;
-  }, [formats]);
+  }, [detector]);
 
   if (problem) {
     return (
@@ -123,8 +133,4 @@ export function BarcodeCamera({ formats, onDetect }: { formats: string[]; onDete
       playsInline
     />
   );
-}
-
-function detectorClass(): BarcodeDetectorClass | undefined {
-  return (window as unknown as { BarcodeDetector?: BarcodeDetectorClass }).BarcodeDetector;
 }
