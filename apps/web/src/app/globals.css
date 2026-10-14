@@ -1411,6 +1411,35 @@ label.file-button {
   padding: 9px 0;
 }
 
+/* A scanned product's serving and attribution, on a line of their own under its amount. */
+.log-source {
+  flex-basis: 100%;
+  margin: 0 0 12px;
+}
+
+.scan-dialog {
+  width: min(32rem, calc(100vw - 32px));
+  padding: 20px 24px;
+  border: 1px solid var(--line);
+  border-top: 2px solid var(--accent);
+  background: var(--surface);
+  color: var(--fg);
+}
+
+.scan-dialog::backdrop {
+  background: var(--bg);
+  opacity: 0.8;
+}
+
+.barcode-camera {
+  display: block;
+  width: 100%;
+  max-height: 50vh;
+  margin: 0 0 8px;
+  object-fit: cover;
+  background: var(--fg);
+}
+
 /* ---------- Week plan ---------- */
 
 .week {

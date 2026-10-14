@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import type { CatalogIngredient, RecipeSummary } from "@mimos/api-client";
+import type { CatalogIngredient, FoodProduct, RecipeSummary } from "@mimos/api-client";
 
 import {
   EMPTY_NUTRITION,
@@ -9,10 +9,12 @@ import {
   describeIngredient,
   describeTotal,
   logBody,
+  measuredOf,
   measuredTotal,
   parseServings,
   recipeTotal,
   searchWhat,
+  servingHint,
   typeWhat,
   unitsFor,
   whatText,
@@ -229,9 +231,9 @@ describe("units and amounts", () => {
   });
 
   it("starts at 100 g, 100 ml, or 1 piece", () => {
-    assert.deepEqual(defaultAmount("PER_100_G"), { quantity: "100", unit: "g" });
-    assert.deepEqual(defaultAmount("PER_100_ML"), { quantity: "100", unit: "ml" });
-    assert.deepEqual(defaultAmount("PER_PIECE"), { quantity: "1", unit: "" });
+    assert.deepEqual(defaultAmount({ basis: "PER_100_G" }), { quantity: "100", unit: "g" });
+    assert.deepEqual(defaultAmount({ basis: "PER_100_ML" }), { quantity: "100", unit: "ml" });
+    assert.deepEqual(defaultAmount({ basis: "PER_PIECE" }), { quantity: "1", unit: "" });
   });
 });
 
@@ -258,5 +260,83 @@ describe("searchWhat", () => {
     assert.equal(describeIngredient(SUGAR), "Ingredient · 400 kcal per 100 g");
     assert.equal(describeIngredient(ingredient({ isShared: false })), "Your ingredient · 400 kcal per 100 g");
     assert.equal(describeIngredient(BANANA), "Ingredient · 105 kcal each");
+  });
+});
+
+const product = (patch: Partial<FoodProduct> = {}): FoodProduct => ({
+  barcode: "50184453",
+  name: "Yeast Extract",
+  brand: "Marmite",
+  basis: "PER_100_G",
+  nutrition: { calories: 260, proteinG: 34, carbsG: 30 },
+  servingSize: 8,
+  ...patch,
+});
+
+const MARMITE: LogWhat = { kind: "product", product: product() };
+const COLA: LogWhat = {
+  kind: "product",
+  product: product({
+    barcode: "5449000000996",
+    name: "Coca-Cola Original",
+    brand: "Coca-Cola",
+    basis: "PER_100_ML",
+    nutrition: { calories: 42.4, proteinG: 0, carbsG: 10.6, fatG: 0 },
+    servingSize: 330,
+  }),
+};
+
+describe("a scanned product", () => {
+  it("is measured food named with its brand, on its own basis, keeping the values Open Food Facts lacks absent", () => {
+    assert.deepEqual(measuredOf(MARMITE), {
+      name: "Yeast Extract (Marmite)",
+      basis: "PER_100_G",
+      nutrition: { calories: 260, proteinG: 34, carbsG: 30 },
+      servingSize: 8,
+    });
+    assert.equal(measuredOf(COLA)?.basis, "PER_100_ML");
+    assert.equal(whatText(MARMITE), "Yeast Extract (Marmite)");
+  });
+
+  it("is named without a brand when it has none, or when the brand is its name", () => {
+    assert.equal(whatText({ kind: "product", product: product({ brand: undefined }) }), "Yeast Extract");
+    assert.equal(whatText({ kind: "product", product: product({ name: "Nutella", brand: "Nutella" }) }), "Nutella");
+  });
+
+  it("is unpicked by typing over its name, like a recipe", () => {
+    assert.deepEqual(typeWhat("Yeast Extract (Marm"), { kind: "custom", description: "Yeast Extract (Marm" });
+  });
+
+  it("starts at one serving in the basis's unit, with a hint saying so", () => {
+    const marmite = measuredOf(MARMITE)!;
+    assert.deepEqual(defaultAmount(marmite), { quantity: "8", unit: "g" });
+    assert.equal(servingHint(marmite), "One serving is 8 g.");
+    assert.deepEqual(defaultAmount(measuredOf(COLA)!), { quantity: "330", unit: "ml" });
+  });
+
+  it("starts at 100 g or 100 ml, with no hint, when it has no serving size", () => {
+    const unserved = measuredOf({ kind: "product", product: product({ servingSize: undefined }) })!;
+    assert.deepEqual(defaultAmount(unserved), { quantity: "100", unit: "g" });
+    assert.equal(servingHint(unserved), undefined);
+    const drink = measuredOf({ kind: "product", product: product({ basis: "PER_100_ML", servingSize: undefined }) })!;
+    assert.deepEqual(defaultAmount(drink), { quantity: "100", unit: "ml" });
+  });
+
+  it("logs as one serving named with its amount, carrying the previewed nutrition and nothing it lacks", () => {
+    assert.deepEqual(logBody(MARMITE, "2026-10-07", "BREAKFAST", "1", EMPTY_NUTRITION, { quantity: "8", unit: "g" }), {
+      date: "2026-10-07",
+      mealType: "BREAKFAST",
+      description: "Yeast Extract (Marmite), 8 g",
+      servings: 1,
+      nutrition: { calories: 20.8, proteinG: 2.7, carbsG: 2.4, fatG: undefined },
+    });
+  });
+
+  it("logs a drink by volume, and not by weight", () => {
+    assert.equal(
+      logBody(COLA, "2026-10-07", "SNACK", "1", EMPTY_NUTRITION, { quantity: "1", unit: "tbsp" })?.description,
+      "Coca-Cola Original (Coca-Cola), 1 tbsp",
+    );
+    assert.equal(logBody(COLA, "2026-10-07", "SNACK", "1", EMPTY_NUTRITION, { quantity: "100", unit: "g" }), undefined);
   });
 });

@@ -1,5 +1,6 @@
 import type {
   CatalogIngredient,
+  FoodProduct,
   MealLogInput,
   MealType,
   Nutrition,
@@ -12,19 +13,27 @@ import { hasNutrition } from "./format.ts";
 
 /**
  * What the log page's "Log something else" form logs: a recipe picked from
- * the search, counted in servings of it; an ingredient picked from it,
- * counted by amount; or anything else, described and counted by hand.
+ * the search, counted in servings of it; an ingredient picked from it, or a
+ * packaged product found by its barcode, counted by amount; or anything
+ * else, described and counted by hand.
  */
 export type LogWhat =
   | { kind: "custom"; description: string }
   | { kind: "recipe"; recipe: RecipeSummary }
-  | { kind: "ingredient"; entry: CatalogIngredient };
+  | { kind: "ingredient"; entry: CatalogIngredient }
+  | { kind: "product"; product: FoodProduct };
 
-/** What the What search offers: everything that is picked rather than typed. */
-export type WhatOption = Exclude<LogWhat, { kind: "custom" }>;
+/** What the What search offers: recipes and ingredients. A product comes from the scan dialog instead. */
+export type WhatOption = Extract<LogWhat, { kind: "recipe" | "ingredient" }>;
 
-/** Food whose nutrition is known per basis (per 100 g, per 100 ml, or each), so any amount of it can be counted. */
-export type Measured = { name: string; basis: NutritionBasis; nutrition: Nutrition };
+/**
+ * Food whose nutrition is known per basis (per 100 g, per 100 ml, or each),
+ * so any amount of it can be counted; a packaged product may also say how
+ * much one serving is, in the basis's unit.
+ */
+export type Measured = { name: string; basis: NutritionBasis; nutrition: Nutrition; servingSize?: number };
+
+type MeasuredWhat = Extract<LogWhat, { kind: "ingredient" | "product" }>;
 
 /** The units an amount is counted in (ADR-0015); "" counts pieces. */
 export type UnitSymbol = "g" | "kg" | "ml" | "l" | "tsp" | "tbsp" | "";
@@ -61,13 +70,14 @@ const MAX_SERVINGS = 100;
 
 const MAX_DESCRIPTION_LENGTH = 200;
 
-/** The What field's text: a picked recipe shows its title, a picked ingredient its name. */
+/** The What field's text: a picked recipe shows its title, a picked ingredient or product its name. */
 export function whatText(what: LogWhat): string {
   switch (what.kind) {
     case "recipe":
       return what.recipe.title;
     case "ingredient":
-      return what.entry.name;
+    case "product":
+      return measured(what).name;
     case "custom":
       return what.description;
   }
@@ -103,7 +113,19 @@ export function describeIngredient(entry: CatalogIngredient): string {
 
 /** The food `what` counts by amount, if it counts one. */
 export function measuredOf(what: LogWhat): Measured | undefined {
-  return what.kind === "ingredient" ? what.entry : undefined;
+  return what.kind === "ingredient" || what.kind === "product" ? measured(what) : undefined;
+}
+
+/**
+ * A product's name with its brand, like "Yeast Extract (Marmite)", so the
+ * entry says whose it was; a brand the name already is, like Nutella's, is
+ * not repeated.
+ */
+export function productName(product: FoodProduct): string {
+  const brand = product.brand?.trim();
+  return brand && brand.toLowerCase() !== product.name.trim().toLowerCase()
+    ? `${product.name} (${brand})`
+    : product.name;
 }
 
 /** The units an amount of food on `basis` can be counted in. */
@@ -111,9 +133,16 @@ export function unitsFor(basis: NutritionBasis): UnitSymbol[] {
   return (Object.keys(UNITS) as UnitSymbol[]).filter((unit) => UNITS[unit].basis === basis);
 }
 
-/** Where a picked food's amount starts: 100 g, 100 ml, or 1 piece. */
-export function defaultAmount(basis: NutritionBasis): AmountFields {
-  return { quantity: String(BASIS_AMOUNT[basis]), unit: unitsFor(basis)[0] };
+/** Where a picked food's amount starts: one serving when the food says what that is, else 100 g, 100 ml, or 1 piece. */
+export function defaultAmount(food: Pick<Measured, "basis" | "servingSize">): AmountFields {
+  return { quantity: String(food.servingSize ?? BASIS_AMOUNT[food.basis]), unit: unitsFor(food.basis)[0] };
+}
+
+/** A food's serving in words, like "One serving is 15 g.", when it has one. */
+export function servingHint(food: Measured): string | undefined {
+  return food.servingSize === undefined
+    ? undefined
+    : `One serving is ${food.servingSize} ${unitLabel(unitsFor(food.basis)[0], food.servingSize)}.`;
 }
 
 /** A unit as words, like "tbsp" or "pieces"; pieces are plural unless `quantity` is 1. */
@@ -157,7 +186,8 @@ export function logBody(
       return parsed === undefined ? undefined : { date, mealType, recipeId: what.recipe.id, servings: parsed };
     }
     case "ingredient":
-      return measuredBody(what.entry, date, mealType, amount);
+    case "product":
+      return measuredBody(measured(what), date, mealType, amount);
     case "custom":
       return customBody(what.description, date, mealType, nutrition);
   }
@@ -224,6 +254,14 @@ function measuredBody(
     servings: 1,
     nutrition: measuredTotal(food, quantity, amount.unit) ?? {},
   };
+}
+
+function measured(what: MeasuredWhat): Measured {
+  if (what.kind === "ingredient") {
+    return what.entry;
+  }
+  const { basis, nutrition, servingSize } = what.product;
+  return { name: productName(what.product), basis, nutrition, servingSize };
 }
 
 function customBody(

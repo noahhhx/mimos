@@ -21,8 +21,10 @@ import {
 import { useAuth } from "@/components/auth-provider";
 import { Combobox } from "@/components/combobox";
 import { PageHeader } from "@/components/page-header";
+import { ScanBarcode } from "@/components/scan-barcode";
 import { SignInPrompt } from "@/components/sign-in-prompt";
 import { apiClient } from "@/lib/api";
+import { openFoodFactsUrl } from "@/lib/barcode";
 import {
   MEAL_TYPES,
   addDays,
@@ -51,6 +53,7 @@ import {
   parseServings,
   recipeTotal,
   searchWhat,
+  servingHint,
   typeWhat,
   unitLabel,
   unitsFor,
@@ -65,7 +68,8 @@ import {
 /**
  * The food diary: per-day calorie and macro totals for the week, the
  * selected day's meals, and a log for the unplanned ones: a recipe, in
- * servings, an ingredient, by amount, or anything else counted by hand.
+ * servings, an ingredient or a packaged product found by its barcode, by
+ * amount, or anything else counted by hand.
  * Information, not judgement — no streaks, no scolding.
  */
 export default function LogPage() {
@@ -83,7 +87,7 @@ export default function LogPage() {
   const [mealType, setMealType] = useState<MealTypeValue>("SNACK");
   const [servings, setServings] = useState("1");
   const [nutrition, setNutrition] = useState<NutritionFields>(EMPTY_NUTRITION);
-  const [amount, setAmount] = useState<AmountFields>(defaultAmount("PER_100_G"));
+  const [amount, setAmount] = useState<AmountFields>(defaultAmount({ basis: "PER_100_G" }));
 
   const reload = useCallback(async () => {
     const to = addDays(weekStart, 6);
@@ -146,6 +150,16 @@ export default function LogPage() {
   const parsedServings = parseServings(servings);
   const measured = measuredOf(what);
   const parsedAmount = parseAmount(amount.quantity);
+
+  const pick = (picked: LogWhat) => {
+    setWhat(picked);
+    const food = measuredOf(picked);
+    if (food) {
+      setAmount(defaultAmount(food));
+    } else {
+      setServings("1");
+    }
+  };
 
   const addLog = async () => {
     if (!body) {
@@ -289,14 +303,7 @@ export default function LogPage() {
                 options={searchWhat(whatText(what), recipes, ingredients)}
                 keyOf={optionKey}
                 onType={(text) => setWhat(typeWhat(text))}
-                onChoose={(option) => {
-                  setWhat(option);
-                  if (option.kind === "recipe") {
-                    setServings("1");
-                  } else {
-                    setAmount(defaultAmount(option.entry.basis));
-                  }
-                }}
+                onChoose={pick}
                 renderOption={(option) =>
                   option.kind === "recipe" ? (
                     <>
@@ -311,6 +318,7 @@ export default function LogPage() {
                   )
                 }
               />
+              <ScanBarcode onFound={(product) => pick({ kind: "product", product })} />
               <label>
                 Meal
                 <select value={mealType} onChange={(e) => setMealType(e.target.value as MealTypeValue)}>
@@ -371,6 +379,15 @@ export default function LogPage() {
                     ? "Enter an amount more than 0."
                     : describeTotal(measuredTotal(measured, parsedAmount, amount.unit))}
                 </p>
+                {what.kind === "product" && (
+                  <p className="muted log-source">
+                    {servingHint(measured)}{" "}
+                    {/* Open Food Facts' data is ODbL, which asks for this attribution (ADR-0025). */}
+                    <a href={openFoodFactsUrl(what.product.barcode)} target="_blank" rel="noreferrer">
+                      From Open Food Facts
+                    </a>
+                  </p>
+                )}
               </div>
             ) : (
               <div className="field-row">
