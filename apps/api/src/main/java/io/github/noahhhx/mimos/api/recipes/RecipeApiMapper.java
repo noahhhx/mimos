@@ -11,6 +11,7 @@ import io.github.noahhhx.mimos.recipes.recipe.RecipeDraft;
 import io.github.noahhhx.mimos.recipes.recipe.RecipePicture;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeStep;
 import java.math.BigDecimal;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import org.openapitools.model.IngredientInput;
@@ -34,6 +35,8 @@ public final class RecipeApiMapper {
                 .description(recipe.description())
                 .servings(recipe.servings())
                 .isLibrary(recipe.isLibrary())
+                .createdAt(recipe.createdAt().atOffset(ZoneOffset.UTC))
+                .updatedAt(recipe.updatedAt().atOffset(ZoneOffset.UTC))
                 .tags(recipe.tags())
                 .nutrition(toApiNutrition(recipe.nutrition()));
     }

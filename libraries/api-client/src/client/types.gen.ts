@@ -558,6 +558,14 @@ export type RecipeSummary = {
      *
      */
     createdBy?: Person;
+    /**
+     * When the recipe was added.
+     */
+    createdAt: string;
+    /**
+     * When its fields were last saved.
+     */
+    updatedAt: string;
     tags: Array<string>;
     nutrition: Nutrition;
 };

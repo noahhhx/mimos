@@ -2167,7 +2167,7 @@ components:
     RecipeSummary:
       type: object
       description: A recipe as shown in lists and search results.
-      required: [id, title, description, servings, isLibrary, tags, nutrition]
+      required: [id, title, description, servings, isLibrary, createdAt, updatedAt, tags, nutrition]
       properties:
         id:
           type: string
@@ -2191,6 +2191,14 @@ components:
           description: >
             Who added this personal recipe; they may since have left the
             household. Absent for library recipes.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the recipe was added.
+        updatedAt:
+          type: string
+          format: date-time
+          description: When its fields were last saved.
         tags:
           type: array
           items:
