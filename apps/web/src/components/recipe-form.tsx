@@ -309,6 +309,24 @@ export function RecipeForm({
               aria-label={`Ingredient ${index + 1} note`}
             />
           </label>
+          <button
+            type="button"
+            className="button secondary"
+            onClick={() => moveIngredient(index, index - 1)}
+            disabled={index === 0}
+            aria-label={`Move ingredient ${index + 1} up`}
+          >
+            Up
+          </button>
+          <button
+            type="button"
+            className="button secondary"
+            onClick={() => moveIngredient(index, index + 1)}
+            disabled={index === values.ingredients.length - 1}
+            aria-label={`Move ingredient ${index + 1} down`}
+          >
+            Down
+          </button>
           <button type="button" className="button secondary" onClick={() => removeRow("ingredient", index)}>
             Remove
           </button>
@@ -422,6 +440,18 @@ export function RecipeForm({
 
   function replaceRow(index: number, next: IngredientRow) {
     set({ ingredients: values.ingredients.map((row, i) => (i === index ? next : row)) });
+  }
+
+  function moveIngredient(from: number, to: number) {
+    const ingredients = [...values.ingredients];
+    const [row] = ingredients.splice(from, 1);
+    ingredients.splice(to, 0, row);
+    set({ ingredients });
+    if (adding?.index === from) {
+      setAdding({ ...adding, index: to });
+    } else if (adding?.index === to) {
+      setAdding({ ...adding, index: from });
+    }
   }
 
   function removeRow(kind: "ingredient" | "step", index: number) {

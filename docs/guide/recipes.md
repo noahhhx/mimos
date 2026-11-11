@@ -45,7 +45,9 @@ above the description. Scroll the row sideways to see them all.
    ingredient** and copy its calories, protein, carbs, and fat from the
    label. It's saved as your household's own: only your household sees
    it, and you can use it in any of your recipes. Under each ingredient, Mimos says what it matched;
-   choose **Don't count it** if the match is wrong.
+   choose **Don't count it** if the match is wrong. Choose **Up** or
+   **Down** on a line to move it in the list, and **Remove** to take it
+   out.
 5. Under **Nutrition per serving**, leave **Calculate from ingredients**
    chosen to have Mimos work it out, or choose **Enter it myself** to type
    it in. Mimos uses it for your [food log](log.md).

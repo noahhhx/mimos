@@ -6,7 +6,8 @@ import { expect, test } from "./fixtures.ts";
  * Regression test for bugs found driving the form: a repeated tag was a 500
  * (duplicate `recipe_tag` row), the nutrition card hid carbs and fat unless
  * calories or protein were set, saving an edit left the page on the form,
- * and an ingredient could not go unmeasured (ADR-0007).
+ * and an ingredient could not go unmeasured (ADR-0007). Also moves an
+ * ingredient up and checks the saved order.
  */
 test("creates a recipe, then edits it back to its view", async ({ loggedInPage: page }) => {
   // Unique per run, so reruns against the same database never collide.
@@ -61,8 +62,22 @@ test("creates a recipe, then edits it back to its view", async ({ loggedInPage: 
     await expect(page.getByRole("heading", { name: "Edit recipe" })).toHaveCount(0);
   });
 
-  await test.step("the edit survives a reload", async () => {
+  await test.step("move an ingredient up and save the new order", async () => {
+    await page.getByRole("button", { name: "Edit" }).click();
+    await expect(page.getByRole("button", { name: "Move ingredient 1 up" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Move ingredient 2 down" })).toBeDisabled();
+    await page.getByRole("button", { name: "Move ingredient 2 up" }).click();
+    await expect(page.getByLabel("Ingredient 1 name")).toHaveValue("salt, to taste");
+    await expect(page.getByLabel("Ingredient 2 amount")).toHaveValue("1");
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await expect(formError.or(recipe.getByRole("heading", { name: `${title} (edited)`, level: 1 }))).toBeVisible();
+    expect(await formError.allInnerTexts(), "the form reported an error").toEqual([]);
+  });
+
+  await test.step("the edit and the new order survive a reload", async () => {
     await page.reload();
     await expect(recipe.getByRole("heading", { name: `${title} (edited)`, level: 1 })).toBeVisible();
+    await expect(recipe.locator(".ingredients li").first()).toHaveText("salt, to taste");
+    await expect(recipe.locator(".ingredients li").nth(1)).toContainText("beans");
   });
 });
