@@ -22,7 +22,17 @@ function entry(slug: string, name: string, basis: NutritionBasis, calories = 1):
 }
 
 function recipe(id: string, title: string, servings: number, nutrition: RecipeSummary["nutrition"]): RecipeSummary {
-  return { id, title, description: "", servings, isLibrary: false, tags: [], nutrition };
+  return {
+    id,
+    title,
+    description: "",
+    servings,
+    isLibrary: false,
+    createdAt: "2025-01-01T00:00:00Z",
+    updatedAt: "2025-01-01T00:00:00Z",
+    tags: [],
+    nutrition,
+  };
 }
 
 const CATALOG = [

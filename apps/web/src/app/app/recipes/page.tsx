@@ -14,6 +14,14 @@ import { PageHeader } from "@/components/page-header";
 import { SignInPrompt } from "@/components/sign-in-prompt";
 import { RecipeList } from "@/components/recipe-list";
 import { apiClient } from "@/lib/api";
+import {
+  DEFAULT_RECIPE_SORT,
+  RECIPE_SORTS,
+  orderRecipes,
+  parseRecipeSort,
+  recipeTags,
+  type RecipeSort,
+} from "@/lib/recipe-order";
 
 /**
  * The recipe book: your own recipes and the curated library side by side,
@@ -21,12 +29,33 @@ import { apiClient } from "@/lib/api";
  * to their public pages.
  */
 export default function RecipesPage() {
+  const SORT_KEY = "mimos.recipes.sort";
+
   const { user } = useAuth();
   const [tab, setTab] = useState<"mine" | "library">("mine");
   const [query, setQuery] = useState("");
   const [mine, setMine] = useState<RecipeSummary[] | null>(null);
   const [library, setLibrary] = useState<RecipeSummary[] | null>(null);
+  const [sort, setSort] = useState<RecipeSort>(DEFAULT_RECIPE_SORT);
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      setSort(parseRecipeSort(window.localStorage.getItem(SORT_KEY)));
+    } catch {
+      // Storage can be unavailable; the default stands.
+    }
+  }, []);
+
+  const chooseSort = (next: RecipeSort) => {
+    setSort(next);
+    try {
+      window.localStorage.setItem(SORT_KEY, next);
+    } catch {
+      // Not remembered, but the choice still applies.
+    }
+  };
 
   useEffect(() => {
     if (!user) {
@@ -65,7 +94,22 @@ export default function RecipesPage() {
     );
   }
 
-  const recipes = tab === "mine" ? mine : library;
+  const tabRecipes = tab === "mine" ? mine : library;
+  const availableTags = recipeTags(tabRecipes ?? []);
+  const activeTags = new Set([...selectedTags].filter((tag) => availableTags.includes(tag)));
+  const displayedRecipes = tabRecipes === null ? null : orderRecipes(tabRecipes, sort, activeTags);
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags((current) => {
+      const next = new Set(current);
+      if (next.has(tag)) {
+        next.delete(tag);
+      } else {
+        next.add(tag);
+      }
+      return next;
+    });
+  };
 
   return (
     <>
@@ -98,13 +142,49 @@ export default function RecipesPage() {
         </button>
       </div>
 
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search by title, description, or tag…"
-        aria-label="Search recipes"
-      />
+      <div className="recipe-filters">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by title, description, or tag…"
+          aria-label="Search recipes"
+        />
+        <label>
+          Sort by
+          <select value={sort} onChange={(e) => chooseSort(parseRecipeSort(e.target.value))}>
+            {(Object.keys(RECIPE_SORTS) as RecipeSort[]).map((key) => (
+              <option key={key} value={key}>
+                {RECIPE_SORTS[key].label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {availableTags.length > 0 && (
+        <div className="button-row" role="group" aria-label="Filter by tag">
+          {availableTags.map((tag) => {
+            const active = activeTags.has(tag);
+            return (
+              <button
+                key={tag}
+                type="button"
+                className={active ? "button small" : "button secondary small"}
+                aria-pressed={active}
+                onClick={() => toggleTag(tag)}
+              >
+                {tag}
+              </button>
+            );
+          })}
+          {activeTags.size > 0 && (
+            <button type="button" className="button secondary small" onClick={() => setSelectedTags(new Set())}>
+              Clear tags
+            </button>
+          )}
+        </div>
+      )}
 
       {error && (
         <div className="card error" role="alert">
@@ -112,21 +192,23 @@ export default function RecipesPage() {
         </div>
       )}
 
-      {recipes === null ? (
+      {displayedRecipes === null ? (
         <p className="muted">Loading…</p>
-      ) : recipes.length === 0 ? (
+      ) : displayedRecipes.length === 0 ? (
         <div className="card">
           <p>
-            {tab === "mine"
-              ? "No personal recipes yet. Write your first one, or cook from the library."
-              : query
-                ? `Nothing in the library matches “${query}”.`
-                : "The library is empty."}
+            {activeTags.size > 0
+              ? "No recipes have all of these tags."
+              : tab === "mine"
+                ? "No personal recipes yet. Write your first one, or cook from the library."
+                : query
+                  ? `Nothing in the library matches "${query}".`
+                  : "The library is empty."}
           </p>
         </div>
       ) : (
         <RecipeList
-          recipes={recipes}
+          recipes={displayedRecipes}
           hrefOf={(recipe) =>
             tab === "mine" || !recipe.slug ? `/app/recipes/${recipe.id}` : `/recipes/${recipe.slug}`
           }

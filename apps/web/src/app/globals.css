@@ -1073,6 +1073,27 @@ input[type="search"]:focus {
   border-bottom-color: var(--accent);
 }
 
+.recipe-filters {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (min-width: 640px) {
+  .recipe-filters {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+  }
+}
+
+.recipe-filters input[type="search"] {
+  margin-bottom: 0;
+}
+
+.recipe-filters label {
+  margin: 0;
+}
+
 /* ---------- Recipe rows (components/recipe-list.tsx) ---------- */
 
 .recipe-list {

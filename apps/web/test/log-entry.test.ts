@@ -28,6 +28,8 @@ const recipe = (patch: Partial<RecipeSummary> = {}): RecipeSummary => ({
   description: "",
   servings: 4,
   isLibrary: true,
+  createdAt: "2025-01-01T00:00:00Z",
+  updatedAt: "2025-01-01T00:00:00Z",
   tags: [],
   nutrition: { calories: 450, proteinG: 20, carbsG: 61, fatG: 12 },
   ...patch,
