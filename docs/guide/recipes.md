@@ -12,6 +12,15 @@ The search box looks through titles, descriptions, tags, and ingredient
 names in the tab you're on, so "beef" also finds a chili made with beef
 mince.
 
+Use **Sort by** to order the recipes by title, by when they were added,
+or by when they were last edited. The default is alphabetical by title.
+
+The tag buttons under the search show every tag used in the tab you're
+on. Press one to show only recipes with that tag. Press another to narrow
+it further; a recipe must have every chosen tag. Press a chosen tag again
+or choose **Clear tags** to widen the list back out. The tab counts stay
+as totals; only the list below them is filtered.
+
 ![The recipe book, showing the Library tab](../assets/screenshots/recipes.png)
 
 ## Cooking from a recipe
