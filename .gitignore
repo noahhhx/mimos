@@ -36,3 +36,4 @@ devenv.local.yaml
 
 # Agent harness evidence (run folders)
 .harness/
+.pi/mcp.json
