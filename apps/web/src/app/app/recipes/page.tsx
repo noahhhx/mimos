@@ -202,7 +202,7 @@ export default function RecipesPage() {
               : tab === "mine"
                 ? "No personal recipes yet. Write your first one, or cook from the library."
                 : query
-                  ? `Nothing in the library matches "${query}".`
+                  ? `Nothing in the library matches “${query}”.`
                   : "The library is empty."}
           </p>
         </div>

@@ -18,21 +18,16 @@ function titleCompare(a: RecipeSummary, b: RecipeSummary): number {
   return byTitle === 0 ? a.id.localeCompare(b.id) : byTitle;
 }
 
-function dateCompare(a: RecipeSummary, b: RecipeSummary, newestFirst: boolean): number {
-  const byDate = newestFirst ? b.createdAt.localeCompare(a.createdAt) : a.createdAt.localeCompare(b.createdAt);
-  return byDate === 0 ? titleCompare(a, b) : byDate;
-}
-
-function editedCompare(a: RecipeSummary, b: RecipeSummary): number {
-  const byEdited = b.updatedAt.localeCompare(a.updatedAt);
-  return byEdited === 0 ? titleCompare(a, b) : byEdited;
+function byInstant(field: "createdAt" | "updatedAt", direction: 1 | -1) {
+  return (a: RecipeSummary, b: RecipeSummary): number =>
+    direction * (Date.parse(a[field]) - Date.parse(b[field])) || titleCompare(a, b);
 }
 
 const comparators: Record<RecipeSort, (a: RecipeSummary, b: RecipeSummary) => number> = {
   title: titleCompare,
-  newest: (a, b) => dateCompare(a, b, true),
-  oldest: (a, b) => dateCompare(a, b, false),
-  edited: editedCompare,
+  newest: byInstant("createdAt", -1),
+  oldest: byInstant("createdAt", 1),
+  edited: byInstant("updatedAt", -1),
 };
 
 export function parseRecipeSort(value: string | null | undefined): RecipeSort {

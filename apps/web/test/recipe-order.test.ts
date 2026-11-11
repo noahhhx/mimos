@@ -125,3 +125,12 @@ describe("RECIPE_SORTS", () => {
     }
   });
 });
+
+it("date sorts compare instants, not strings of different precision", () => {
+  const early = recipe({ id: "a", title: "Early", createdAt: "2025-01-01T00:00:00Z" });
+  const late = recipe({ id: "b", title: "Late", createdAt: "2025-01-01T00:00:00.5Z" });
+  assert.deepEqual(
+    orderRecipes([late, early], "oldest", new Set()).map((r) => r.title),
+    ["Early", "Late"],
+  );
+});
