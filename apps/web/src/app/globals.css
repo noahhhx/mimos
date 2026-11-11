@@ -1020,6 +1020,24 @@ input[type="search"]:focus {
   border-top: 1px solid var(--line);
 }
 
+/* The recipe form's sections: bigger and bolder than its field labels, so a heading never reads as one. */
+.recipe-form h2 {
+  margin-top: 40px;
+  margin-bottom: 6px;
+  padding-top: 24px;
+  font-size: 18px;
+  line-height: 1.25;
+  letter-spacing: 0.08em;
+}
+
+/* A section's help text, under its heading: smaller than the fields, on a readable measure. */
+.recipe-form h2 + .muted {
+  max-width: 62ch;
+  margin: 0 0 8px;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
 .form .actions {
   display: flex;
   gap: 8px;

@@ -206,7 +206,7 @@ export function RecipeForm({
 
   return (
     <form
-      className="card form"
+      className="card form recipe-form"
       onSubmit={(e) => {
         e.preventDefault();
         void save();
