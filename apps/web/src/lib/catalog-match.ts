@@ -78,9 +78,9 @@ export function mentions(name: string, entry: CatalogIngredient): boolean {
   return phrasesOf(entry).some((phrase) => startsAWord(text, phrase));
 }
 
-/** The name a line takes when its author picks an entry: "Red lentils, dry" is written "red lentils". */
+/** The name a line takes when its author picks an entry, as the entry writes it: "Red lentils, dry" is written "Red lentils". */
 export function lineNameOf(entry: CatalogIngredient): string {
-  return entry.name.replace(/\(.*\)|,.*$/g, "").trim().toLowerCase();
+  return entry.name.replace(/\(.*\)|,.*$/g, "").trim();
 }
 
 /** An entry's calories in words, like "813 kcal per 100 ml" or "4 kcal each". */
@@ -98,7 +98,7 @@ export function basisForUnit(unit: string): NutritionBasis {
 }
 
 function phrasesOf(entry: CatalogIngredient): string[] {
-  return [lineNameOf(entry), normalize(entry.slug.replaceAll("-", " "))].filter((phrase) => phrase !== "");
+  return [normalize(lineNameOf(entry)), normalize(entry.slug.replaceAll("-", " "))].filter((phrase) => phrase !== "");
 }
 
 function normalize(value: string): string {

@@ -72,9 +72,14 @@ export function lineHint(status: IngredientLineStatus | undefined, link: LineLin
   }
 }
 
-/** Links a row to a catalog entry, keeping what was typed when it already names the entry. */
+/**
+ * Links a row to a catalog entry, keeping what was typed when it already
+ * names the entry ("garlic cloves, crushed"), in the entry's own casing
+ * when it is just the entry's name ("olive oil" is written "Olive oil").
+ */
 export function pickEntry(row: IngredientRow, entry: CatalogIngredient): IngredientRow {
-  return { ...unlinked(row), name: mentions(row.name, entry) ? row.name : lineNameOf(entry), catalogSlug: entry.slug };
+  const name = pickedName(row.name, lineNameOf(entry), mentions(row.name, entry));
+  return { ...unlinked(row), name, catalogSlug: entry.slug };
 }
 
 /**
@@ -84,7 +89,7 @@ export function pickEntry(row: IngredientRow, entry: CatalogIngredient): Ingredi
 export function pickRecipe(row: IngredientRow, recipe: RecipeSummary): IngredientRow {
   return {
     ...unlinked(row),
-    name: containsAtWordStart(row.name, recipe.title) ? row.name : recipe.title.toLowerCase(),
+    name: pickedName(row.name, recipe.title, containsAtWordStart(row.name, recipe.title)),
     unit: SERVINGS,
     recipeId: recipe.id,
   };
@@ -123,6 +128,12 @@ export function retype(
   }
   const slug = suggestCatalogSlug(name, catalog);
   return { ...unlinked(row), name, ...(slug ? { catalogSlug: slug } : {}) };
+}
+
+/** What a picked row is called: what was typed when it names the pick and says more, otherwise the pick's name as written. */
+function pickedName(typed: string, name: string, named: boolean): string {
+  const same = typed.trim().toLowerCase() === name.toLowerCase();
+  return named && !same ? typed : name;
 }
 
 function unlinked(row: IngredientRow): IngredientRow {

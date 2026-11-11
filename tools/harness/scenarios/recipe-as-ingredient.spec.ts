@@ -50,7 +50,7 @@ test("uses one of your recipes as an ingredient", async ({ loggedInPage: page })
     const option = page.getByRole("option", { name: new RegExp(`^${focaccia}`) });
     await expect(option).toContainText("Your recipe · 278 kcal per serving");
     await option.click();
-    await expect(page.getByLabel("Ingredient 1 name")).toHaveValue(focaccia.toLowerCase());
+    await expect(page.getByLabel("Ingredient 1 name")).toHaveValue(focaccia);
     await expect(page.getByLabel("Ingredient 1 unit")).toHaveValue("servings");
     await expect(row(1)).toContainText(`Uses your recipe ${focaccia} (makes 8 servings).`);
 
@@ -78,7 +78,7 @@ test("uses one of your recipes as an ingredient", async ({ loggedInPage: page })
     await expect(recipe.locator(".per-serving")).toContainText("300 kcal");
     await expect(recipe).toContainText("2 servings");
 
-    await recipe.getByRole("link", { name: focaccia.toLowerCase() }).click();
+    await recipe.getByRole("link", { name: focaccia }).click();
     await expect(page.locator("article.recipe").getByRole("heading", { name: focaccia, level: 1 })).toBeVisible();
   });
 });

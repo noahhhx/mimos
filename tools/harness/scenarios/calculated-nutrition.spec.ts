@@ -37,7 +37,7 @@ test("calculates a recipe's nutrition from its ingredients", async ({ loggedInPa
     await page.getByLabel("Ingredient 2 unit").selectOption("tbsp");
     await page.getByLabel("Ingredient 2 name").fill("oli");
     await page.getByRole("option", { name: /^Olive oil/ }).click();
-    await expect(page.getByLabel("Ingredient 2 name")).toHaveValue("olive oil");
+    await expect(page.getByLabel("Ingredient 2 name")).toHaveValue("Olive oil");
     await expect(row(2)).toContainText("Matched to Olive oil");
 
     await page.getByRole("button", { name: "+ Ingredient" }).click();

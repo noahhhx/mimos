@@ -76,9 +76,9 @@ describe("mentions and lineNameOf", () => {
     assert.equal(mentions("ginger", CATALOG[0]), false);
   });
 
-  it("writes a picked entry as a line name without its qualifiers", () => {
-    assert.equal(lineNameOf(CATALOG[7]), "red lentils");
-    assert.equal(lineNameOf(CATALOG[8]), "beef mince");
+  it("writes a picked entry as a line name without its qualifiers, in its own casing", () => {
+    assert.equal(lineNameOf(CATALOG[7]), "Red lentils");
+    assert.equal(lineNameOf(CATALOG[8]), "Beef mince");
   });
 });
 

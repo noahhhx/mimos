@@ -66,17 +66,23 @@ describe("picking", () => {
     assert.deepEqual(pickRecipe(row({ name: "foc", unit: "g", catalogSlug: "all-purpose-flour" }), FOCACCIA), {
       quantity: "2",
       unit: "servings",
-      name: "focaccia",
+      name: "Focaccia",
       recipeId: "r-focaccia",
     });
     assert.equal(pickRecipe(row({ name: "rosemary focaccia, halved" }), FOCACCIA).name, "rosemary focaccia, halved");
+    assert.equal(pickRecipe(row({ name: "focaccia" }), FOCACCIA).name, "Focaccia");
+  });
+
+  it("names a picked entry as it is written, unless the typed name says more", () => {
+    assert.equal(pickEntry(row({ name: "olive oil " }), CATALOG[0]).name, "Olive oil");
+    assert.equal(pickEntry(row({ name: "garlic cloves, crushed" }), CATALOG[1]).name, "garlic cloves, crushed");
   });
 
   it("drops a recipe link when a catalog entry is picked", () => {
     assert.deepEqual(pickEntry(row({ name: "oli", unit: "tbsp", recipeId: "r-focaccia" }), CATALOG[0]), {
       quantity: "2",
       unit: "tbsp",
-      name: "olive oil",
+      name: "Olive oil",
       catalogSlug: "olive-oil",
     });
   });
