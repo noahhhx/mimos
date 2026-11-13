@@ -10,6 +10,13 @@ describe("formatQuantity", () => {
     assert.equal(formatQuantity(3, undefined), "3");
   });
 
+  it("shows a whole recipe as a multiple with no unit", () => {
+    assert.equal(formatQuantity(1, "recipe"), "1x");
+    assert.equal(formatQuantity(2, " Recipes "), "2x");
+    assert.equal(formatQuantity(0.5, "recipe"), "0.5x");
+    assert.equal(formatQuantity(null, "recipe"), "");
+  });
+
   it("counts servings of a recipe in words that agree with the amount", () => {
     assert.equal(formatQuantity(2, "servings"), "2 servings");
     assert.equal(formatQuantity(1, "servings"), "1 serving");

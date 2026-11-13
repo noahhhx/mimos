@@ -64,7 +64,7 @@ export function lineHint(status: IngredientLineStatus | undefined, link: LineLin
     case "UNIT_NOT_SUPPORTED":
       return link.kind === "entry"
         ? `Not counted. ${link.entry.name} counts in ${UNITS_BY_BASIS[link.entry.basis]}.`
-        : "Not counted. A recipe counts in servings.";
+        : "Not counted. A recipe counts in servings or as a whole recipe.";
     case "NUTRITION_UNKNOWN":
       return link.kind === "recipe" ? `Not counted. ${link.recipe.title}'s nutrition isn't known yet.` : undefined;
     default:

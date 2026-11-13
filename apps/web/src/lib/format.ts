@@ -63,17 +63,27 @@ export function todayIso(now: Date = new Date()): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
+/** Whether a unit means the whole of a linked recipe, shown as "2x" with no unit (ADR-0018). */
+function isWholeRecipeUnit(unit: string | null | undefined): boolean {
+  const normalized = unit?.trim().toLowerCase();
+  return normalized === "recipe" || normalized === "recipes";
+}
+
 /**
  * "2 cups flour" style quantity formatting (best effort, no smarts). An
  * unmeasured ingredient ("salt, to taste") has no quantity: it formats as
  * its unit alone, or as nothing.
  */
 export function formatQuantity(quantity: number | null | undefined, unit: string | null | undefined): string {
+  const wholeRecipe = isWholeRecipeUnit(unit);
   if (quantity == null) {
-    return unit ?? "";
+    return wholeRecipe ? "" : (unit ?? "");
   }
   const rounded = Math.round(quantity * 100) / 100;
   const number = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2).replace(/0$/, "");
+  if (wholeRecipe) {
+    return `${number}x`;
+  }
   if (!unit) {
     return number;
   }

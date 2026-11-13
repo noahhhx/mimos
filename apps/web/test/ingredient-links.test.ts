@@ -150,7 +150,7 @@ describe("describing a link and why it did not count", () => {
   it("names the units a linked row must use, and a recipe whose nutrition is unknown", () => {
     assert.equal(lineHint("UNIT_NOT_SUPPORTED", asEntry(0)), "Not counted. Olive oil counts in ml, l, tsp or tbsp.");
     assert.equal(lineHint("UNIT_NOT_SUPPORTED", asEntry(1)), "Not counted. Garlic clove counts in pieces.");
-    assert.equal(lineHint("UNIT_NOT_SUPPORTED", asRecipe(FOCACCIA)), "Not counted. A recipe counts in servings.");
+    assert.equal(lineHint("UNIT_NOT_SUPPORTED", asRecipe(FOCACCIA)), "Not counted. A recipe counts in servings or as a whole recipe.");
     assert.equal(lineHint("NUTRITION_UNKNOWN", asRecipe(PESTO)), "Not counted. Basil pesto's nutrition isn't known yet.");
     assert.equal(lineHint("UNMEASURED", asRecipe(FOCACCIA)), "No amount, so it adds nothing.");
     assert.equal(lineHint("COUNTED", asEntry(1)), undefined);

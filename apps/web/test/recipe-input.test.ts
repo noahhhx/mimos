@@ -120,6 +120,12 @@ describe("toRecipeInput", () => {
     );
   });
 
+  it("offers the whole recipe unit for recipe rows only, and keeps it when current", () => {
+    assert.deepEqual(unitChoices("", true).slice(-2), ["servings", "recipe"]);
+    assert.ok(unitChoices("recipe").includes("recipe"));
+    assert.ok(!unitChoices("g").includes("recipe"));
+  });
+
   it("round-trips a line that is one of the user's recipes, in servings", () => {
     const form = formValuesOf({
       id: "00000000-0000-0000-0000-000000000000",
@@ -190,8 +196,8 @@ describe("unit choices", () => {
   });
 
   it("offers servings only for a row that is one of the user's recipes, or is already in servings", () => {
-    assert.deepEqual(unitChoices("", true), ["", "g", "kg", "ml", "l", "tsp", "tbsp", "servings"]);
-    assert.deepEqual(unitChoices("servings"), ["", "g", "kg", "ml", "l", "tsp", "tbsp", "servings"]);
+    assert.deepEqual(unitChoices("", true), ["", "g", "kg", "ml", "l", "tsp", "tbsp", "servings", "recipe"]);
+    assert.deepEqual(unitChoices("servings"), ["", "g", "kg", "ml", "l", "tsp", "tbsp", "servings", "recipe"]);
     assert.equal(unitChoices("g").includes("servings"), false);
   });
 

@@ -46,13 +46,16 @@ export const UNITS = ["", "g", "kg", "ml", "l", "tsp", "tbsp"];
 /** The unit a line that is one of the user's recipes counts in (ADR-0018). */
 export const SERVINGS = "servings";
 
+/** The unit that counts all of a linked recipe's servings: "1 recipe" of a 6-serving focaccia is 6 (ADR-0018). */
+export const RECIPE = "recipe";
+
 /**
- * The unit choices for a row: the metric units, servings for a row that
+ * The unit choices for a row: the metric units, servings or the whole recipe for a row that
  * is one of the user's recipes, plus the unit an older recipe was written
  * in ("cups"), so editing the recipe keeps it.
  */
 export function unitChoices(current: string, isRecipe = false): string[] {
-  const units = isRecipe || current === SERVINGS ? [...UNITS, SERVINGS] : UNITS;
+  const units = isRecipe || current === SERVINGS || current === RECIPE ? [...UNITS, SERVINGS, RECIPE] : UNITS;
   return units.includes(current) ? units : [...units, current];
 }
 
@@ -205,7 +208,7 @@ function linkFieldsOf(line: Pick<IngredientRow, "catalogSlug" | "recipeId">): Pi
 /** "G", " tbsp", and "Servings" are units the form offers, written loosely; anything else stays as written. */
 function metricOrAsWritten(unit: string): string {
   const normalized = unit.trim().toLowerCase();
-  return UNITS.includes(normalized) || normalized === SERVINGS ? normalized : unit;
+  return UNITS.includes(normalized) || normalized === SERVINGS || normalized === RECIPE ? normalized : unit;
 }
 
 function optionalNumber(value: string): number | undefined {

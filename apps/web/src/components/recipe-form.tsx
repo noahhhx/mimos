@@ -38,6 +38,7 @@ import {
 } from "@/lib/ingredient-links";
 import {
   EMPTY_INGREDIENT,
+  RECIPE,
   formValuesOf,
   toEstimateInput,
   toRecipeInput,
@@ -258,7 +259,7 @@ export function RecipeForm({
       <h2>Ingredients</h2>
       <p className="muted">
         Search for each ingredient or one of your recipes, or add your own ingredient when it isn&apos;t there.
-        Measure it in grams, millilitres, spoons, or pieces (a recipe in servings) to count it toward nutrition, and
+        Measure it in grams, millilitres, spoons, or pieces (a recipe in servings or whole) to count it toward nutrition, and
         leave the amount blank for things like salt to taste.
       </p>
       {values.ingredients.map((row, index) => (
@@ -284,7 +285,7 @@ export function RecipeForm({
             >
               {unitChoices(row.unit, Boolean(row.recipeId)).map((unit) => (
                 <option key={unit} value={unit}>
-                  {unit === "" ? "pieces" : unit}
+                  {unit === "" ? "pieces" : unit === RECIPE ? "whole recipe" : unit}
                 </option>
               ))}
             </select>
