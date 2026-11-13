@@ -32,8 +32,9 @@ serving at the top.
 ![A recipe open for cooking, with ingredients beside the method](../assets/screenshots/recipe.png)
 
 Tap an ingredient to tick it off as you gather it, and tap a step to tick
-it off as you go. Ticks are only a cooking aid: they stay on this page and
-clear when you leave it.
+it off as you go. Ticks are only a cooking aid. They stay while the
+browser tab is open, so you can leave a recipe and come back to it, and
+they clear when you close the tab.
 
 If one of your recipes has [pictures](#pictures), they show in a row
 above the description. Scroll the row sideways to see them all.
@@ -114,7 +115,10 @@ follows. A line doesn't count when:
 - the other recipe's nutrition isn't known yet, because you left some of
   it blank or none of its ingredients count.
 
-On the recipe page, the ingredient links to the recipe it uses. If you
+On the recipe page, the ingredient links to the recipe it uses. Follow
+it and a trail above the recipe shows the way you came, like
+"Recipes › Sandwich › Focaccia". Choose a recipe in the trail to go back
+to it, with its ticks as you left them. If you
 delete that recipe, the line stays in the sandwich but no longer counts.
 A recipe can't use itself, or a recipe that already uses it. Your
 shopping list shows the line as it is ("2 servings focaccia"), not the
