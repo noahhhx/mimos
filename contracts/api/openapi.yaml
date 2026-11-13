@@ -640,8 +640,10 @@ paths:
         a missing one with createIngredient), with its amount in g, kg, ml,
         l, tsp, or tbsp, or no unit for a count of pieces, matching the
         entry's basis. A line can instead be one of the household's
-        recipes (recipeId, from listMyRecipes), measured in servings of it,
-        like 2 servings of a focaccia in a sandwich. Put prep like "minced"
+        recipes (recipeId, from listMyRecipes), measured in `servings` of it
+        or as the `recipe` (the whole recipe, all its servings, whatever
+        that is), like 2 servings of a focaccia in a sandwich or 1 recipe
+        of it. Put prep like "minced"
         in the line's note, not its name. Check the result first with
         estimateRecipeNutrition. With MANUAL, send per-serving nutrition and
         leave out values you do not know rather than guessing zero.
@@ -849,7 +851,8 @@ paths:
         its catalog entry's basis covers (PER_100_G: g, kg; PER_100_ML: ml,
         l, tsp = 5 ml, tbsp = 15 ml; PER_PIECE: no unit), or a recipeId of
         one of the household's recipes whose nutrition is known, an amount,
-        and the unit servings. Returns the per-serving nutrition of the
+        and the unit servings or recipe (all of that recipe's servings).
+        Returns the per-serving nutrition of the
         lines that counted and each line's status, in order. Nothing is
         saved.
       requestBody:
@@ -2047,8 +2050,10 @@ components:
           format: uuid
           description: >
             Id of one of your household's recipes this line is (see listMyRecipes),
-            counted in servings of it (unit `servings`) for calculated
-            nutrition, using that recipe's current per-serving nutrition;
+            counted in servings of it (unit `servings`) or as the whole
+            recipe (unit `recipe`: quantity times all its servings) for
+            calculated nutrition, using that recipe's current per-serving
+            nutrition;
             omitted when not linked to a recipe. A line links at most one
             of catalogSlug and recipeId. Library recipes, other households'
             recipes, the recipe itself, and a recipe that already uses this
@@ -2140,7 +2145,7 @@ components:
         UNMEASURED: linked but has no amount. NOT_LINKED: neither a
         catalogSlug nor a recipeId. UNIT_NOT_SUPPORTED: linked, but its unit
         does not fit the catalog entry's basis, or a recipe link is not in
-        servings. NUTRITION_UNKNOWN: links a recipe whose per-serving
+        servings or recipe. NUTRITION_UNKNOWN: links a recipe whose per-serving
         calories, protein, carbs, or fat are not known (typed nutrition left
         blank, or nothing in it counts), so it adds nothing.
       enum: [COUNTED, UNMEASURED, NOT_LINKED, UNIT_NOT_SUPPORTED, NUTRITION_UNKNOWN]
