@@ -93,3 +93,19 @@ version 2 had no recipe links. Frozen fixture: `export/v3.json`.
 - A deep chain of linked recipes costs one query per level when read.
   Chains are short in practice; if that changes, a recursive query can
   load the graph in one round trip.
+
+## Amendment 2026-11-13: the whole recipe as a unit
+
+A line that links a recipe may also be counted in `recipe` (or `recipes`):
+the whole recipe, however many servings it makes. One `recipe` of a
+focaccia that makes 6 servings counts as 6 servings of it. The unit is
+stored as written, so there is no migration and the account export
+format is unchanged. It is valid only on lines with a `recipeId`; on any
+other line it is an unsupported unit, like any unknown one.
+
+The calculator models this instead of using a size constant: the links it
+is given carry each linked recipe's servings next to its per-serving
+nutrition (`LinkedRecipe`), and a unit's size is resolved against that
+(`recipe` is the linked recipe's servings, `servings` is 1). The web shows
+such a line as `1x Focaccia`, with no unit. The shopping list does not
+expand linked recipes and shows a line with its own quantity and unit.
