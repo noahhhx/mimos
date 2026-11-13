@@ -21,7 +21,7 @@ test("exports an account and imports it into a fresh one", async ({ page }, test
   await test.step("write a recipe", async () => {
     await page.getByRole("navigation", { name: "App" }).getByRole("link", { name: "Recipes" }).click();
     await page.getByRole("link", { name: "+ New recipe" }).click();
-    await page.getByLabel("Title").fill(title);
+    await page.getByLabel("Title", { exact: true }).fill(title);
     await page.getByLabel("Description").fill("Written by the harness's account-data scenario.");
     await page.getByLabel("Servings").fill("2");
     await page.getByLabel("Ingredient 1 amount").fill("1");
