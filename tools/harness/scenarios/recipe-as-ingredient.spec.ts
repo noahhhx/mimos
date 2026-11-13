@@ -6,7 +6,8 @@ import { expect, test } from "./fixtures.ts";
  * servings, and the sandwich's calculated nutrition counts it. The numbers
  * follow from the seeded ingredients: 500 g all-purpose flour and 50 ml
  * olive oil make 278 kcal a serving for 8; two servings of that and two
- * 22 kcal tomatoes make 300 kcal a serving for 2.
+ * 22 kcal tomatoes make 300 kcal a serving for 2. The whole focaccia
+ * (1 recipe, all 8 servings) and the tomatoes make 1134 kcal a serving.
  */
 test("uses one of your recipes as an ingredient", async ({ loggedInPage: page }) => {
   // Unique per run: the search must find this run's focaccia, not an earlier one's.
@@ -61,13 +62,18 @@ test("uses one of your recipes as an ingredient", async ({ loggedInPage: page })
     await expect(nutrition).toContainText("300 kcal");
   });
 
-  await test.step("a recipe counts in servings only", async () => {
+  await test.step("a recipe counts in servings or whole", async () => {
     await page.getByLabel("Ingredient 1 unit").selectOption("g");
-    await expect(row(1)).toContainText("Not counted. A recipe counts in servings.");
+    await expect(row(1)).toContainText("Not counted. A recipe counts in servings or as a whole recipe.");
     await page.getByLabel("Ingredient 1 unit").selectOption("servings");
     await expect(row(1)).not.toContainText("Not counted.");
     await expect(nutrition).toContainText("300 kcal");
     await expect(page.getByText("Counting 2 of 2 ingredients.")).toBeVisible();
+
+    await page.getByLabel("Ingredient 1 amount").fill("1");
+    await page.getByLabel("Ingredient 1 unit").selectOption("recipe");
+    await expect(row(1)).not.toContainText("Not counted.");
+    await expect(nutrition).toContainText("1134 kcal");
   });
 
   await test.step("save, and follow the line to the recipe it uses", async () => {
@@ -75,8 +81,9 @@ test("uses one of your recipes as an ingredient", async ({ loggedInPage: page })
     await page.getByRole("button", { name: "Create recipe" }).click();
     const recipe = page.locator("article.recipe");
     await expect(recipe.getByRole("heading", { name: sandwich, level: 1 })).toBeVisible();
-    await expect(recipe.locator(".per-serving")).toContainText("300 kcal");
-    await expect(recipe).toContainText("2 servings");
+    await expect(recipe.locator(".per-serving")).toContainText("1134 kcal");
+    const line = recipe.locator(".ingredients li").filter({ hasText: focaccia });
+    await expect(line).toHaveText(new RegExp(`^\\s*1x\\s+${focaccia}\\s*$`));
 
     await recipe.getByRole("link", { name: focaccia }).click();
     await expect(page.locator("article.recipe").getByRole("heading", { name: focaccia, level: 1 })).toBeVisible();

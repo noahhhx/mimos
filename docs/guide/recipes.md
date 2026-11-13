@@ -99,18 +99,18 @@ sandwich made with the focaccia you bake from your own recipe. Type the
 recipe's name in an ingredient line: your recipes appear in the list
 too, marked **Your recipe** with the calories in one serving. Pick one,
 then give the amount in **servings** of it, like "2 servings focaccia", or
-in **whole recipe**, which counts every serving the other recipe makes
-whatever that is: "1 whole recipe" of a focaccia that makes 6 servings
+in **recipe**, the whole of it, which counts every serving the other
+recipe makes whatever that is: "1 recipe" of a focaccia that makes 6 servings
 is 6 servings. On the recipe page a whole-recipe line reads "1x
 Focaccia", with no unit ("2x", "0.5x").
 
-![A sandwich recipe using the focaccia recipe, measured in servings](../assets/screenshots/recipe-uses-recipe.png)
+![A sandwich recipe using the whole focaccia recipe](../assets/screenshots/recipe-uses-recipe.png)
 
 The line counts toward nutrition with the other recipe's nutrition per
 serving, as that recipe is now: change the focaccia and the sandwich
 follows. A line doesn't count when:
 
-- its unit is anything but servings or whole recipe, or
+- its unit is anything but servings or recipe, or
 - the other recipe's nutrition isn't known yet, because you left some of
   it blank or none of its ingredients count.
 

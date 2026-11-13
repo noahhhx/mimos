@@ -38,7 +38,6 @@ import {
 } from "@/lib/ingredient-links";
 import {
   EMPTY_INGREDIENT,
-  RECIPE,
   formValuesOf,
   toEstimateInput,
   toRecipeInput,
@@ -285,7 +284,7 @@ export function RecipeForm({
             >
               {unitChoices(row.unit, Boolean(row.recipeId)).map((unit) => (
                 <option key={unit} value={unit}>
-                  {unit === "" ? "pieces" : unit === RECIPE ? "whole recipe" : unit}
+                  {unit === "" ? "pieces" : unit}
                 </option>
               ))}
             </select>
