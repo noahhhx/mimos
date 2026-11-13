@@ -8,7 +8,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The units calculated nutrition understands: metric, with the metric
- * spoons (ADR-0015), and servings of a linked recipe (ADR-0018). A line
+ * spoons (ADR-0015), and servings of a linked recipe and the whole of it (ADR-0018). A line
  * with no unit is a count of pieces.
  */
 enum MetricUnit {
@@ -19,7 +19,8 @@ enum MetricUnit {
     L(Dimension.VOLUME, 1000, "l"),
     TSP(Dimension.VOLUME, 5, "tsp"),
     TBSP(Dimension.VOLUME, 15, "tbsp"),
-    SERVING(Dimension.SERVING, 1, "servings", "serving");
+    SERVING(Dimension.SERVING, 1, "servings", "serving"),
+    RECIPE(Dimension.SERVING, 0, "recipe", "recipes");
 
     enum Dimension {
         MASS,
@@ -30,7 +31,7 @@ enum MetricUnit {
 
     private final List<String> symbols;
     final Dimension dimension;
-    /** How many grams, millilitres, pieces, or servings one of this unit is. */
+    /** How many grams, millilitres, pieces, or servings one of this unit is; a whole recipe's is its linked recipe's servings, so 0 here. */
     final double size;
 
     MetricUnit(Dimension dimension, double size, String... symbols) {

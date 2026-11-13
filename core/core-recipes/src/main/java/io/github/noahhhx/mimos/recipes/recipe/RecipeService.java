@@ -154,7 +154,8 @@ public class RecipeService {
      * cycle. Anything else is a 400 that does not say whether the recipe
      * exists.
      */
-    private Map<UUID, Nutrition> requireLinkedRecipes(UUID ownerId, @Nullable UUID savedId, List<Ingredient> lines) {
+    private Map<UUID, NutritionCalculator.LinkedRecipe> requireLinkedRecipes(
+            UUID ownerId, @Nullable UUID savedId, List<Ingredient> lines) {
         Set<UUID> linked = lines.stream()
                 .map(Ingredient::recipeId)
                 .filter(Objects::nonNull)
@@ -179,7 +180,10 @@ public class RecipeService {
                                 + "\" uses this recipe, so this recipe can't use it");
             });
         }
-        return found.values().stream().collect(Collectors.toMap(Recipe::id, Recipe::nutrition));
+        return found.values().stream()
+                .collect(Collectors.toMap(
+                        Recipe::id,
+                        recipe -> new NutritionCalculator.LinkedRecipe(recipe.servings(), recipe.nutrition())));
     }
 
     /** Deletes a personal recipe; library recipes are read-only. */

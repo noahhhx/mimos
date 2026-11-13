@@ -85,6 +85,24 @@ class RecipesAsIngredientsTests extends ApiIntegrationTestSupport {
     }
 
     @Test
+    void aWholeRecipeCountsAllItsServings() {
+        String token = accessToken(createUser());
+        String focaccia = create(token, focaccia(8)).get("id").asText();
+
+        JsonNode estimate = estimate(
+                token,
+                2,
+                lines(
+                        line(1, "recipe", "focaccia", null, focaccia),
+                        line(0.5, " Recipes ", "focaccia", null, focaccia),
+                        line(1, "recipe", "flour", "all-purpose-flour", null)));
+
+        assertThat(estimate.get("lines").toString()).isEqualTo("[\"COUNTED\",\"COUNTED\",\"UNIT_NOT_SUPPORTED\"]");
+        // 1.5 recipes of 8 servings at 278 kcal each, over two servings.
+        assertThat(estimate.get("nutrition").get("calories").asDouble()).isEqualTo(1668);
+    }
+
+    @Test
     void theEstimateSaysHowEachRecipeLineCounts() {
         String token = accessToken(createUser());
         String focaccia = create(token, focaccia(8)).get("id").asText();

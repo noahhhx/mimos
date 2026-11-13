@@ -20,10 +20,18 @@ final class NutritionCalculator {
     private NutritionCalculator() {}
 
     /** Nutrition for an amount of one dimension: what a line's link is counted against. */
-    private record Measure(MetricUnit.Dimension dimension, double amount, Nutrition nutrition) {}
+    private record Measure(MetricUnit.Dimension dimension, double amount, Nutrition nutrition, double recipeServings) {
+
+        double sizeOf(MetricUnit unit) {
+            return unit == MetricUnit.RECIPE ? recipeServings : unit.size;
+        }
+    }
+
+    /** A linked recipe: how many servings it makes, and what one serving holds. */
+    record LinkedRecipe(int servings, Nutrition perServing) {}
 
     /** What lines link to: catalog entries by slug, and linked recipes' per-serving nutrition by id. */
-    record Links(Map<String, CatalogIngredient> catalog, Map<UUID, Nutrition> recipes) {
+    record Links(Map<String, CatalogIngredient> catalog, Map<UUID, LinkedRecipe> recipes) {
 
         private @Nullable Measure measureOf(Ingredient line) {
             String slug = line.catalogSlug();
@@ -31,11 +39,13 @@ final class NutritionCalculator {
                 CatalogIngredient entry = catalog.get(slug);
                 return entry == null
                         ? null
-                        : new Measure(entry.basis().dimension, entry.basis().amount, entry.nutrition());
+                        : new Measure(entry.basis().dimension, entry.basis().amount, entry.nutrition(), 0);
             }
             UUID recipeId = line.recipeId();
-            Nutrition perServing = recipeId == null ? null : recipes.get(recipeId);
-            return perServing == null ? null : new Measure(MetricUnit.Dimension.SERVING, 1, perServing);
+            LinkedRecipe linked = recipeId == null ? null : recipes.get(recipeId);
+            return linked == null
+                    ? null
+                    : new Measure(MetricUnit.Dimension.SERVING, 1, linked.perServing(), linked.servings());
         }
     }
 
@@ -75,7 +85,7 @@ final class NutritionCalculator {
                 statuses.add(LineStatus.NUTRITION_UNKNOWN);
                 continue;
             }
-            double amounts = quantity * unit.get().size / measure.amount();
+            double amounts = quantity * measure.sizeOf(unit.get()) / measure.amount();
             calories += amounts * perCalories;
             proteinG += amounts * perProteinG;
             carbsG += amounts * perCarbsG;
@@ -130,11 +140,14 @@ final class NutritionCalculator {
             }
             Nutrition result = node.typed();
             if (node.source() == NutritionSource.INGREDIENTS) {
-                Map<UUID, Nutrition> linked = new HashMap<>();
+                Map<UUID, LinkedRecipe> linked = new HashMap<>();
                 for (Ingredient line : node.lines()) {
                     UUID recipeId = line.recipeId();
                     if (recipeId != null) {
-                        linked.put(recipeId, perServing(recipeId));
+                        Node target = recipes.get(recipeId);
+                        linked.put(
+                                recipeId,
+                                new LinkedRecipe(target == null ? 1 : target.servings(), perServing(recipeId)));
                     }
                 }
                 result = estimate(node.lines(), node.servings(), new Links(catalog, linked))
