@@ -85,6 +85,18 @@ class PlannedFoodsEndpointTests extends ApiIntegrationTestSupport {
     }
 
     @Test
+    void entriesInOneSlotComeBackInTheOrderTheyWerePlanned() {
+        TestUser person = user();
+        for (int amount = 1; amount <= 8; amount++) {
+            person.ok(HttpMethod.POST, ENTRIES, foodEntry("SNACK", "banana", null, amount));
+        }
+
+        assertThat(person.ok(HttpMethod.GET, "/api/v1/plans/" + MONDAY, null).get("entries"))
+                .extracting(entry -> entry.get("servings").asInt())
+                .containsExactly(1, 2, 3, 4, 5, 6, 7, 8);
+    }
+
+    @Test
     void aFoodSharedByTheHouseholdCountsItsAmountDividedByItsDiners() {
         TestUser host = user();
         TestUser guest = user();

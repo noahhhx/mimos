@@ -34,6 +34,7 @@ public class MealPlanRepository {
                          when 'DINNER' then 2
                          when 'SNACK' then 3
                      end,
+                     e.created_at,
                      e.id
             """;
     private static final String SELECT_WEEK_ENTRIES = SELECT_ENTRIES.formatted("p.start_date = ?");
