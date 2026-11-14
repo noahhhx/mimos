@@ -24,7 +24,7 @@ logged.
 | -- | ---- | ---------- | ------ |
 | 01 | [Domain, schema, API, export](01-backend.md) | – | done (a2832ff) |
 | 02 | [Plan page: pick, scan, show, log a food](02-web.md) | 01 | done (3399e83) |
-| 03 | [Guide page and scenario](03-docs-and-scenario.md) | 02 | todo |
+| 03 | [Guide page and scenario](03-docs-and-scenario.md) | 02 | done (95201a0) |
 
 ## Gates
 
@@ -45,15 +45,13 @@ logged.
   `MealPlanEntry.recipeId` and `recipeTitle` are now optional, so item 02
   has to branch on `food` where the web reads them (the Kitchen tonight
   card, the plan page, the Log page's "log a planned meal").
-- Entries in one slot (same date and meal type) are ordered by random id,
-  so two planned items in the same slot have no stable order. Existing
-  behavior, now easier to hit with foods; item 02 or later may want a
-  stable tiebreak.
-- The plan page's picker is still `role="dialog"` named "Pick a recipe",
-  because the `shared-week` and `planned-totals` scenarios find it by that
-  name. Item 03 may rename it ("Pick a meal") together with those two
-  scenarios. The guide's planning page (`docs/guide/planning.md`) still
-  says "Search your recipes and the library".
+- Entries in one slot (same date and meal type) were ordered by random id.
+  Done in item 03: V21 adds `meal_plan_entry.created_at`, and the plan
+  read orders by it before id. Entries that existed before V21 share the
+  migration's timestamp and keep id order.
+- The plan page's picker is now `role="dialog"` named "Pick a meal"
+  (item 03), with the `shared-week` and `planned-totals` scenarios
+  updated to match.
 - Scanning a product whose name, basis, and four values match one of the
   household's own ingredients reuses it instead of creating a second one
   (`existingIngredient`, `apps/web/src/lib/planned-item.ts`), so scanning
@@ -68,7 +66,4 @@ logged.
 - A scanned product missing a value opens `NewIngredient` inside the
   picker, started from what Open Food Facts gave (`initialNutrition`).
   Cancelling it leaves the picker open; nothing is saved.
-- Same-slot order is still random-id order (see above). With two foods in
-  one slot it shows plainly in the UI (Banana between two Nutellas, in the
-  order the ids fell), so a stable tiebreak (created time) is now worth
-  doing.
+- Same-slot order is now creation order (see above).
