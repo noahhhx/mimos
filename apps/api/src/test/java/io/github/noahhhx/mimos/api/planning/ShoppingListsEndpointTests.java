@@ -157,6 +157,59 @@ class ShoppingListsEndpointTests extends ApiIntegrationTestSupport {
     }
 
     @Test
+    void recipesUsedAsIngredientsAddTheirOwnIngredients() {
+        RestClient api = api();
+        String token = accessToken(createUser());
+        LocalDate monday = LocalDate.of(2026, 6, 1); // a Monday
+
+        JsonNode dough = createRecipe(
+                api, token, "Chain Dough", 2, objectMapper.createArrayNode().add(line(300, "g", "bread flour")));
+        JsonNode focaccia = createRecipe(
+                api,
+                token,
+                "Chain Focaccia",
+                4,
+                objectMapper
+                        .createArrayNode()
+                        .add(line(1, "recipe", "Chain Dough")
+                                .put("recipeId", dough.get("id").asText()))
+                        .add(line(40, "ml", "olive oil")));
+        JsonNode sandwich = createRecipe(
+                api,
+                token,
+                "Chain Sandwich",
+                2,
+                objectMapper
+                        .createArrayNode()
+                        .add(line(2, "servings", "Chain Focaccia")
+                                .put("recipeId", focaccia.get("id").asText()))
+                        .add(objectMapper.createObjectNode().put("quantity", 1).put("name", "tomato")));
+        plan(api, token, monday, monday, "LUNCH", sandwich.get("id").asText(), 3);
+
+        JsonNode list = generate(api, token, monday);
+
+        // 3 of 2 sandwich servings is 3 of 4 focaccia servings, which is 3/4 of the whole dough.
+        assertThat(findItem(list, "Chain Focaccia")).isNull();
+        assertThat(findItem(list, "Chain Dough")).isNull();
+        JsonNode flour = requireNonNull(findItem(list, "bread flour"), "flour must be on the list");
+        assertThat(flour.get("quantity").asDouble()).isEqualTo(225);
+        assertThat(flour.get("unit").asText()).isEqualTo("g");
+        JsonNode oil = requireNonNull(findItem(list, "olive oil"), "oil must be on the list");
+        assertThat(oil.get("quantity").asDouble()).isEqualTo(30);
+        JsonNode tomato = requireNonNull(findItem(list, "tomato"), "tomato must be on the list");
+        assertThat(tomato.get("quantity").asDouble()).isEqualTo(2);
+        assertThat(list.get("items")).hasSize(3);
+    }
+
+    private ObjectNode line(double quantity, String unit, String name) {
+        return objectMapper
+                .createObjectNode()
+                .put("quantity", quantity)
+                .put("unit", unit)
+                .put("name", name);
+    }
+
+    @Test
     void checkedStateSurvivesRegeneration() {
         RestClient api = api();
         String token = accessToken();

@@ -24,4 +24,21 @@ public record Ingredient(
                     "ingredient \"" + name + "\" links both a catalog entry and a recipe; a line links at most one");
         }
     }
+
+    /**
+     * How many servings of a linked recipe that makes {@code linkedServings}
+     * this line uses: its quantity in {@code servings}, or that many whole
+     * recipes for {@code recipe} (ADR-0018). Null when it is unmeasured or in
+     * a unit a recipe is not counted in.
+     */
+    public @Nullable Double servingsOf(int linkedServings) {
+        if (quantity == null) {
+            return null;
+        }
+        return switch (MetricUnit.parse(unit).orElse(MetricUnit.PIECE)) {
+            case SERVING -> quantity;
+            case RECIPE -> quantity * linkedServings;
+            default -> null;
+        };
+    }
 }

@@ -5,7 +5,9 @@ week's [plan](planning.md): every ingredient of every planned meal, scaled
 to the servings you planned, with the same ingredient added up across
 recipes. Things you buy by the piece, like onions or lemons, are rounded
 up to whole ones: half a recipe that needs one onion still puts one onion
-on the list. A [planned food](planning.md#planning-a-single-food) is on
+on the list. A recipe that uses another of your recipes as an ingredient
+puts that recipe's ingredients on the list, not the recipe itself, however
+many recipes deep it goes. A [planned food](planning.md#planning-a-single-food) is on
 the list too, by its name and amount.
 
 ![The week's shopping list, grouped by aisle](../assets/screenshots/shopping-list.png)

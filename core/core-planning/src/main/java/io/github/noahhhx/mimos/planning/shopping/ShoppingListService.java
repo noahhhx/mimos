@@ -11,12 +11,17 @@ import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
  * Shopping list generation: aggregates ingredient quantities across the
  * week's planned recipes, scaled by planned servings, plus one line per
  * planned food (ADR-0026), keyed by normalized ingredient name + unit. A
+ * line that is another recipe (ADR-0018) adds that recipe's ingredients
+ * instead, through any depth of nesting, so the list holds only what to buy. A
  * counted line (no unit: "1 onion") rounds up to whole items once totaled,
  * since nobody buys 0.13 of an onion; measured lines keep their amount. Regeneration replaces the list but preserves
  * checked-off state for lines that survive (same name and unit) — ticking
@@ -55,10 +62,10 @@ public class ShoppingListService {
     public ShoppingList generate(UUID ownerId, LocalDate startDate) {
         requireMonday(startDate);
         List<PlannedMeal> planned = mealPlanService.plannedMeals(ownerId, startDate);
-        Map<UUID, Recipe> recipesById = recipes.findByIds(planned.stream()
+        Map<UUID, Recipe> recipesById = withLinkedRecipes(planned.stream()
                 .map(meal -> meal.item() instanceof PlannedItem.Recipe recipe ? recipe.recipeId() : null)
-                .filter(java.util.Objects::nonNull)
-                .toList());
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet()));
         Map<String, Boolean> previouslyChecked = repository
                 .findList(ownerId, startDate)
                 .map(list -> list.items().stream()
@@ -80,15 +87,8 @@ public class ShoppingListService {
                     if (recipe == null) {
                         continue; // recipe deleted since planning; the FK already removed the entry.
                     }
-                    double scale = meal.amount() / recipe.servings();
-                    for (Ingredient ingredient : recipe.ingredients()) {
-                        String key = lineKey(Aisles.normalizeName(ingredient.name()), ingredient.unit());
-                        Double quantity = ingredient.quantity();
-                        if (quantity != null) {
-                            totals.merge(key, quantity * scale, Double::sum);
-                        }
-                        displayNames.putIfAbsent(key, ingredient.name());
-                    }
+                    Set<UUID> path = new HashSet<>(Set.of(recipe.id()));
+                    addIngredients(recipe, meal.amount() / recipe.servings(), recipesById, path, totals, displayNames);
                 }
                 // A planned food is one line of its own, merged with any recipe line of the same name and unit.
                 case PlannedItem.Food food -> {
@@ -118,6 +118,57 @@ public class ShoppingListService {
         repository.replaceList(ownerId, startDate, clock.instant(), items);
         return find(ownerId, startDate)
                 .orElseThrow(() -> new IllegalStateException("list must exist after generation"));
+    }
+
+    /** The recipes by id, plus every recipe their lines link, however deep, loaded a level at a time. */
+    private Map<UUID, Recipe> withLinkedRecipes(Set<UUID> recipeIds) {
+        Map<UUID, Recipe> loaded = new HashMap<>();
+        Set<UUID> requested = new HashSet<>();
+        Set<UUID> next = recipeIds;
+        while (!next.isEmpty()) {
+            requested.addAll(next);
+            loaded.putAll(recipes.findByIds(next));
+            next = loaded.values().stream()
+                    .flatMap(recipe -> recipe.ingredients().stream())
+                    .map(Ingredient::recipeId)
+                    .filter(Objects::nonNull)
+                    .filter(id -> !requested.contains(id))
+                    .collect(Collectors.toSet());
+        }
+        return loaded;
+    }
+
+    /**
+     * Adds a recipe's lines at {@code scale} (null: unmeasured), replacing
+     * each linked recipe with its own lines. A link that is missing, or that
+     * leads back into {@code path} (two edits saved at once can make a cycle),
+     * stays a line of its own.
+     */
+    private static void addIngredients(
+            Recipe recipe,
+            @Nullable Double scale,
+            Map<UUID, Recipe> recipesById,
+            Set<UUID> path,
+            Map<String, Double> totals,
+            Map<String, String> displayNames) {
+        for (Ingredient ingredient : recipe.ingredients()) {
+            UUID linkedId = ingredient.recipeId();
+            Recipe linked = linkedId == null || path.contains(linkedId) ? null : recipesById.get(linkedId);
+            if (linked != null) {
+                Double servings = ingredient.servingsOf(linked.servings());
+                Double linkedScale = scale == null || servings == null ? null : scale * servings / linked.servings();
+                path.add(linked.id());
+                addIngredients(linked, linkedScale, recipesById, path, totals, displayNames);
+                path.remove(linked.id());
+                continue;
+            }
+            String key = lineKey(Aisles.normalizeName(ingredient.name()), ingredient.unit());
+            Double quantity = ingredient.quantity();
+            if (quantity != null && scale != null) {
+                totals.merge(key, quantity * scale, Double::sum);
+            }
+            displayNames.putIfAbsent(key, ingredient.name());
+        }
     }
 
     /** The owner's generated list for the week, if one exists. */
