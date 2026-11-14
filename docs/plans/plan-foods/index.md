@@ -22,7 +22,7 @@ logged.
 
 | #  | Item | Depends on | Status |
 | -- | ---- | ---------- | ------ |
-| 01 | [Domain, schema, API, export](01-backend.md) | – | todo |
+| 01 | [Domain, schema, API, export](01-backend.md) | – | done (a2832ff) |
 | 02 | [Plan page: pick, scan, show, log a food](02-web.md) | 01 | todo |
 | 03 | [Guide page and scenario](03-docs-and-scenario.md) | 02 | todo |
 
@@ -38,4 +38,14 @@ logged.
 
 ## Found along the way
 
-(nothing yet)
+- Item 01's endpoint tests for planned foods are in
+  `PlannedFoodsEndpointTests` (fresh users per test), not in
+  `MealPlansEndpointTests`, which still uses the shared `test` account.
+- `npm run typecheck -w @mimos/web` passes against the regenerated client.
+  `MealPlanEntry.recipeId` and `recipeTitle` are now optional, so item 02
+  has to branch on `food` where the web reads them (the Kitchen tonight
+  card, the plan page, the Log page's "log a planned meal").
+- Entries in one slot (same date and meal type) are ordered by random id,
+  so two planned items in the same slot have no stable order. Existing
+  behavior, now easier to hit with foods; item 02 or later may want a
+  stable tiebreak.
