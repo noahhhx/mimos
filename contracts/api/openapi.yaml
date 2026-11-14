@@ -1310,9 +1310,11 @@ paths:
       summary: The shopping list generated for a week
       description: >
         Returns the list as it was last generated, with each item's checked
-        state; items not checked are still to buy. 404 when the week's list
-        was never generated. The list does not follow later changes to the
-        plan; call generateShoppingList to rebuild it.
+        state; items not checked are still to buy. Items with `added` true
+        were added by hand (addShoppingListItem) rather than generated from
+        the plan. 404 when the week's list was never generated. The list
+        does not follow later changes to the plan; call
+        generateShoppingList to rebuild it.
       responses:
         '200':
           description: The week's shopping list.
@@ -1335,7 +1337,8 @@ paths:
         across the planned recipes, scaled by planned servings, plus a
         line for each planned food (its name, unit, and amount, merged with
         a recipe's line of the same name and unit), grouped by aisle. Call it after changing the plan. Checked-off items keep their
-        checked state when the list is regenerated.
+        checked state when the list is regenerated, and items added by hand
+        (addShoppingListItem) are kept as they are.
       responses:
         '200':
           description: The generated shopping list.
@@ -1347,10 +1350,59 @@ paths:
           $ref: '#/components/responses/Problem'
         '401':
           $ref: '#/components/responses/Problem'
+  /api/v1/plans/{startDate}/shopping-list/items:
+    parameters:
+      - $ref: '#/components/parameters/PlanWeek'
+    post:
+      tags: [shopping-lists]
+      operationId: addShoppingListItem
+      summary: Add an item to a week's shopping list by hand
+      description: >
+        Adds anything to buy, whether the week's plan needs it or not
+        (ADR-0027), such as "bin bags" or "milk, 2 l". The item goes in the
+        aisle its name suggests, is never merged with a generated line, and
+        stays on the list when it is regenerated. `quantity` is optional
+        (more than 0, at most 10000); `unit` is free text (at most 30
+        characters) and needs a quantity. A week with no list yet gets one
+        generated from its plan first, as generateShoppingList would.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShoppingListItemInput'
+      responses:
+        '201':
+          description: The added item.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingListItem'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
   /api/v1/plans/{startDate}/shopping-list/items/{itemId}:
     parameters:
       - $ref: '#/components/parameters/PlanWeek'
       - $ref: '#/components/parameters/ShoppingListItemId'
+    delete:
+      tags: [shopping-lists]
+      operationId: removeShoppingListItem
+      summary: Remove an item added by hand
+      description: >
+        Removes an item with `added` true. A generated item cannot be
+        removed (400): it would come back when the list is regenerated, so
+        change the plan or check the item off instead.
+      responses:
+        '204':
+          description: Removed.
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
     patch:
       tags: [shopping-lists]
       operationId: updateShoppingListItem
@@ -2681,8 +2733,8 @@ components:
           maxLength: 100
     ShoppingListItem:
       type: object
-      description: One aggregated shopping-list line.
-      required: [id, name, category, checked]
+      description: One shopping-list line, generated from the plan or added by hand.
+      required: [id, name, category, checked, added]
       properties:
         id:
           type: string
@@ -2693,12 +2745,31 @@ components:
           type: string
         quantity:
           type: number
-          description: Total measured amount across the week's recipes, rounded up to whole items for a line without a unit; omitted when every recipe leaves the ingredient unmeasured (ADR-0007).
+          description: Total measured amount across the week's recipes, rounded up to whole items for a line without a unit; omitted when every recipe leaves the ingredient unmeasured (ADR-0007). For an added item, the amount it was given, if any.
         category:
           type: string
           description: Aisle grouping (Produce, Meat & Seafood, Dairy & Eggs, ...).
         checked:
           type: boolean
+        added:
+          type: boolean
+          description: True when the item was added by hand (ADR-0027); regenerating keeps it, and only these can be removed.
+    ShoppingListItemInput:
+      type: object
+      description: An item to add to a shopping list by hand.
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        quantity:
+          type: number
+          description: How much to buy, more than 0 and at most 10000. Omit for just the item.
+        unit:
+          type: string
+          maxLength: 30
+          description: Free text, like `l`, `g`, or `pack`; needs a quantity.
     ShoppingList:
       type: object
       description: A week's shopping list.
@@ -2788,7 +2859,7 @@ components:
     AccountExport:
       type: object
       description: >
-        One person's data, in export format version 7 (ADR-0011, ADR-0019, ADR-0022, ADR-0023, ADR-0026).
+        One person's data, in export format version 8 (ADR-0011, ADR-0019, ADR-0022, ADR-0023, ADR-0026, ADR-0027).
         Any change to this schema, or to what a section holds, bumps the
         version and adds an upgrade step from the previous one.
       required: [format, version, exportedAt, ingredients, recipes, mealPlans, shoppingLists, mealLogs, trainingSessions]
@@ -2798,7 +2869,7 @@ components:
           enum: [mimos.export]
         version:
           type: integer
-          description: The format version. This instance exports version 7.
+          description: The format version. This instance exports version 8.
         exportedAt:
           type: string
           format: date-time
@@ -3022,6 +3093,9 @@ components:
           type: string
         checked:
           type: boolean
+        added:
+          type: boolean
+          description: True for an item added by hand (ADR-0027); absent means generated from the plan.
     ExportedMealLog:
       type: object
       description: >

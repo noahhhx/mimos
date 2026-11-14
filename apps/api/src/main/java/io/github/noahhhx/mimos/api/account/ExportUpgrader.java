@@ -27,7 +27,8 @@ public final class ExportUpgrader {
             ExportUpgrader::keepOnlyOwnMeals,
             ExportUpgrader::addTraining,
             ExportUpgrader::addRecipePictures,
-            ExportUpgrader::allowPlannedFoods);
+            ExportUpgrader::allowPlannedFoods,
+            ExportUpgrader::allowAddedShoppingItems);
 
     /** The version this instance exports. */
     public static final int CURRENT_VERSION = STEPS.size() + 1;
@@ -135,6 +136,15 @@ public final class ExportUpgrader {
      * through unchanged.
      */
     private static ObjectNode allowPlannedFoods(ObjectNode document) {
+        return document;
+    }
+
+    /**
+     * Version 8 (ADR-0027): a shopping-list item may be marked {@code added},
+     * put on the list by hand. Version 7 had none, and an item without the
+     * flag is generated, so its data comes through unchanged.
+     */
+    private static ObjectNode allowAddedShoppingItems(ObjectNode document) {
         return document;
     }
 

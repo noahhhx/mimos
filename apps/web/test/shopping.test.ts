@@ -3,13 +3,14 @@ import { describe, it } from "node:test";
 
 import type { ShoppingListItem } from "@mimos/api-client";
 
-import { aislesToShop } from "../src/lib/shopping.ts";
+import { addedItem, aislesToShop } from "../src/lib/shopping.ts";
 
 const item = (name: string, category: string, checked = false): ShoppingListItem => ({
   id: name,
   name,
   category,
   checked,
+  added: false,
 });
 
 const shape = (items: ShoppingListItem[]) =>
@@ -59,5 +60,29 @@ describe("aislesToShop", () => {
 
   it("returns nothing for an empty list", () => {
     assert.deepEqual(aislesToShop([]), []);
+  });
+});
+
+describe("addedItem", () => {
+  it("needs only a name, trimmed", () => {
+    assert.deepEqual(addedItem({ name: "  bin bags ", quantity: "", unit: "" }), { input: { name: "bin bags" } });
+  });
+
+  it("takes an amount, with or without a unit", () => {
+    assert.deepEqual(addedItem({ name: "milk", quantity: "2", unit: " l " }), {
+      input: { name: "milk", quantity: 2, unit: "l" },
+    });
+    assert.deepEqual(addedItem({ name: "lemons", quantity: "3", unit: "" }), {
+      input: { name: "lemons", quantity: 3 },
+    });
+  });
+
+  it("refuses a blank name, a unit without an amount, an amount out of range, and a unit not offered", () => {
+    assert.ok("error" in addedItem({ name: " ", quantity: "", unit: "" }));
+    assert.ok("error" in addedItem({ name: "milk", quantity: "", unit: "l" }));
+    assert.ok("error" in addedItem({ name: "milk", quantity: "0", unit: "" }));
+    assert.ok("error" in addedItem({ name: "milk", quantity: "10001", unit: "" }));
+    assert.ok("error" in addedItem({ name: "milk", quantity: "lots", unit: "" }));
+    assert.ok("error" in addedItem({ name: "bin bags", quantity: "1", unit: "pack" }));
   });
 });

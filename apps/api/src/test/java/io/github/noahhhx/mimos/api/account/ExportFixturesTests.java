@@ -265,6 +265,30 @@ class ExportFixturesTests extends ApiIntegrationTestSupport {
         assertThat(bar.has("recipeId")).isFalse();
     }
 
+    @Test
+    void version8KeepsItemsAddedByHand() {
+        RestClient api = api();
+        String token = accessToken(createUser());
+
+        importFixture(api, token, 8);
+
+        JsonNode items =
+                get(api, token, "/api/v1/plans/2026-09-28/shopping-list").get("items");
+        assertThat(items).hasSize(3);
+        assertThat(items.get(0).get("added").asBoolean()).isFalse();
+        JsonNode binBags = items.get(2);
+        assertThat(binBags.get("name").asText()).isEqualTo("bin bags");
+        assertThat(binBags.get("unit").asText()).isEqualTo("pack");
+        assertThat(binBags.get("added").asBoolean()).isTrue();
+
+        JsonNode exported = get(api, token, "/api/v1/account/export")
+                .get("shoppingLists")
+                .get(0)
+                .get("items");
+        assertThat(exported.get(0).has("added")).isFalse();
+        assertThat(exported.get(2).get("added").asBoolean()).isTrue();
+    }
+
     private JsonNode importFixture(RestClient api, String token, int version) {
         JsonNode document;
         try (InputStream in = new ClassPathResource(fixturePath(version)).getInputStream()) {

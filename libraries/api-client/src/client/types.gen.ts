@@ -938,14 +938,14 @@ export type PanelAction = {
 };
 
 /**
- * One aggregated shopping-list line.
+ * One shopping-list line, generated from the plan or added by hand.
  */
 export type ShoppingListItem = {
     id: string;
     name: string;
     unit?: string;
     /**
-     * Total measured amount across the week's recipes, rounded up to whole items for a line without a unit; omitted when every recipe leaves the ingredient unmeasured (ADR-0007).
+     * Total measured amount across the week's recipes, rounded up to whole items for a line without a unit; omitted when every recipe leaves the ingredient unmeasured (ADR-0007). For an added item, the amount it was given, if any.
      */
     quantity?: number;
     /**
@@ -953,6 +953,25 @@ export type ShoppingListItem = {
      */
     category: string;
     checked: boolean;
+    /**
+     * True when the item was added by hand (ADR-0027); regenerating keeps it, and only these can be removed.
+     */
+    added: boolean;
+};
+
+/**
+ * An item to add to a shopping list by hand.
+ */
+export type ShoppingListItemInput = {
+    name: string;
+    /**
+     * How much to buy, more than 0 and at most 10000. Omit for just the item.
+     */
+    quantity?: number;
+    /**
+     * Free text, like `l`, `g`, or `pack`; needs a quantity.
+     */
+    unit?: string;
 };
 
 /**
@@ -1018,13 +1037,13 @@ export type DailyLogSummary = {
 };
 
 /**
- * One person's data, in export format version 7 (ADR-0011, ADR-0019, ADR-0022, ADR-0023, ADR-0026). Any change to this schema, or to what a section holds, bumps the version and adds an upgrade step from the previous one.
+ * One person's data, in export format version 8 (ADR-0011, ADR-0019, ADR-0022, ADR-0023, ADR-0026, ADR-0027). Any change to this schema, or to what a section holds, bumps the version and adds an upgrade step from the previous one.
  *
  */
 export type AccountExport = {
     format: 'mimos.export';
     /**
-     * The format version. This instance exports version 7.
+     * The format version. This instance exports version 8.
      */
     version: number;
     exportedAt: string;
@@ -1173,6 +1192,10 @@ export type ExportedShoppingListItem = {
     quantity?: number;
     category: string;
     checked: boolean;
+    /**
+     * True for an item added by hand (ADR-0027); absent means generated from the plan.
+     */
+    added?: boolean;
 };
 
 /**
@@ -2811,6 +2834,81 @@ export type GenerateShoppingListResponses = {
 };
 
 export type GenerateShoppingListResponse = GenerateShoppingListResponses[keyof GenerateShoppingListResponses];
+
+export type AddShoppingListItemData = {
+    body: ShoppingListItemInput;
+    path: {
+        /**
+         * The Monday that starts the planned week, as an ISO date (2026-10-05). Any other day is rejected with a 400.
+         *
+         */
+        startDate: string;
+    };
+    query?: never;
+    url: '/api/v1/plans/{startDate}/shopping-list/items';
+};
+
+export type AddShoppingListItemErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type AddShoppingListItemError = AddShoppingListItemErrors[keyof AddShoppingListItemErrors];
+
+export type AddShoppingListItemResponses = {
+    /**
+     * The added item.
+     */
+    201: ShoppingListItem;
+};
+
+export type AddShoppingListItemResponse = AddShoppingListItemResponses[keyof AddShoppingListItemResponses];
+
+export type RemoveShoppingListItemData = {
+    body?: never;
+    path: {
+        /**
+         * The Monday that starts the planned week, as an ISO date (2026-10-05). Any other day is rejected with a 400.
+         *
+         */
+        startDate: string;
+        itemId: string;
+    };
+    query?: never;
+    url: '/api/v1/plans/{startDate}/shopping-list/items/{itemId}';
+};
+
+export type RemoveShoppingListItemErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type RemoveShoppingListItemError = RemoveShoppingListItemErrors[keyof RemoveShoppingListItemErrors];
+
+export type RemoveShoppingListItemResponses = {
+    /**
+     * Removed.
+     */
+    204: void;
+};
+
+export type RemoveShoppingListItemResponse = RemoveShoppingListItemResponses[keyof RemoveShoppingListItemResponses];
 
 export type UpdateShoppingListItemData = {
     body: ShoppingListItemPatch;

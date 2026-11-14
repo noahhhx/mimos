@@ -36,6 +36,8 @@ import org.springframework.transaction.annotation.Transactional;
  * since nobody buys 0.13 of an onion; measured lines keep their amount. Regeneration replaces the list but preserves
  * checked-off state for lines that survive (same name and unit) — ticking
  * things off in the store then replanning shouldn't lose your progress.
+ * Items added by hand (ADR-0027) are not the plan's, so regeneration keeps
+ * them as they are and never merges them with a generated line.
  */
 @Service
 public class ShoppingListService {
@@ -43,6 +45,7 @@ public class ShoppingListService {
     static final int MAX_ITEMS = 1000;
     static final int MAX_NAME_LENGTH = 200;
     static final int MAX_UNIT_LENGTH = 30;
+    static final double MAX_ADDED_QUANTITY = 10_000;
 
     private final MealPlanService mealPlanService;
     private final RecipeService recipes;
@@ -61,19 +64,26 @@ public class ShoppingListService {
     @Transactional
     public ShoppingList generate(UUID ownerId, LocalDate startDate) {
         requireMonday(startDate);
+        Instant generatedAt = clock.instant();
+        UUID listId = repository.lockOrCreateList(ownerId, startDate, generatedAt);
+        List<ShoppingList.ShoppingListItem> previous =
+                repository.findList(ownerId, startDate).map(ShoppingList::items).orElse(List.of());
         List<PlannedMeal> planned = mealPlanService.plannedMeals(ownerId, startDate);
         Map<UUID, Recipe> recipesById = withLinkedRecipes(planned.stream()
                 .map(meal -> meal.item() instanceof PlannedItem.Recipe recipe ? recipe.recipeId() : null)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet()));
-        Map<String, Boolean> previouslyChecked = repository
-                .findList(ownerId, startDate)
-                .map(list -> list.items().stream()
-                        .collect(java.util.stream.Collectors.toMap(
-                                item -> lineKey(Aisles.normalizeName(item.name()), item.unit()),
-                                ShoppingList.ShoppingListItem::checked,
-                                (a, b) -> a)))
-                .orElse(Map.of());
+        Map<String, Boolean> previouslyChecked = previous.stream()
+                .filter(item -> !item.added())
+                .collect(Collectors.toMap(
+                        item -> lineKey(Aisles.normalizeName(item.name()), item.unit()),
+                        ShoppingList.ShoppingListItem::checked,
+                        (a, b) -> a));
+        List<ShoppingListRepository.ItemRow> added = previous.stream()
+                .filter(ShoppingList.ShoppingListItem::added)
+                .map(item -> new ShoppingListRepository.ItemRow(
+                        item.name(), item.unit(), item.quantity(), item.category(), item.checked(), true))
+                .toList();
 
         // Aggregate: (normalized name, unit) -> first-seen display name, and the total of the
         // measured quantities. Unmeasured ingredients add a line but nothing to its total, so a
@@ -99,25 +109,83 @@ public class ShoppingListService {
             }
         }
 
-        List<ShoppingListRepository.ItemRow> items = displayNames.entrySet().stream()
-                .map(entry -> {
-                    String key = entry.getKey();
-                    String name = entry.getValue();
-                    String unit = unitOf(key);
-                    Double total = totals.get(key);
-                    return new ShoppingListRepository.ItemRow(
-                            name,
-                            unit,
-                            total == null ? null : unit == null ? wholeItems(total) : round(total),
-                            Aisles.categorize(name),
-                            previouslyChecked.getOrDefault(key, false));
-                })
+        List<ShoppingListRepository.ItemRow> items = java.util.stream.Stream.concat(
+                        displayNames.entrySet().stream().map(entry -> {
+                            String key = entry.getKey();
+                            String name = entry.getValue();
+                            String unit = unitOf(key);
+                            Double total = totals.get(key);
+                            return new ShoppingListRepository.ItemRow(
+                                    name,
+                                    unit,
+                                    total == null ? null : unit == null ? wholeItems(total) : round(total),
+                                    Aisles.categorize(name),
+                                    previouslyChecked.getOrDefault(key, false),
+                                    false);
+                        }),
+                        added.stream())
                 .sorted(Comparator.comparing((ShoppingListRepository.ItemRow item) -> categoryRank(item.category()))
                         .thenComparing(ShoppingListRepository.ItemRow::name, String.CASE_INSENSITIVE_ORDER))
                 .toList();
-        repository.replaceList(ownerId, startDate, clock.instant(), items);
+        repository.replaceItems(listId, generatedAt, items);
         return find(ownerId, startDate)
                 .orElseThrow(() -> new IllegalStateException("list must exist after generation"));
+    }
+
+    /**
+     * Adds an item by hand (ADR-0027): anything to buy, planned or not,
+     * with an optional amount, in the aisle its name suggests. A week with
+     * no list yet gets one generated from its plan first, so the item joins
+     * the week's list rather than standing in for it.
+     */
+    @Transactional
+    public ShoppingList.ShoppingListItem addItem(
+            UUID ownerId, LocalDate startDate, String name, @Nullable Double quantity, @Nullable String unit) {
+        requireMonday(startDate);
+        String itemName = requireText("item name", name, MAX_NAME_LENGTH).strip();
+        String itemUnit = unit == null || unit.isBlank() ? null : unit.strip();
+        if (itemUnit != null && itemUnit.length() > MAX_UNIT_LENGTH) {
+            throw new IllegalArgumentException("item unit must be at most " + MAX_UNIT_LENGTH + " characters");
+        }
+        if (quantity != null
+                && (quantity.isNaN() || quantity.isInfinite() || quantity <= 0 || quantity > MAX_ADDED_QUANTITY)) {
+            throw new IllegalArgumentException(
+                    "item quantity must be more than 0 and at most " + (int) MAX_ADDED_QUANTITY);
+        }
+        if (itemUnit != null && quantity == null) {
+            throw new IllegalArgumentException("an item with a unit needs a quantity");
+        }
+        if (repository.findList(ownerId, startDate).isEmpty()) {
+            generate(ownerId, startDate);
+        }
+        UUID listId = repository.lockOrCreateList(ownerId, startDate, clock.instant());
+        if (repository.countItems(listId) >= MAX_ITEMS) {
+            throw new IllegalArgumentException("a shopping list can have at most " + MAX_ITEMS + " items");
+        }
+        UUID itemId = repository.appendItem(
+                listId,
+                new ShoppingListRepository.ItemRow(
+                        itemName, itemUnit, quantity, Aisles.categorize(itemName), false, true));
+        return repository
+                .findItem(ownerId, startDate, itemId)
+                .orElseThrow(() -> new IllegalStateException("item must exist after adding it"));
+    }
+
+    /**
+     * Removes an item added by hand. A generated item is the plan's, so it
+     * cannot be removed: it would come back on the next regeneration.
+     */
+    @Transactional
+    public void removeItem(UUID ownerId, LocalDate startDate, UUID itemId) {
+        requireMonday(startDate);
+        ShoppingList.ShoppingListItem item = repository
+                .findItem(ownerId, startDate, itemId)
+                .orElseThrow(() -> new NoSuchElementException("shopping list item not found: " + itemId));
+        if (!item.added()) {
+            throw new IllegalArgumentException(
+                    "Only items added by hand can be removed. Change the plan and regenerate the list instead.");
+        }
+        repository.deleteItem(itemId);
     }
 
     /** The recipes by id, plus every recipe their lines link, however deep, loaded a level at a time. */
@@ -216,7 +284,7 @@ public class ShoppingListService {
                 throw new IllegalArgumentException("item quantity must not be negative: " + item.name());
             }
         }
-        repository.replaceList(ownerId, startDate, generatedAt, items);
+        repository.replaceItems(repository.lockOrCreateList(ownerId, startDate, generatedAt), generatedAt, items);
         return find(ownerId, startDate).orElseThrow(() -> new IllegalStateException("list must exist after restoring"));
     }
 
@@ -230,7 +298,7 @@ public class ShoppingListService {
                 .orElseThrow(() -> new NoSuchElementException("shopping list item not found: " + itemId));
         repository.updateChecked(itemId, checked);
         return new ShoppingList.ShoppingListItem(
-                item.id(), item.name(), item.unit(), item.quantity(), item.category(), checked);
+                item.id(), item.name(), item.unit(), item.quantity(), item.category(), checked, item.added());
     }
 
     private static void requireMonday(LocalDate startDate) {
@@ -239,13 +307,14 @@ public class ShoppingListService {
         }
     }
 
-    private static void requireText(String field, @Nullable String value, int maxLength) {
+    private static String requireText(String field, @Nullable String value, int maxLength) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(field + " is required");
         }
-        if (value.length() > maxLength) {
+        if (value.strip().length() > maxLength) {
             throw new IllegalArgumentException(field + " must be at most " + maxLength + " characters");
         }
+        return value;
     }
 
     private static String lineKey(String normalizedName, @Nullable String unit) {

@@ -64,7 +64,7 @@ An agent signed in to your Mimos can do what you can do in the app:
 - Read, search, write, change, and delete your household's recipes.
 - Read and search the library.
 - Plan meals, change servings and who eats them, and remove planned meals.
-- Generate your shopping list and tick items off.
+- Generate your shopping list, add items that aren't in the plan, and tick items off.
 - Log meals, including your share of a meal you shared, and read your daily totals.
 - Turn plugins on or off and read their suggestions.
 - See who is in your household and create an invite link.

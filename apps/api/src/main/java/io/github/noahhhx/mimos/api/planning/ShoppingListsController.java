@@ -10,7 +10,9 @@ import java.util.NoSuchElementException;
 import java.util.UUID;
 import org.openapitools.api.ShoppingListsApi;
 import org.openapitools.model.ShoppingListItem;
+import org.openapitools.model.ShoppingListItemInput;
 import org.openapitools.model.ShoppingListItemPatch;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -52,6 +54,27 @@ public class ShoppingListsController implements ShoppingListsApi {
         return ResponseEntity.ok(toApiItem(item));
     }
 
+    @Override
+    public ResponseEntity<ShoppingListItem> addShoppingListItem(
+            LocalDate startDate, ShoppingListItemInput shoppingListItemInput) {
+        UUID householdId = currentUser.requireProfile().householdId();
+        BigDecimal quantity = shoppingListItemInput.getQuantity();
+        io.github.noahhhx.mimos.planning.shopping.ShoppingList.ShoppingListItem item = shoppingListService.addItem(
+                householdId,
+                startDate,
+                shoppingListItemInput.getName(),
+                quantity == null ? null : quantity.doubleValue(),
+                shoppingListItemInput.getUnit());
+        return ResponseEntity.status(HttpStatus.CREATED).body(toApiItem(item));
+    }
+
+    @Override
+    public ResponseEntity<Void> removeShoppingListItem(LocalDate startDate, UUID itemId) {
+        UUID householdId = currentUser.requireProfile().householdId();
+        shoppingListService.removeItem(householdId, startDate, itemId);
+        return ResponseEntity.noContent().build();
+    }
+
     private static org.openapitools.model.ShoppingList toApiList(
             io.github.noahhhx.mimos.planning.shopping.ShoppingList list) {
         List<ShoppingListItem> items =
@@ -70,6 +93,7 @@ public class ShoppingListsController implements ShoppingListsApi {
                 .unit(item.unit())
                 .quantity(item.quantity() == null ? null : BigDecimal.valueOf(item.quantity()))
                 .category(item.category())
-                .checked(item.checked());
+                .checked(item.checked())
+                .added(item.added());
     }
 }

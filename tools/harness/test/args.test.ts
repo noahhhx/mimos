@@ -129,7 +129,7 @@ test("ui: one known scenario, headless as the test user by default", () => {
 });
 
 test("ui: scenarios are the spec files in tools/harness/scenarios", () => {
-  assert.deepEqual(scenarioNames(), ["account-data", "app-nav", "app-pages", "calculated-nutrition", "counted-ingredients", "country-wheel", "create-recipe", "edit-recipe", "fuel-profile", "fuel-targets", "household", "intervals-icu", "keycloak-theme", "kitchen-home", "log-barcode", "log-recipe", "login", "plan-food", "planned-totals", "plugin-opt-in", "recipe-as-ingredient", "recipe-form-errors", "recipe-pictures", "recipe-sort-filter", "session-expiry", "shared-week", "stay-signed-in"]);
+  assert.deepEqual(scenarioNames(), ["account-data", "app-nav", "app-pages", "calculated-nutrition", "counted-ingredients", "country-wheel", "create-recipe", "edit-recipe", "fuel-profile", "fuel-targets", "household", "intervals-icu", "keycloak-theme", "kitchen-home", "log-barcode", "log-recipe", "login", "plan-food", "planned-totals", "plugin-opt-in", "recipe-as-ingredient", "recipe-form-errors", "recipe-pictures", "recipe-sort-filter", "session-expiry", "shared-week", "shopping-added-items", "stay-signed-in"]);
 });
 
 test("displayCommand quotes only what needs quoting", () => {

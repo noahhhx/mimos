@@ -231,7 +231,8 @@ public class AccountExporter {
                                 .unit(item.unit())
                                 .quantity(toBigDecimal(item.quantity()))
                                 .category(item.category())
-                                .checked(item.checked()))
+                                .checked(item.checked())
+                                .added(item.added() ? true : null))
                         .toList());
     }
 

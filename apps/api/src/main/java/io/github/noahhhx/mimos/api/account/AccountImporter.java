@@ -582,7 +582,8 @@ public class AccountImporter {
                 item.getUnit(),
                 fromBigDecimal(item.getQuantity()),
                 present(item.getCategory(), "category"),
-                present(item.getChecked(), "checked"));
+                present(item.getChecked(), "checked"),
+                Boolean.TRUE.equals(item.getAdded()));
     }
 
     /**

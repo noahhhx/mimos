@@ -260,6 +260,166 @@ class ShoppingListsEndpointTests extends ApiIntegrationTestSupport {
         assertThat(list.get("items")).isEmpty();
     }
 
+    @Test
+    void itemsAddedByHandSurviveRegenerationAndCanBeRemoved() {
+        RestClient api = api();
+        String token = accessToken(createUser());
+        LocalDate monday = LocalDate.of(2026, 7, 6); // a Monday
+        JsonNode soup = createRecipe(api, token, "Added Soup", 4, 2, "cups", "lentils");
+        plan(api, token, monday, monday, "DINNER", soup.get("id").asText(), 4);
+        generate(api, token, monday);
+
+        JsonNode binBags = addItem(
+                api,
+                token,
+                monday,
+                objectMapper
+                        .createObjectNode()
+                        .put("name", "  bin bags ")
+                        .put("quantity", 1)
+                        .put("unit", "pack"));
+        assertThat(binBags.get("name").asText()).isEqualTo("bin bags");
+        assertThat(binBags.get("quantity").asDouble()).isEqualTo(1);
+        assertThat(binBags.get("unit").asText()).isEqualTo("pack");
+        assertThat(binBags.get("added").asBoolean()).isTrue();
+        assertThat(binBags.get("checked").asBoolean()).isFalse();
+        // Same name as a generated line: a line of its own, never merged with the plan's.
+        JsonNode extraLentils =
+                addItem(api, token, monday, objectMapper.createObjectNode().put("name", "lentils"));
+        assertThat(extraLentils.get("category").asText()).isEqualTo("Pantry");
+        assertThat(extraLentils.has("quantity")).isFalse();
+        check(api, token, monday, binBags.get("id").asText());
+
+        JsonNode regenerated = generate(api, token, monday);
+
+        assertThat(regenerated.get("items")).hasSize(4); // lentils and eggs from the plan, plus two added
+        JsonNode keptBags = requireNonNull(findItem(regenerated, "bin bags"), "bin bags must survive regeneration");
+        assertThat(keptBags.get("added").asBoolean()).isTrue();
+        assertThat(keptBags.get("checked").asBoolean()).isTrue();
+        assertThat(keptBags.get("quantity").asDouble()).isEqualTo(1);
+        JsonNode plannedLentils = null;
+        for (JsonNode item : regenerated.get("items")) {
+            if (item.get("name").asText().equals("lentils")
+                    && !item.get("added").asBoolean()) {
+                plannedLentils = item;
+            }
+        }
+        plannedLentils = requireNonNull(plannedLentils, "the plan's lentils must be on the list");
+        assertThat(plannedLentils.get("quantity").asDouble()).isEqualTo(2);
+
+        // The plan's items are not removable: they would come back on regeneration.
+        assertThat(remove(api, token, monday, plannedLentils.get("id").asText()))
+                .isEqualTo(400);
+        assertThat(remove(api, token, monday, keptBags.get("id").asText())).isEqualTo(204);
+        assertThat(remove(api, token, monday, keptBags.get("id").asText())).isEqualTo(404);
+        assertThat(findItem(generate(api, token, monday), "bin bags")).isNull();
+    }
+
+    @Test
+    void addingToAWeekWithNoListGeneratesItFromThePlanFirst() {
+        RestClient api = api();
+        String token = accessToken(createUser());
+        LocalDate monday = LocalDate.of(2026, 7, 13); // a Monday
+        JsonNode soup = createRecipe(api, token, "First Add Soup", 4, 2, "cups", "barley");
+        plan(api, token, monday, monday, "DINNER", soup.get("id").asText(), 4);
+
+        addItem(
+                api,
+                token,
+                monday,
+                objectMapper
+                        .createObjectNode()
+                        .put("name", "milk")
+                        .put("quantity", 2)
+                        .put("unit", "l"));
+
+        JsonNode list = requireNonNull(
+                api.get()
+                        .uri("/api/v1/plans/{start}/shopping-list", monday.toString())
+                        .headers(headers -> headers.setBearerAuth(token))
+                        .retrieve()
+                        .body(JsonNode.class),
+                "shopping list GET returned no body");
+        assertThat(findItem(list, "barley")).isNotNull();
+        JsonNode milk = requireNonNull(findItem(list, "milk"), "milk must be on the list");
+        assertThat(milk.get("category").asText()).isEqualTo("Dairy & Eggs");
+        assertThat(milk.get("added").asBoolean()).isTrue();
+    }
+
+    @Test
+    void anAddedItemNeedsANameAndASensibleAmount() {
+        RestClient api = api();
+        String token = accessToken(createUser());
+        LocalDate monday = LocalDate.of(2026, 7, 20); // a Monday
+
+        assertThat(addStatus(api, token, monday, objectMapper.createObjectNode().put("name", " ")))
+                .isEqualTo(400);
+        assertThat(addStatus(
+                        api,
+                        token,
+                        monday,
+                        objectMapper.createObjectNode().put("name", "milk").put("unit", "l")))
+                .isEqualTo(400);
+        assertThat(addStatus(
+                        api,
+                        token,
+                        monday,
+                        objectMapper.createObjectNode().put("name", "milk").put("quantity", 0)))
+                .isEqualTo(400);
+        assertThat(addStatus(
+                        api,
+                        token,
+                        monday,
+                        objectMapper.createObjectNode().put("name", "milk").put("quantity", 10_001)))
+                .isEqualTo(400);
+        assertThat(addStatus(
+                        api,
+                        token,
+                        monday.plusDays(1),
+                        objectMapper.createObjectNode().put("name", "milk")))
+                .isEqualTo(400);
+    }
+
+    private JsonNode addItem(RestClient api, String token, LocalDate startDate, ObjectNode input) {
+        return requireNonNull(
+                api.post()
+                        .uri("/api/v1/plans/{start}/shopping-list/items", startDate.toString())
+                        .headers(headers -> headers.setBearerAuth(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(input)
+                        .exchange((req, res) -> {
+                            assertThat(res.getStatusCode().value()).isEqualTo(201);
+                            return requireNonNull(res.bodyTo(JsonNode.class), "add returned no body");
+                        }),
+                "add returned no body");
+    }
+
+    private int addStatus(RestClient api, String token, LocalDate startDate, ObjectNode input) {
+        return requireNonNull(api.post()
+                .uri("/api/v1/plans/{start}/shopping-list/items", startDate.toString())
+                .headers(headers -> headers.setBearerAuth(token))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(input)
+                .exchange((req, res) -> res.getStatusCode().value()));
+    }
+
+    private int remove(RestClient api, String token, LocalDate startDate, String itemId) {
+        return requireNonNull(api.delete()
+                .uri("/api/v1/plans/{start}/shopping-list/items/{id}", startDate.toString(), itemId)
+                .headers(headers -> headers.setBearerAuth(token))
+                .exchange((req, res) -> res.getStatusCode().value()));
+    }
+
+    private void check(RestClient api, String token, LocalDate startDate, String itemId) {
+        api.patch()
+                .uri("/api/v1/plans/{start}/shopping-list/items/{id}", startDate.toString(), itemId)
+                .headers(headers -> headers.setBearerAuth(token))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(objectMapper.createObjectNode().put("checked", true))
+                .retrieve()
+                .body(JsonNode.class);
+    }
+
     private JsonNode generate(RestClient api, String token, LocalDate startDate) {
         return requireNonNull(
                 api.post()

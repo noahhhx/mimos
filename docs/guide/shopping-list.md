@@ -22,6 +22,22 @@ The list doesn't change on its own when you change the plan. After editing
 the week, choose **Regenerate** to bring the list up to date. Anything you
 had already ticked off stays ticked off.
 
+## Adding your own items
+
+Not everything you buy is in a recipe. Under **Add an item**, type what
+you need, like bin bags or coffee, with an amount if you want one, and
+choose **Add**. Pick the amount's unit from the list (`l` for 2 l of milk);
+leave it on pieces to count them (2 lemons). It goes in the aisle its
+name suggests and is marked **Added**.
+
+Regenerating the list keeps your added items, ticked or not, and never
+merges them with the plan's. To take one off the list, choose **Remove**
+next to it. Items from the plan can't be removed; change the plan and
+regenerate, or tick them off.
+
+If the week has no list yet, adding an item makes one from the week's
+plan first.
+
 ## In the store
 
 Tick each item off as it goes into the basket. Ticks are saved straight

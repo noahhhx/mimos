@@ -143,7 +143,7 @@ describe("pickThought", () => {
 });
 
 describe("stillToBuy", () => {
-  const item = (name: string, checked: boolean): ShoppingListItem => ({ id: name, name, category: "Pantry", checked });
+  const item = (name: string, checked: boolean): ShoppingListItem => ({ id: name, name, category: "Pantry", checked, added: false });
 
   it("shows unchecked items first, fills up with checked ones, and counts what's left", () => {
     const items = [item("a", true), item("b", false), item("c", false), item("d", true)];

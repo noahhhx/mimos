@@ -32,6 +32,7 @@ right at the time.
 | [ADR-0024](adr-0024-stay-signed-in.md)                             | Stay signed in |
 | [ADR-0025](adr-0025-food-product-lookup.md)                        | Food product lookup by barcode |
 | [ADR-0026](adr-0026-planned-foods.md)                              | Planned foods |
+| [ADR-0027](adr-0027-shopping-list-added-items.md)                  | Items added to the shopping list by hand |
 
 New ADRs are sequential: `adr-NNNN-title.md`, with the numbering in this
 index. Once accepted, an ADR is never rewritten — superseding decisions get

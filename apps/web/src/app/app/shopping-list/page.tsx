@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import {
+  addShoppingListItem,
   generateShoppingList,
   getShoppingList,
+  removeShoppingListItem,
   updateShoppingListItem,
   type ShoppingList,
 } from "@mimos/api-client";
@@ -16,12 +18,14 @@ import { SignInPrompt } from "@/components/sign-in-prompt";
 import { apiClient } from "@/lib/api";
 import { Quantity } from "@/components/quantity";
 import { addDays, countedName, dayLabel, mondayOf } from "@/lib/format";
-import { aislesToShop } from "@/lib/shopping";
+import { ADD_ITEM_UNITS, addedItem, aislesToShop, type AddItemFields } from "@/lib/shopping";
+
+const NO_FIELDS: AddItemFields = { name: "", quantity: "", unit: "" };
 
 /**
  * The week's shopping list, grouped by aisle and checkable with one thumb
  * in the store, with what's still to buy on top. Regenerating keeps what
- * you've already ticked off.
+ * you've already ticked off, and anything you added by hand (ADR-0027).
  */
 export default function ShoppingListPage() {
   const { user } = useAuth();
@@ -30,6 +34,8 @@ export default function ShoppingListPage() {
   const [error, setError] = useState<string | null>(null);
   const [neverGenerated, setNeverGenerated] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [fields, setFields] = useState<AddItemFields>(NO_FIELDS);
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     // Honor ?week= from the plan page's cross-link. Read from the URL in an
@@ -104,6 +110,41 @@ export default function ShoppingListPage() {
     }
   };
 
+  const add = async (event: FormEvent) => {
+    event.preventDefault();
+    const parsed = addedItem(fields);
+    if ("error" in parsed) {
+      setError(parsed.error);
+      return;
+    }
+    setAdding(true);
+    const result = await addShoppingListItem({
+      client: apiClient,
+      path: { startDate: weekStart },
+      body: parsed.input,
+    });
+    setAdding(false);
+    if (result.error) {
+      setError("Could not add the item.");
+      return;
+    }
+    setError(null);
+    setFields(NO_FIELDS);
+    // A week with no list gets one from its plan first, so load the whole list again.
+    await reload();
+  };
+
+  const remove = async (itemId: string) => {
+    setList((current) =>
+      current ? { ...current, items: current.items.filter((item) => item.id !== itemId) } : current,
+    );
+    const result = await removeShoppingListItem({ client: apiClient, path: { startDate: weekStart, itemId } });
+    if (result.error) {
+      setError("Could not remove the item. Refreshing.");
+      await reload();
+    }
+  };
+
   const aisles = aislesToShop(list?.items ?? []);
 
   return (
@@ -135,7 +176,7 @@ export default function ShoppingListPage() {
         {neverGenerated
           ? "No list for this week yet. Generate one from the plan."
           : list
-            ? `Generated ${new Date(list.generatedAt).toLocaleString()} · regenerating keeps checked-off items.`
+            ? `Generated ${new Date(list.generatedAt).toLocaleString()} · regenerating keeps checked-off and added items.`
             : ""}
       </p>
 
@@ -145,9 +186,48 @@ export default function ShoppingListPage() {
         </div>
       )}
 
+      <form className="add-item" onSubmit={(event) => void add(event)}>
+        <h2>Add an item</h2>
+        <div className="field-row">
+          <label className="add-item-name">
+            Item
+            <input
+              type="text"
+              maxLength={200}
+              placeholder="Anything else to buy"
+              value={fields.name}
+              onChange={(e) => setFields({ ...fields, name: e.target.value })}
+            />
+          </label>
+          <label className="add-item-amount">
+            Amount
+            <input
+              type="number"
+              min={0}
+              step="any"
+              value={fields.quantity}
+              onChange={(e) => setFields({ ...fields, quantity: e.target.value })}
+            />
+          </label>
+          <label className="add-item-unit">
+            Unit
+            <select value={fields.unit} onChange={(e) => setFields({ ...fields, unit: e.target.value })}>
+              {ADD_ITEM_UNITS.map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit || "pieces"}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button className="button" type="submit" disabled={adding}>
+            {adding ? "Adding…" : "Add"}
+          </button>
+        </div>
+      </form>
+
       {list && list.items.length === 0 && (
         <div className="card">
-          <p>Nothing to buy. Plan some meals first.</p>
+          <p>Nothing to buy. Plan some meals, or add an item.</p>
         </div>
       )}
 
@@ -165,6 +245,19 @@ export default function ShoppingListPage() {
                   />{" "}
                   <Quantity quantity={item.quantity} unit={item.unit} /> {countedName(item.name, item.quantity, item.unit)}
                 </label>
+                {item.added && (
+                  <>
+                    {" "}
+                    <span className="muted">Added</span>{" "}
+                    <button
+                      className="button secondary small"
+                      aria-label={`Remove ${item.name}`}
+                      onClick={() => void remove(item.id)}
+                    >
+                      Remove
+                    </button>
+                  </>
+                )}
               </li>
             ))}
           </ul>
