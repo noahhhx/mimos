@@ -21,7 +21,7 @@ import { SignInPrompt } from "@/components/sign-in-prompt";
 import { Quantity } from "@/components/quantity";
 import { SplitPage } from "@/components/split-page";
 import { apiClient } from "@/lib/api";
-import { mondayOf, shortDayLabel, todayIso, weekdayName } from "@/lib/format";
+import { countedName, mondayOf, shortDayLabel, todayIso, weekdayName } from "@/lib/format";
 import { greeting, pickThought, pickTonight, stillToBuy, totalMinutes, weekDinners } from "@/lib/kitchen";
 import { entryLabel, plannedWhat } from "@/lib/planned-item";
 import { applySuggestionEntries } from "@/lib/suggestions";
@@ -325,7 +325,7 @@ function ShoppingBlock({ shopping, weekStart }: { shopping: Load<ShoppingList | 
               <span className="box" aria-hidden="true" />
               <span>
                 {item.checked && <span className="visually-hidden">Got: </span>}
-                <Quantity quantity={item.quantity} unit={item.unit} /> {item.name}
+                <Quantity quantity={item.quantity} unit={item.unit} /> {countedName(item.name, item.quantity, item.unit)}
               </span>
             </li>
           ))}

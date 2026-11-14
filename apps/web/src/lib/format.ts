@@ -79,7 +79,7 @@ export function formatQuantity(quantity: number | null | undefined, unit: string
   if (quantity == null) {
     return wholeRecipe ? "" : (unit ?? "");
   }
-  const rounded = Math.round(quantity * 100) / 100;
+  const rounded = roundQuantity(quantity);
   const number = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2).replace(/0$/, "");
   if (wholeRecipe) {
     return `${number}x`;
@@ -89,6 +89,60 @@ export function formatQuantity(quantity: number | null | undefined, unit: string
   }
   // A line that is one of your recipes counts in servings of it (ADR-0018): "1 serving", "2 servings".
   return `${number} ${rounded === 1 && unit.trim().toLowerCase() === "servings" ? "serving" : unit}`;
+}
+
+function roundQuantity(quantity: number): number {
+  return Math.round(quantity * 100) / 100;
+}
+
+/** A parenthetical that names what a piece is, so it takes the plural: "Rye bread (slices)". */
+const COUNTED_IN = new Set(["slice", "rasher", "piece", "sheet", "strip", "wedge"]);
+
+const IRREGULAR_PLURALS: Record<string, string> = {
+  half: "halves",
+  knife: "knives",
+  leaf: "leaves",
+  loaf: "loaves",
+  potato: "potatoes",
+  tomato: "tomatoes",
+};
+
+function pluralWord(word: string): string {
+  const irregular = IRREGULAR_PLURALS[word.toLowerCase()];
+  if (irregular) {
+    return word[0] + irregular.slice(1);
+  }
+  if (/s$/i.test(word)) {
+    return word;
+  }
+  if (/(ch|sh|x|z)$/i.test(word)) {
+    return `${word}es`;
+  }
+  if (/[^aeiou]y$/i.test(word)) {
+    return `${word.slice(0, -1)}ies`;
+  }
+  return `${word}s`;
+}
+
+/**
+ * An ingredient's name as it reads after its amount: a count of pieces (no
+ * unit) other than one takes the plural, "2 Eggs" but "1 Egg". The plural
+ * goes on the head noun, before any qualifier: "Chicken thighs, bone-in",
+ * "Corns on the cob", "Rye bread (slices)". A name that already ends in s is
+ * left as it is.
+ */
+export function countedName(name: string, quantity: number | null | undefined, unit: string | null | undefined): string {
+  if (unit?.trim() || quantity == null || roundQuantity(quantity) === 1) {
+    return name;
+  }
+  const counted = /\((\w+)\)/.exec(name);
+  if (counted && COUNTED_IN.has(counted[1].toLowerCase())) {
+    return name.replace(counted[0], `(${pluralWord(counted[1])})`);
+  }
+  const qualifier = /,|\s\(|\s(?:of|on|in|with)\s/i.exec(name);
+  const end = qualifier ? qualifier.index : name.length;
+  const head = name.slice(0, end).replace(/(\S+)(\s*)$/, (_, word: string, space: string) => pluralWord(word) + space);
+  return head + name.slice(end);
 }
 
 /** "1 serving", "2 servings", "1.5 servings". */

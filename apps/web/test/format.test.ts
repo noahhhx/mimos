@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { formatQuantity, formatServings, hasNutrition, nutritionCells, todayIso } from "../src/lib/format.ts";
+import { countedName, formatQuantity, formatServings, hasNutrition, nutritionCells, todayIso } from "../src/lib/format.ts";
 
 describe("formatQuantity", () => {
   it("formats an amount with its unit", () => {
@@ -26,6 +26,43 @@ describe("formatQuantity", () => {
   it("formats an unmeasured ingredient as its unit or nothing", () => {
     assert.equal(formatQuantity(undefined, "pinch"), "pinch");
     assert.equal(formatQuantity(undefined, undefined), "");
+  });
+});
+
+describe("countedName", () => {
+  it("takes the plural for a count of pieces other than one", () => {
+    assert.equal(countedName("Egg", 2, undefined), "Eggs");
+    assert.equal(countedName("Egg", 1, undefined), "Egg");
+    assert.equal(countedName("Egg", 1.001, null), "Egg");
+    assert.equal(countedName("Onion", 0.5, ""), "Onions");
+  });
+
+  it("leaves a measured, unmeasured, or already plural name alone", () => {
+    assert.equal(countedName("Flour", 200, "g"), "Flour");
+    assert.equal(countedName("Pancakes", 2, "servings"), "Pancakes");
+    assert.equal(countedName("Salt", undefined, undefined), "Salt");
+    assert.equal(countedName("garlic cloves", 3, undefined), "garlic cloves");
+  });
+
+  it("puts the plural on the head noun of every per-piece catalog name", () => {
+    const cases: [string, string][] = [
+      ["Anchovy fillet, in oil (drained)", "Anchovy fillets, in oil (drained)"],
+      ["Bacon, streaky (rasher)", "Bacon, streaky (rashers)"],
+      ["Baking potato (large)", "Baking potatoes (large)"],
+      ["Bay leaf", "Bay leaves"],
+      ["Beef stock cube (10 g)", "Beef stock cubes (10 g)"],
+      ["Chicken thigh, bone-in, skin-on", "Chicken thighs, bone-in, skin-on"],
+      ["Corn on the cob", "Corns on the cob"],
+      ["Garlic bulb (whole head)", "Garlic bulbs (whole head)"],
+      ["Peach", "Peaches"],
+      ["Rye bread (slice)", "Rye bread (slices)"],
+      ["Tomato", "Tomatoes"],
+      ["Jalape\u00f1o", "Jalape\u00f1os"],
+      ["Courgette (zucchini)", "Courgettes (zucchini)"],
+    ];
+    for (const [name, plural] of cases) {
+      assert.equal(countedName(name, 2, undefined), plural);
+    }
   });
 });
 

@@ -10,7 +10,7 @@ import { Quantity } from "@/components/quantity";
 import { RecipePictures } from "@/components/recipe-pictures";
 import { SplitPage } from "@/components/split-page";
 import { readCookState, recipeHref, writeCookState } from "@/lib/cook-trail";
-import { hasNutrition } from "@/lib/format";
+import { countedName, hasNutrition } from "@/lib/format";
 
 /**
  * A recipe as you cook it, for library and personal recipes alike. The
@@ -120,7 +120,7 @@ export function RecipeView({
                 {ingredient.recipeId ? (
                   <Link href={recipeHref(ingredient.recipeId, [...via, recipe.id])}>{ingredient.name}</Link>
                 ) : (
-                  ingredient.name
+                  countedName(ingredient.name, ingredient.quantity, ingredient.unit)
                 )}
                 {ingredient.note ? `, ${ingredient.note}` : ""}
               </label>
