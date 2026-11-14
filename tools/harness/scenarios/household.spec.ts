@@ -5,8 +5,8 @@ import { apiAs, expect, fillRegistration, register, test } from "./fixtures.ts";
  * Sharing a household (ADR-0019) between two fresh accounts, each in its
  * own browser: the host adds a recipe and creates an invite link; the
  * guest opens it signed out, registers, comes back to the join page, reads
- * what joining does, joins, finds the host's recipe marked "Added by" the
- * host, and leaves again. Fresh accounts keep `test` and `test2` out of
+ * what joining does, joins, finds the host's recipe in the list, opens
+ * it to see it marked "Added by" the host, and leaves again. Fresh accounts keep `test` and `test2` out of
  * any household.
  */
 test("invite someone, who joins, sees your recipe, and leaves", async ({ page, browser }, testInfo) => {
@@ -71,10 +71,10 @@ test("invite someone, who joins, sees your recipe, and leaves", async ({ page, b
       await expect(guestPage.locator(".member-list li")).toHaveText([`${guest}You`, host]);
     });
 
-    await test.step("the host's recipe is the guest's to cook, marked with who added it", async () => {
+    await test.step("the host's recipe is the guest's to cook, marked with who added it when opened", async () => {
       await guestPage.goto("/app/recipes");
       const row = guestPage.locator(".recipe-list li").filter({ hasText: recipe });
-      await expect(row).toContainText(`Added by ${host}`);
+      await expect(row).not.toContainText("Added by");
       await row.getByRole("link", { name: recipe }).click();
       await expect(guestPage.getByRole("heading", { name: recipe, level: 1 })).toBeVisible();
       await expect(guestPage.locator(".toolbar")).toContainText(`Added by ${host}`);

@@ -22,7 +22,7 @@ To see yours, open the profile menu at the top right and choose
 
 Everyone in a household is equal. Anyone can add, change, or delete its
 recipes, plan its meals, and tick off its shopping list. A recipe someone
-else added says **Added by** them, in the recipe list and above the recipe.
+else added says **Added by** them, above the recipe when you open it.
 
 ## Sharing meals
 

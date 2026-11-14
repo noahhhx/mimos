@@ -4,7 +4,7 @@ Open **Recipes** to see your recipe book. It has two tabs:
 
 - **My recipes**: the recipes you and your [household](household.md) have
   written. Only your household can see them, and a recipe someone else
-  added says **Added by** them.
+  added says **Added by** them when you open it.
 - **Library**: free recipes curated for everyone on this Mimos. Anyone can
   read them, signed in or not.
 

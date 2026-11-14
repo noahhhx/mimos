@@ -6,8 +6,7 @@ import { formatServings } from "@/lib/format";
 
 /**
  * Recipes as rows: title, description and tags, servings and calories on
- * the right, with who added it when that was someone else in the
- * household. The whole row is the link.
+ * the right. The whole row is the link.
  */
 export function RecipeList({
   recipes,
@@ -25,9 +24,6 @@ export function RecipeList({
           </h2>
           <div>
             <p className="muted">{recipe.description}</p>
-            {recipe.createdBy && !recipe.createdBy.you && (
-              <p className="muted">Added by {recipe.createdBy.displayName}</p>
-            )}
             {recipe.tags.length > 0 && (
               <p className="tags">
                 {recipe.tags.map((tag) => (
