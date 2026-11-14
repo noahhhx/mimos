@@ -9,7 +9,7 @@ slots: breakfast, lunch, dinner, and snack. Use **← Previous** and
 ## Adding a meal
 
 1. Choose **+** next to the slot you want to fill.
-2. Search your recipes and the library, or scroll the list.
+2. Search your recipes, the library, and ingredients, or scroll the list.
 3. Choose a recipe. It goes into the slot for 2 servings, or, when you
    [share a household](#planning-for-a-household), one serving for each
    person eating it.
@@ -18,13 +18,42 @@ slots: breakfast, lunch, dinner, and snack. Use **← Previous** and
 
 A slot can hold more than one recipe, such as a main and a side.
 
+## Planning a single food
+
+Not everything needs a recipe. A snack slot can hold one ingredient, such
+as a banana, straight from the search in [Adding a meal](#adding-a-meal).
+
+1. Choose **+** next to the slot you want to fill.
+2. Start typing the ingredient's name, such as "banana". The list shows
+   the shared ingredients and your household's own, each with its
+   calories.
+3. Choose the ingredient. It goes into the slot for each person eating
+   it, at 1 piece, or 100 g or 100 ml when it's measured that way.
+
+A planned food shows its name and amount, such as "Banana, 1" or
+"Bagel, 85 g". Instead of the servings buttons, it has an **Amount**
+field. Type a new amount and press Enter.
+
+**Scan a barcode** in the picker looks a packaged product up in
+[Open Food Facts](https://world.openfoodfacts.org), as on the
+[log page](log.md#logging-something-else). If the product has its
+nutrition, Mimos saves it as one of your household's ingredients and
+plans it at its serving size, so you can search for it again next week.
+If the product lacks a nutrition value, Mimos asks for the missing ones
+before saving it.
+
+A planned food works like any other meal: **Log** logs your share of its
+amount, the [planned total](#your-planned-total) and
+[Fuel for the day](fuel.md) count it, and the [shopping
+list](shopping-list.md) lists it by name and amount.
+
 ## Changing a planned meal
 
 Each planned meal has a row of buttons:
 
 | Button      | What it does                                                    |
 | ----------- | --------------------------------------------------------------- |
-| **−** / **+** | Fewer or more servings, half a serving at a time.            |
+| **−** / **+** | Fewer or more servings of a recipe, half a serving at a time. A planned food has an **Amount** field instead. |
 | **Log**     | Adds the meal to your [food log](log.md) for that day. Only on meals you eat. |
 | **✕**       | Takes the meal out of the plan.                                 |
 

@@ -21,6 +21,10 @@ of people eating, to the nearest 0.1 serving: 3 servings for 2 people is
 1.5 servings each. Change it if you ate more or less, then choose **Log
 share**. **Log** appears only on meals you eat.
 
+A [planned food](planning.md#planning-a-single-food) logs the same way,
+as the food and your share of its amount, with its nutrition from the
+ingredient.
+
 ## Logging something else
 
 For anything you didn't plan, log a recipe, an ingredient, or a packaged
