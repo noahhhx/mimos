@@ -37,7 +37,8 @@ you share a [household](household.md), leave it first. If you've already started
 whoever runs it to give you a fresh one.
 
 Every planned meal in the file comes back as yours alone, with the
-servings it was planned with.
+servings it was planned with. A [planned food](planning.md#planning-a-single-food)
+comes back with its amount, along with the ingredient it uses.
 
 Plans and logs that use library recipes come across as long as the new
 Mimos has those recipes in its library. If it doesn't, the import tells you
