@@ -170,7 +170,7 @@ async function createRecipe(
 async function planOn(dayCard: Locator, meal: string, title: string): Promise<void> {
   const page = dayCard.page();
   await dayCard.getByRole("button", { name: new RegExp(`^Add ${meal} for `) }).click();
-  const picker = page.getByRole("dialog", { name: "Pick a recipe" });
+  const picker = page.getByRole("dialog", { name: "Pick a meal" });
   await picker.getByRole("searchbox").fill(title);
   await picker.getByRole("button", { name: new RegExp(`^${title}`) }).click();
   await expect(picker).toHaveCount(0);

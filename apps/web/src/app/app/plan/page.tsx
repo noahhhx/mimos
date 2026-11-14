@@ -646,7 +646,7 @@ export default function PlanPage() {
       )}
 
       {picker && (
-        <div className="picker card" role="dialog" aria-label="Pick a recipe">
+        <div className="picker card" role="dialog" aria-label="Pick a meal">
           <div className="toolbar">
             <h2>
               {mealLabel(picker.mealType)} · {dayLabel(picker.date)}
