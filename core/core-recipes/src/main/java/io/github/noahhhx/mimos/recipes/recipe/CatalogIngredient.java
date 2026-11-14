@@ -1,5 +1,6 @@
 package io.github.noahhhx.mimos.recipes.recipe;
 
+import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
@@ -39,5 +40,20 @@ public record CatalogIngredient(
 
     public Nutrition nutrition() {
         return new Nutrition(calories, proteinG, carbsG, fatG);
+    }
+
+    /**
+     * The exact (unrounded) nutrition of an amount of this entry (ADR-0026),
+     * or empty when the unit does not fit the basis: a per-100-g entry takes
+     * g and kg, a per-100-ml one ml, l, tsp, and tbsp, and a per-piece one
+     * no unit.
+     */
+    public Optional<Nutrition> nutritionOf(double quantity, @Nullable String unit) {
+        return MetricUnit.parse(unit)
+                .filter(parsed -> parsed.dimension == basis.dimension)
+                .map(parsed -> {
+                    double amounts = quantity * parsed.size / basis.amount;
+                    return new Nutrition(amounts * calories, amounts * proteinG, amounts * carbsG, amounts * fatG);
+                });
     }
 }
