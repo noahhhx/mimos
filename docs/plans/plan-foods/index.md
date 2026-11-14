@@ -23,7 +23,7 @@ logged.
 | #  | Item | Depends on | Status |
 | -- | ---- | ---------- | ------ |
 | 01 | [Domain, schema, API, export](01-backend.md) | – | done (a2832ff) |
-| 02 | [Plan page: pick, scan, show, log a food](02-web.md) | 01 | todo |
+| 02 | [Plan page: pick, scan, show, log a food](02-web.md) | 01 | done (3399e83) |
 | 03 | [Guide page and scenario](03-docs-and-scenario.md) | 02 | todo |
 
 ## Gates
@@ -49,3 +49,26 @@ logged.
   so two planned items in the same slot have no stable order. Existing
   behavior, now easier to hit with foods; item 02 or later may want a
   stable tiebreak.
+- The plan page's picker is still `role="dialog"` named "Pick a recipe",
+  because the `shared-week` and `planned-totals` scenarios find it by that
+  name. Item 03 may rename it ("Pick a meal") together with those two
+  scenarios. The guide's planning page (`docs/guide/planning.md`) still
+  says "Search your recipes and the library".
+- Scanning a product whose name, basis, and four values match one of the
+  household's own ingredients reuses it instead of creating a second one
+  (`existingIngredient`, `apps/web/src/lib/planned-item.ts`), so scanning
+  the same bagel on two days adds one ingredient. Two different products
+  with the same name and values also collapse into one; that is harmless
+  for planning.
+- The plan page lists a food as its name with a number input and unit
+  ("Banana", `2` pieces); the entry's one-line label ("Banana, 2") is for
+  the Kitchen home. The Log page's description of the same food is
+  "Banana, 2 pieces", the wording the Log page already used for
+  ingredients.
+- A scanned product missing a value opens `NewIngredient` inside the
+  picker, started from what Open Food Facts gave (`initialNutrition`).
+  Cancelling it leaves the picker open; nothing is saved.
+- Same-slot order is still random-id order (see above). With two foods in
+  one slot it shows plainly in the UI (Banana between two Nutellas, in the
+  order the ids fell), so a stable tiebreak (created time) is now worth
+  doing.
