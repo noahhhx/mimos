@@ -1569,7 +1569,8 @@ label.file-button {
   border-left: 2px solid var(--accent);
 }
 
-.planned-meal > a {
+.planned-meal > a,
+.planned-meal > .planned-name {
   font-family: var(--serif);
   font-size: 19px;
   font-weight: 500;
@@ -1593,6 +1594,35 @@ label.file-button {
 
 .meal-controls span {
   padding: 0 4px;
+}
+
+/* A planned food's amount: its number with the unit beside it (ADR-0026). */
+.food-amount {
+  display: inline-flex;
+  letter-spacing: normal;
+  text-transform: none;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+}
+
+.food-amount input {
+  width: 6em;
+  margin-top: 0;
+  padding: 4px 6px;
+}
+
+.picker-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.picker-search input {
+  flex: 1 1 14rem;
+  width: auto;
+  margin-top: 0;
 }
 
 /* Who eats a meal (ADR-0019): one chip per member, filled for a diner. */

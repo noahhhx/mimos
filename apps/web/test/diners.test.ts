@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import {
   chipLabels,
+  defaultDinerCount,
   defaultServings,
   eatsIt,
   parsePlanView,
@@ -45,6 +46,14 @@ describe("defaultServings", () => {
     assert.equal(defaultServings("LUNCH", 3), 1);
     assert.equal(defaultServings("BREAKFAST", 2), 1);
     assert.equal(defaultServings("SNACK", 2), 1);
+  });
+});
+
+describe("defaultDinerCount", () => {
+  it("is everyone at dinner and the caller alone otherwise", () => {
+    assert.equal(defaultDinerCount("DINNER", 3), 3);
+    assert.equal(defaultDinerCount("LUNCH", 3), 1);
+    assert.equal(defaultDinerCount("DINNER", 1), 1);
   });
 });
 

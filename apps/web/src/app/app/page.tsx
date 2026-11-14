@@ -9,6 +9,7 @@ import {
   getRecipe,
   getShoppingList,
   type MealPlan,
+  type MealPlanEntry,
   type PlanSuggestion,
   type RecipeDetail,
   type ShoppingList,
@@ -22,6 +23,7 @@ import { SplitPage } from "@/components/split-page";
 import { apiClient } from "@/lib/api";
 import { mondayOf, shortDayLabel, todayIso, weekdayName } from "@/lib/format";
 import { greeting, pickThought, pickTonight, stillToBuy, totalMinutes, weekDinners } from "@/lib/kitchen";
+import { entryLabel, plannedWhat } from "@/lib/planned-item";
 import { applySuggestionEntries } from "@/lib/suggestions";
 
 /** One block's data: each block on the page loads and fails on its own. */
@@ -157,7 +159,7 @@ export default function KitchenPage() {
                       {date === today && <span className="visually-hidden"> (today)</span>}
                     </span>
                     {dinner ? (
-                      <Link href={`/app/recipes/${dinner.recipeId}`}>{dinner.recipeTitle}</Link>
+                      <DinnerName entry={dinner} />
                     ) : (
                       <span className="open">Nothing yet</span>
                     )}
@@ -188,22 +190,24 @@ export default function KitchenPage() {
           </>
         ) : (
           <>
-            <h3>{tonight.entry.recipeTitle}</h3>
-            {recipe.state === "error" && (
+            <h3>{entryLabel(tonight.entry)}</h3>
+            {recipe.state === "error" && tonightRecipeId && (
               <p className="card error" role="alert">
                 Could not load the recipe&apos;s details.
               </p>
             )}
-            {recipe.state === "ok" && recipe.data.id === tonight.entry.recipeId && (
+            {recipe.state === "ok" && tonightRecipeId && recipe.data.id === tonightRecipeId && (
               <>
                 <p className="description">{recipe.data.description}</p>
                 <TonightFacts recipe={recipe.data} servings={tonight.entry.servings} />
               </>
             )}
             <div className="buttons">
-              <Link className="button" href={`/app/recipes/${tonight.entry.recipeId}`}>
-                Start cooking
-              </Link>
+              {tonightRecipeId && (
+                <Link className="button" href={`/app/recipes/${tonightRecipeId}`}>
+                  Start cooking
+                </Link>
+              )}
               <Link className="button secondary" href={planLink}>
                 Swap meal
               </Link>
@@ -248,6 +252,16 @@ export default function KitchenPage() {
         )}
       </div>
     </SplitPage>
+  );
+}
+
+/** A rail dinner: a recipe links to itself; a planned food is just its name and amount. */
+function DinnerName({ entry }: { entry: MealPlanEntry }) {
+  const what = plannedWhat(entry);
+  return what.kind === "recipe" ? (
+    <Link href={`/app/recipes/${what.recipeId}`}>{what.title}</Link>
+  ) : (
+    <span>{entryLabel(entry)}</span>
   );
 }
 
