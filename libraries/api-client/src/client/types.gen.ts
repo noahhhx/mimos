@@ -636,19 +636,26 @@ export type RecipeInput = {
 export type MealType = 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK';
 
 /**
- * One planned meal in a week.
+ * One planned meal in a week, of a recipe or of a single food.
  */
 export type MealPlanEntry = {
     id: string;
     date: string;
     mealType: MealType;
-    recipeId: string;
     /**
-     * Title of the planned recipe at planning time.
+     * The planned recipe. Present exactly when `food` is not.
      */
-    recipeTitle: string;
+    recipeId?: string;
     /**
-     * How many servings of the recipe are cooked, for all its diners together.
+     * Title of the planned recipe at planning time. Present exactly when `recipeId` is.
+     */
+    recipeTitle?: string;
+    /**
+     * The planned food. Present exactly when `recipeId` is not.
+     */
+    food?: PlannedFood;
+    /**
+     * How much is planned, for all the diners together: servings of the recipe, or of a food, its amount in `food.unit` (pieces without one).
      *
      */
     servings: number;
@@ -696,12 +703,54 @@ export type PlannedDayTotal = {
     mealsWithoutNutrition: number;
 };
 
+/**
+ * A planned food, an ingredient (shared or the household's own) by its slug; see listIngredients.
+ */
+export type PlannedFood = {
+    /**
+     * Slug of the ingredient.
+     */
+    catalogSlug: string;
+    /**
+     * Name of the ingredient.
+     */
+    name: string;
+    /**
+     * The unit `servings` is counted in. Absent for a count of pieces.
+     */
+    unit?: string;
+};
+
+/**
+ * A food to plan: an ingredient, shared or the household's own, by its slug (see listIngredients). In an account export the slug is one of the document's `ingredients` or a shared catalog entry's.
+ *
+ */
+export type PlannedFoodInput = {
+    /**
+     * Slug of the ingredient.
+     */
+    catalogSlug: string;
+    /**
+     * The unit the amount is counted in. It must fit the ingredient's basis: g or kg per 100 g; ml, l, tsp, or tbsp per 100 ml; absent for a count of pieces.
+     *
+     */
+    unit?: string;
+};
+
 export type MealPlanEntryInput = {
     date: string;
     mealType: MealType;
-    recipeId: string;
     /**
-     * How many servings are cooked, for all the diners together.
+     * The recipe to plan. Send exactly one of `recipeId` and `food`.
+     */
+    recipeId?: string;
+    /**
+     * The food to plan. Send exactly one of `recipeId` and `food`.
+     */
+    food?: PlannedFoodInput;
+    /**
+     * How much is planned, for all the diners together: servings of the recipe, or of a food, its amount in `food.unit` (pieces without one).
+     *
      */
     servings: number;
     /**
@@ -716,7 +765,8 @@ export type MealPlanEntryInput = {
  */
 export type MealPlanEntryPatch = {
     /**
-     * How many servings are cooked, for all the diners together.
+     * How much is planned, for all the diners together: servings of the recipe, or of a food, its amount in `food.unit` (pieces without one).
+     *
      */
     servings?: number;
     /**
@@ -968,13 +1018,13 @@ export type DailyLogSummary = {
 };
 
 /**
- * One person's data, in export format version 6 (ADR-0011, ADR-0019, ADR-0022, ADR-0023). Any change to this schema, or to what a section holds, bumps the version and adds an upgrade step from the previous one.
+ * One person's data, in export format version 7 (ADR-0011, ADR-0019, ADR-0022, ADR-0023, ADR-0026). Any change to this schema, or to what a section holds, bumps the version and adds an upgrade step from the previous one.
  *
  */
 export type AccountExport = {
     format: 'mimos.export';
     /**
-     * The format version. This instance exports version 6.
+     * The format version. This instance exports version 7.
      */
     version: number;
     exportedAt: string;
@@ -1083,7 +1133,7 @@ export type ExportedMealPlan = {
 };
 
 /**
- * One planned meal the exporter eats. Exactly one of `recipeId` and `librarySlug` is present. `servings` is the amount cooked, for everyone who ate it together.
+ * One planned meal the exporter eats. Exactly one of `recipeId`, `librarySlug`, and `food` is present. `servings` is the amount planned, for everyone who ate it together: servings of the recipe, or the food's amount in `food.unit`.
  *
  */
 export type ExportedPlanEntry = {
@@ -1097,6 +1147,11 @@ export type ExportedPlanEntry = {
      * A curated library recipe, by its public slug.
      */
     librarySlug?: string;
+    /**
+     * A planned food. Its `catalogSlug` is one of this document's `ingredients` or a shared catalog entry's.
+     *
+     */
+    food?: PlannedFoodInput;
     servings: number;
 };
 

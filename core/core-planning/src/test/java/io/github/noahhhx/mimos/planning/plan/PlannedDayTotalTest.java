@@ -15,23 +15,29 @@ class PlannedDayTotalTest {
     private static final LocalDate MONDAY = LocalDate.of(2026, 10, 5);
     private static final UUID ME = UUID.randomUUID();
     private static final UUID PARTNER = UUID.randomUUID();
-    private static final UUID STEW = UUID.randomUUID();
-    private static final UUID SOUP = UUID.randomUUID();
-    private static final UUID SOUP_WITH_CALORIES = UUID.randomUUID();
-    private static final UUID CRUMB = UUID.randomUUID();
-    private static final UUID NO_PROTEIN = UUID.randomUUID();
-    private static final UUID NO_CARBS = UUID.randomUUID();
-    private static final UUID NO_FAT = UUID.randomUUID();
-    private static final UUID BROTH = UUID.randomUUID();
-    private static final Map<UUID, Nutrition> PER_SERVING = Map.of(
-            STEW, new Nutrition(400.0, 20.0, 40.0, 10.0),
-            SOUP, new Nutrition(null, 5.0, 12.0, 3.0),
-            SOUP_WITH_CALORIES, new Nutrition(100.0 / 3, 0.1, 0.0, 1.0),
-            CRUMB, new Nutrition(0.05, 0.05, 0.05, 0.05),
-            NO_PROTEIN, new Nutrition(300.0, null, 30.0, 10.0),
-            NO_CARBS, new Nutrition(200.0, 15.0, null, 5.0),
-            NO_FAT, new Nutrition(100.0, 10.0, 20.0, null),
-            BROTH, new Nutrition(null, 0.0, 0.0, 0.0));
+    private static final PlannedItem STEW = recipe();
+    private static final PlannedItem SOUP = recipe();
+    private static final PlannedItem SOUP_WITH_CALORIES = recipe();
+    private static final PlannedItem CRUMB = recipe();
+    private static final PlannedItem NO_PROTEIN = recipe();
+    private static final PlannedItem NO_CARBS = recipe();
+    private static final PlannedItem NO_FAT = recipe();
+    private static final PlannedItem BROTH = recipe();
+    private static final PlannedItem BANANA = new PlannedItem.Food("banana", null);
+    private static final PlannedItem BAGEL_GRAMS = new PlannedItem.Food("bagel", "g");
+    private static final PlannedItem OIL_IN_GRAMS = new PlannedItem.Food("olive-oil", "g");
+    private static final Map<PlannedItem, Nutrition> PER_UNIT = Map.ofEntries(
+            Map.entry(STEW, new Nutrition(400.0, 20.0, 40.0, 10.0)),
+            Map.entry(SOUP, new Nutrition(null, 5.0, 12.0, 3.0)),
+            Map.entry(SOUP_WITH_CALORIES, new Nutrition(100.0 / 3, 0.1, 0.0, 1.0)),
+            Map.entry(CRUMB, new Nutrition(0.05, 0.05, 0.05, 0.05)),
+            Map.entry(NO_PROTEIN, new Nutrition(300.0, null, 30.0, 10.0)),
+            Map.entry(NO_CARBS, new Nutrition(200.0, 15.0, null, 5.0)),
+            Map.entry(NO_FAT, new Nutrition(100.0, 10.0, 20.0, null)),
+            Map.entry(BROTH, new Nutrition(null, 0.0, 0.0, 0.0)),
+            Map.entry(BANANA, new Nutrition(105.0, 1.3, 27.0, 0.4)),
+            Map.entry(BAGEL_GRAMS, new Nutrition(2.7, 0.1, 0.5, 0.01)),
+            Map.entry(OIL_IN_GRAMS, Nutrition.UNKNOWN));
 
     @Test
     void aMealEatenAloneCountsEveryServing() {
@@ -96,9 +102,34 @@ class PlannedDayTotalTest {
 
     @Test
     void aMealWhoseRecipeIsGoneIsCountedAsWithoutNutrition() {
-        PlannedDayTotal monday = monday(entry(MONDAY, UUID.randomUUID(), 1, ME));
+        PlannedDayTotal monday = monday(entry(MONDAY, recipe(), 1, ME));
 
         assertThat(monday.total()).isEqualTo(Nutrition.UNKNOWN);
+        assertThat(monday.mealsWithoutNutrition()).isEqualTo(1);
+    }
+
+    @Test
+    void aFoodEatenAloneCountsItsWholeAmount() {
+        PlannedDayTotal monday = monday(entry(MONDAY, BANANA, 2, ME), entry(MONDAY, BAGEL_GRAMS, 85, ME));
+
+        assertThat(monday.total()).isEqualTo(new Nutrition(439.5, 11.1, 96.5, 1.7));
+        assertThat(monday.meals()).isEqualTo(2);
+        assertThat(monday.mealsWithoutNutrition()).isZero();
+    }
+
+    @Test
+    void aSharedFoodCountsItsAmountDividedByItsDiners() {
+        PlannedDayTotal monday = monday(entry(MONDAY, BAGEL_GRAMS, 170, ME, PARTNER));
+
+        assertThat(monday.total()).isEqualTo(new Nutrition(229.5, 8.5, 42.5, 0.9));
+    }
+
+    @Test
+    void aFoodWithAUnitItsBasisDoesNotTakeCountsAsUnknown() {
+        PlannedDayTotal monday = monday(entry(MONDAY, OIL_IN_GRAMS, 15, ME), entry(MONDAY, BANANA, 1, ME));
+
+        assertThat(monday.total()).isEqualTo(new Nutrition(105.0, 1.3, 27.0, 0.4));
+        assertThat(monday.meals()).isEqualTo(2);
         assertThat(monday.mealsWithoutNutrition()).isEqualTo(1);
     }
 
@@ -134,7 +165,7 @@ class PlannedDayTotalTest {
                 saturday.plusDays(3),
                 ME,
                 List.of(entry(MONDAY, STEW, 1, ME), entry(saturday.plusDays(3), STEW, 1, ME)),
-                PER_SERVING);
+                PER_UNIT);
 
         assertThat(days)
                 .extracting(PlannedDayTotal::date)
@@ -143,14 +174,18 @@ class PlannedDayTotalTest {
         assertThat(days.getLast().total().calories()).isEqualTo(400.0);
     }
 
+    private static PlannedItem recipe() {
+        return new PlannedItem.Recipe(UUID.randomUUID());
+    }
+
     private static PlannedDayTotal monday(MealPlanRepository.PlannedMealInput... entries) {
-        return PlannedDayTotal.forRange(MONDAY, MONDAY, ME, List.of(entries), PER_SERVING)
+        return PlannedDayTotal.forRange(MONDAY, MONDAY, ME, List.of(entries), PER_UNIT)
                 .getFirst();
     }
 
     private static MealPlanRepository.PlannedMealInput entry(
-            LocalDate date, UUID recipeId, double servings, UUID... diners) {
+            LocalDate date, PlannedItem item, double amount, UUID... diners) {
         return new MealPlanRepository.PlannedMealInput(
-                UUID.randomUUID(), date, MealType.DINNER, recipeId, servings, Set.of(diners));
+                UUID.randomUUID(), date, MealType.DINNER, item, amount, Set.of(diners));
     }
 }

@@ -26,7 +26,8 @@ public final class ExportUpgrader {
             ExportUpgrader::allowRecipeLinks,
             ExportUpgrader::keepOnlyOwnMeals,
             ExportUpgrader::addTraining,
-            ExportUpgrader::addRecipePictures);
+            ExportUpgrader::addRecipePictures,
+            ExportUpgrader::allowPlannedFoods);
 
     /** The version this instance exports. */
     public static final int CURRENT_VERSION = STEPS.size() + 1;
@@ -125,6 +126,15 @@ public final class ExportUpgrader {
                 exported.putArray("pictures");
             }
         });
+        return document;
+    }
+
+    /**
+     * Version 7 (ADR-0026): a plan entry may plan a food, an ingredient by
+     * slug, instead of a recipe. Version 6 had none, so its data comes
+     * through unchanged.
+     */
+    private static ObjectNode allowPlannedFoods(ObjectNode document) {
         return document;
     }
 

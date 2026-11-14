@@ -400,7 +400,7 @@ export const getPublicRecipe = <ThrowOnError extends boolean = false>(options: O
 /**
  * The caller's household's meal plan for a week
  *
- * Returns the plan for the week starting at `startDate`, which must be a Monday. The plan is created empty on first access and is shared by everyone in the caller's household (ADR-0019). Each entry has the id that updateMealPlanEntry and deleteMealPlanEntry take, and names its diners: the members who eat it, with `you` marking the caller. The caller's own meals are the entries where they are a diner.
+ * Returns the plan for the week starting at `startDate`, which must be a Monday. The plan is created empty on first access and is shared by everyone in the caller's household (ADR-0019). Each entry has the id that updateMealPlanEntry and deleteMealPlanEntry take, and names its diners: the members who eat it, with `you` marking the caller. The caller's own meals are the entries where they are a diner. An entry plans a recipe (`recipeId` and `recipeTitle`) or a single food (`food`, an ingredient with its unit); exactly one of the two is present, and `servings` is servings of the recipe or the food's amount in `food.unit`.
  *
  */
 export const getMealPlan = <ThrowOnError extends boolean = false>(options: Options<GetMealPlanData, ThrowOnError>): RequestResult<GetMealPlanResponses, GetMealPlanErrors, ThrowOnError> => (options.client ?? client).get<GetMealPlanResponses, GetMealPlanErrors, ThrowOnError>({ url: '/api/v1/plans/{startDate}', ...options });
@@ -408,7 +408,7 @@ export const getMealPlan = <ThrowOnError extends boolean = false>(options: Optio
 /**
  * The caller's own planned calories and macros for each day of a week
  *
- * Returns seven days, Monday first, for the week starting at `startDate`, which must be a Monday. The totals are the caller's alone: only meals the caller is a diner of count, and each counts the caller's share times the recipe's per-serving nutrition. The share is the meal's servings divided by its number of diners, rounded to 0.1 serving and never below 0.1; a meal the caller eats alone counts all its servings. That is the share logging a planned meal fills in. Other members of the household get different totals for the same week. A value a meal's recipe lacks (calories, protein, carbs, or fat) adds nothing to its total, and the recipe's known values still count, as logging the meal records them. A meal whose recipe lacks any of the four is also counted in `mealsWithoutNutrition`, so a total that leaves values out says so. A value no meal that day knows is absent from `total`, never zero, so a day with no meals has an empty `total`.
+ * Returns seven days, Monday first, for the week starting at `startDate`, which must be a Monday. The totals are the caller's alone: only meals the caller is a diner of count, and each counts the caller's share times the recipe's per-serving nutrition, or a planned food's nutrition for the share's amount. The share is the meal's servings divided by its number of diners, rounded to 0.1 serving and never below 0.1; a meal the caller eats alone counts all its servings. That is the share logging a planned meal fills in. Other members of the household get different totals for the same week. A value a meal's recipe or ingredient lacks (calories, protein, carbs, or fat) adds nothing to its total, and the known values still count, as logging the meal records them. A meal whose recipe or ingredient lacks any of the four is also counted in `mealsWithoutNutrition`, so a total that leaves values out says so. A value no meal that day knows is absent from `total`, never zero, so a day with no meals has an empty `total`.
  *
  */
 export const getMyPlannedTotals = <ThrowOnError extends boolean = false>(options: Options<GetMyPlannedTotalsData, ThrowOnError>): RequestResult<GetMyPlannedTotalsResponses, GetMyPlannedTotalsErrors, ThrowOnError> => (options.client ?? client).get<GetMyPlannedTotalsResponses, GetMyPlannedTotalsErrors, ThrowOnError>({ url: '/api/v1/plans/{startDate}/my-totals', ...options });
@@ -416,7 +416,7 @@ export const getMyPlannedTotals = <ThrowOnError extends boolean = false>(options
 /**
  * Plan a meal in the week
  *
- * Plans a recipe (personal or library, by its id) for a day and meal. `startDate` is the week's Monday and `date` must fall within that week (Monday to Sunday). A slot can hold more than one recipe. `servings` is the amount cooked, for everyone who eats it, and may be fractional. `diners` names who eats it by profile id (from getHousehold): one or more members of the caller's household. Leave `diners` out for the usual choice: a DINNER is eaten by every member, a BREAKFAST, LUNCH or SNACK by the caller alone. An empty list, or anyone who is not a member, is a 400.
+ * Plans a recipe (personal or library, by its id) or a single food for a day and meal. Send exactly one of `recipeId` and `food`; both or neither is a 400. A food is an ingredient, shared or one of the household's own, by its slug from listIngredients, with the amount counted in a unit its basis takes: g or kg per 100 g; ml, l, tsp, or tbsp per 100 ml; no unit (a count of pieces) per piece. An unknown slug is a 404, a unit the basis does not take a 400. `startDate` is the week's Monday and `date` must fall within that week (Monday to Sunday). A slot can hold more than one entry. `servings` is the amount planned, for everyone who eats it, and may be fractional: servings of the recipe (at most 100), or the food's amount in `food.unit` (at most 10,000). `diners` names who eats it by profile id (from getHousehold): one or more members of the caller's household. Leave `diners` out for the usual choice: a DINNER is eaten by every member, a BREAKFAST, LUNCH or SNACK by the caller alone. An empty list, or anyone who is not a member, is a 400.
  *
  */
 export const addMealPlanEntry = <ThrowOnError extends boolean = false>(options: Options<AddMealPlanEntryData, ThrowOnError>): RequestResult<AddMealPlanEntryResponses, AddMealPlanEntryErrors, ThrowOnError> => (options.client ?? client).post<AddMealPlanEntryResponses, AddMealPlanEntryErrors, ThrowOnError>({
@@ -436,7 +436,7 @@ export const deleteMealPlanEntry = <ThrowOnError extends boolean = false>(option
 /**
  * Change a planned meal's servings or who eats it
  *
- * Send `servings`, `diners`, or both; leaving one out keeps it. `diners` replaces the whole list and must name one or more members of the caller's household (profile ids from getHousehold); an empty list, or anyone who is not a member, is a 400. Changing the diners does not change the servings cooked.
+ * Send `servings`, `diners`, or both; leaving one out keeps it. `servings` is the new amount planned: servings of the recipe (at most 100), or a planned food's amount in its unit (at most 10,000). `diners` replaces the whole list and must name one or more members of the caller's household (profile ids from getHousehold); an empty list, or anyone who is not a member, is a 400. Changing the diners does not change the servings cooked.
  *
  */
 export const updateMealPlanEntry = <ThrowOnError extends boolean = false>(options: Options<UpdateMealPlanEntryData, ThrowOnError>): RequestResult<UpdateMealPlanEntryResponses, UpdateMealPlanEntryErrors, ThrowOnError> => (options.client ?? client).patch<UpdateMealPlanEntryResponses, UpdateMealPlanEntryErrors, ThrowOnError>({
@@ -490,7 +490,7 @@ export const getShoppingList = <ThrowOnError extends boolean = false>(options: O
 /**
  * Generate (or regenerate) the shopping list for a week
  *
- * Builds the week's list from its plan: ingredient quantities summed across the planned recipes, scaled by planned servings, grouped by aisle. Call it after changing the plan. Checked-off items keep their checked state when the list is regenerated.
+ * Builds the week's list from its plan: ingredient quantities summed across the planned recipes, scaled by planned servings, plus a line for each planned food (its name, unit, and amount, merged with a recipe's line of the same name and unit), grouped by aisle. Call it after changing the plan. Checked-off items keep their checked state when the list is regenerated.
  *
  */
 export const generateShoppingList = <ThrowOnError extends boolean = false>(options: Options<GenerateShoppingListData, ThrowOnError>): RequestResult<GenerateShoppingListResponses, GenerateShoppingListErrors, ThrowOnError> => (options.client ?? client).post<GenerateShoppingListResponses, GenerateShoppingListErrors, ThrowOnError>({ url: '/api/v1/plans/{startDate}/shopping-list', ...options });
@@ -518,7 +518,7 @@ export const listMealLogs = <ThrowOnError extends boolean = false>(options: Opti
 /**
  * Log a meal
  *
- * Either reference a recipe (nutrition is derived from the recipe's per-serving values scaled by servings) or log ad-hoc with a description and manual nutrition totals. The log is the caller's own, not their household's. To log a planned meal for the caller, send the entry's recipeId, date, and mealType, with `servings` set to the caller's share: the entry's servings divided by its number of diners (a dinner of 4 servings for 2 diners is 2 servings each), unless the user says how much they ate.
+ * Either reference a recipe (nutrition is derived from the recipe's per-serving values scaled by servings) or log ad-hoc with a description and manual nutrition totals. The log is the caller's own, not their household's. To log a planned meal for the caller, send the entry's recipeId, date, and mealType, with `servings` set to the caller's share: the entry's servings divided by its number of diners (a dinner of 4 servings for 2 diners is 2 servings each), unless the user says how much they ate. A planned food has no recipeId: log it ad hoc with the food's name as the description, the share's amount as `servings`, and the nutrition of that amount from the ingredient (see listIngredients).
  *
  */
 export const createMealLog = <ThrowOnError extends boolean = false>(options: Options<CreateMealLogData, ThrowOnError>): RequestResult<CreateMealLogResponses, CreateMealLogErrors, ThrowOnError> => (options.client ?? client).post<CreateMealLogResponses, CreateMealLogErrors, ThrowOnError>({

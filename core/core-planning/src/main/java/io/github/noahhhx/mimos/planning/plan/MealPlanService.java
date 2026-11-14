@@ -1,18 +1,20 @@
 package io.github.noahhhx.mimos.planning.plan;
 
+import io.github.noahhhx.mimos.recipes.recipe.CatalogIngredient;
+import io.github.noahhhx.mimos.recipes.recipe.IngredientService;
 import io.github.noahhhx.mimos.recipes.recipe.Nutrition;
 import io.github.noahhhx.mimos.recipes.recipe.Recipe;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeService;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,21 +22,27 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Meal planning use cases. Plans are keyed by their Monday and created
  * empty on first access; entries must fall inside the plan's week and
- * reference recipes the owner can see (their own or the library). Recipe
- * data is resolved through core-recipes' public interface only.
+ * reference recipes or ingredients the owner can see (their own or the
+ * shared library and catalog). Recipe and ingredient data is resolved
+ * through core-recipes' public interface only.
  */
 @Service
 public class MealPlanService {
 
-    /** The servings bound of the plan domain; suggestion validation mirrors it (ADR-0006). */
+    /** The servings bound of a planned recipe; suggestion validation mirrors it (ADR-0006). */
     public static final double MAX_SERVINGS = 100;
+
+    /** The quantity bound of a planned food, in its unit (ADR-0026). */
+    public static final double MAX_FOOD_QUANTITY = 10_000;
 
     private final MealPlanRepository plans;
     private final RecipeService recipes;
+    private final IngredientService ingredients;
 
-    public MealPlanService(MealPlanRepository plans, RecipeService recipes) {
+    public MealPlanService(MealPlanRepository plans, RecipeService recipes, IngredientService ingredients) {
         this.plans = plans;
         this.recipes = recipes;
+        this.ingredients = ingredients;
     }
 
     /** The owner's plan for the week, created empty on first access. */
@@ -52,54 +60,74 @@ public class MealPlanService {
             LocalDate startDate,
             LocalDate date,
             MealType mealType,
-            UUID recipeId,
-            double servings) {
+            PlannedItem item,
+            double amount) {
         requireDiners(dinerProfileIds);
         requireMonday(startDate);
         requireWithinWeek(startDate, date);
-        requireServings(servings);
-        Recipe recipe = recipes.findVisible(recipeId, ownerId)
-                .orElseThrow(() -> new NoSuchElementException("recipe not found: " + recipeId));
+        switch (item) {
+            case PlannedItem.Recipe recipe -> {
+                requireAmount(amount, MAX_SERVINGS);
+                if (recipes.findVisible(recipe.recipeId(), ownerId).isEmpty()) {
+                    throw new NoSuchElementException("recipe not found: " + recipe.recipeId());
+                }
+            }
+            case PlannedItem.Food food -> {
+                requireAmount(amount, MAX_FOOD_QUANTITY);
+                CatalogIngredient ingredient = visibleIngredient(ownerId, food.catalogSlug());
+                if (ingredient.nutritionOf(1, food.unit()).isEmpty()) {
+                    throw new IllegalArgumentException(
+                            switch (ingredient.basis()) {
+                                case PER_100_G ->
+                                    food.catalogSlug() + " is measured per 100 g, so its unit must be g or kg";
+                                case PER_100_ML ->
+                                    food.catalogSlug()
+                                            + " is measured per 100 ml, so its unit must be ml, l, tsp, or tbsp";
+                                case PER_PIECE -> food.catalogSlug() + " is counted in pieces, so it takes no unit";
+                            });
+                }
+            }
+        }
         UUID planId = plans.ensurePlan(ownerId, startDate);
         MealPlanRepository.PlannedMealInput entry = new MealPlanRepository.PlannedMealInput(
-                UUID.randomUUID(), date, mealType, recipeId, servings, Set.copyOf(dinerProfileIds));
+                UUID.randomUUID(), date, mealType, item, amount, Set.copyOf(dinerProfileIds));
         plans.insertEntry(planId, entry);
-        return toPlannedMeal(entry, Map.of(recipeId, recipe));
+        return withTitle(ownerId, entry);
     }
 
     /**
-     * Changes the servings, the diners (at least one), or both, of one of
-     * the owner's entries; null leaves that part as it is. The servings
-     * cooked do not follow the diners.
+     * Changes the amount, the diners (at least one), or both, of one of
+     * the owner's entries; null leaves that part as it is. The amount is
+     * bounded by the entry's own kind, and does not follow the diners.
      */
     @Transactional
     public PlannedMeal updateEntry(
             UUID ownerId,
             LocalDate startDate,
             UUID entryId,
-            @Nullable Double servings,
+            @Nullable Double amount,
             @Nullable Set<UUID> dinerProfileIds) {
         requireMonday(startDate);
-        if (servings != null) {
-            requireServings(servings);
-        }
         if (dinerProfileIds != null) {
             requireDiners(dinerProfileIds);
         }
         MealPlanRepository.PlannedMealInput entry = requireEntry(ownerId, startDate, entryId);
-        if (servings != null) {
-            plans.updateServings(entryId, servings);
+        if (amount != null) {
+            requireAmount(amount, entry.item() instanceof PlannedItem.Recipe ? MAX_SERVINGS : MAX_FOOD_QUANTITY);
+            plans.updateServings(entryId, amount);
         }
         if (dinerProfileIds != null) {
             plans.replaceDiners(entryId, dinerProfileIds);
         }
-        return withTitle(new MealPlanRepository.PlannedMealInput(
-                entry.id(),
-                entry.date(),
-                entry.mealType(),
-                entry.recipeId(),
-                servings != null ? servings : entry.servings(),
-                dinerProfileIds != null ? Set.copyOf(dinerProfileIds) : entry.dinerProfileIds()));
+        return withTitle(
+                ownerId,
+                new MealPlanRepository.PlannedMealInput(
+                        entry.id(),
+                        entry.date(),
+                        entry.mealType(),
+                        entry.item(),
+                        amount != null ? amount : entry.amount(),
+                        dinerProfileIds != null ? Set.copyOf(dinerProfileIds) : entry.dinerProfileIds()));
     }
 
     /** Removes one of the owner's entries. */
@@ -110,7 +138,7 @@ public class MealPlanService {
         plans.deleteEntry(entryId);
     }
 
-    /** The week's raw entries with their recipes resolved (for shopping lists and logging). */
+    /** The week's raw entries with their titles resolved (for shopping lists and logging). */
     public List<PlannedMeal> plannedMeals(UUID ownerId, LocalDate startDate) {
         return hydrate(ownerId, startDate, plans.ensurePlan(ownerId, startDate)).entries();
     }
@@ -131,28 +159,25 @@ public class MealPlanService {
      */
     public List<PlannedDayTotal> plannedTotals(UUID ownerId, LocalDate from, LocalDate to, UUID dinerProfileId) {
         List<MealPlanRepository.PlannedMealInput> entries = plans.loadEntryInputsBetween(ownerId, from, to);
-        Map<UUID, Nutrition> perServing = recipes
-                .findByIds(entries.stream()
-                        .map(MealPlanRepository.PlannedMealInput::recipeId)
-                        .toList())
-                .values()
-                .stream()
-                .collect(Collectors.toMap(Recipe::id, Recipe::nutrition));
-        return PlannedDayTotal.forRange(from, to, dinerProfileId, entries, perServing);
+        return PlannedDayTotal.forRange(from, to, dinerProfileId, entries, perUnitNutrition(ownerId, entries));
     }
 
     /** Every week the owner has planned meals in, oldest first; weeks without entries are left out. */
     public List<MealPlan> plansWithEntries(UUID ownerId) {
         List<MealPlanRepository.WeekEntry> all = plans.loadAllEntryInputs(ownerId);
-        Map<UUID, Recipe> recipesById = recipes.findByIds(
-                all.stream().map(weekEntry -> weekEntry.entry().recipeId()).toList());
+        Map<UUID, Recipe> recipesById = recipes.findByIds(recipeIdsOf(
+                all.stream().map(MealPlanRepository.WeekEntry::entry).toList()));
+        Map<String, CatalogIngredient> ingredientsBySlug = ingredients.findVisibleBySlugs(
+                ownerId,
+                foodSlugsOf(
+                        all.stream().map(MealPlanRepository.WeekEntry::entry).toList()));
         Map<UUID, MealPlan> byPlan = new LinkedHashMap<>();
         for (MealPlanRepository.WeekEntry weekEntry : all) {
             byPlan.computeIfAbsent(
                             weekEntry.planId(),
                             planId -> new MealPlan(planId, ownerId, weekEntry.startDate(), new ArrayList<>()))
                     .entries()
-                    .add(toPlannedMeal(weekEntry.entry(), recipesById));
+                    .add(toPlannedMeal(weekEntry.entry(), recipesById, ingredientsBySlug));
         }
         return byPlan.values().stream()
                 .map(plan -> new MealPlan(plan.id(), ownerId, plan.startDate(), List.copyOf(plan.entries())))
@@ -181,28 +206,72 @@ public class MealPlanService {
 
     private MealPlan hydrate(UUID ownerId, LocalDate startDate, UUID planId) {
         List<MealPlanRepository.PlannedMealInput> inputs = plans.loadEntryInputs(ownerId, startDate);
-        Map<UUID, Recipe> recipesById = recipes.findByIds(inputs.stream()
-                .map(MealPlanRepository.PlannedMealInput::recipeId)
-                .toList());
-        List<PlannedMeal> entries =
-                inputs.stream().map(input -> toPlannedMeal(input, recipesById)).toList();
+        Map<UUID, Recipe> recipesById = recipes.findByIds(recipeIdsOf(inputs));
+        Map<String, CatalogIngredient> ingredientsBySlug = ingredients.findVisibleBySlugs(ownerId, foodSlugsOf(inputs));
+        List<PlannedMeal> entries = inputs.stream()
+                .map(input -> toPlannedMeal(input, recipesById, ingredientsBySlug))
+                .toList();
         return new MealPlan(planId, ownerId, startDate, entries);
     }
 
-    private static PlannedMeal toPlannedMeal(MealPlanRepository.PlannedMealInput input, Map<UUID, Recipe> recipesById) {
-        Recipe recipe = recipesById.get(input.recipeId());
+    /** Per unit of amount: a recipe's per-serving nutrition, or a food's per its unit. */
+    private Map<PlannedItem, Nutrition> perUnitNutrition(
+            UUID ownerId, List<MealPlanRepository.PlannedMealInput> entries) {
+        Map<UUID, Recipe> recipesById = recipes.findByIds(recipeIdsOf(entries));
+        Map<String, CatalogIngredient> ingredientsBySlug =
+                ingredients.findVisibleBySlugs(ownerId, foodSlugsOf(entries));
+        Map<PlannedItem, Nutrition> perUnit = new HashMap<>();
+        for (MealPlanRepository.PlannedMealInput entry : entries) {
+            switch (entry.item()) {
+                case PlannedItem.Recipe recipe -> {
+                    Recipe found = recipesById.get(recipe.recipeId());
+                    if (found != null) {
+                        perUnit.putIfAbsent(recipe, found.nutrition());
+                    }
+                }
+                case PlannedItem.Food food -> {
+                    CatalogIngredient ingredient = ingredientsBySlug.get(food.catalogSlug());
+                    perUnit.putIfAbsent(
+                            food,
+                            ingredient == null
+                                    ? Nutrition.UNKNOWN
+                                    : ingredient.nutritionOf(1, food.unit()).orElse(Nutrition.UNKNOWN));
+                }
+            }
+        }
+        return perUnit;
+    }
+
+    private static PlannedMeal toPlannedMeal(
+            MealPlanRepository.PlannedMealInput input,
+            Map<UUID, Recipe> recipesById,
+            Map<String, CatalogIngredient> ingredientsBySlug) {
+        String title =
+                switch (input.item()) {
+                    case PlannedItem.Recipe recipe -> {
+                        Recipe found = recipesById.get(recipe.recipeId());
+                        yield found != null ? found.title() : "Deleted recipe";
+                    }
+                    case PlannedItem.Food food -> {
+                        CatalogIngredient ingredient = ingredientsBySlug.get(food.catalogSlug());
+                        yield ingredient != null ? ingredient.name() : food.catalogSlug();
+                    }
+                };
         return new PlannedMeal(
                 input.id(),
                 input.date(),
                 input.mealType(),
-                input.recipeId(),
-                recipe != null ? recipe.title() : "Deleted recipe",
-                input.servings(),
+                input.item(),
+                title,
+                input.amount(),
                 input.dinerProfileIds());
     }
 
-    private PlannedMeal withTitle(MealPlanRepository.PlannedMealInput entry) {
-        return toPlannedMeal(entry, recipes.findByIds(List.of(entry.recipeId())));
+    private PlannedMeal withTitle(UUID ownerId, MealPlanRepository.PlannedMealInput entry) {
+        return toPlannedMeal(
+                entry,
+                recipes.findByIds(recipeIdsOf(List.of(entry))),
+                ingredients.findVisibleBySlugs(ownerId, foodSlugsOf(List.of(entry))));
     }
 
     private MealPlanRepository.PlannedMealInput requireEntry(UUID ownerId, LocalDate startDate, UUID entryId) {
@@ -213,6 +282,35 @@ public class MealPlanService {
             throw new NoSuchElementException("plan entry not found: " + entryId);
         }
         return entry;
+    }
+
+    private CatalogIngredient visibleIngredient(UUID ownerId, String slug) {
+        CatalogIngredient ingredient =
+                ingredients.findVisibleBySlugs(ownerId, List.of(slug)).get(slug);
+        if (ingredient == null) {
+            throw new NoSuchElementException("ingredient not found: " + slug);
+        }
+        return ingredient;
+    }
+
+    private static List<UUID> recipeIdsOf(List<MealPlanRepository.PlannedMealInput> entries) {
+        List<UUID> ids = new ArrayList<>();
+        for (MealPlanRepository.PlannedMealInput entry : entries) {
+            if (entry.item() instanceof PlannedItem.Recipe recipe) {
+                ids.add(recipe.recipeId());
+            }
+        }
+        return ids;
+    }
+
+    private static List<String> foodSlugsOf(List<MealPlanRepository.PlannedMealInput> entries) {
+        List<String> slugs = new ArrayList<>();
+        for (MealPlanRepository.PlannedMealInput entry : entries) {
+            if (entry.item() instanceof PlannedItem.Food food) {
+                slugs.add(food.catalogSlug());
+            }
+        }
+        return slugs;
     }
 
     private static void requireMonday(LocalDate startDate) {
@@ -233,9 +331,9 @@ public class MealPlanService {
         }
     }
 
-    private static void requireServings(double servings) {
-        if (Double.isNaN(servings) || servings <= 0 || servings > MAX_SERVINGS) {
-            throw new IllegalArgumentException("servings must be between 0 (exclusive) and " + MAX_SERVINGS);
+    private static void requireAmount(double amount, double max) {
+        if (Double.isNaN(amount) || amount <= 0 || amount > max) {
+            throw new IllegalArgumentException("servings must be between 0 (exclusive) and " + max);
         }
     }
 }

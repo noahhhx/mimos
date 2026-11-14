@@ -1,6 +1,7 @@
 package io.github.noahhhx.mimos.planning.shopping;
 
 import io.github.noahhhx.mimos.planning.plan.MealPlanService;
+import io.github.noahhhx.mimos.planning.plan.PlannedItem;
 import io.github.noahhhx.mimos.planning.plan.PlannedMeal;
 import io.github.noahhhx.mimos.recipes.recipe.Ingredient;
 import io.github.noahhhx.mimos.recipes.recipe.Recipe;
@@ -22,10 +23,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Shopping list generation: aggregates ingredient quantities across the
- * week's planned recipes, scaled by planned servings, keyed by normalized
- * ingredient name + unit. A counted line (no unit: "1 onion") rounds up to
- * whole items once totaled, since nobody buys 0.13 of an onion; measured
- * lines keep their amount. Regeneration replaces the list but preserves
+ * week's planned recipes, scaled by planned servings, plus one line per
+ * planned food (ADR-0026), keyed by normalized ingredient name + unit. A
+ * counted line (no unit: "1 onion") rounds up to whole items once totaled,
+ * since nobody buys 0.13 of an onion; measured lines keep their amount. Regeneration replaces the list but preserves
  * checked-off state for lines that survive (same name and unit) — ticking
  * things off in the store then replanning shouldn't lose your progress.
  */
@@ -54,8 +55,10 @@ public class ShoppingListService {
     public ShoppingList generate(UUID ownerId, LocalDate startDate) {
         requireMonday(startDate);
         List<PlannedMeal> planned = mealPlanService.plannedMeals(ownerId, startDate);
-        Map<UUID, Recipe> recipesById =
-                recipes.findByIds(planned.stream().map(PlannedMeal::recipeId).toList());
+        Map<UUID, Recipe> recipesById = recipes.findByIds(planned.stream()
+                .map(meal -> meal.item() instanceof PlannedItem.Recipe recipe ? recipe.recipeId() : null)
+                .filter(java.util.Objects::nonNull)
+                .toList());
         Map<String, Boolean> previouslyChecked = repository
                 .findList(ownerId, startDate)
                 .map(list -> list.items().stream()
@@ -71,18 +74,28 @@ public class ShoppingListService {
         Map<String, Double> totals = new LinkedHashMap<>();
         Map<String, String> displayNames = new LinkedHashMap<>();
         for (PlannedMeal meal : planned) {
-            Recipe recipe = recipesById.get(meal.recipeId());
-            if (recipe == null) {
-                continue; // recipe deleted since planning; the FK already removed the entry.
-            }
-            double scale = meal.servings() / recipe.servings();
-            for (Ingredient ingredient : recipe.ingredients()) {
-                String key = lineKey(Aisles.normalizeName(ingredient.name()), ingredient.unit());
-                Double quantity = ingredient.quantity();
-                if (quantity != null) {
-                    totals.merge(key, quantity * scale, Double::sum);
+            switch (meal.item()) {
+                case PlannedItem.Recipe plannedRecipe -> {
+                    Recipe recipe = recipesById.get(plannedRecipe.recipeId());
+                    if (recipe == null) {
+                        continue; // recipe deleted since planning; the FK already removed the entry.
+                    }
+                    double scale = meal.amount() / recipe.servings();
+                    for (Ingredient ingredient : recipe.ingredients()) {
+                        String key = lineKey(Aisles.normalizeName(ingredient.name()), ingredient.unit());
+                        Double quantity = ingredient.quantity();
+                        if (quantity != null) {
+                            totals.merge(key, quantity * scale, Double::sum);
+                        }
+                        displayNames.putIfAbsent(key, ingredient.name());
+                    }
                 }
-                displayNames.putIfAbsent(key, ingredient.name());
+                // A planned food is one line of its own, merged with any recipe line of the same name and unit.
+                case PlannedItem.Food food -> {
+                    String key = lineKey(Aisles.normalizeName(meal.title()), food.unit());
+                    totals.merge(key, meal.amount(), Double::sum);
+                    displayNames.putIfAbsent(key, meal.title());
+                }
             }
         }
 
