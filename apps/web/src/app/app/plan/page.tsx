@@ -6,6 +6,7 @@ import { Fragment, useCallback, useEffect, useState } from "react";
 import {
   addMealPlanEntry,
   addMyTraining,
+  createIngredient,
   createMealLog,
   deleteMealPlanEntry,
   deleteMyTraining,
@@ -14,12 +15,16 @@ import {
   getMyFuel,
   getPlanSuggestions,
   getWeekPanels,
+  listIngredients,
   listLibraryRecipes,
   listMyRecipes,
   updateMealPlanEntry,
+  type CatalogIngredient,
+  type FoodProduct,
   type FuelDay,
   type FuelTarget,
   type MealPlan,
+  type MealPlanEntryInput,
   type Person,
   type PlanSuggestion,
   type PlannedDayTotal,
@@ -31,10 +36,13 @@ import {
 } from "@mimos/api-client";
 
 import { useAuth } from "@/components/auth-provider";
+import { NewIngredient } from "@/components/new-ingredient";
 import { PageHeader } from "@/components/page-header";
+import { ScanBarcode } from "@/components/scan-barcode";
 import { SignInPrompt } from "@/components/sign-in-prompt";
 import { WeekPanelSection } from "@/components/week-panel";
 import { apiClient } from "@/lib/api";
+import { searchCatalog } from "@/lib/catalog-match";
 import {
   chipLabels,
   defaultServings,
@@ -60,6 +68,19 @@ import {
   trainingLabelFor,
 } from "@/lib/fuel";
 import { TRAINING_FIELD_ERRORS, namedFields } from "@/lib/fuel-fields";
+import { describeIngredient, productName, unitLabel } from "@/lib/log-entry";
+import {
+  amountText,
+  entryName,
+  existingIngredient,
+  foodLogBody,
+  newFoodEntry,
+  MAX_FOOD_AMOUNT,
+  parseFoodAmount,
+  plannedWhat,
+  productIngredient,
+  unitOf,
+} from "@/lib/planned-item";
 import { plannedTotalParts, showsPlannedTotals, withoutNutritionNote } from "@/lib/planned-totals";
 import { applySuggestionEntries } from "@/lib/suggestions";
 
@@ -86,9 +107,13 @@ export default function PlanPage() {
   const [applying, setApplying] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [picker, setPicker] = useState<{ date: string; mealType: string } | null>(null);
+  const [picker, setPicker] = useState<{ date: string; mealType: (typeof MEAL_TYPES)[number] } | null>(null);
   const [pickerQuery, setPickerQuery] = useState("");
   const [pickerResults, setPickerResults] = useState<RecipeSummary[] | null>(null);
+  // Ingredients plan as foods and give a planned food its nutrition when it is logged (ADR-0026).
+  const [ingredients, setIngredients] = useState<CatalogIngredient[]>([]);
+  // A scanned product that lacks a value, until the person fills it in.
+  const [unfinished, setUnfinished] = useState<FoodProduct | null>(null);
   const [logged, setLogged] = useState<string | null>(null);
   const [members, setMembers] = useState<Person[]>([]);
   const [view, setView] = useState<PlanView>("mine");
@@ -150,6 +175,22 @@ export default function PlanPage() {
     }
   }, [subject, reload]);
 
+  // Foods only make planning quicker: when the catalog fails to load, recipes plan as before.
+  useEffect(() => {
+    if (!subject) {
+      return;
+    }
+    let cancelled = false;
+    void listIngredients({ client: apiClient }).then((result) => {
+      if (!cancelled) {
+        setIngredients(result.data ?? []);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [subject]);
+
   useEffect(() => {
     if (!picker) {
       return;
@@ -199,6 +240,8 @@ export default function PlanPage() {
     }
   }
 
+  const foodResults = searchCatalog(pickerQuery, ingredients);
+
   const chooseView = (next: PlanView) => {
     setView(next);
     try {
@@ -208,24 +251,55 @@ export default function PlanPage() {
     }
   };
 
-  const planMeal = async (recipeId: string) => {
+  const closePicker = () => {
+    setPicker(null);
+    setPickerQuery("");
+    setPickerResults(null);
+    setUnfinished(null);
+  };
+
+  const planItem = async (item: Pick<MealPlanEntryInput, "recipeId" | "food" | "servings">) => {
     if (!picker) {
       return;
     }
-    const mealType = picker.mealType as (typeof MEAL_TYPES)[number];
     const result = await addMealPlanEntry({
       client: apiClient,
       path: { startDate: weekStart },
-      body: { date: picker.date, mealType, recipeId, servings: defaultServings(mealType, members.length) },
+      body: { date: picker.date, mealType: picker.mealType, ...item },
     });
     if (result.error) {
       setError("Could not plan that meal.");
       return;
     }
-    setPicker(null);
-    setPickerQuery("");
-    setPickerResults(null);
+    closePicker();
     await reload();
+  };
+
+  const planRecipe = (recipeId: string) =>
+    picker && planItem({ recipeId, servings: defaultServings(picker.mealType, members.length) });
+
+  const planFood = (food: CatalogIngredient, servingSize?: number) =>
+    picker &&
+    planItem(newFoodEntry({ slug: food.slug, basis: food.basis, servingSize }, picker.mealType, members.length));
+
+  // A product with all four values becomes one of the household's ingredients, once, and is planned.
+  const planProduct = async (product: FoodProduct) => {
+    const input = productIngredient(product);
+    if (!input) {
+      setUnfinished(product);
+      return;
+    }
+    let food = existingIngredient(input, ingredients);
+    if (!food) {
+      const created = await createIngredient({ client: apiClient, body: input });
+      if (!created.data) {
+        setError("Could not add that product.");
+        return;
+      }
+      food = created.data;
+      setIngredients((current) => [...current, created.data]);
+    }
+    await planFood(food, product.servingSize);
   };
 
   const changeServings = async (entryId: string, servings: number) => {
@@ -259,22 +333,32 @@ export default function PlanPage() {
     await reload();
   };
 
-  const logMeal = async (entry: Entry, servings: number) => {
-    const result = await createMealLog({
+  const changeAmount = async (entryId: string, amount: number) => {
+    const result = await updateMealPlanEntry({
       client: apiClient,
-      body: {
-        date: entry.date,
-        mealType: entry.mealType,
-        recipeId: entry.recipeId,
-        servings,
-      },
+      path: { startDate: weekStart, entryId },
+      body: { servings: amount },
     });
     if (result.error) {
+      setError("Could not change that amount.");
+    }
+    await reload();
+  };
+
+  // A recipe logs as servings of it; a food logs as an ad-hoc meal of its amount, with the nutrition calculated here.
+  const logMeal = async (entry: Entry, amount: number) => {
+    const what = plannedWhat(entry);
+    const body =
+      what.kind === "recipe"
+        ? { date: entry.date, mealType: entry.mealType, recipeId: what.recipeId, servings: amount }
+        : foodLogBody(entry, ingredients, amount);
+    const result = body && (await createMealLog({ client: apiClient, body }));
+    if (!result || result.error) {
       setError("Could not log that meal.");
       return;
     }
     setSharing(null);
-    setLogged(`${entry.recipeTitle} logged.`);
+    setLogged(`${entryName(entry)} logged.`);
   };
 
   // A meal eaten alone logs in one tap; a shared one asks for your share first.
@@ -448,25 +532,42 @@ export default function PlanPage() {
                         +
                       </button>
                     </div>
-                    {entries.map((entry) => (
+                    {entries.map((entry) => {
+                      const what = plannedWhat(entry);
+                      return (
                       <div key={entry.id} className="planned-meal">
-                        <Link href={`/app/recipes/${entry.recipeId}`}>{entry.recipeTitle}</Link>
+                        {what.kind === "recipe" ? (
+                          <Link href={`/app/recipes/${what.recipeId}`}>{what.title}</Link>
+                        ) : (
+                          <span className="planned-name">{what.food.name}</span>
+                        )}
                         <div className="meal-controls">
-                          <button
-                            className="button secondary small"
-                            onClick={() => void changeServings(entry.id, entry.servings - 0.5)}
-                            aria-label="Fewer servings"
-                          >
-                            −
-                          </button>
-                          <span>{formatServings(entry.servings)}</span>
-                          <button
-                            className="button secondary small"
-                            onClick={() => void changeServings(entry.id, entry.servings + 0.5)}
-                            aria-label="More servings"
-                          >
-                            +
-                          </button>
+                          {what.kind === "recipe" ? (
+                            <>
+                              <button
+                                className="button secondary small"
+                                onClick={() => void changeServings(entry.id, entry.servings - 0.5)}
+                                aria-label="Fewer servings"
+                              >
+                                −
+                              </button>
+                              <span>{formatServings(entry.servings)}</span>
+                              <button
+                                className="button secondary small"
+                                onClick={() => void changeServings(entry.id, entry.servings + 0.5)}
+                                aria-label="More servings"
+                              >
+                                +
+                              </button>
+                            </>
+                          ) : (
+                            <FoodAmount
+                              name={what.food.name}
+                              amount={entry.servings}
+                              unit={what.food.unit}
+                              onSave={(amount) => changeAmount(entry.id, amount)}
+                            />
+                          )}
                           {eatsIt(entry) && (
                             <button className="button secondary small" onClick={() => startLog(entry)}>
                               Log
@@ -475,7 +576,7 @@ export default function PlanPage() {
                           <button
                             className="button secondary small"
                             onClick={() => void unplan(entry.id)}
-                            aria-label={`Remove ${entry.recipeTitle}`}
+                            aria-label={`Remove ${entryName(entry)}`}
                           >
                             ✕
                           </button>
@@ -504,7 +605,7 @@ export default function PlanPage() {
                         {sharing?.entryId === entry.id && (
                           <form
                             className="share"
-                            aria-label={`Log your share of ${entry.recipeTitle}`}
+                            aria-label={`Log your share of ${entryName(entry)}`}
                             onSubmit={(event) => {
                               event.preventDefault();
                               void logMeal(entry, Number(sharing.servings));
@@ -515,15 +616,15 @@ export default function PlanPage() {
                               <input
                                 type="number"
                                 min={0.1}
-                                max={100}
-                                step={0.1}
+                                max={what.kind === "recipe" ? 100 : 10_000}
+                                step={what.kind === "recipe" ? 0.1 : "any"}
                                 required
                                 value={sharing.servings}
                                 onChange={(event) => setSharing({ entryId: entry.id, servings: event.target.value })}
                               />
                             </label>
                             <span className="muted">
-                              of {formatServings(entry.servings)} for {entry.diners.length} people
+                              of {amountText(entry)} for {entry.diners.length} people
                             </span>
                             <button className="button small" type="submit">
                               Log share
@@ -534,7 +635,8 @@ export default function PlanPage() {
                           </form>
                         )}
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 );
               })}
@@ -544,31 +646,46 @@ export default function PlanPage() {
       )}
 
       {picker && (
-        <div className="picker card" role="dialog" aria-label="Pick a recipe">
+        <div className="picker card" role="dialog" aria-label="Pick a meal">
           <div className="toolbar">
             <h2>
               {mealLabel(picker.mealType)} · {dayLabel(picker.date)}
             </h2>
-            <button className="button secondary" onClick={() => setPicker(null)}>
+            <button className="button secondary" onClick={closePicker}>
               Close
             </button>
           </div>
-          <input
-            type="search"
-            value={pickerQuery}
-            onChange={(e) => setPickerQuery(e.target.value)}
-            placeholder="Search your recipes and the library…"
-            autoFocus
-          />
-          {pickerResults === null ? (
+          <div className="picker-search">
+            <input
+              type="search"
+              value={pickerQuery}
+              onChange={(e) => setPickerQuery(e.target.value)}
+              placeholder="Search recipes and ingredients…"
+              aria-label="Search recipes and ingredients"
+              autoFocus
+            />
+            <ScanBarcode onFound={(product) => void planProduct(product)} />
+          </div>
+          {unfinished ? (
+            <NewIngredient
+              initialName={productName(unfinished)}
+              initialBasis={unfinished.basis}
+              initialNutrition={unfinished.nutrition}
+              onCreated={(created) => {
+                setIngredients((current) => [...current, created]);
+                void planFood(created, created.basis === unfinished.basis ? unfinished.servingSize : undefined);
+              }}
+              onCancel={() => setUnfinished(null)}
+            />
+          ) : pickerResults === null ? (
             <p className="muted">Searching…</p>
-          ) : pickerResults.length === 0 ? (
+          ) : pickerResults.length === 0 && foodResults.length === 0 ? (
             <p className="muted">Nothing matches.</p>
           ) : (
             <ul className="picker-results">
               {pickerResults.map((recipe) => (
                 <li key={recipe.id}>
-                  <button className="button secondary" onClick={() => void planMeal(recipe.id)}>
+                  <button className="button secondary" onClick={() => void planRecipe(recipe.id)}>
                     {recipe.title}
                     <span className="muted">
                       {" "}
@@ -578,11 +695,75 @@ export default function PlanPage() {
                   </button>
                 </li>
               ))}
+              {foodResults.map((food) => (
+                <li key={food.slug}>
+                  <button className="button secondary" onClick={() => void planFood(food)}>
+                    {food.name}
+                    <span className="muted"> · {describeIngredient(food)}</span>
+                  </button>
+                </li>
+              ))}
             </ul>
           )}
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * A planned food's amount: a number with its unit beside it, saved on Enter
+ * or when focus leaves. Anything the API would refuse goes back to what is
+ * planned.
+ */
+function FoodAmount({
+  name,
+  amount,
+  unit,
+  onSave,
+}: {
+  name: string;
+  amount: number;
+  unit: string | undefined;
+  onSave: (amount: number) => Promise<void>;
+}) {
+  const [text, setText] = useState(String(amount));
+  const [seen, setSeen] = useState(amount);
+  if (seen !== amount) {
+    setSeen(amount);
+    setText(String(amount));
+  }
+
+  const commit = () => {
+    const parsed = parseFoodAmount(text);
+    if (parsed === undefined || parsed === amount) {
+      setText(String(amount));
+      return;
+    }
+    void onSave(parsed);
+  };
+
+  return (
+    <label className="food-amount">
+      <input
+        type="number"
+        inputMode="decimal"
+        min={0}
+        max={MAX_FOOD_AMOUNT}
+        step="any"
+        aria-label={`Amount of ${name}`}
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            commit();
+          }
+        }}
+      />
+      <span>{unitLabel(unitOf({ unit }), Number(text))}</span>
+    </label>
   );
 }
 

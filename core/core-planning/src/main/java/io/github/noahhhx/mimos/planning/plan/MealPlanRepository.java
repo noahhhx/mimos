@@ -13,15 +13,16 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 /**
- * JDBC persistence for meal plans and their entries. Recipe titles are not
+ * JDBC persistence for meal plans and their entries. Titles are not
  * stored here — core-planning resolves them through core-recipes'
- * public interface (ADR-0001) — so entries keep only the recipe id.
+ * public interface (ADR-0001) — so entries keep only the recipe id, or
+ * the planned food's slug and unit (ADR-0026).
  */
 @Repository
 public class MealPlanRepository {
 
     private static final String SELECT_ENTRIES = """
-            select e.id, e.entry_date, e.meal_type, e.recipe_id, e.servings,
+            select e.id, e.entry_date, e.meal_type, e.recipe_id, e.food_slug, e.food_unit, e.servings,
                    array(select d.profile_id from meal_plan_entry_diner d where d.entry_id = e.id) as diners
             from meal_plan_entry e
             join meal_plan p on p.id = e.meal_plan_id
@@ -33,6 +34,7 @@ public class MealPlanRepository {
                          when 'DINNER' then 2
                          when 'SNACK' then 3
                      end,
+                     e.created_at,
                      e.id
             """;
     private static final String SELECT_WEEK_ENTRIES = SELECT_ENTRIES.formatted("p.start_date = ?");
@@ -64,17 +66,29 @@ public class MealPlanRepository {
 
     /** Inserts an entry and its diners. */
     public void insertEntry(UUID planId, PlannedMealInput entry) {
+        UUID recipeId = null;
+        String foodSlug = null;
+        String foodUnit = null;
+        switch (entry.item()) {
+            case PlannedItem.Recipe recipe -> recipeId = recipe.recipeId();
+            case PlannedItem.Food food -> {
+                foodSlug = food.catalogSlug();
+                foodUnit = food.unit();
+            }
+        }
         jdbc.update(
                 """
-                insert into meal_plan_entry (id, meal_plan_id, entry_date, meal_type, recipe_id, servings)
-                values (?, ?, ?, ?, ?, ?)
+                insert into meal_plan_entry (id, meal_plan_id, entry_date, meal_type, recipe_id, food_slug, food_unit, servings)
+                values (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 entry.id(),
                 planId,
                 Date.valueOf(entry.date()),
                 entry.mealType().name(),
-                entry.recipeId(),
-                entry.servings());
+                recipeId,
+                foodSlug,
+                foodUnit,
+                entry.amount());
         insertDiners(entry.id(), entry.dinerProfileIds());
     }
 
@@ -122,7 +136,8 @@ public class MealPlanRepository {
     public List<WeekEntry> loadAllEntryInputs(UUID ownerId) {
         return jdbc.query(
                 """
-                select p.id as plan_id, p.start_date, e.id, e.entry_date, e.meal_type, e.recipe_id, e.servings,
+                select p.id as plan_id, p.start_date, e.id, e.entry_date, e.meal_type, e.recipe_id, e.food_slug,
+                       e.food_unit, e.servings,
                        array(select d.profile_id from meal_plan_entry_diner d where d.entry_id = e.id) as diners
                 from meal_plan_entry e
                 join meal_plan p on p.id = e.meal_plan_id
@@ -177,7 +192,7 @@ public class MealPlanRepository {
     /** A single entry (owner-checked via the plan join), for patch/delete confirmation. */
     public Optional<PlannedMealInput> findEntry(UUID ownerId, UUID entryId) {
         List<PlannedMealInput> rows = jdbc.query("""
-                select e.id, e.entry_date, e.meal_type, e.recipe_id, e.servings,
+                select e.id, e.entry_date, e.meal_type, e.recipe_id, e.food_slug, e.food_unit, e.servings,
                        array(select d.profile_id from meal_plan_entry_diner d where d.entry_id = e.id) as diners
                 from meal_plan_entry e
                 join meal_plan p on p.id = e.meal_plan_id
@@ -188,7 +203,7 @@ public class MealPlanRepository {
 
     /** Raw entry data before title resolution. */
     public record PlannedMealInput(
-            UUID id, LocalDate date, MealType mealType, UUID recipeId, double servings, Set<UUID> dinerProfileIds) {}
+            UUID id, LocalDate date, MealType mealType, PlannedItem item, double amount, Set<UUID> dinerProfileIds) {}
 
     /** An entry with its plan and the Monday of the plan's week. */
     public record WeekEntry(UUID planId, LocalDate startDate, PlannedMealInput entry) {}
@@ -199,11 +214,15 @@ public class MealPlanRepository {
 
         @Override
         public PlannedMealInput mapRow(ResultSet rs, int rowNum) throws SQLException {
+            UUID recipeId = rs.getObject("recipe_id", UUID.class);
+            PlannedItem item = recipeId != null
+                    ? new PlannedItem.Recipe(recipeId)
+                    : new PlannedItem.Food(rs.getString("food_slug"), rs.getString("food_unit"));
             return new PlannedMealInput(
                     rs.getObject("id", UUID.class),
                     rs.getDate("entry_date").toLocalDate(),
                     MealType.valueOf(rs.getString("meal_type")),
-                    rs.getObject("recipe_id", UUID.class),
+                    item,
                     rs.getDouble("servings"),
                     Set.of((UUID[]) rs.getArray("diners").getArray()));
         }

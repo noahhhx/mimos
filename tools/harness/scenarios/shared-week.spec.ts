@@ -166,7 +166,7 @@ test("a shared week: who eats what, Mine and Everyone, and logging your share", 
 async function planMonday(page: Page, meal: string, title: string): Promise<void> {
   const monday = page.locator(".week .day").first();
   await monday.getByRole("button", { name: new RegExp(`^Add ${meal} for `) }).click();
-  const picker = page.getByRole("dialog", { name: "Pick a recipe" });
+  const picker = page.getByRole("dialog", { name: "Pick a meal" });
   await picker.getByRole("searchbox").fill(title);
   await picker.getByRole("button", { name: new RegExp(`^${title}`) }).click();
   await expect(picker).toHaveCount(0);

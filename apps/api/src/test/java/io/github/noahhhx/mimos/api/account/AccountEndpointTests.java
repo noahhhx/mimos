@@ -144,6 +144,78 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
     }
 
     @Test
+    void plannedFoodsTravelByTheirIngredientAndAnUnknownOneIsSkipped() {
+        TestUser source = new TestUser(port, objectMapper, jdbc);
+        String week = "/api/v1/plans/" + MONDAY;
+        String bar = source.ok(
+                        HttpMethod.POST,
+                        "/api/v1/ingredients",
+                        Map.of(
+                                "name",
+                                "Export bar",
+                                "basis",
+                                "PER_100_G",
+                                "nutrition",
+                                Map.of("calories", 400, "proteinG", 8, "carbsG", 60, "fatG", 14)))
+                .get("slug")
+                .asText();
+        source.ok(HttpMethod.POST, week + "/entries", food(MONDAY, "SNACK", "banana", null, 2));
+        source.ok(HttpMethod.POST, week + "/entries", food(MONDAY, "BREAKFAST", bar, "g", 45));
+
+        JsonNode exported = source.ok(HttpMethod.GET, "/api/v1/account/export", null);
+
+        JsonNode entries = exported.get("mealPlans").get(0).get("entries");
+        assertThat(entries).hasSize(2);
+        assertThat(entries.get(0).get("food").get("catalogSlug").asText()).isEqualTo(bar);
+        assertThat(entries.get(0).get("food").get("unit").asText()).isEqualTo("g");
+        assertThat(entries.get(0).get("servings").asDouble()).isEqualTo(45);
+        assertThat(entries.get(1).get("food").get("catalogSlug").asText()).isEqualTo("banana");
+        assertThat(entries.get(1).get("food").has("unit")).isFalse();
+        assertThat(entries.get(1).has("recipeId")).isFalse();
+
+        TestUser fresh = new TestUser(port, objectMapper, jdbc);
+        JsonNode report = fresh.ok(HttpMethod.POST, "/api/v1/account/import", exported);
+        assertThat(report.get("plannedMeals").asInt()).isEqualTo(2);
+        assertThat(report.get("warnings")).isEmpty();
+        String importedBar = fresh.ok(HttpMethod.GET, "/api/v1/ingredients?q=export bar", null)
+                .get(0)
+                .get("slug")
+                .asText();
+        JsonNode restored = fresh.ok(HttpMethod.GET, week, null).get("entries");
+        assertThat(restored)
+                .extracting(entry -> entry.get("food").get("catalogSlug").asText())
+                .containsExactly(importedBar, "banana");
+        assertThat(restored.get(0).get("food").get("name").asText()).isEqualTo("Export bar");
+        assertThat(restored.get(0).get("servings").asDouble()).isEqualTo(45);
+
+        ObjectNode unknown = (ObjectNode) exported.deepCopy();
+        ((ObjectNode) unknown.get("mealPlans").get(0).get("entries").get(1).get("food"))
+                .put("catalogSlug", "retired-fruit");
+        TestUser another = new TestUser(port, objectMapper, jdbc);
+        JsonNode skipped = another.ok(HttpMethod.POST, "/api/v1/account/import", unknown);
+        assertThat(skipped.get("plannedMeals").asInt()).isEqualTo(1);
+        assertThat(skipped.get("warnings").get(0).asText())
+                .isEqualTo(
+                        "Ingredient \"retired-fruit\" is not in this instance's catalog:" + " 1 planned food skipped.");
+    }
+
+    @Test
+    void aPlannedMealNeedsExactlyOneOfARecipeALibraryRecipeAndAFood() {
+        TestUser person = new TestUser(port, objectMapper, jdbc);
+        ObjectNode both = fixture();
+        ((ObjectNode) both.get("mealPlans").get(0).get("entries").get(0))
+                .putObject("food")
+                .put("catalogSlug", "banana");
+
+        JsonNode problem =
+                person.send(HttpMethod.POST, "/api/v1/account/import", both).body();
+
+        assertThat(requireNonNull(problem).get("detail").asText())
+                .isEqualTo("mealPlans[0].entries[0]: a planned meal needs exactly one of recipeId, librarySlug,"
+                        + " and food");
+    }
+
+    @Test
     void aPictureThatIsNotAnImageIsNamedAndNothingIsWritten() {
         RestClient api = api();
         String token = accessToken(createUser());
@@ -167,6 +239,16 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
             }
         }
         throw new AssertionError("the export has no recipe titled " + title);
+    }
+
+    private static Map<String, Object> food(
+            LocalDate date, String mealType, String slug, @Nullable String unit, double amount) {
+        Map<String, Object> food = new HashMap<>();
+        food.put("catalogSlug", slug);
+        if (unit != null) {
+            food.put("unit", unit);
+        }
+        return Map.of("date", date.toString(), "mealType", mealType, "food", food, "servings", amount);
     }
 
     private static List<String> pictureData(JsonNode recipe) {

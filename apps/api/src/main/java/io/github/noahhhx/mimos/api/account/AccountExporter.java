@@ -10,6 +10,7 @@ import io.github.noahhhx.mimos.planning.logging.MealLog;
 import io.github.noahhhx.mimos.planning.logging.MealLogService;
 import io.github.noahhhx.mimos.planning.plan.MealPlan;
 import io.github.noahhhx.mimos.planning.plan.MealPlanService;
+import io.github.noahhhx.mimos.planning.plan.PlannedItem;
 import io.github.noahhhx.mimos.planning.plan.PlannedMeal;
 import io.github.noahhhx.mimos.planning.shopping.ShoppingList;
 import io.github.noahhhx.mimos.planning.shopping.ShoppingListService;
@@ -42,6 +43,7 @@ import org.openapitools.model.ExportedRecipePicture;
 import org.openapitools.model.ExportedShoppingList;
 import org.openapitools.model.ExportedShoppingListItem;
 import org.openapitools.model.ExportedTrainingSession;
+import org.openapitools.model.PlannedFoodInput;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -99,7 +101,12 @@ public class AccountExporter {
 
         Set<UUID> ownedIds = owned.stream().map(Recipe::id).collect(Collectors.toSet());
         Map<UUID, String> librarySlugs = librarySlugs(Stream.concat(
-                        plans.stream().flatMap(plan -> plan.entries().stream().map(PlannedMeal::recipeId)),
+                        plans.stream()
+                                .flatMap(plan -> plan.entries().stream())
+                                .map(PlannedMeal::item)
+                                .filter(PlannedItem.Recipe.class::isInstance)
+                                .map(PlannedItem.Recipe.class::cast)
+                                .map(PlannedItem.Recipe::recipeId),
                         logs.stream().map(MealLog::recipeId))
                 .filter(id -> id != null && !ownedIds.contains(id))
                 .collect(Collectors.toSet()));
@@ -182,20 +189,35 @@ public class AccountExporter {
                 .updatedAt(toOffset(recipe.updatedAt()));
     }
 
-    /** A plan's entries; an entry whose recipe is neither owned nor in the library cannot be referenced. */
+    /**
+     * A plan's entries. An entry whose recipe is neither owned nor in the
+     * library cannot be referenced and is left out; a planned food is an
+     * ingredient by slug, own or shared (ADR-0026).
+     */
     private static ExportedMealPlan toExported(MealPlan plan, Set<UUID> ownedIds, Map<UUID, String> librarySlugs) {
         return new ExportedMealPlan()
                 .startDate(plan.startDate())
                 .entries(plan.entries().stream()
-                        .filter(entry ->
-                                ownedIds.contains(entry.recipeId()) || librarySlugs.containsKey(entry.recipeId()))
-                        .map(entry -> new ExportedPlanEntry()
-                                .date(entry.date())
-                                .mealType(org.openapitools.model.MealType.valueOf(
-                                        entry.mealType().name()))
-                                .recipeId(ownedIds.contains(entry.recipeId()) ? entry.recipeId() : null)
-                                .librarySlug(librarySlugs.get(entry.recipeId()))
-                                .servings(BigDecimal.valueOf(entry.servings())))
+                        .filter(entry -> !(entry.item() instanceof PlannedItem.Recipe recipe)
+                                || ownedIds.contains(recipe.recipeId())
+                                || librarySlugs.containsKey(recipe.recipeId()))
+                        .map(entry -> {
+                            ExportedPlanEntry exported = new ExportedPlanEntry()
+                                    .date(entry.date())
+                                    .mealType(org.openapitools.model.MealType.valueOf(
+                                            entry.mealType().name()))
+                                    .servings(BigDecimal.valueOf(entry.amount()));
+                            switch (entry.item()) {
+                                case PlannedItem.Recipe recipe ->
+                                    exported.recipeId(ownedIds.contains(recipe.recipeId()) ? recipe.recipeId() : null)
+                                            .librarySlug(librarySlugs.get(recipe.recipeId()));
+                                case PlannedItem.Food food ->
+                                    exported.food(new PlannedFoodInput()
+                                            .catalogSlug(food.catalogSlug())
+                                            .unit(food.unit()));
+                            }
+                            return exported;
+                        })
                         .toList());
     }
 

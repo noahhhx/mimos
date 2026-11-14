@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { createIngredient, type CatalogIngredient, type NutritionBasis } from "@mimos/api-client";
+import { createIngredient, type CatalogIngredient, type Nutrition, type NutritionBasis } from "@mimos/api-client";
 
 import { apiClient } from "@/lib/api";
 
@@ -22,23 +22,31 @@ type Values = Record<(typeof FIELDS)[number]["key"], string>;
 /**
  * Adds an ingredient of the user's own (ADR-0016) from inside the recipe
  * form: its name, what its nutrition is for, and the four values from its
- * label. It sits inside the recipe's form, so Enter saves the ingredient
+ * label, optionally started from what is already known (a scanned product
+ * that lacks a value). It sits inside the recipe's form, so Enter saves the ingredient
  * rather than submitting the recipe.
  */
 export function NewIngredient({
   initialName,
   initialBasis,
+  initialNutrition,
   onCreated,
   onCancel,
 }: {
   initialName: string;
   initialBasis: NutritionBasis;
+  initialNutrition?: Nutrition;
   onCreated: (entry: CatalogIngredient) => void;
   onCancel: () => void;
 }) {
   const [name, setName] = useState(initialName);
   const [basis, setBasis] = useState<NutritionBasis>(initialBasis);
-  const [values, setValues] = useState<Values>({ calories: "", proteinG: "", carbsG: "", fatG: "" });
+  const [values, setValues] = useState<Values>({
+    calories: initialNutrition?.calories?.toString() ?? "",
+    proteinG: initialNutrition?.proteinG?.toString() ?? "",
+    carbsG: initialNutrition?.carbsG?.toString() ?? "",
+    fatG: initialNutrition?.fatG?.toString() ?? "",
+  });
   const [error, setError] = useState<string>();
   const [saving, setSaving] = useState(false);
 

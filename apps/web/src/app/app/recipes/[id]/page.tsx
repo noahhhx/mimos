@@ -12,6 +12,7 @@ import { SignInPrompt } from "@/components/sign-in-prompt";
 import { RecipeForm } from "@/components/recipe-form";
 import { RecipeView } from "@/components/recipe-view";
 import { apiClient } from "@/lib/api";
+import { parseTrail, readCookState, recipeHref } from "@/lib/cook-trail";
 
 /**
  * One recipe: the cook's view by default, with edit and delete for your
@@ -26,6 +27,23 @@ export default function RecipeDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [trail, setTrail] = useState<{ id: string; title: string }[]>([]);
+
+  useEffect(() => {
+    // Read ?via= in an effect, as the plan page reads ?week=, rather than useSearchParams.
+    const ids = parseTrail(new URLSearchParams(window.location.search).get("via"), params.id);
+    setTrail(
+      ids.map((id) => {
+        let title: string | undefined;
+        try {
+          title = readCookState(window.sessionStorage, id)?.title;
+        } catch {
+          // Storage unavailable: the crumb is still a link, just unnamed.
+        }
+        return { id, title: title || "Recipe" };
+      }),
+    );
+  }, [params.id]);
 
   useEffect(() => {
     if (!user || !params.id) {
@@ -72,6 +90,9 @@ export default function RecipeDetailPage() {
     );
   }
 
+  // Until the followed recipe loads, the trail would name the one being left.
+  const shownTrail = recipe?.id === params.id ? trail : [];
+
   const remove = async () => {
     if (!recipe || !confirm(`Delete “${recipe.title}”? This cannot be undone.`)) {
       return;
@@ -86,9 +107,25 @@ export default function RecipeDetailPage() {
 
   return (
     <>
-      <p className="back">
-        <Link href="/app/recipes">← Recipes</Link>
-      </p>
+      {recipe && shownTrail.length > 0 ? (
+        <nav className="back trail" aria-label="Recipes followed">
+          <ol>
+            <li>
+              <Link href="/app/recipes">Recipes</Link>
+            </li>
+            {shownTrail.map((crumb, index) => (
+              <li key={crumb.id}>
+                <Link href={recipeHref(crumb.id, shownTrail.slice(0, index).map((c) => c.id))}>{crumb.title}</Link>
+              </li>
+            ))}
+            <li aria-current="page">{recipe.title}</li>
+          </ol>
+        </nav>
+      ) : (
+        <p className="back">
+          <Link href="/app/recipes">← Recipes</Link>
+        </p>
+      )}
 
       {error && (
         <div className="card error" role="alert">
@@ -136,8 +173,8 @@ export default function RecipeDetailPage() {
               )}
             </div>
           </div>
-          {/* Keyed so following an ingredient link to another recipe starts its ticks afresh. */}
-          <RecipeView key={recipe.id} recipe={recipe} />
+          {/* Keyed so following an ingredient link to another recipe loads that recipe's own ticks. */}
+          <RecipeView key={recipe.id} recipe={recipe} via={shownTrail.map((crumb) => crumb.id)} />
         </>
       )}
     </>

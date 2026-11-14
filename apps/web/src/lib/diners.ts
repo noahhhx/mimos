@@ -39,10 +39,12 @@ export function shareOf(servings: number, dinerCount: number): number {
  * diners: every member at dinner, the caller alone otherwise.
  */
 export function defaultServings(mealType: MealType, memberCount: number): number {
-  if (memberCount <= 1) {
-    return 2;
-  }
-  return mealType === "DINNER" ? memberCount : 1;
+  return memberCount <= 1 ? 2 : defaultDinerCount(mealType, memberCount);
+}
+
+/** How many people a new meal is for by default: every member at dinner, the caller alone otherwise. */
+export function defaultDinerCount(mealType: MealType, memberCount: number): number {
+  return memberCount > 1 && mealType === "DINNER" ? memberCount : 1;
 }
 
 /** The diners after tapping a member; `null` when that would leave the meal with nobody. */

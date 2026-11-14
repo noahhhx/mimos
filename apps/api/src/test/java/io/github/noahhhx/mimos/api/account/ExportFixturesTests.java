@@ -239,6 +239,32 @@ class ExportFixturesTests extends ApiIntegrationTestSupport {
         assertThat(image).isEqualTo(TestPictures.PNG);
     }
 
+    @Test
+    void version7RestoresPlannedFoods() {
+        RestClient api = api();
+        String token = accessToken(createUser());
+
+        JsonNode report = importFixture(api, token, 7);
+
+        assertThat(report.get("plannedMeals").asInt()).isEqualTo(4);
+        JsonNode own = get(api, token, "/api/v1/ingredients?q=fixture oat bar");
+        assertThat(own).hasSize(1);
+        JsonNode entries = get(api, token, "/api/v1/plans/2026-09-28").get("entries");
+        assertThat(entries).hasSize(4);
+        JsonNode banana = entries.get(3);
+        assertThat(banana.get("food").get("catalogSlug").asText()).isEqualTo("banana");
+        assertThat(banana.get("food").has("unit")).isFalse();
+        assertThat(banana.get("servings").asDouble()).isEqualTo(2);
+        JsonNode bar = entries.get(2);
+        assertThat(bar.get("food").get("name").asText()).isEqualTo("Fixture oat bar");
+        assertThat(bar.get("food").get("catalogSlug").asText())
+                .isEqualTo(own.get(0).get("slug").asText())
+                .isNotEqualTo("fixture-oat-bar-d4e5f6");
+        assertThat(bar.get("food").get("unit").asText()).isEqualTo("g");
+        assertThat(bar.get("servings").asDouble()).isEqualTo(45);
+        assertThat(bar.has("recipeId")).isFalse();
+    }
+
     private JsonNode importFixture(RestClient api, String token, int version) {
         JsonNode document;
         try (InputStream in = new ClassPathResource(fixturePath(version)).getInputStream()) {

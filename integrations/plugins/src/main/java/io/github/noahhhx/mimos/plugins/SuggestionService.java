@@ -2,6 +2,7 @@ package io.github.noahhhx.mimos.plugins;
 
 import io.github.noahhhx.mimos.planning.plan.MealPlanService;
 import io.github.noahhhx.mimos.planning.plan.MealType;
+import io.github.noahhhx.mimos.planning.plan.PlannedItem;
 import io.github.noahhhx.mimos.recipes.recipe.Recipe;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeService;
 import java.time.DayOfWeek;
@@ -71,10 +72,12 @@ public class SuggestionService {
                 .map(meal -> new PlannedSlot(
                         meal.date(),
                         meal.mealType(),
-                        meal.servings(),
-                        // recipeTitle is the user's own data; only the id of
-                        // a *library* recipe may cross the boundary.
-                        libraryById.containsKey(meal.recipeId()) ? meal.recipeId() : null))
+                        meal.amount(),
+                        // A food and a personal recipe cross the boundary as a
+                        // bare slot; only a *library* recipe's id may cross.
+                        meal.item() instanceof PlannedItem.Recipe recipe && libraryById.containsKey(recipe.recipeId())
+                                ? recipe.recipeId()
+                                : null))
                 .toList();
         List<LibraryRecipe> catalog = library.stream()
                 .map(recipe -> new LibraryRecipe(recipe.id(), recipe.title(), recipe.tags(), recipe.servings()))

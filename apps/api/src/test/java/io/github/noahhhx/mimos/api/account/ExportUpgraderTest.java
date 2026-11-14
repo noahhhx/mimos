@@ -139,11 +139,25 @@ class ExportUpgraderTest {
 
         ObjectNode upgraded = ExportUpgrader.standard().upgrade(v5).document();
 
-        assertThat(upgraded.remove("version").asInt()).isEqualTo(6);
+        assertThat(upgraded.remove("version").asInt()).isEqualTo(ExportUpgrader.CURRENT_VERSION);
         assertThat(upgraded.get("recipes")).hasSize(4);
         assertEveryRecipeGainedNoPictures(upgraded);
         v5.remove("version");
         assertThat(upgraded).isEqualTo(v5);
+    }
+
+    @Test
+    void version6PassesThroughToTheVersionThatAllowsPlannedFoods() throws IOException {
+        ObjectNode v6;
+        try (InputStream in = new ClassPathResource("export/v6.json").getInputStream()) {
+            v6 = (ObjectNode) MAPPER.readTree(in);
+        }
+
+        ObjectNode upgraded = ExportUpgrader.standard().upgrade(v6).document();
+
+        assertThat(upgraded.remove("version").asInt()).isEqualTo(7);
+        v6.remove("version");
+        assertThat(upgraded).isEqualTo(v6);
     }
 
     /** Checks each recipe now has an empty pictures list, then takes it off so the rest can be compared. */

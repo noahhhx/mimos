@@ -15,6 +15,7 @@ import io.github.noahhhx.mimos.planning.logging.MealLogDraft;
 import io.github.noahhhx.mimos.planning.logging.MealLogService;
 import io.github.noahhhx.mimos.planning.plan.MealPlanService;
 import io.github.noahhhx.mimos.planning.plan.MealType;
+import io.github.noahhhx.mimos.planning.plan.PlannedItem;
 import io.github.noahhhx.mimos.planning.shopping.ShoppingListRepository;
 import io.github.noahhhx.mimos.planning.shopping.ShoppingListService;
 import io.github.noahhhx.mimos.recipes.recipe.Ingredient;
@@ -56,6 +57,7 @@ import org.openapitools.model.ExportedShoppingListItem;
 import org.openapitools.model.ExportedTrainingSession;
 import org.openapitools.model.ImportReport;
 import org.openapitools.model.IngredientQuantity;
+import org.openapitools.model.PlannedFoodInput;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.core.JacksonException;
@@ -193,6 +195,8 @@ public class AccountImporter {
         private final Map<String, String> ingredientSlugs = new HashMap<>();
         /** Catalog slugs not in this instance's catalog, and the recipes that linked them. */
         private final Map<String, Set<String>> missingCatalogSlugs = new LinkedHashMap<>();
+        /** Ingredient slugs this instance lacks, and how many planned foods were skipped for each. */
+        private final Map<String, Integer> missingFoodSlugs = new LinkedHashMap<>();
 
         private int plannedMeals;
         private int lists;
@@ -293,8 +297,8 @@ public class AccountImporter {
             eachAt("mealPlans", exported, plan -> {
                 LocalDate startDate = present(plan.getStartDate(), "startDate");
                 eachAt("entries", present(plan.getEntries(), "entries"), entry -> {
-                    UUID recipeId = resolvePlanned(entry);
-                    if (recipeId == null) {
+                    PlannedItem item = resolvePlanned(entry);
+                    if (item == null) {
                         return;
                     }
                     mealPlans.addEntry(
@@ -304,7 +308,7 @@ public class AccountImporter {
                             present(entry.getDate(), "date"),
                             MealType.valueOf(
                                     present(entry.getMealType(), "mealType").name()),
-                            recipeId,
+                            item,
                             present(entry.getServings(), "servings").doubleValue());
                     plannedMeals++;
                 });
@@ -380,20 +384,40 @@ public class AccountImporter {
         }
 
         /** The planned meal's recipe here, or null when its library recipe is not in this library. */
-        private @Nullable UUID resolvePlanned(ExportedPlanEntry entry) {
+        /** What the entry plans here, or null when this instance lacks the library recipe or ingredient. */
+        private @Nullable PlannedItem resolvePlanned(ExportedPlanEntry entry) {
             UUID recipeId = entry.getRecipeId();
             String slug = entry.getLibrarySlug();
-            if ((recipeId == null) == (slug == null)) {
-                throw new IllegalArgumentException("a planned meal needs exactly one of recipeId and librarySlug");
+            PlannedFoodInput food = entry.getFood();
+            if ((recipeId == null ? 0 : 1) + (slug == null ? 0 : 1) + (food == null ? 0 : 1) != 1) {
+                throw new IllegalArgumentException(
+                        "a planned meal needs exactly one of recipeId, librarySlug, and food");
             }
             if (recipeId != null) {
-                return imported(recipeId);
+                return new PlannedItem.Recipe(imported(recipeId));
             }
-            Optional<UUID> library = library(slug);
+            if (food != null) {
+                return resolveFood(food);
+            }
+            String librarySlug = present(slug, "librarySlug");
+            Optional<UUID> library = library(librarySlug);
             if (library.isEmpty()) {
-                missing(slug)[0]++;
+                missing(librarySlug)[0]++;
             }
-            return library.orElse(null);
+            return library.map(PlannedItem.Recipe::new).orElse(null);
+        }
+
+        private @Nullable PlannedItem resolveFood(PlannedFoodInput food) {
+            String exported = present(food.getCatalogSlug(), "catalogSlug");
+            String own = ingredientSlugs.get(exported);
+            if (own != null) {
+                return new PlannedItem.Food(own, food.getUnit());
+            }
+            if (ingredients.findVisibleBySlugs(household, List.of(exported)).containsKey(exported)) {
+                return new PlannedItem.Food(exported, food.getUnit());
+            }
+            missingFoodSlugs.merge(exported, 1, Integer::sum);
+            return null;
         }
 
         /** The logged meal's recipe here, if it had one that still exists. */
@@ -490,6 +514,8 @@ public class AccountImporter {
                                     .map(title -> "\"" + title + "\"")
                                     .toList())
                     + ", which keep the nutrition they were exported with."));
+            missingFoodSlugs.forEach((slug, skipped) -> warnings.add("Ingredient \"" + slug
+                    + "\" is not in this instance's catalog: " + count(skipped, "planned food") + " skipped."));
             return warnings;
         }
     }

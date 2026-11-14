@@ -85,7 +85,23 @@ test("uses one of your recipes as an ingredient", async ({ loggedInPage: page })
     const line = recipe.locator(".ingredients li").filter({ hasText: focaccia });
     await expect(line).toHaveText(new RegExp(`^\\s*1x\\s+${focaccia}\\s*$`));
 
+    await recipe.getByRole("checkbox", { name: "2 Tomato" }).check();
     await recipe.getByRole("link", { name: focaccia }).click();
     await expect(page.locator("article.recipe").getByRole("heading", { name: focaccia, level: 1 })).toBeVisible();
+  });
+
+  await test.step("the trail leads back, with the sandwich's ticks kept", async () => {
+    const trail = page.getByRole("navigation", { name: "Recipes followed" });
+    await expect(trail).toHaveText(new RegExp(`Recipes.*${sandwich}.*${focaccia}`));
+    await page.locator("article.recipe").getByRole("checkbox", { name: /^500 g All-purpose flour/ }).check();
+
+    await trail.getByRole("link", { name: sandwich }).click();
+    const recipe = page.locator("article.recipe");
+    await expect(recipe.getByRole("heading", { name: sandwich, level: 1 })).toBeVisible();
+    await expect(recipe.getByRole("checkbox", { name: "2 Tomato" })).toBeChecked();
+    await expect(page.getByRole("navigation", { name: "Recipes followed" })).toHaveCount(0);
+
+    await recipe.getByRole("link", { name: focaccia }).click();
+    await expect(page.locator("article.recipe").getByRole("checkbox", { name: /^500 g All-purpose flour/ })).toBeChecked();
   });
 });

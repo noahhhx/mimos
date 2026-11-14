@@ -8,6 +8,7 @@ import io.github.noahhhx.mimos.api.identity.UserProfileRecord;
 import io.github.noahhhx.mimos.planning.plan.MealPlan;
 import io.github.noahhhx.mimos.planning.plan.MealPlanService;
 import io.github.noahhhx.mimos.planning.plan.MealType;
+import io.github.noahhhx.mimos.planning.plan.PlannedItem;
 import io.github.noahhhx.mimos.planning.plan.PlannedMeal;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -18,6 +19,8 @@ import org.openapitools.model.MealPlanEntry;
 import org.openapitools.model.MealPlanEntryInput;
 import org.openapitools.model.MealPlanEntryPatch;
 import org.openapitools.model.Person;
+import org.openapitools.model.PlannedFood;
+import org.openapitools.model.PlannedFoodInput;
 import org.openapitools.model.PlannedTotals;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -78,9 +81,27 @@ public class MealPlansController implements PlanningApi {
                 startDate,
                 mealPlanEntryInput.getDate(),
                 mealType,
-                mealPlanEntryInput.getRecipeId(),
+                plannedItemOf(mealPlanEntryInput),
                 mealPlanEntryInput.getServings().doubleValue());
         return ResponseEntity.status(201).body(toApiEntry(entry, household.members(), caller.id()));
+    }
+
+    /** What the entry plans: exactly one of a recipe and a food (ADR-0026). */
+    private static PlannedItem plannedItemOf(MealPlanEntryInput input) {
+        UUID recipeId = input.getRecipeId();
+        PlannedFoodInput food = input.getFood();
+        if ((recipeId == null) == (food == null)) {
+            throw new IllegalArgumentException("a planned meal needs exactly one of recipeId and food");
+        }
+        if (recipeId != null) {
+            return new PlannedItem.Recipe(recipeId);
+        }
+        if (food == null
+                || food.getCatalogSlug() == null
+                || food.getCatalogSlug().isBlank()) {
+            throw new IllegalArgumentException("a planned food needs a catalogSlug");
+        }
+        return new PlannedItem.Food(food.getCatalogSlug(), food.getUnit());
     }
 
     @Override
@@ -119,14 +140,21 @@ public class MealPlansController implements PlanningApi {
                         .displayName(member.displayName())
                         .you(member.profileId().equals(callerId)))
                 .toList();
-        return new MealPlanEntry()
+        MealPlanEntry api = new MealPlanEntry()
                 .id(entry.id())
                 .date(entry.date())
                 .mealType(
                         org.openapitools.model.MealType.valueOf(entry.mealType().name()))
-                .recipeId(entry.recipeId())
-                .recipeTitle(entry.recipeTitle())
-                .servings(BigDecimal.valueOf(entry.servings()))
+                .servings(BigDecimal.valueOf(entry.amount()))
                 .diners(diners);
+        switch (entry.item()) {
+            case PlannedItem.Recipe recipe -> api.recipeId(recipe.recipeId()).recipeTitle(entry.title());
+            case PlannedItem.Food food ->
+                api.food(new PlannedFood()
+                        .catalogSlug(food.catalogSlug())
+                        .name(entry.title())
+                        .unit(food.unit()));
+        }
+        return api;
     }
 }
