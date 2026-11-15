@@ -1,0 +1,206 @@
+/* Plan page redesign mockups. Tokens copied from apps/web/src/app/globals.css. */
+
+@font-face {
+  font-family: "Newsreader";
+  src: url("../../../../apps/web/src/fonts/newsreader/Newsreader.woff2") format("woff2");
+  font-weight: 200 800;
+}
+@font-face {
+  font-family: "Public Sans";
+  src: url("../../../../apps/web/src/fonts/public-sans/PublicSans.woff2") format("woff2");
+  font-weight: 100 900;
+}
+
+:root {
+  --bg: #f4eee5;
+  --surface: #fbf7f1;
+  --hover: #efe6da;
+  --fg: #2b221c;
+  --muted: #76685c;
+  --line: #ddd2c3;
+  --accent: #94560f;
+  --on-accent: #fbf7f1;
+  --danger: #a84a25;
+  --serif: "Newsreader", Georgia, serif;
+  --sans: "Public Sans", system-ui, sans-serif;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #191512;
+  --surface: #221c18;
+  --hover: #2b241f;
+  --fg: #f1e7d9;
+  --muted: #a8998b;
+  --line: #3a312a;
+  --accent: #e9aa50;
+  --on-accent: #191512;
+  --danger: #d97a4f;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
+a:hover { text-decoration-color: var(--accent); }
+button { font: inherit; color: inherit; }
+.muted { color: var(--muted); }
+.serif { font-family: var(--serif); }
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+h1 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(40px, 7vw, 68px);
+  font-weight: 400;
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+}
+h2 {
+  margin: 32px 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+h3 { margin: 0; font-family: var(--serif); font-size: 26px; font-weight: 500; line-height: 1.2; }
+
+.wrap { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+.wrap.wide { max-width: 1440px; }
+@media (min-width: 640px) { .wrap { padding: 0 32px; } }
+
+/* ---- Mockup chrome (not part of the design) ---- */
+.mockbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  padding: 8px 16px;
+  border-bottom: 2px dashed var(--muted);
+  background: var(--hover);
+  font-size: 13px;
+}
+.mockbar strong { letter-spacing: 0.08em; text-transform: uppercase; font-size: 12px; }
+.mockbar a.on { color: var(--accent); font-weight: 700; text-decoration-color: var(--accent); }
+.mockbar .spacer { flex: 1; }
+.mockbar button {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 2px 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.mockbar button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.mocknote {
+  margin: 0 0 24px;
+  padding: 10px 14px;
+  border: 1px dashed var(--muted);
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* ---- App chrome ---- */
+.app-header { border-bottom: 1px solid var(--line); }
+.app-header .wrap { display: flex; align-items: center; gap: 28px; height: 64px; }
+.brand { font-family: var(--serif); font-size: 26px; font-weight: 500; text-decoration: none; }
+.nav { display: flex; gap: 22px; font-size: 15px; }
+.nav a { text-decoration: none; color: var(--muted); }
+.nav a.on { color: var(--fg); border-bottom: 2px solid var(--accent); padding-bottom: 4px; }
+.avatar { margin-left: auto; width: 34px; height: 34px; border: 1px solid var(--line); display: grid; place-items: center; font-size: 13px; font-weight: 700; }
+@media (max-width: 700px) { .nav { display: none; } }
+
+.page-header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 32px; margin: 40px 0 32px; }
+.page-header .eyebrow { margin: 0 0 8px; }
+.page-header .rule { width: 64px; height: 2px; margin-top: 22px; background: var(--accent); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ---- Buttons ---- */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid var(--accent);
+  border-radius: 0;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.button:hover { background: color-mix(in srgb, var(--accent) 82%, var(--fg)); }
+.button.secondary { border-color: var(--line); background: transparent; color: var(--fg); }
+.button.secondary:hover { border-color: var(--accent); }
+.button.danger { border-color: var(--danger); background: transparent; color: var(--danger); }
+.button.danger:hover { background: var(--danger); color: var(--on-accent); }
+.button.small { min-height: 30px; min-width: 30px; padding: 0 8px; font-size: 14px; }
+.button.ghost { border-color: transparent; background: transparent; color: var(--muted); }
+.button.ghost:hover { border-color: var(--line); color: var(--fg); }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-width: 30px;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  justify-content: center;
+}
+.chip.on { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+button.chip { cursor: pointer; background: transparent; }
+button.chip.on { background: var(--accent); }
+
+.stepper { display: inline-flex; align-items: center; gap: 4px; }
+.stepper span { min-width: 92px; text-align: center; font-size: 14px; }
+
+.logged { color: var(--muted); font-size: 13px; font-weight: 600; white-space: nowrap; }
+
+/* ---- Fuel table (shared by several mockups) ---- */
+table.fuel { border-collapse: collapse; width: 100%; font-size: 15px; font-variant-numeric: tabular-nums; }
+table.fuel th, table.fuel td { white-space: nowrap; padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--line); }
+table.fuel th:first-child, table.fuel td:first-child { text-align: left; padding-left: 0; }
+table.fuel thead th { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+table.fuel tbody th { font-weight: 600; white-space: normal; }
+
+/* ---- Plugin bits ---- */
+.week-panel { align-self: start; border: 1px solid var(--line); background: var(--surface); }
+.week-panel summary { display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; list-style: none; }
+.week-panel summary::-webkit-details-marker { display: none; }
+.week-panel summary .name { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.week-panel summary .sum { font-family: var(--serif); font-size: 19px; }
+.week-panel summary .sign { margin-left: auto; color: var(--muted); }
+.week-panel .body { padding: 0 16px 16px; font-size: 15px; }
+.suggestion { border: 1px solid var(--line); background: var(--surface); padding: 14px 16px; }
+.suggestion h4 { margin: 0 0 4px; font-family: var(--serif); font-size: 19px; font-weight: 500; }
+.suggestion ul { margin: 6px 0 12px; padding-left: 18px; font-size: 14px; }
+
+/* ---- Picker dialog ---- */
+.backdrop { position: fixed; inset: 0; background: color-mix(in srgb, var(--fg) 40%, transparent); display: grid; place-items: center; padding: 16px; z-index: 50; }
+.picker { width: min(560px, 100%); max-height: 86vh; overflow: auto; background: var(--surface); border: 1px solid var(--line); padding: 20px 24px 24px; }
+.picker .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.picker input, .picker select { font: inherit; padding: 8px 10px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 0; }
+.picker input { flex: 1 1 14rem; }
+.picker ul { list-style: none; margin: 16px 0 0; padding: 0; }
+.picker li button { width: 100%; text-align: left; padding: 10px 12px; border: 1px solid var(--line); border-top: 0; background: transparent; cursor: pointer; }
+.picker li:first-child button { border-top: 1px solid var(--line); }
+.picker li button:hover { background: var(--hover); }

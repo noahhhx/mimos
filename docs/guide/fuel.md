@@ -48,19 +48,23 @@ harm health and performance.
 
 ### On the plan
 
-With targets on, each day on the [plan](planning.md) shows three lines
-above its meals:
+With targets on, the [plan](planning.md)'s table has two rows above the
+meals:
 
-- **Training**: the sessions you've added for that day, and any that
-  came from [intervals.icu](#bring-in-training-from-intervalsicu). Each
-  says where it came from: **By hand** or **intervals.icu**.
-- **Fuel for the day**: the day's target.
-- **Planned**: what you'll eat if you eat what you planned. See
+- **Training**: each day's sessions, such as "Ride 90 min", or **Rest**.
+- **Planned**: the calories you'll eat if you eat what you planned,
+  against the day's fuel for the day, such as "2244 of 3706 kcal". See
   [Your planned total](planning.md#your-planned-total).
 
-![Three days of a week: Tuesday's 90-minute ride raises its fuel for the day](../assets/screenshots/fuel-plan.png)
+Select a day, by its name or either of those rows, to see it in full
+beside the table: its training, each saying where it came from (**By
+hand** or [**intervals.icu**](#bring-in-training-from-intervalsicu)), and
+a table of **Fuel for the day** and **Planned**, each with calories,
+protein, carbs, and fat.
 
-In a shared household, these lines show in **Mine** only, because they are
+![The plan with Tuesday selected: its 90-minute ride, and its fuel for the day against what's planned](../assets/screenshots/fuel-plan.png)
+
+In a shared household, these show in **Mine** only, because they are
 yours alone. **Everyone** shows none of them.
 
 ### In the log
@@ -75,8 +79,9 @@ dash.
 
 Mimos counts the training you add to a day.
 
-1. Open **Plan** and find the day.
-2. Choose **+** next to **Training**.
+1. Open **Plan** and select the day, by its name at the top of the table
+   or its **Training** row.
+2. Choose **+ Add training**.
 3. Choose the **Sport**: Ride, Run, Swim, Strength, or Other.
 4. Enter the **Minutes**, from 1 to 1440.
 5. Choose the **Intensity**:
@@ -87,6 +92,7 @@ Mimos counts the training you add to a day.
 
 The day's fuel for the day changes at once. A day can hold several
 sessions, and they add up. To take one out, choose **✕** next to it.
+Training from intervals.icu has no **✕**: change it there.
 
 ## Bring in training from intervals.icu
 

@@ -1498,47 +1498,451 @@ label.file-button {
   background: var(--fg);
 }
 
-/* ---------- Week plan ---------- */
+/* ---------- Week plan: the ledger (days across, meals down) ---------- */
 
-.week {
+/* The ledger needs more room than the reading column: the plan page widens
+   its main column and the header with it. */
+main.wrap:has(.plan-ledger),
+body:has(.plan-ledger) .site-header-inner {
+  max-width: 1440px;
+}
+
+.ledger-layout {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  border-top: 1px solid var(--line);
-  border-left: 1px solid var(--line);
+  grid-template-columns: minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
 }
 
-.week .card {
-  margin: 0;
-  border-width: 0 1px 1px 0;
+@media (min-width: 1100px) {
+  .ledger-layout {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
 }
 
-.day h2 {
-  margin: 0 0 12px;
-  color: var(--fg);
+.ledger-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  background: var(--surface);
 }
 
-.meal-slot {
-  padding: 8px 0;
-  border-top: 1px solid var(--line);
+.ledger {
+  width: 100%;
+  min-width: 820px;
+  /* Separate borders move with the sticky row heads; collapsed ones stay behind. */
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
 }
 
-.meal-slot-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.ledger .ledger-rowhead {
+  width: 104px;
 }
 
-.meal-slot-head .muted {
+.ledger th,
+.ledger td {
+  padding: 0;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  text-align: left;
+  font-weight: inherit;
+}
+
+.ledger tr > :last-child {
+  border-right: 0;
+}
+
+.ledger tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+/* Row heads stay put while a phone scrolls the days sideways. */
+.ledger tbody th {
+  z-index: 2;
+  position: sticky;
+  left: 0;
+  padding: 12px;
+  background: var(--surface);
+  color: var(--muted);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
-.planned-total span,
-.fuel-target span,
-.training-parts span {
+.ledger thead td {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--surface);
+}
+
+.ledger-day,
+.ledger-meta,
+.ledger-entry,
+.ledger-add {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.ledger-day {
+  padding: 10px 10px 8px;
+  border-top: 3px solid transparent;
+}
+
+button.ledger-day,
+.ledger-meta,
+.ledger-entry,
+.ledger-add {
+  cursor: pointer;
+}
+
+.ledger .today .ledger-day {
+  border-top-color: var(--accent);
+}
+
+.ledger-weekday {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ledger .today .ledger-weekday {
+  color: var(--accent);
+}
+
+.ledger-date {
+  display: block;
+  font-family: var(--serif);
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+.ledger-meta {
+  min-height: 100%;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.ledger-meta > span {
+  display: block;
+}
+
+.ledger-meta .ledger-figure {
+  color: var(--fg);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ledger-cell {
+  min-height: 72px;
+  padding: 4px;
+}
+
+.ledger-entry {
+  padding: 6px 6px 7px;
+  line-height: 1.25;
+}
+
+.ledger-entry-name {
+  display: block;
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 500;
+  overflow-wrap: break-word;
+}
+
+.ledger-entry-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Who eats a meal, as the household's initials (ADR-0019), kept together on one line. */
+.ledger-diners {
+  display: inline-flex;
+  gap: 2px;
   white-space: nowrap;
+}
+
+.ledger-diner {
+  padding: 0 3px;
+  border: 1px solid var(--line);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+/* Everyone's view: a meal you do not eat reads quieter than yours. */
+.ledger-entry.others .ledger-entry-name {
+  color: var(--muted);
+}
+
+button.ledger-day:hover,
+.ledger-meta:hover,
+.ledger-entry:hover {
+  background: var(--hover);
+}
+
+.ledger [aria-pressed="true"] {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: var(--hover);
+}
+
+.ledger-add {
+  min-height: 28px;
+  border: 1px dashed transparent;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.ledger-cell.empty .ledger-add {
+  min-height: 62px;
+}
+
+.ledger-add:hover,
+.ledger-add:focus-visible {
+  border-color: var(--line);
+  color: var(--fg);
+}
+
+/* With a mouse, Add waits for the cell to be hovered; on touch it always shows. */
+@media (hover: hover) {
+  .ledger-add {
+    color: transparent;
+  }
+
+  .ledger-cell:hover .ledger-add,
+  .ledger-add:focus-visible {
+    border-color: var(--line);
+    color: var(--muted);
+  }
+}
+
+@media (max-width: 639px) {
+  .ledger {
+    min-width: 760px;
+  }
+
+  .ledger .ledger-rowhead {
+    width: 84px;
+  }
+
+  .ledger tbody th {
+    padding: 12px 8px;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+}
+
+/* The rail: the inspector, then the week's plugins. */
+.ledger-rail {
+  display: grid;
+  gap: 24px;
+}
+
+@media (min-width: 1100px) {
+  .ledger-rail {
+    position: sticky;
+    top: 16px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+  }
+}
+
+.ledger-rail .week-panels,
+.ledger-rail .suggestions {
+  margin: 0;
+}
+
+.ledger-rail .suggestions h2 {
+  margin-top: 0;
+}
+
+.ledger-rail .suggestion-cards {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.inspector {
+  padding: 20px 22px 24px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+/* On narrow screens the inspector is a sheet over the bottom of the page. */
+@media (max-width: 1099px) {
+  .inspector {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 20;
+    max-height: 75vh;
+    overflow-y: auto;
+    border-width: 2px 0 0;
+    border-top-color: var(--accent);
+  }
+
+  .inspector-hint {
+    display: none;
+  }
+}
+
+.inspector-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.inspector-head .eyebrow {
+  margin: 0;
+}
+
+.inspector-title {
+  margin: 4px 0 0;
+  color: var(--fg);
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.inspector-title:focus {
+  outline: none;
+}
+
+.inspector-title a {
+  text-decoration: none;
+}
+
+.inspector-title a:hover {
+  text-decoration: underline;
+}
+
+.inspector-kind,
+.inspector-hint > .muted {
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+
+.inspector-section {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.inspector-section > p {
+  margin: 0;
+}
+
+.inspector .label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.inspector-actions {
+  justify-items: stretch;
+}
+
+.ok-text {
+  margin: 0;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stepper span {
+  min-width: 96px;
+  text-align: center;
+  font-size: 15px;
+}
+
+.inspector-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0 0;
+}
+
+.inspector-stats div {
+  display: flex;
+  flex-direction: column-reverse;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+}
+
+.inspector-stats dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.inspector-stats dd {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+/* A day's fuel: its target and what is planned, under the same columns. */
+.day-fuel {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.day-fuel th,
+.day-fuel td {
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.day-fuel thead th {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.day-fuel tbody th {
+  padding-left: 0;
+  text-align: left;
+  font-weight: 600;
+  white-space: normal;
 }
 
 .training-session {
@@ -1546,11 +1950,20 @@ label.file-button {
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  margin: 4px 0;
+  width: 100%;
 }
 
 .training-parts {
   margin: 0;
+  font-size: 15px;
+}
+
+.training-parts span {
+  white-space: nowrap;
+}
+
+.training-form {
+  width: 100%;
 }
 
 .training-form label {
@@ -1561,39 +1974,6 @@ label.file-button {
   display: flex;
   gap: 4px;
   margin-top: 8px;
-}
-
-.planned-meal {
-  margin: 8px 0 4px;
-  padding: 2px 0 2px 10px;
-  border-left: 2px solid var(--accent);
-}
-
-.planned-meal > a,
-.planned-meal > .planned-name {
-  font-family: var(--serif);
-  font-size: 19px;
-  font-weight: 500;
-  line-height: 1.3;
-  text-decoration: none;
-}
-
-.planned-meal > a:hover {
-  text-decoration: underline;
-}
-
-.meal-controls {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-  margin-top: 6px;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.meal-controls span {
-  padding: 0 4px;
 }
 
 /* A planned food's amount: its number with the unit beside it (ADR-0026). */

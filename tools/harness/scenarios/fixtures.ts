@@ -1,6 +1,6 @@
 import { appendFileSync } from "node:fs";
 
-import { expect, test as base, type Page } from "@playwright/test";
+import { expect, test as base, type Locator, type Page } from "@playwright/test";
 
 import { DEFAULT_USER, USERS, endpoints } from "../src/config.ts";
 import { redactText } from "../src/redact.ts";
@@ -121,6 +121,58 @@ export async function browserWeek(page: Page): Promise<{ today: string; monday: 
     start.setDate(now.getDate() - ((now.getDay() + 6) % 7));
     return { today: iso(now), monday: iso(start) };
   });
+}
+
+/**
+ * The plan page's ledger: a table of days by meals whose cells show names
+ * only, and the inspector beside it that opens on a selected meal or day.
+ * Days are counted from Monday (0).
+ */
+export function planLedger(page: Page) {
+  const table = page.getByRole("table", { name: /^Meals for the week of / });
+  const inspector = page.getByRole("complementary", { name: "Details" }).locator("section.inspector");
+  const escaped = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const meal = (title: string): Locator => table.getByRole("button", { name: new RegExp(`^${escaped(title)}`) });
+  const dayHead = (day: number): Locator => table.getByRole("columnheader").nth(day);
+  return {
+    table,
+    /** A planned meal's cell, by the start of its name. */
+    meal,
+    /** The inspector, open on whatever is selected. */
+    inspector,
+    /** Selects a meal (unless it is already open) and answers its inspector. */
+    async openMeal(title: string): Promise<Locator> {
+      const open = page.getByRole("region", { name: title, exact: true });
+      if ((await open.count()) === 0) {
+        await meal(title).first().click();
+      }
+      await expect(open).toBeVisible();
+      return open;
+    },
+    /** Selects a day by its column head and answers its inspector. */
+    async openDay(day: number): Promise<Locator> {
+      const head = dayHead(day).getByRole("button");
+      if ((await head.getAttribute("aria-pressed")) !== "true") {
+        await head.click();
+      }
+      await expect(inspector).toBeVisible();
+      return inspector;
+    },
+    dayHead,
+    /** A day's Planned cell: its accessible name reads "Planned for <day>: <kcal> of <target> kcal". */
+    planned: (day: number): Locator => table.getByRole("button", { name: /^Planned for / }).nth(day),
+    /** A day's Training cell, present only while fuel targets are on. */
+    training: (day: number): Locator => table.getByRole("button", { name: /^Training for / }).nth(day),
+    /** Plans a recipe or food in a day's slot through the picker. */
+    async plan(day: number, slot: string, title: string): Promise<void> {
+      await table.getByRole("button", { name: new RegExp(`^Add ${slot} for `) }).nth(day).click();
+      const picker = page.getByRole("dialog", { name: "Pick a meal" });
+      await picker.getByRole("searchbox").fill(title);
+      await picker.getByRole("button", { name: new RegExp(`^${escaped(title)}`) }).click();
+      await expect(picker).toHaveCount(0);
+      await expect(meal(title).first()).toBeVisible();
+    },
+  };
 }
 
 export { expect };

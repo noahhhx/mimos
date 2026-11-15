@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan · 1 · The Ledger</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 32px; align-items: start; }
+  @media (max-width: 1000px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+  .scroller { overflow-x: auto; border: 1px solid var(--line); background: var(--surface); }
+  table.ledger { border-collapse: collapse; width: 100%; min-width: 860px; table-layout: fixed; }
+  .ledger th, .ledger td { border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); vertical-align: top; padding: 0; }
+  .ledger tr > :last-child { border-right: 0; }
+  .ledger tbody tr:last-child > * { border-bottom: 0; }
+  .ledger col.rowhead { width: 104px; }
+  .ledger tbody th { position: sticky; left: 0; z-index: 1; background: var(--surface); text-align: left; padding: 10px 12px; }
+
+  .dayhead { display: block; width: 100%; padding: 10px 10px 8px; border: 0; background: transparent; text-align: left; cursor: pointer; border-top: 3px solid transparent; }
+  .dayhead:hover { background: var(--hover); }
+  .dayhead .dow { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .dayhead .num { display: block; font-family: var(--serif); font-size: 28px; line-height: 1.1; }
+  .dayhead.today { border-top-color: var(--accent); }
+  .dayhead.today .dow { color: var(--accent); }
+  .dayhead.sel, .cellbtn.sel { background: var(--hover); outline: 2px solid var(--accent); outline-offset: -2px; }
+  .past { color: var(--muted); }
+
+  .meta { padding: 8px 10px; font-size: 13px; line-height: 1.4; }
+  .meta .big { font-size: 15px; font-weight: 600; color: var(--fg); font-variant-numeric: tabular-nums; }
+  .rest { color: var(--muted); }
+
+  .cell { position: relative; min-height: 64px; padding: 4px; }
+  .cellbtn { display: block; width: 100%; padding: 6px 6px 7px; border: 0; background: transparent; text-align: left; cursor: pointer; line-height: 1.25; }
+  .cellbtn:hover { background: var(--hover); }
+  .cellbtn .t { display: block; font-family: var(--serif); font-size: 16px; font-weight: 500; }
+  .cellbtn .s { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); }
+  .cellbtn.others .t { color: var(--muted); }
+  .cellbtn .tick { color: var(--accent); font-weight: 700; }
+  .add { display: block; width: 100%; min-height: 28px; border: 1px dashed transparent; background: transparent; color: transparent; cursor: pointer; font-size: 18px; }
+  .cell:hover .add, .add:focus-visible { border-color: var(--line); color: var(--muted); }
+  .cell.empty .add { min-height: 54px; }
+
+  .rail { position: sticky; top: 16px; border: 1px solid var(--line); background: var(--surface); padding: 20px 22px 24px; }
+  .rail .label { display: block; margin-bottom: 6px; }
+  .rail section { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .rail .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0; }
+  .rail h3 a { text-decoration: none; }
+  .stack { display: grid; gap: 12px; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 8px 0 0; }
+  .stats div { border: 1px solid var(--line); padding: 10px 12px; }
+  .stats b { display: block; font-family: var(--serif); font-size: 28px; font-weight: 500; line-height: 1.1; }
+</style>
+</head>
+<body data-wide="1">
+<main class="wrap wide" id="app"></main>
+<script src="shared.js"></script>
+<script>
+  let sel = null; // {type:"entry", id} | {type:"day", date}
+  window.onRemoved = (id) => { if (sel?.id === id) sel = null; };
+  const pick = (s) => { sel = s; render(); };
+
+  function cell(day, meal) {
+    const entries = inSlot(day, meal);
+    const items = entries.map((en) => `
+      <button class="cellbtn ${sel?.id === en.id ? "sel" : ""} ${eats(en) ? "" : "others"}" onclick="pick({type:'entry',id:'${en.id}'})">
+        <span class="t">${en.title}</span>
+        <span class="s">${en.logged ? '<span class="tick">✓</span> ' : ""}${servingsText(en)}${shared() && en.diners.length > 1 ? " · shared" : !eats(en) ? " · Sam" : ""}</span>
+      </button>`).join("");
+    return `<td><div class="cell ${entries.length ? "" : "empty"}">${items}
+      <button class="add" aria-label="Add ${MEAL_LABEL[meal]} for ${dayLabel(day.date)}" onclick="openPicker('${day.date}','${meal}')">+</button></div></td>`;
+  }
+
+  function inspector() {
+    if (sel?.type === "entry") {
+      const f = findEntry(sel.id);
+      if (!f) return weekInfo();
+      const { day, en } = f;
+      return `<span class="label">${dayLabel(day.date)} · ${MEAL_LABEL[en.meal]}</span>
+        <h3><a href="#">${en.title}</a></h3>
+        <p class="muted" style="margin:4px 0 0;font-size:14px">${en.kind === "food" ? "Food" : "Recipe"}${eats(en) ? ` · ${n(en.kcal)} kcal for you` : ""}</p>
+        <section><span class="label">${en.kind === "food" ? "Amount" : "Servings cooked"}</span>
+          <div class="stepper"><button class="button secondary small" onclick="act.servings('${en.id}',-1)">−</button><span>${servingsText(en)}</span><button class="button secondary small" onclick="act.servings('${en.id}',1)">+</button></div></section>
+        ${shared() ? `<section><span class="label">Who eats it</span><div style="display:flex;gap:6px">${memberChips(en, true)}</div></section>` : ""}
+        <section class="stack">
+          ${eats(en) ? (en.logged ? `<span class="logged">✓ Logged on ${dayLabel(day.date)}</span>` : `<button class="button" onclick="act.log('${en.id}')">Log ${en.diners.length > 1 ? "my share" : "it"}</button>`) : `<span class="muted" style="font-size:14px">You don't eat this one.</span>`}
+          <button class="button danger" onclick="act.remove('${en.id}')">Remove from plan</button>
+        </section>
+        <p style="margin:18px 0 0"><button class="button ghost small" onclick="pick(null)">← Back to the week</button></p>`;
+    }
+    if (sel?.type === "day") {
+      const day = dayOf(sel.date);
+      return `<span class="label">${isPast(day.date) ? "Earlier this week" : day.date === TODAY ? "Today" : "Coming up"}</span>
+        <h3>${dayFull(day.date)}</h3>
+        ${showsFuel() ? `<section><span class="label">Training</span>
+          ${day.training.length ? day.training.map((s) => `<div class="row"><span>${sessionLong(s)}<br><span class="muted" style="font-size:13px">${s.done ? "Done" : "Planned"} · ${s.source}</span></span>${s.source === "By hand" ? `<button class="button secondary small" onclick="act.removeSession('${day.date}','${s.id}')" aria-label="Remove">✕</button>` : ""}</div>`).join("") : `<p class="muted" style="margin:4px 0">Rest day.</p>`}
+          <button class="button secondary small" onclick="act.addSession('${day.date}')">+ Add training</button></section>
+        <section><span class="label">Fuel</span>${fuelTable(day)}</section>` : `<section><p class="muted">Fuel shows in the Mine view.</p></section>`}
+        <section><button class="button secondary" onclick="openPicker('${day.date}','LUNCH')">+ Add a meal</button></section>
+        <p style="margin:18px 0 0"><button class="button ghost small" onclick="pick(null)">← Back to the week</button></p>`;
+    }
+    return weekInfo();
+  }
+
+  function weekInfo() {
+    const mine = state.days.flatMap((d) => d.entries.filter(eats));
+    const sessions = state.days.flatMap((d) => d.training);
+    return `<span class="label">This week</span>
+      <h3>Select a meal or a day</h3>
+      <p class="muted" style="font-size:14px;margin:6px 0 0">Its servings, diners, Log, and Remove open here.</p>
+      <div class="stats"><div><b>${mine.length}</b><span class="muted" style="font-size:13px">meals you eat</span></div>
+        <div><b>${sessions.length}</b><span class="muted" style="font-size:13px">training sessions</span></div></div>
+      <section class="stack"><span class="label" style="margin:0">From your plugins</span>${pluginBits()}</section>`;
+  }
+
+  window.render = () => {
+    const days = state.days;
+    document.getElementById("app").innerHTML = `${pageHeader()}
+      <p class="mocknote">Option 1, the Ledger. Days run across and meals run down, so every row lines up. Cells show names only. Select a meal (or a day's header) and its controls open in the rail on the right. Hover an empty cell to add a meal.</p>
+      <div class="layout">
+        <div class="scroller"><table class="ledger">
+          <colgroup><col class="rowhead">${days.map(() => "<col>").join("")}</colgroup>
+          <thead><tr><th></th>${days.map((d) => `<th><button class="dayhead ${d.date === TODAY ? "today" : ""} ${sel?.date === d.date ? "sel" : ""} ${isPast(d.date) ? "past" : ""}" onclick="pick({type:'day',date:'${d.date}'})">
+            <span class="dow">${d.date === TODAY ? "Today" : dayShort(d.date)}</span><span class="num">${dayNum(d.date)}</span></button></th>`).join("")}</tr></thead>
+          <tbody>
+            ${showsFuel() ? `
+            <tr><th class="label">Training</th>${days.map((d) => `<td><div class="meta">${d.training.length ? d.training.map((s) => `<div>${sessionShort(s)}</div>`).join("") : `<span class="rest">Rest</span>`}</div></td>`).join("")}</tr>
+            <tr><th class="label">Fuel</th>${days.map((d) => `<td><div class="meta"><span class="big">${n(planned(d).kcal)}</span><br><span class="muted">of ${n(d.target.kcal)} kcal</span></div></td>`).join("")}</tr>` : ""}
+            ${MEAL_TYPES.map((m) => `<tr><th class="label">${MEAL_LABEL[m]}</th>${days.map((d) => cell(d, m)).join("")}</tr>`).join("")}
+          </tbody></table></div>
+        <aside class="rail" aria-label="Details">${inspector()}</aside>
+      </div><div style="height:80px"></div>`;
+  };
+</script>
+</body>
+</html>

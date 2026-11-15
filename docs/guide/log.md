@@ -10,8 +10,9 @@ logged with no score.
 
 ## Logging a planned meal
 
-In the [plan](planning.md), choose **Log** on a meal once you've eaten it.
-Mimos works out its nutrition from the recipe and the servings you planned.
+In the [plan](planning.md), select a meal once you've eaten it and choose
+**Log**. Mimos works out its nutrition from the recipe and the servings you
+planned.
 A recipe without nutrition still logs; it just adds nothing to the totals.
 
 In a [household](household.md), you log only your own share of a meal

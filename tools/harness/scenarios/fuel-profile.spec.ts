@@ -1,4 +1,4 @@
-import { apiAs, expect, register, test } from "./fixtures.ts";
+import { apiAs, expect, planLedger, register, test } from "./fixtures.ts";
 
 test("a person saves their fuel profile", async ({ page }) => {
   await register(page, `fuel-${Date.now().toString(36)}`);
@@ -87,7 +87,9 @@ test("a person saves their fuel profile", async ({ page }) => {
   await test.step("the plan and the log both show each day's fuel", async () => {
     const nav = page.getByRole("navigation", { name: "App" });
     await nav.getByRole("link", { name: "Plan" }).click();
-    await expect(page.getByRole("group", { name: /^Fuel for / })).toHaveCount(7);
+    const plan = planLedger(page);
+    await expect(plan.table.getByRole("button", { name: / of \d+ kcal$/ })).toHaveCount(7);
+    await expect((await plan.openDay(0)).getByRole("row", { name: /^Fuel for the day/ })).toBeVisible();
     await nav.getByRole("link", { name: "Log" }).click();
     await expect(page.getByRole("heading", { name: "Log", level: 1 })).toBeVisible();
     await expect(page.locator("table.totals tr.fuel-row")).toHaveCount(7);

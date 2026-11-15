@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan · today's page (for comparison)</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .week { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+  .day { background: var(--surface); padding: 20px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .day > .label { display: block; margin-bottom: 12px; color: var(--fg); font-size: 13px; }
+  .slot { padding: 8px 0; border-top: 1px solid var(--line); }
+  .slot-head { display: flex; justify-content: space-between; align-items: center; }
+  .slot p { margin: 4px 0; }
+  .slot p span { white-space: nowrap; }
+  .meal { margin: 8px 0 4px; padding: 2px 0 2px 10px; border-left: 2px solid var(--accent); }
+  .meal a { font-family: var(--serif); font-size: 19px; font-weight: 500; text-decoration: none; }
+  .controls { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: 6px; font-size: 13px; color: var(--muted); }
+  .controls > span { padding: 0 4px; }
+  .diners { display: flex; gap: 4px; margin-top: 6px; }
+</style>
+</head>
+<body>
+<main class="wrap" id="app"></main>
+<script src="shared.js"></script>
+<script>
+  const parts = (x) => `<p><span>${n(x.kcal)} kcal ·</span> <span>${x.p} g protein ·</span> <span>${x.c} g carbs ·</span> <span>${x.f} g fat</span></p>`;
+  window.render = () => {
+    document.getElementById("app").innerHTML = `${pageHeader()}
+      <p class="mocknote">Today's layout, rebuilt with the same week as the four proposals so you can compare like for like.</p>
+      <div style="display:grid;gap:12px;margin-bottom:24px">${pluginBits()}</div>
+      ${shared() ? `<div class="actions" style="margin-bottom:16px"><button class="button ${state.view === "mine" ? "" : "secondary"} small">Mine</button><button class="button ${state.view === "everyone" ? "" : "secondary"} small">Everyone</button></div>` : ""}
+      <div class="week">${state.days.map((day) => `
+        <section class="day"><span class="label">${dayLabel(day.date)}</span>
+          ${showsFuel() ? `
+          <div class="slot"><div class="slot-head"><span class="label">Training</span><button class="button secondary small" onclick="act.addSession('${day.date}')">+</button></div>
+            ${day.training.map((s) => `<div class="slot-head"><p>${sessionLong(s)} · ${s.done ? "Done" : "Planned"} · ${s.source}</p>${s.source === "By hand" ? `<button class="button secondary small" onclick="act.removeSession('${day.date}','${s.id}')">✕</button>` : ""}</div>`).join("")}</div>
+          <div class="slot"><span class="label">Fuel for the day</span>${parts(day.target)}</div>
+          <div class="slot"><span class="label">Planned</span>${parts(planned(day))}</div>` : ""}
+          ${MEAL_TYPES.map((m) => `<div class="slot"><div class="slot-head"><span class="label">${MEAL_LABEL[m]}</span><button class="button secondary small" onclick="openPicker('${day.date}','${m}')">+</button></div>
+            ${inSlot(day, m).map((en) => `<div class="meal"><a href="#">${en.title}</a>
+              <div class="controls"><button class="button secondary small" onclick="act.servings('${en.id}',-1)">−</button><span>${servingsText(en)}</span><button class="button secondary small" onclick="act.servings('${en.id}',1)">+</button>
+              ${eats(en) ? `<button class="button secondary small" onclick="act.log('${en.id}')">Log</button>` : ""}<button class="button secondary small" onclick="act.remove('${en.id}')">✕</button></div>
+              ${shared() ? `<div class="diners">${memberChips(en, true)}</div>` : ""}</div>`).join("")}</div>`).join("")}
+        </section>`).join("")}</div><div style="height:80px"></div>`;
+  };
+</script>
+</body>
+</html>

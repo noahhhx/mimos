@@ -1,20 +1,23 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import { endpoints } from "../src/config.ts";
-import { apiAs, browserWeek, expect, register, test } from "./fixtures.ts";
+import { apiAs, browserWeek, expect, planLedger, register, test } from "./fixtures.ts";
 
 const golden = { enabled: true, weightKg: 70, sex: "MALE", bodyFatPercent: 15, ftpWatts: 280, goal: "FUEL", proteinGPerKg: 1.6 };
 
 test("the plan shows each day's fuel once targets are on", async ({ page }) => {
   await register(page, `fuel-plan-${Date.now().toString(36)}`);
   const nav = page.getByRole("navigation", { name: "App" });
-  const mondayFuel = page.locator(".week .day").first().getByRole("group", { name: /^Fuel for / });
+  const plan = planLedger(page);
 
-  await test.step("targets off: no day shows its fuel", async () => {
+  await test.step("targets off: no day shows its fuel or training", async () => {
     await nav.getByRole("link", { name: "Plan" }).click();
-    await expect(page.locator(".week .day")).toHaveCount(7);
-    await expect(page.getByText("Fuel for the day")).toHaveCount(0);
-    await expect(page.getByRole("group", { name: /^Training for / })).toHaveCount(0);
+    await expect(plan.table.getByRole("columnheader")).toHaveCount(7);
+    await expect(plan.planned(0)).toHaveAccessibleName(/: nothing yet$/);
+    await expect(plan.table.getByRole("button", { name: /^Training for / })).toHaveCount(0);
+    const monday = await plan.openDay(0);
+    await expect(monday).not.toContainText("Fuel for the day");
+    await expect(monday.getByRole("group", { name: /^Training for / })).toHaveCount(0);
   });
 
   await test.step("the golden profile is saved from the Fuel page", async () => {
@@ -34,10 +37,13 @@ test("the plan shows each day's fuel once targets are on", async ({ page }) => {
   await test.step("Monday reads Fuel for the day: 2678 kcal and 350 g carbs", async () => {
     await nav.getByRole("link", { name: "Plan" }).click();
     await expect(page.getByRole("tablist", { name: "Whose meals" }), "a household of one has no toggle").toHaveCount(0);
-    await expect(page.getByRole("group", { name: /^Fuel for / })).toHaveCount(7);
-    await expect(mondayFuel).toContainText("Fuel for the day");
-    await expect(mondayFuel).toContainText("2678 kcal");
-    await expect(mondayFuel).toContainText("350 g carbs");
+    await expect(plan.table.getByRole("button", { name: /^Training for / })).toHaveCount(7);
+    await expect(plan.planned(0)).toHaveAccessibleName(/: nothing yet of 2678 kcal$/);
+    const monday = await plan.openDay(0);
+    const fuel = fuelRow(monday);
+    await expect(fuel.getByRole("rowheader")).toHaveText("Fuel for the day");
+    await expect(fuel.getByRole("cell").nth(0)).toHaveText("2678");
+    await expect(fuel.getByRole("cell").nth(2)).toHaveText("350 g");
   });
 
   await test.step("every day's line matches the API", async () => {
@@ -46,9 +52,9 @@ test("the plan shows each day's fuel once targets are on", async ({ page }) => {
   });
 
   const api = await apiAs(page);
-  const tuesdayCard = page.locator(".week .day").nth(1);
-  const tuesdayFuel = tuesdayCard.getByRole("group", { name: /^Fuel for / }).locator(".fuel-target");
-  const tuesdayTraining = tuesdayCard.getByRole("group", { name: /^Training for / });
+  const tuesdayInspector = await plan.openDay(1);
+  const tuesdayFuel = fuelRow(tuesdayInspector).getByRole("cell");
+  const tuesdayTraining = tuesdayInspector.getByRole("group", { name: /^Training for / });
   const tuesday = await tuesdayDay(page, api);
   const restDayText = targetText(tuesday.target!);
   expect(tuesday.target!.basis.loadBand, "a day without training is LIGHT").toBe("LIGHT");
@@ -74,6 +80,7 @@ test("the plan shows each day's fuel once targets are on", async ({ page }) => {
     await form.getByRole("button", { name: "Add", exact: true }).click();
     await expect(form).toHaveCount(0);
     await expect(tuesdayTraining.locator(".training-parts")).toHaveText("Ride · 90 min · Endurance · Planned · By hand");
+    await expect(plan.training(1)).toHaveText("Ride 90 min");
 
     const ridden = await tuesdayDay(page, api);
     const { calories, carbsG, basis } = ridden.target!;
@@ -92,6 +99,7 @@ test("the plan shows each day's fuel once targets are on", async ({ page }) => {
   await test.step("removing the ride brings Tuesday back to its earlier target", async () => {
     await tuesdayTraining.getByRole("button", { name: "Remove Ride, 90 min" }).click();
     await expect(tuesdayTraining.locator(".training-session")).toHaveCount(0);
+    await expect(plan.training(1)).toHaveText("Rest");
     await expect(tuesdayFuel).toHaveText(restDayText);
     expect((await tuesdayDay(page, api)).target).toEqual(tuesday.target);
   });
@@ -161,20 +169,21 @@ test("Everyone hides fuel in a shared household, and Mine shows only the viewer'
   await test.step("Mine shows the host's fuel", async () => {
     await page.goto("/app/plan");
     await expect(page.getByRole("tab", { name: "Mine" })).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByRole("group", { name: /^Fuel for / })).toHaveCount(7);
     await expectLinesMatchApi(page, hostApi);
   });
 
   await test.step("Everyone shows no fuel", async () => {
     await page.getByRole("tab", { name: "Everyone" }).click();
     await expect(page.getByRole("tab", { name: "Everyone" })).toHaveAttribute("aria-selected", "true");
-    await expect(page.locator(".week .day")).toHaveCount(7);
-    await expect(page.getByText("Fuel for the day")).toHaveCount(0);
+    const plan = planLedger(page);
+    await expect(plan.table.getByRole("columnheader")).toHaveCount(7);
+    await expect(page.getByRole("button", { name: /^(Planned|Training) for / })).toHaveCount(0);
+    await expect(plan.dayHead(0).getByRole("button"), "a day has no fuel to open").toHaveCount(0);
   });
 
   await test.step("Mine shows it again", async () => {
     await page.getByRole("tab", { name: "Mine" }).click();
-    await expect(page.getByRole("group", { name: /^Fuel for / })).toHaveCount(7);
+    await expect(page.getByRole("button", { name: /^Planned for / })).toHaveCount(7);
   });
 });
 
@@ -187,8 +196,14 @@ type Target = {
 };
 type Day = { date: string; target?: Target; sessions: unknown[] };
 
-function targetText({ calories, proteinG, carbsG, fatG }: Target): string {
-  return `${calories} kcal · ${proteinG} g protein · ${carbsG} g carbs · ${fatG} g fat`;
+/** A target as the day's fuel table shows it: calories, then each macro in grams. */
+function targetText({ calories, proteinG, carbsG, fatG }: Target): string[] {
+  return [`${calories}`, `${proteinG} g`, `${carbsG} g`, `${fatG} g`];
+}
+
+/** The Fuel for the day row of a day's inspector. */
+function fuelRow(inspector: Locator): Locator {
+  return inspector.getByRole("row", { name: /^Fuel for the day/ });
 }
 
 async function tuesdayDay(page: Page, api: Awaited<ReturnType<typeof apiAs>>): Promise<Day> {
@@ -212,12 +227,13 @@ async function weekDays(page: Page, api: Awaited<ReturnType<typeof apiAs>>): Pro
   return days;
 }
 
+/** Each day's Planned cell names its target, and its inspector's Fuel for the day row matches the API. */
 async function expectLinesMatchApi(page: Page, api: Awaited<ReturnType<typeof apiAs>>): Promise<void> {
-  const week = page.locator(".week .day");
+  const plan = planLedger(page);
   const days = await weekDays(page, api);
   for (const [index, day] of days.entries()) {
-    await expect(week.nth(index).getByRole("group", { name: /^Fuel for / }).locator(".fuel-target")).toHaveText(
-      targetText(day.target!),
-    );
+    await expect(plan.planned(index)).toHaveAccessibleName(new RegExp(`of ${day.target!.calories} kcal$`));
+    const inspector = await plan.openDay(index);
+    await expect(fuelRow(inspector).getByRole("cell")).toHaveText(targetText(day.target!));
   }
 }

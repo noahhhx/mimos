@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan page redesign · mockups</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin: 24px 0 48px; }
+  .card { display: block; border: 1px solid var(--line); background: var(--surface); padding: 20px 22px; text-decoration: none; }
+  .card:hover { border-color: var(--accent); }
+  .card h3 { margin: 4px 0 8px; }
+  .card p { margin: 0 0 8px; font-size: 15px; }
+  .card .pc { font-size: 14px; color: var(--muted); }
+  ul.problems { padding-left: 20px; max-width: 760px; }
+  ul.problems li { margin: 6px 0; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="page-header"><div><p class="eyebrow label">Mockups · not the app</p><h1>Plan page redesign</h1><div class="rule"></div></div></div>
+  <p style="max-width:760px">Four directions for a calmer plan page, all built on one realistic week: a two-person household, five training sessions, a fuel target on every day, and a plugin turned on. Every mockup is clickable (servings, Log, Remove, diners, add meal, add training) and responsive, so narrow the window to see the phone layout. The bar at the top switches between mockups, light and dark, and the Mine and Everyone views.</p>
+
+  <h2>What's wrong today</h2>
+  <ul class="problems">
+    <li>Each day stacks seven labelled sections (Training, Fuel, Planned, and four meals), so a full day is mostly labels.</li>
+    <li>About 60 buttons on the week, each as prominent as the meal names.</li>
+    <li>Fuel and Planned are two four-part strings stacked on top of each other, so you compare them by reading both.</li>
+    <li>Seven days wrap into rows of three of different heights, so nothing lines up.</li>
+    <li>Plugins push the week down the page.</li>
+  </ul>
+
+  <div class="cards">
+    <a class="card" href="current.html"><span class="label">Baseline</span><h3>Today's page</h3><p>The current layout with the same data, for comparison.</p></a>
+    <a class="card" href="1-ledger.html"><span class="label">Option 1</span><h3>The Ledger</h3><p>A day × meal table with names only; selecting a meal or day opens its controls in a side rail.</p><p class="pc">Densest, and the whole week fits on one screen. Every edit is one extra click, and on phones it scrolls sideways.</p></a>
+    <a class="card" href="2-one-day.html"><span class="label">Option 2</span><h3>One day at a time</h3><p>A strip of seven compact tiles, then one day in full: meals, training, and a two-row fuel table.</p><p class="pc">Best on phones and for "what am I eating today". Weaker for balancing the whole week.</p></a>
+    <a class="card" href="3-plan-eat.html"><span class="label">Option 3</span><h3>Plan and Eat modes</h3><p>Split by what you're doing: a quiet Eat agenda with Log only, and a Plan mode that holds all the editing.</p><p class="pc">Each mode shows less than half of today's controls. A quick edit means switching modes.</p></a>
+    <a class="card" href="4-fuel-columns.html"><span class="label">Option 4</span><h3>Fuel columns</h3><p>Each day is a column as tall as its target, with meals as blocks sized by calories.</p><p class="pc">Read the fuel at a glance; suits training weeks best. Comes close to ADR-0022's no-scoring rule and needs per-meal kcal from the API.</p></a>
+  </div>
+</main>
+<script src="shared.js"></script>
+</body>
+</html>

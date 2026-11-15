@@ -1,7 +1,7 @@
-import type { Locator, Page } from "@playwright/test";
+import type { Locator } from "@playwright/test";
 
 import { endpoints } from "../src/config.ts";
-import { apiAs, browserWeek, expect, register, test } from "./fixtures.ts";
+import { apiAs, browserWeek, expect, planLedger, register, test } from "./fixtures.ts";
 
 type Nutrition = { calories?: number; proteinG?: number; carbsG?: number; fatG?: number };
 type PlannedTotals = {
@@ -22,25 +22,24 @@ test("the plan shows each day's planned total", async ({ page }) => {
   expect(dinner, "the library has a recipe with calories").toBeDefined();
   const { title, nutrition } = dinner!;
   const kcal = (servings: number) => `${Math.round(Math.round(nutrition!.calories! * servings * 10) / 10)} kcal`;
-  const mondayCard = day(page, 0);
-  const tuesdayCard = day(page, 1);
-  const wednesdayCard = day(page, 2);
-  const planned = mondayCard.getByRole("group", { name: /^Planned for / });
+  const plan = planLedger(page);
+  const plannedRow = (inspector: Locator) => inspector.getByRole("row", { name: /^Planned/ }).getByRole("cell");
 
-  await test.step("an empty week shows no planned totals", async () => {
+  await test.step("an empty week has planned nothing yet on any day", async () => {
     const totalsLoaded = page.waitForResponse((response) => response.url().includes(`/me/fuel?from=${monday}&`));
     await page.goto("/app/plan");
     expect((await totalsLoaded).ok(), "the week's totals load").toBe(true);
-    await expect(mondayCard.getByRole("heading")).toBeVisible();
-    await expect(page.getByRole("group", { name: /^Planned for / })).toHaveCount(0);
+    for (let day = 0; day < 7; day++) {
+      await expect(plan.planned(day)).toHaveAccessibleName(/: nothing yet$/);
+    }
   });
 
   await test.step(`plan ${title} for Monday's dinner: Planned reads twice its calories`, async () => {
-    await planOn(mondayCard, "Dinner", title);
-    await expect(mondayCard.locator(".planned-meal").filter({ hasText: title }).getByText("2 servings")).toBeVisible();
-    await expect(planned).toContainText("Planned");
-    await expect(planned).toContainText(kcal(2));
-    await expect(planned).toContainText(/\d+ g protein · \d+ g carbs · \d+ g fat/);
+    await plan.plan(0, "Dinner", title);
+    await expect(plan.meal(title)).toContainText("2 servings");
+    await expect(plan.planned(0)).toHaveAccessibleName(new RegExp(`: ${kcal(2)}$`));
+    const monday = await plan.openDay(0);
+    await expect(plannedRow(monday)).toHaveText([kcal(2).replace(" kcal", ""), /^\d+ g$/, /^\d+ g$/, /^\d+ g$/]);
   });
 
   await test.step("the API agrees: seven days, and one meal on Monday", async () => {
@@ -51,8 +50,9 @@ test("the plan shows each day's planned total", async ({ page }) => {
   });
 
   await test.step("one more serving updates the total without a reload", async () => {
-    await mondayCard.locator(".planned-meal").filter({ hasText: title }).getByRole("button", { name: "More servings" }).click();
-    await expect(planned).toContainText(kcal(2.5));
+    const dinner = await plan.openMeal(title);
+    await dinner.getByRole("button", { name: "More servings" }).click();
+    await expect(plan.planned(0)).toHaveAccessibleName(new RegExp(`: ${kcal(2.5)}$`));
   });
 
   await test.step("a recipe without calories adds its other values and is noted", async () => {
@@ -60,44 +60,44 @@ test("the plan shows each day's planned total", async ({ page }) => {
       (await api<PlannedTotals>("GET", `/api/v1/plans/${monday}/my-totals`)).days.find((day) => day.date === monday)!.total;
     const before = await mondayTotal();
     await createRecipe(api, mystery, { proteinG: 5, carbsG: 12, fatG: 3 });
-    await planOn(mondayCard, "Lunch", mystery);
-    await expect(planned).toContainText("Unknown nutrition in 1 meal is not counted.");
-    await expect(planned).toContainText(kcal(2.5));
+    await plan.plan(0, "Lunch", mystery);
+    await expect(plan.planned(0)).toHaveAccessibleName(new RegExp(`: ${kcal(2.5)}$`));
+    const mondayDay = await plan.openDay(0);
+    await expect(mondayDay).toContainText("Unknown nutrition in 1 meal is not counted.");
     const after = await mondayTotal();
     expect(after.proteinG).toBeCloseTo(before.proteinG! + 10, 5);
     expect(after.calories).toBe(before.calories);
   });
 
-  await test.step("a day whose only meal lacks calories shows its other values and no calories", async () => {
-    await planOn(wednesdayCard, "Lunch", mystery);
-    const wednesday = wednesdayCard.getByRole("group", { name: /^Planned for / });
-    await expect(wednesday).toContainText("10 g protein · 24 g carbs · 6 g fat");
+  await test.step("a day whose only meal lacks calories shows its other values and a dash for calories", async () => {
+    await plan.plan(2, "Lunch", mystery);
+    await expect(plan.planned(2)).toHaveAccessibleName(/: calories unknown$/);
+    const wednesday = await plan.openDay(2);
+    await expect(plannedRow(wednesday)).toHaveText(["–", "10 g", "24 g", "6 g"]);
     await expect(wednesday).toContainText("Unknown nutrition in 1 meal is not counted.");
-    await expect(wednesday).not.toContainText("kcal");
     const totals = await api<PlannedTotals>("GET", `/api/v1/plans/${monday}/my-totals`);
     expect(totals.days[2]?.total, "calories are absent, not zero").toEqual({ proteinG: 10, carbsG: 24, fatG: 6 });
   });
 
-  await test.step("a day whose meals have no nutrition at all shows only the note", async () => {
+  await test.step("a day whose meals have no nutrition at all shows dashes and the note", async () => {
     await createRecipe(api, unknown, {});
-    await planOn(tuesdayCard, "Dinner", unknown);
-    const tuesday = tuesdayCard.getByRole("group", { name: /^Planned for / });
+    await plan.plan(1, "Dinner", unknown);
+    await expect(plan.planned(1)).toHaveAccessibleName(/: calories unknown$/);
+    const tuesday = await plan.openDay(1);
+    await expect(plannedRow(tuesday)).toHaveText(["–", "–", "–", "–"]);
     await expect(tuesday).toContainText("Unknown nutrition in 1 meal is not counted.");
-    await expect(tuesday.locator(".planned-total")).toHaveCount(0);
     const totals = await api<PlannedTotals>("GET", `/api/v1/plans/${monday}/my-totals`);
     expect(totals.days[1]?.total, "no value is known").toEqual({});
   });
 
-  await test.step("each value stays with its unit and label at every phone width", async () => {
-    await expect(planned.locator(".planned-total span")).toHaveCount(4);
+  await test.step("the day's fuel fits the sheet at every phone width", async () => {
+    const mondayDay = await plan.openDay(0);
+    const cells = mondayDay.locator(".day-fuel tbody td");
+    await expect(cells).toHaveCount(4);
     for (let width = 320; width <= 640; width += 8) {
       await page.setViewportSize({ width, height: 900 });
-      const broken = await planned.locator(".planned-total span").evaluateAll((parts) =>
-        parts
-          .filter((part) => new Set([...part.getClientRects()].map((rect) => Math.round(rect.top))).size > 1)
-          .map((part) => part.textContent),
-      );
-      expect(broken, `no value splits from its label at ${width}px`).toEqual([]);
+      const fits = await mondayDay.evaluate((sheet) => sheet.scrollWidth <= sheet.clientWidth);
+      expect(fits, `the sheet does not scroll sideways at ${width}px`).toBe(true);
     }
   });
 });
@@ -122,33 +122,31 @@ test("Everyone hides the planned total in a shared household", async ({ page, br
   }
 
   const { monday } = await browserWeek(page);
-  const mondayCard = day(page, 0);
-  const planned = mondayCard.getByRole("group", { name: /^Planned for / });
+  const plan = planLedger(page);
 
   await test.step("the host plans a dinner both eat: Mine shows the host's half", async () => {
     const { id } = await createRecipe(hostApi, stew, { calories: 400, proteinG: 20, carbsG: 40, fatG: 10 });
     await hostApi("POST", `/api/v1/plans/${monday}/entries`, { date: monday, mealType: "DINNER", recipeId: id, servings: 2 });
     await page.goto("/app/plan");
     await expect(page.getByRole("tab", { name: "Mine" })).toHaveAttribute("aria-selected", "true");
-    await expect(planned).toContainText("400 kcal · 20 g protein · 40 g carbs · 10 g fat");
+    await expect(plan.planned(0)).toHaveAccessibleName(/: 400 kcal$/);
+    const mondayDay = await plan.openDay(0);
+    await expect(mondayDay.getByRole("row", { name: /^Planned/ }).getByRole("cell")).toHaveText(["400", "20 g", "40 g", "10 g"]);
   });
 
   await test.step("Everyone shows the meal but no planned total", async () => {
     await page.getByRole("tab", { name: "Everyone" }).click();
     await expect(page.getByRole("tab", { name: "Everyone" })).toHaveAttribute("aria-selected", "true");
-    await expect(mondayCard.locator(".planned-meal").filter({ hasText: stew })).toBeVisible();
-    await expect(page.getByRole("group", { name: /^Planned for / })).toHaveCount(0);
+    await expect(plan.meal(stew)).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Planned for / })).toHaveCount(0);
+    await expect(plan.dayHead(0).getByRole("button"), "a day has nothing to open").toHaveCount(0);
   });
 
   await test.step("Mine shows it again", async () => {
     await page.getByRole("tab", { name: "Mine" }).click();
-    await expect(planned).toContainText("400 kcal");
+    await expect(plan.planned(0)).toHaveAccessibleName(/: 400 kcal$/);
   });
 });
-
-function day(page: Page, index: number): Locator {
-  return page.locator(".week .day").nth(index);
-}
 
 async function createRecipe(
   api: Awaited<ReturnType<typeof apiAs>>,
@@ -165,14 +163,4 @@ async function createRecipe(
     ingredients: [{ quantity: 1, unit: "l", name: "Stock" }],
     steps: [{ instruction: "Heat it." }],
   });
-}
-
-async function planOn(dayCard: Locator, meal: string, title: string): Promise<void> {
-  const page = dayCard.page();
-  await dayCard.getByRole("button", { name: new RegExp(`^Add ${meal} for `) }).click();
-  const picker = page.getByRole("dialog", { name: "Pick a meal" });
-  await picker.getByRole("searchbox").fill(title);
-  await picker.getByRole("button", { name: new RegExp(`^${title}`) }).click();
-  await expect(picker).toHaveCount(0);
-  await expect(dayCard.locator(".planned-meal").filter({ hasText: title })).toBeVisible();
 }

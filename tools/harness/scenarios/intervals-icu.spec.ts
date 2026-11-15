@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 
-import { apiAs, browserWeek, expect, register, test } from "./fixtures.ts";
+import { apiAs, browserWeek, expect, planLedger, register, test } from "./fixtures.ts";
 
 /** The fake intervals.icu (tools/harness/fakes/intervals-icu), published on loopback by compose.fakes.yml. */
 const FAKE = `http://127.0.0.1:${process.env.INTERVALS_ICU_FAKE_PORT ?? "8090"}`;
@@ -75,11 +75,17 @@ test("a person connects intervals.icu and their planned workouts reach the plan"
     expect(energy.kcal, "1,360,800 J is 1361 kJ, taken as kcal").toBe(1361);
 
     await nav.getByRole("link", { name: "Plan" }).click();
-    const card = await dayCard(page, synced.date);
-    const training = card.getByRole("group", { name: /^Training for / });
+    const plan = planLedger(page);
+    const index = await dayIndex(page, synced.date);
+    await expect(plan.training(index)).toContainText("Ride 90 min");
+    await expect(plan.planned(index)).toHaveAccessibleName(new RegExp(`of ${synced.target!.calories} kcal$`));
+    const day = await plan.openDay(index);
+    const training = day.getByRole("group", { name: /^Training for / });
     await expect(training.locator(".training-parts")).toHaveText("Ride · 90 min · Hard · Planned · intervals.icu");
     await expect(training.getByRole("button", { name: /^Remove / }), "synced sessions have no remove control").toHaveCount(0);
-    await expect(card.getByRole("group", { name: /^Fuel for / })).toContainText(`${synced.target!.calories} kcal`);
+    await expect(day.getByRole("row", { name: /^Fuel for the day/ }).getByRole("cell").first()).toHaveText(
+      `${synced.target!.calories}`,
+    );
   });
 
   await test.step("disconnecting removes the synced training", async () => {
@@ -103,8 +109,8 @@ async function syncedDay(page: Page, api: Awaited<ReturnType<typeof apiAs>>): Pr
   return day!;
 }
 
-async function dayCard(page: Page, date: string) {
+/** A date's column in this week's ledger, counted from Monday (0). */
+async function dayIndex(page: Page, date: string): Promise<number> {
   const { monday } = await browserWeek(page);
-  const index = Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${monday}T00:00:00Z`)) / 86_400_000);
-  return page.locator(".week .day").nth(index);
+  return Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${monday}T00:00:00Z`)) / 86_400_000);
 }

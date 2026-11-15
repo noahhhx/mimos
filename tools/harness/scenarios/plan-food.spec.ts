@@ -1,9 +1,7 @@
 import { readFileSync } from "node:fs";
 
-import type { Locator } from "@playwright/test";
-
 import { MARMITE, fixtures } from "../fakes/open-food-facts/src/fixtures.ts";
-import { apiAs, browserWeek, expect, register, test } from "./fixtures.ts";
+import { apiAs, browserWeek, expect, planLedger, register, test } from "./fixtures.ts";
 
 /** The fake Open Food Facts (tools/harness/fakes/open-food-facts), published on loopback by compose.fakes.yml. */
 const FAKE = `http://127.0.0.1:${process.env.OPEN_FOOD_FACTS_FAKE_PORT ?? "8091"}`;
@@ -32,20 +30,21 @@ test("plans a banana and a scanned product as foods, not recipes", async ({ page
   const api = await apiAs(page);
   const { monday } = await browserWeek(page);
   const kcal = (pieces: number) => `${Math.round(BANANA.calories * pieces)} kcal`;
-  const mondayCard = page.locator(".week .day").nth(0);
-  const planned = mondayCard.getByRole("group", { name: /^Planned for / });
-  const banana = mondayCard.locator(".planned-meal").filter({ hasText: "Banana" });
-  const marmite = mondayCard.locator(".planned-meal").filter({ hasText: "Yeast Extract (Marmite)" });
+  const plan = planLedger(page);
+  const planned = plan.planned(0);
+  const addSnack = () => plan.table.getByRole("button", { name: /^Add Snack for / }).first().click();
 
   await test.step("plan a banana as Monday's snack: one piece, its calories from the seed", async () => {
     await page.goto("/app/plan");
-    await mondayCard.getByRole("button", { name: /^Add Snack for / }).click();
+    await addSnack();
     const picker = page.getByRole("dialog", { name: "Pick a meal" });
     await picker.getByRole("searchbox").fill("banana");
     await picker.getByRole("button", { name: /^Banana · Ingredient/ }).click();
     await expect(picker).toHaveCount(0);
+    await expect(plan.meal("Banana")).toContainText("1 piece");
+    const banana = await plan.openMeal("Banana");
     await expect(banana.getByLabel("Amount of Banana")).toHaveValue("1");
-    await expect(planned).toContainText(kcal(1));
+    await expect(planned).toHaveAccessibleName(new RegExp(`: ${kcal(1)}$`));
   });
 
   await test.step("the API reads it as a food, with no recipe", async () => {
@@ -59,9 +58,11 @@ test("plans a banana and a scanned product as foods, not recipes", async ({ page
   });
 
   await test.step("two bananas double the total without a reload", async () => {
+    const banana = await plan.openMeal("Banana");
     await banana.getByLabel("Amount of Banana").fill("2");
     await banana.getByLabel("Amount of Banana").press("Enter");
-    await expect(planned).toContainText(kcal(2));
+    await expect(planned).toHaveAccessibleName(new RegExp(`: ${kcal(2)}$`));
+    await expect(plan.meal("Banana")).toContainText("2 pieces");
   });
 
   await test.step("the shopping list has the banana", async () => {
@@ -74,8 +75,9 @@ test("plans a banana and a scanned product as foods, not recipes", async ({ page
 
   await test.step("log the snack: the Log page lists it", async () => {
     await page.goto("/app/plan");
+    const banana = await plan.openMeal("Banana");
     await banana.getByRole("button", { name: "Log", exact: true }).click();
-    await expect(page.getByRole("status")).toHaveText("Banana logged.");
+    await expect(banana.getByRole("status")).toHaveText("Banana logged.");
     await page.goto("/app/log");
     await page.getByRole("row", { name: /^Mon/ }).click();
     await expect(page.locator(".log-entries li").filter({ hasText: "Banana, 2 pieces" })).toBeVisible();
@@ -83,7 +85,7 @@ test("plans a banana and a scanned product as foods, not recipes", async ({ page
 
   await test.step("scan Marmite by its typed barcode: it lacks a fat value, so the form asks for it", async () => {
     await page.goto("/app/plan");
-    await mondayCard.getByRole("button", { name: /^Add Snack for / }).click();
+    await addSnack();
     const picker = page.getByRole("dialog", { name: "Pick a meal" });
     await picker.getByRole("button", { name: "Scan a barcode" }).click();
     const scan = page.getByRole("dialog", { name: "Scan a barcode" });
@@ -98,20 +100,19 @@ test("plans a banana and a scanned product as foods, not recipes", async ({ page
   });
 
   await test.step("it is planned at its 8 g serving", async () => {
+    await expect(plan.meal("Yeast Extract (Marmite)")).toContainText("8 g");
+    const marmite = await plan.openMeal("Yeast Extract (Marmite)");
     await expect(marmite.getByLabel("Amount of Yeast Extract (Marmite)")).toHaveValue("8");
-    await expect(marmite).toContainText("g");
-    await expect(planned).toContainText(`${Math.round(BANANA.calories * 2 + (MARMITE_KCAL_PER_100_G * 8) / 100)} kcal`);
+    await expect(planned).toHaveAccessibleName(
+      new RegExp(`: ${Math.round(BANANA.calories * 2 + (MARMITE_KCAL_PER_100_G * 8) / 100)} kcal$`),
+    );
   });
 
   await test.step("searching marmite in the picker finds the new ingredient", async () => {
-    await openPicker(mondayCard);
+    await addSnack();
     const picker = page.getByRole("dialog", { name: "Pick a meal" });
     await picker.getByRole("searchbox").fill("marmite");
     await expect(picker.getByRole("button", { name: /^Yeast Extract \(Marmite\)/ })).toContainText("Your ingredient");
   });
 });
-
-async function openPicker(dayCard: Locator): Promise<void> {
-  await dayCard.getByRole("button", { name: /^Add Snack for / }).click();
-}
 

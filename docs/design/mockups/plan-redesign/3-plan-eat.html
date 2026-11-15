@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan · 3 · Plan and Eat modes</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .modes { display: inline-flex; border: 1px solid var(--line); margin-bottom: 28px; }
+  .modes button { border: 0; padding: 10px 26px; background: transparent; cursor: pointer; font-size: 16px; font-weight: 600; color: var(--muted); }
+  .modes button.on { background: var(--accent); color: var(--on-accent); }
+  .modes + p { margin: -18px 0 28px; font-size: 14px; }
+
+  /* Eat */
+  .eat-day { border-top: 1px solid var(--line); padding: 18px 0 20px; }
+  .eat-day:last-child { border-bottom: 1px solid var(--line); }
+  .eat-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+  .eat-head h3 { font-size: 26px; }
+  .eat-head .train { font-size: 14px; color: var(--muted); }
+  .eat-head .fuel { margin-left: auto; font-size: 15px; font-variant-numeric: tabular-nums; }
+  .eat-head .fuel b { font-weight: 600; }
+  .eat-day.today { border-top: 2px solid var(--accent); }
+  .eat-day.today .eat-head .label { color: var(--accent); }
+  .macros { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+  .eat-meals { margin: 12px 0 0; }
+  .eat-meal { display: grid; grid-template-columns: 100px minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 8px 0; }
+  .eat-meal .name { font-family: var(--serif); font-size: 19px; font-weight: 500; text-decoration: none; line-height: 1.25; }
+  .eat-meal .share { font-size: 13px; color: var(--muted); }
+  .collapsed { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; padding: 12px 0; border-top: 1px solid var(--line); cursor: pointer; background: transparent; border-left: 0; border-right: 0; border-bottom: 0; width: 100%; text-align: left; }
+  .collapsed:hover { background: var(--hover); }
+  .collapsed .d { font-family: var(--serif); font-size: 19px; }
+  .collapsed .r { margin-left: auto; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  @media (max-width: 560px) {
+    .eat-meal { grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; }
+    .eat-meal .label { grid-column: 1 / -1; }
+    .eat-head .fuel { margin-left: 0; width: 100%; }
+  }
+
+  /* Plan */
+  .plugins { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-bottom: 28px; }
+  .plan-day { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 16px 28px; padding: 18px 0; border-top: 1px solid var(--line); }
+  .plan-day:last-child { border-bottom: 1px solid var(--line); }
+  .plan-day .when h3 { font-size: 24px; }
+  .plan-day .when .k { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .train-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .tchip { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 4px 0 10px; border: 1px solid var(--line); font-size: 13px; font-weight: 600; }
+  .tchip.synced { padding-right: 10px; }
+  .tchip button { border: 0; background: transparent; cursor: pointer; color: var(--muted); padding: 0 4px; }
+  .add-train { height: 28px; border: 1px dashed var(--line); background: transparent; padding: 0 10px; font-size: 13px; cursor: pointer; color: var(--muted); }
+  .add-train:hover { border-color: var(--accent); color: var(--fg); }
+  .plan-rows { display: grid; gap: 0; }
+  .prow { display: grid; grid-template-columns: 90px minmax(0, 1fr) auto auto auto; gap: 12px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .prow:first-child { padding-top: 0; }
+  .prow .name { font-family: var(--serif); font-size: 18px; font-weight: 500; text-decoration: none; line-height: 1.25; }
+  .prow .stepper span { min-width: 84px; font-size: 13px; color: var(--muted); }
+  .addmeal { justify-self: start; margin-top: 10px; }
+  @media (max-width: 760px) {
+    .plan-day { grid-template-columns: minmax(0, 1fr); }
+    .prow { grid-template-columns: minmax(0, 1fr) auto; }
+    .prow .label { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+<main class="wrap" id="app"></main>
+<script src="shared.js"></script>
+<script>
+  let mode = "eat";
+  const expanded = new Set();
+
+  function eatDay(d) {
+    const mine = d.entries.filter(eats).sort((a, b) => MEAL_TYPES.indexOf(a.meal) - MEAL_TYPES.indexOf(b.meal));
+    const logged = mine.filter((x) => x.logged).length;
+    const p = planned(d);
+    if (isPast(d.date) && !expanded.has(d.date)) {
+      return `<button class="collapsed" onclick="expanded.add('${d.date}');render()">
+        <span class="label">${dayShort(d.date)}</span><span class="d">${mine.map((x) => x.title).join(" · ") || "Nothing planned"}</span>
+        <span class="r">${logged} of ${mine.length} logged${showsFuel() ? ` · ${n(p.kcal)} of ${n(d.target.kcal)} kcal` : ""}</span></button>`;
+    }
+    return `<section class="eat-day ${d.date === TODAY ? "today" : ""}">
+      <div class="eat-head"><span class="label">${d.date === TODAY ? "Today" : dayShort(d.date)}</span><h3>${dayFull(d.date)}</h3>
+        ${showsFuel() ? `<span class="train">${d.training.length ? d.training.map(sessionLong).join(" + ") : "Rest day"}</span>
+        <span class="fuel"><b>${n(p.kcal)}</b> <span class="muted">of ${n(d.target.kcal)} kcal</span></span>` : ""}</div>
+      ${showsFuel() && d.date === TODAY ? `<p class="macros">Protein ${p.p} of ${d.target.p} g · Carbs ${p.c} of ${d.target.c} g · Fat ${p.f} of ${d.target.f} g</p>` : ""}
+      <div class="eat-meals">${mine.length ? mine.map((en) => `<div class="eat-meal">
+        <span class="label">${MEAL_LABEL[en.meal]}</span>
+        <div><a class="name" href="#">${en.title}</a><div class="share">${shareText(en)}</div></div>
+        ${en.logged ? `<span class="logged">✓ Logged</span>` : `<button class="button small" onclick="act.log('${en.id}')">Log</button>`}
+      </div>`).join("") : `<p class="muted">Nothing planned. <a href="#" onclick="mode='plan';render();return false">Plan this day</a></p>`}</div>
+    </section>`;
+  }
+
+  function planDay(d) {
+    const rows = visible(d).sort((a, b) => MEAL_TYPES.indexOf(a.meal) - MEAL_TYPES.indexOf(b.meal));
+    return `<section class="plan-day">
+      <div class="when"><span class="label">${dayShort(d.date)}${d.date === TODAY ? " · Today" : ""}</span><h3>${parse(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</h3>
+        ${showsFuel() ? `<div class="k">${n(planned(d).kcal)} of ${n(d.target.kcal)} kcal</div>
+        <div class="train-chips">${d.training.map((s) => `<span class="tchip ${s.source === "By hand" ? "" : "synced"}" title="${s.source}">${sessionShort(s)}${s.source === "By hand" ? `<button onclick="act.removeSession('${d.date}','${s.id}')" aria-label="Remove">✕</button>` : ""}</span>`).join("")}
+          <button class="add-train" onclick="act.addSession('${d.date}')">+ Training</button></div>` : ""}</div>
+      <div class="plan-rows">
+        ${rows.map((en) => `<div class="prow">
+          <span class="label">${MEAL_LABEL[en.meal]}</span>
+          <a class="name" href="#" style="${eats(en) ? "" : "color:var(--muted)"}">${en.title}</a>
+          <span class="stepper"><button class="button secondary small" onclick="act.servings('${en.id}',-1)" aria-label="Less">−</button><span>${servingsText(en)}</span><button class="button secondary small" onclick="act.servings('${en.id}',1)" aria-label="More">+</button></span>
+          ${shared() ? `<span style="display:flex;gap:4px">${memberChips(en, true)}</span>` : "<span></span>"}
+          <button class="button ghost small" onclick="act.remove('${en.id}')" aria-label="Remove ${esc(en.title)}">✕</button>
+        </div>`).join("")}
+        <button class="button secondary small addmeal" onclick="openPicker('${d.date}','${MEAL_TYPES.find((m) => !inSlot(d, m).length) || "SNACK"}')">+ Add meal</button>
+      </div>
+    </section>`;
+  }
+
+  window.render = () => {
+    document.getElementById("app").innerHTML = `${pageHeader()}
+      <p class="mocknote">Option 3, Plan and Eat modes. The page asks what you are doing. Eat (the default for the current week) is a quiet agenda: your meals, your share, Log, and the day's fuel on one line, with past days folded away. Plan (the default for future weeks) holds the editing: servings, diners, Remove, training, and plugins. Empty slots never show; each day has one Add meal button.</p>
+      <div class="modes" role="tablist"><button role="tab" class="${mode === "eat" ? "on" : ""}" onclick="mode='eat';render()">Eat</button><button role="tab" class="${mode === "plan" ? "on" : ""}" onclick="mode='plan';render()">Plan</button></div>
+      <p class="muted">${mode === "eat" ? "What you're eating this week, and what's left to log." : "Shape the week: add meals and training, set servings and who eats what."}</p>
+      ${mode === "eat" ? state.days.map(eatDay).join("") : `<div class="plugins">${pluginBits()}</div>${state.days.map(planDay).join("")}`}
+      <div style="height:80px"></div>`;
+  };
+</script>
+</body>
+</html>

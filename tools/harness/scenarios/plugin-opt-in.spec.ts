@@ -19,8 +19,8 @@ test("a plugin suggests only after the user turns it on", async ({ page }) => {
   const openPlan = async () => {
     await page.getByRole("navigation", { name: "App" }).getByRole("link", { name: "Plan" }).click();
     await expect(page.getByRole("heading", { name: "Plan", level: 1 })).toBeVisible();
-    // The week grid renders once the plan and its suggestions have loaded.
-    await expect(page.locator(".week")).toBeVisible();
+    // The week's ledger renders once the plan and its suggestions have loaded.
+    await expect(page.getByRole("table", { name: /^Meals for the week of / })).toBeVisible();
   };
 
   const openPlugins = async () => {

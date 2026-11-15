@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan · 4 · Fuel columns</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .board-scroll { overflow-x: auto; padding-bottom: 8px; }
+  .board { display: grid; grid-template-columns: repeat(7, minmax(128px, 1fr)); gap: 12px; min-width: 940px; align-items: end; }
+  .col { display: flex; flex-direction: column; min-width: 0; }
+  .colhead { border: 0; background: transparent; text-align: left; padding: 4px 2px 8px; cursor: pointer; border-bottom: 3px solid transparent; }
+  .colhead:hover { background: var(--hover); }
+  .colhead.sel { border-bottom-color: var(--accent); }
+  .colhead .dow { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .colhead.today .dow { color: var(--accent); }
+  .colhead .num { font-family: var(--serif); font-size: 26px; line-height: 1.1; }
+
+  .train { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-height: 40px; padding: 6px 8px; margin-bottom: 4px; font-size: 13px; font-weight: 600; border: 1px solid var(--line); border-left: 3px solid var(--fg); background: var(--bg); }
+  .train.rest { border: 1px dashed var(--line); border-left-width: 1px; font-weight: 400; color: var(--muted); background: transparent; }
+
+  /* The glass: its height is the day's fuel target; meals stack in it from the top of their filled area. */
+  .glass { position: relative; display: flex; flex-direction: column; border: 1px solid var(--line); background: var(--surface); }
+  .open { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; min-height: 0; border-bottom: 1px dashed var(--line); background: repeating-linear-gradient(-45deg, transparent 0 7px, var(--hover) 7px 8px); }
+  .open button { border: 1px dashed var(--muted); background: var(--surface); padding: 2px 8px; font-size: 12px; color: var(--muted); cursor: pointer; }
+  .open button:hover { color: var(--fg); border-color: var(--accent); }
+  .open .left { display: block; text-align: center; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .block { flex: 0 0 auto; display: flex; flex-direction: column; justify-content: center; overflow: hidden; padding: 2px 8px; border: 0; border-top: 1px solid var(--line); border-left: 4px solid var(--accent); background: var(--surface); text-align: left; cursor: pointer; line-height: 1.2; min-height: 30px; }
+  .block:first-child { border-top: 0; }
+  .block:hover { background: var(--hover); }
+  .block.sel { outline: 2px solid var(--accent); outline-offset: -2px; background: var(--hover); }
+  .block.logged { border-left-color: var(--muted); }
+  .block .t { font-family: var(--serif); font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .block .k { font-size: 11px; color: var(--muted); }
+  .block.others { border-left-color: var(--line); }
+  .targetline { position: absolute; left: -6px; right: -6px; height: 0; border-top: 2px solid var(--fg); }
+  .targetline span { position: absolute; right: 0; top: -18px; font-size: 11px; font-weight: 600; background: var(--bg); padding: 0 4px; }
+  .foot { padding: 8px 2px 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .foot b { font-size: 15px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 16px 0 0; font-size: 13px; color: var(--muted); }
+  .legend i { display: inline-block; width: 14px; height: 14px; vertical-align: -2px; margin-right: 6px; border: 1px solid var(--line); }
+
+  .detail { margin-top: 28px; border: 1px solid var(--line); background: var(--surface); padding: 20px 24px 22px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 16px 40px; }
+  @media (max-width: 760px) { .detail { grid-template-columns: 1fr; } }
+  .detail .label { display: block; margin-bottom: 6px; }
+  .detail .controls { display: flex; flex-wrap: wrap; gap: 18px 28px; align-items: end; }
+  .plugins { margin-top: 40px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+</style>
+</head>
+<body data-wide="1">
+<main class="wrap wide" id="app"></main>
+<script src="shared.js"></script>
+<script>
+  let sel = { type: "day", date: TODAY };
+  window.onRemoved = (id) => { if (sel?.id === id) sel = { type: "day", date: TODAY }; };
+  const pick = (s) => { sel = s; render(); };
+  const SCALE = 0.11; // px per kcal
+  const EQUAL = 64; // block height when the view has no fuel
+
+  function column(d) {
+    const fuel = showsFuel();
+    const entries = visible(d).sort((a, b) => MEAL_TYPES.indexOf(a.meal) - MEAL_TYPES.indexOf(b.meal));
+    const p = planned(d);
+    const blockH = (en) => (fuel ? Math.max(30, en.kcal * SCALE) : EQUAL);
+    const filled = entries.reduce((s, en) => s + blockH(en), 0);
+    const targetH = fuel ? d.target.kcal * SCALE : 4 * EQUAL + 40;
+    const glassH = Math.max(targetH, filled + (fuel ? 0 : 40));
+    const openKcal = d.target.kcal - p.kcal;
+    return `<div class="col">
+      <button class="colhead ${d.date === TODAY ? "today" : ""} ${sel?.date === d.date ? "sel" : ""}" onclick="pick({type:'day',date:'${d.date}'})">
+        <span class="dow">${d.date === TODAY ? "Today" : dayShort(d.date)}</span><span class="num">${dayNum(d.date)}</span></button>
+      ${fuel ? (d.training.length ? `<div class="train">${d.training.map((s) => `<span>${sessionShort(s)}</span>`).join("")}</div>` : `<div class="train rest">Rest</div>`) : ""}
+      <div class="glass" style="height:${glassH}px">
+        <div class="open">${glassH - filled > 44 ? `<div>${fuel && openKcal > 0 ? `<span class="left">${n(openKcal)} kcal open</span>` : ""}<button onclick="openPicker('${d.date}','${MEAL_TYPES.find((m) => !inSlot(d, m).length) || "SNACK"}')">+ Add</button></div>` : ""}</div>
+        ${entries.map((en) => `<button class="block ${sel?.id === en.id ? "sel" : ""} ${en.logged ? "logged" : ""} ${eats(en) ? "" : "others"}" style="height:${blockH(en)}px" onclick="pick({type:'entry',id:'${en.id}'})" title="${esc(en.title)}">
+          <span class="t">${en.title}</span>${blockH(en) >= 44 ? `<span class="k">${MEAL_LABEL[en.meal]}${fuel ? ` · ${n(en.kcal)} kcal` : ""}</span>` : ""}</button>`).join("")}
+        ${fuel && filled > targetH ? `<div class="targetline" style="bottom:${targetH}px"><span>target</span></div>` : ""}
+      </div>
+      ${fuel ? `<div class="foot"><b>${n(p.kcal)}</b> <span class="muted">/ ${n(d.target.kcal)}</span></div>` : ""}
+    </div>`;
+  }
+
+  function detail() {
+    if (sel?.type === "entry") {
+      const f = findEntry(sel.id);
+      if (!f) return "";
+      const { day, en } = f;
+      return `<div><span class="label">${dayLabel(day.date)} · ${MEAL_LABEL[en.meal]}</span><h3><a href="#" style="text-decoration:none">${en.title}</a></h3>
+          <p class="muted" style="margin:6px 0 0;font-size:14px">${eats(en) ? `${shareText(en)} · ${n(en.kcal)} kcal · ${en.p} g protein · ${en.c} g carbs · ${en.f} g fat` : "Sam's meal"}</p></div>
+        <div class="controls">
+          <div><span class="label">${en.kind === "food" ? "Amount" : "Servings cooked"}</span><div class="stepper"><button class="button secondary small" onclick="act.servings('${en.id}',-1)">−</button><span>${servingsText(en)}</span><button class="button secondary small" onclick="act.servings('${en.id}',1)">+</button></div></div>
+          ${shared() ? `<div><span class="label">Who eats it</span>${memberChips(en, true)}</div>` : ""}
+          ${eats(en) ? (en.logged ? `<span class="logged">✓ Logged</span>` : `<button class="button" onclick="act.log('${en.id}')">Log</button>`) : ""}
+          <button class="button danger" onclick="act.remove('${en.id}')">Remove</button>
+        </div>`;
+    }
+    const day = dayOf(sel.date);
+    return `<div><span class="label">${day.date === TODAY ? "Today" : dayShort(day.date)}</span><h3>${dayFull(day.date)}</h3>
+        ${showsFuel() ? `<div style="margin-top:12px">${day.training.map((s) => `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0"><span>${sessionLong(s)} <span class="muted" style="font-size:13px">· ${s.source}</span></span>${s.source === "By hand" ? `<button class="button secondary small" onclick="act.removeSession('${day.date}','${s.id}')">✕</button>` : ""}</div>`).join("") || `<p class="muted" style="margin:0">Rest day.</p>`}
+        <button class="button secondary small" style="margin-top:8px" onclick="act.addSession('${day.date}')">+ Add training</button></div>` : ""}</div>
+      <div>${showsFuel() ? fuelTable(day) : `<p class="muted">Columns have no fuel in the Everyone view, so every meal is the same height.</p>`}</div>`;
+  }
+
+  window.render = () => {
+    document.getElementById("app").innerHTML = `${pageHeader()}
+      <p class="mocknote">Option 4, fuel columns. Each day is a column as tall as its fuel target, so a long ride makes a taller day. Meals are blocks sized by your calories, and the hatched space above them is what's still open: neutral, never red or green (ADR-0022, no scoring). A day planned past its target grows above the target line. Select a block or a day for its controls below. Switch to Everyone in the bar above to see the fallback.</p>
+      <div class="board-scroll"><div class="board">${state.days.map(column).join("")}</div></div>
+      <div class="legend"><span><i style="border-left:4px solid var(--accent)"></i>Planned</span><span><i style="border-left:4px solid var(--muted)"></i>Logged</span><span><i style="background:repeating-linear-gradient(-45deg, transparent 0 3px, var(--line) 3px 4px)"></i>Still open</span><span><i style="border-left:3px solid var(--fg);background:var(--bg)"></i>Training</span></div>
+      <section class="detail">${detail()}</section>
+      <section class="plugins">${pluginBits()}</section>
+      <div style="height:80px"></div>`;
+  };
+</script>
+</body>
+</html>

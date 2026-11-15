@@ -1,7 +1,7 @@
-import type { Page } from "@playwright/test";
+import type { Locator } from "@playwright/test";
 
 import { endpoints } from "../src/config.ts";
-import { apiAs, browserWeek, expect, register, test } from "./fixtures.ts";
+import { apiAs, browserWeek, expect, planLedger, register, test } from "./fixtures.ts";
 
 /**
  * A week planned by a household of two (ADR-0019, "Plan entries have
@@ -52,26 +52,28 @@ test("a shared week: who eats what, Mine and Everyone, and logging your share", 
       await guestApi("POST", "/api/v1/household/join", { token });
     });
 
-    const hostMeal = (title: string) => page.locator(".planned-meal").filter({ hasText: title });
-    const guestMeal = (title: string) => guestPage.locator(".planned-meal").filter({ hasText: title });
+    const hostPlan = planLedger(page);
+    const guestPlan = planLedger(guestPage);
 
     await test.step("the host plans Monday's dinner, which both eat and cooks a serving each", async () => {
       await page.goto("/app/plan");
       await expect(page.getByRole("tab", { name: "Mine" })).toHaveAttribute("aria-selected", "true");
-      await planMonday(page, "Dinner", stew);
-      const dinner = hostMeal(stew);
-      await expect(dinner.getByText("2 servings")).toBeVisible();
+      await hostPlan.plan(0, "Dinner", stew);
+      await expect(hostPlan.meal(stew)).toContainText("2 servings");
+      const dinner = await hostPlan.openMeal(stew);
       await expect(chip(dinner, `${host} (you)`)).toHaveAttribute("aria-pressed", "true");
       await expect(chip(dinner, guest)).toHaveAttribute("aria-pressed", "true");
       await dinner.getByRole("button", { name: "More servings" }).click();
       await expect(dinner.getByText("2.5 servings")).toBeVisible();
       await dinner.getByRole("button", { name: "More servings" }).click();
       await expect(dinner.getByText("3 servings")).toBeVisible();
+      await expect(hostPlan.meal(stew), "the cell follows").toContainText("3 servings");
     });
 
     await test.step("the host plans a lunch, which only the host eats", async () => {
-      await planMonday(page, "Lunch", hostLunch);
-      const lunch = hostMeal(hostLunch);
+      await hostPlan.plan(0, "Lunch", hostLunch);
+      await expect(hostPlan.meal(hostLunch)).toContainText("1 serving");
+      const lunch = await hostPlan.openMeal(hostLunch);
       await expect(lunch.getByText("1 serving", { exact: true })).toBeVisible();
       await expect(chip(lunch, `${host} (you)`)).toHaveAttribute("aria-pressed", "true");
       await expect(chip(lunch, `${host} (you)`)).toBeDisabled();
@@ -80,30 +82,33 @@ test("a shared week: who eats what, Mine and Everyone, and logging your share", 
 
     await test.step("the guest plans a lunch for themselves", async () => {
       await guestPage.goto("/app/plan");
-      await planMonday(guestPage, "Lunch", guestLunch);
-      await expect(chip(guestMeal(guestLunch), `${guest} (you)`)).toHaveAttribute("aria-pressed", "true");
-      await expect(chip(guestMeal(guestLunch), host)).toHaveAttribute("aria-pressed", "false");
+      await guestPlan.plan(0, "Lunch", guestLunch);
+      const lunch = await guestPlan.openMeal(guestLunch);
+      await expect(chip(lunch, `${guest} (you)`)).toHaveAttribute("aria-pressed", "true");
+      await expect(chip(lunch, host)).toHaveAttribute("aria-pressed", "false");
     });
 
     await test.step("Mine hides the guest's lunch from the host; Everyone shows it, without Log", async () => {
       await page.reload();
-      await expect(hostMeal(stew)).toBeVisible();
-      await expect(hostMeal(hostLunch)).toBeVisible();
-      await expect(hostMeal(guestLunch)).toHaveCount(0);
+      await expect(hostPlan.meal(stew)).toBeVisible();
+      await expect(hostPlan.meal(hostLunch)).toBeVisible();
+      await expect(hostPlan.meal(guestLunch)).toHaveCount(0);
       await page.getByRole("tab", { name: "Everyone" }).click();
-      await expect(hostMeal(guestLunch)).toBeVisible();
-      await expect(hostMeal(guestLunch).getByRole("button", { name: "Log" })).toHaveCount(0);
-      await expect(hostMeal(stew).getByRole("button", { name: "Log" })).toBeVisible();
+      await expect(hostPlan.meal(guestLunch)).toBeVisible();
+      const theirs = await hostPlan.openMeal(guestLunch);
+      await expect(theirs.getByRole("button", { name: "Log" })).toHaveCount(0);
+      const ours = await hostPlan.openMeal(stew);
+      await expect(ours.getByRole("button", { name: "Log" })).toBeVisible();
     });
 
     await test.step("the host's choice of Everyone is remembered", async () => {
       await page.reload();
       await expect(page.getByRole("tab", { name: "Everyone" })).toHaveAttribute("aria-selected", "true");
-      await expect(hostMeal(guestLunch)).toBeVisible();
+      await expect(hostPlan.meal(guestLunch)).toBeVisible();
     });
 
     await test.step("the host adds the guest to the host's lunch, then takes them off again", async () => {
-      const lunch = hostMeal(hostLunch);
+      const lunch = await hostPlan.openMeal(hostLunch);
       await chip(lunch, guest).click();
       await expect(chip(lunch, guest)).toHaveAttribute("aria-pressed", "true");
       await expect(chip(lunch, `${host} (you)`)).toBeEnabled();
@@ -114,13 +119,13 @@ test("a shared week: who eats what, Mine and Everyone, and logging your share", 
 
     await test.step("the guest logs the dinner: their share is half of the 3 servings", async () => {
       await guestPage.reload();
-      const dinner = guestMeal(stew);
+      const dinner = await guestPlan.openMeal(stew);
       await dinner.getByRole("button", { name: "Log" }).click();
       const share = dinner.getByRole("form", { name: `Log your share of ${stew}` });
       await expect(share.getByLabel("Your share")).toHaveValue("1.5");
       await expect(share).toContainText("of 3 servings for 2 people");
       await share.getByRole("button", { name: "Log share" }).click();
-      await expect(guestPage.getByRole("status").filter({ hasText: `${stew} logged.` })).toBeVisible();
+      await expect(dinner.getByRole("status")).toHaveText(`${stew} logged.`);
     });
 
     await test.step("the guest's log has 1.5 servings of the stew, 600 kcal", async () => {
@@ -162,17 +167,6 @@ test("a shared week: who eats what, Mine and Everyone, and logging your share", 
   }
 });
 
-/** Plans a recipe in Monday's slot through the picker. */
-async function planMonday(page: Page, meal: string, title: string): Promise<void> {
-  const monday = page.locator(".week .day").first();
-  await monday.getByRole("button", { name: new RegExp(`^Add ${meal} for `) }).click();
-  const picker = page.getByRole("dialog", { name: "Pick a meal" });
-  await picker.getByRole("searchbox").fill(title);
-  await picker.getByRole("button", { name: new RegExp(`^${title}`) }).click();
-  await expect(picker).toHaveCount(0);
-  await expect(page.locator(".planned-meal").filter({ hasText: title })).toBeVisible();
-}
-
-function chip(meal: ReturnType<Page["locator"]>, name: string) {
+function chip(meal: Locator, name: string) {
   return meal.getByRole("group", { name: "Who eats it" }).getByRole("button", { name, exact: true });
 }

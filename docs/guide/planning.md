@@ -1,14 +1,23 @@
 # Planning a week
 
-Open **Plan** to see a week of meals, Monday to Sunday. Each day has four
-slots: breakfast, lunch, dinner, and snack. Use **← Previous** and
-**Next →** to move between weeks.
+Open **Plan** to see a week of meals as a table: the days run across,
+Monday to Sunday, and the four slots run down: breakfast, lunch, dinner,
+and snack. Each slot shows what's planned in it and how much. Today's
+column is marked at the top. Use **← Previous** and **Next →** to move
+between weeks, and **This week** to come back.
 
-![The week plan, with meals in some of the slots](../assets/screenshots/plan.png)
+![The week plan: a table of days and meals, with a meal selected and its details beside the table](../assets/screenshots/plan.png)
+
+Select a meal to see its details beside the table, where you change it
+(see [Changing a planned meal](#changing-a-planned-meal)). Select it
+again, choose **✕**, or press Escape to close them. On a phone, the table
+scrolls sideways with the slot names kept in view, and the details open at
+the bottom of the screen.
 
 ## Adding a meal
 
-1. Choose **+** next to the slot you want to fill.
+1. Point at the slot you want to fill and choose **+**. On a phone, the
+   **+** always shows.
 2. Search your recipes, the library, and ingredients, or scroll the list.
 3. Choose a recipe. It goes into the slot for 2 servings, or, when you
    [share a household](#planning-for-a-household), one serving for each
@@ -24,18 +33,18 @@ A slot can hold more than one recipe, such as a main and a side.
 Not everything needs a recipe. A snack slot can hold one ingredient, such
 as a banana, straight from the search in [Adding a meal](#adding-a-meal).
 
-1. Choose **+** next to the slot you want to fill.
+1. Choose **+** in the slot you want to fill.
 2. Start typing the ingredient's name, such as "banana". Ingredients
    follow the recipes in the list: the shared ones and your household's
    own, each marked as such with its calories.
 3. Choose the ingredient. It goes into the slot for each person eating
    it, at 1 piece, or 100 g or 100 ml when it's measured that way.
 
-A planned food shows its name and amount, such as "Banana, 1" or
-"Bagel, 85 g". Instead of the servings buttons, it has an amount you can
-type over, with its unit beside it. Press Enter, or leave the field, to
-save the new amount. An amount Mimos can't use goes back to what was
-planned.
+A planned food shows its name and amount, such as "Banana, 1 piece" or
+"Bagel, 85 g". Select it, and its details have an **Amount** you can type
+over, with its unit beside it, instead of the servings buttons. Press
+Enter, or leave the field, to save the new amount. An amount Mimos can't
+use goes back to what was planned.
 
 **Scan a barcode** in the picker looks a packaged product up in
 [Open Food Facts](https://world.openfoodfacts.org), as on the
@@ -56,27 +65,30 @@ list](shopping-list.md) lists it by name and amount.
 
 ## Changing a planned meal
 
-Each planned meal has a row of buttons:
+Select a meal in the table. Its details show its name, which links to the
+recipe, and these:
 
-| Button      | What it does                                                    |
+| Control     | What it does                                                    |
 | ----------- | --------------------------------------------------------------- |
-| **−** / **+** | Fewer or more servings of a recipe, half a serving at a time. A planned food has an **Amount** field instead. |
+| **Servings** **−** / **+** | Fewer or more servings of a recipe, half a serving at a time. A planned food has an **Amount** field instead. |
+| **Who eats it** | Who in the household eats the meal. Only when you [share a household](#planning-for-a-household). |
 | **Log**     | Adds the meal to your [food log](log.md) for that day. Only on meals you eat. |
-| **✕**       | Takes the meal out of the plan.                                 |
+| **Remove from plan** | Takes the meal out of the plan.                        |
 
 Servings matter: the [shopping list](shopping-list.md) and the food log
 both scale each recipe to the servings you planned.
 
-To swap a meal, take it out with **✕** and add another. The Kitchen's
-**Swap meal** button brings you here for that.
+To swap a meal, take it out with **Remove from plan** and add another.
+The Kitchen's **Swap meal** button brings you here for that.
 
 ## Your planned total
 
-A day with meals you eat shows a **Planned** line under its name: the
-calories, protein, carbs, and fat you will eat that day if you eat what
-you planned.
+The **Planned** row, above the meals, shows the calories you will eat each
+day if you eat what you planned. A day with nothing planned shows a dash.
+Select a day, by its name at the top of the table or its **Planned**
+figure, to see its protein, carbs, and fat too.
 
-![Monday's planned total above its meals](../assets/screenshots/plan-totals.png)
+![Thursday selected: its planned calories, protein, carbs, and fat beside the table](../assets/screenshots/plan-totals.png)
 
 - A meal you eat alone counts every serving planned.
 - A meal you [share](#planning-for-a-household) counts your share: its
@@ -86,14 +98,17 @@ you planned.
   value adds nothing to the total. The recipe's other values still
   count, as they do when you log it. The day says how many of its meals
   have unknown nutrition. A value that no meal that day has is left out
-  rather than shown as 0, so a day where no meal has any known value
-  shows only that note. Add the recipe's nutrition to count it.
+  rather than shown as 0, so a day where no meal has any known calories
+  shows a dash in the table, and its details show dashes for every value
+  it lacks. Add the recipe's nutrition to count it.
 
 In a shared household, the total shows in **Mine** only, because it is
 yours alone. **Everyone** shows no totals.
 
-With [fuel targets](fuel.md) on, the day also shows your training and its
-**Fuel for the day** above the **Planned** line.
+With [fuel targets](fuel.md) on, the table also has a **Training** row,
+the **Planned** row reads each day's calories against its **Fuel for the
+day**, such as "2244 of 3706 kcal", and a day's details show its training
+and both rows of nutrition.
 
 ## Planning for a household
 
@@ -103,10 +118,11 @@ lunch for one person.
 
 ![A shared week: dinners for both, and a lunch each](../assets/screenshots/plan-shared.png)
 
-**Who eats it.** Under each meal is a button for each person in the
-household, showing their initials. A filled button means that person eats
-the meal. Choose a button to add or remove that person. A meal always has
-someone eating it, so the last filled button can't be removed.
+**Who eats it.** In the table, each meal shows the initials of the people
+eating it. Select the meal, and its details have a button for each person
+in the household under **Who eats it**. A filled button means that person
+eats the meal. Choose a button to add or remove that person. A meal always
+has someone eating it, so the last filled button can't be removed.
 
 A new meal starts with:
 
@@ -121,16 +137,16 @@ who eats a meal doesn't change its servings; use **−** and **+** for that.
 
 **Mine and Everyone.** Above the week, **Mine** shows only the meals you
 eat, shared dinners included. **Everyone** shows the whole household's
-meals, so you can see what others have planned. Mimos remembers your
-choice on each device.
+meals, so you can see what others have planned; meals you don't eat are
+greyed. Mimos remembers your choice on each device.
 
-A household of one sees none of this: no buttons under meals and no
-toggle.
+A household of one sees none of this: no initials, no **Who eats it**,
+and no toggle.
 
 ## Suggestions
 
 If you've turned on a [plugin](plugins.md) that suggests meals, its ideas
-appear in a **Suggestions** panel above the week. Each card says which
+appear under **Suggestions**, beside the week (below it on a phone). Each card says which
 plugin it came from and which meals it would add.
 
 ![A suggestion card from Country of the Week](../assets/screenshots/plan-suggestions.png){ width="420" }
@@ -142,7 +158,8 @@ offer one suggested dinner for an open evening this week.
 ## Country of the Week
 
 With the [Country of the Week](plugins.md#country-of-the-week) plugin
-turned on, a **Country of the Week** line sits above the week. It stays
+turned on, a **Country of the Week** line sits beside the week, under a
+meal's details (below the week on a phone). It stays
 closed until you open it, so weeks you don't want a country for look the
 same as before.
 

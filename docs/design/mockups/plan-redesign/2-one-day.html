@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan · 2 · One day at a time</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--line); border-right: 0; }
+  .tile { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px 12px; border: 0; border-right: 1px solid var(--line); border-bottom: 3px solid transparent; background: var(--surface); text-align: left; cursor: pointer; min-width: 0; }
+  .tile:hover { background: var(--hover); }
+  .tile.sel { border-bottom-color: var(--accent); background: var(--bg); }
+  .tile .dow { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .tile.today .dow { color: var(--accent); }
+  .tile .num { font-family: var(--serif); font-size: 30px; line-height: 1; }
+  .tile .train { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile .train.rest { font-weight: 400; color: var(--muted); }
+  .slots { display: flex; gap: 3px; }
+  .slots i { width: 10px; height: 10px; border: 1px solid var(--muted); }
+  .slots i.full { background: var(--muted); }
+  .slots i.done { background: var(--accent); border-color: var(--accent); }
+  .tile .kcal { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  @media (max-width: 720px) {
+    .tile { padding: 8px 4px 10px; align-items: center; }
+    .tile .dow { letter-spacing: 0.04em; }
+    .tile .num { font-size: 24px; }
+    .tile .train, .tile .kcal { display: none; }
+    .slots i { width: 7px; height: 7px; }
+  }
+
+  .tabs { display: flex; gap: 0; margin: 24px 0 0; border-bottom: 1px solid var(--line); }
+  .tabs button { border: 0; border-bottom: 2px solid transparent; background: transparent; padding: 8px 14px; cursor: pointer; font-size: 15px; color: var(--muted); }
+  .tabs button.on { border-bottom-color: var(--accent); color: var(--fg); font-weight: 600; }
+
+  .day { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 40px; margin-top: 28px; }
+  @media (max-width: 860px) { .day { grid-template-columns: minmax(0, 1fr); gap: 24px; } }
+  .dayhead { margin-bottom: 18px; }
+  .dayhead h3 { font-size: 34px; }
+
+  .meals { border-top: 1px solid var(--line); }
+  .meal { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 4px 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .meal + .meal.same { border-top: 0; }
+  .meal .mt { align-self: start; padding-top: 4px; }
+  .meal .name { font-family: var(--serif); font-size: 21px; font-weight: 500; line-height: 1.25; text-decoration: none; }
+  .meal .sub { font-size: 13px; color: var(--muted); }
+  .meal .right { display: flex; align-items: center; gap: 6px; }
+  .meal.others .name { color: var(--muted); }
+  .meal .more { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; padding: 12px 14px; margin-top: 8px; background: var(--surface); border: 1px solid var(--line); }
+  .meal .more .label { display: block; margin-bottom: 4px; }
+  .meal.empty .name { font-family: var(--sans); font-size: 15px; }
+  @media (max-width: 560px) {
+    .meal { grid-template-columns: minmax(0, 1fr) auto; }
+    .meal .mt { grid-column: 1 / -1; padding: 0; }
+    .meal .more { grid-column: 1 / -1; }
+  }
+
+  .side { display: grid; gap: 28px; align-content: start; }
+  .side .box { border: 1px solid var(--line); background: var(--surface); padding: 16px 18px 18px; }
+  .side .box > .label { display: block; margin-bottom: 8px; }
+  .session { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; }
+  .session b { font-weight: 600; }
+
+  .overview { margin-top: 28px; display: grid; gap: 0; border-top: 1px solid var(--line); }
+  .ov { display: grid; grid-template-columns: 120px repeat(4, minmax(0, 1fr)); gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); align-items: baseline; cursor: pointer; }
+  .ov:hover { background: var(--hover); }
+  .ov .n { font-family: var(--serif); font-size: 16px; }
+  @media (max-width: 720px) { .ov { grid-template-columns: 1fr; gap: 2px; } }
+
+  .plugins { margin-top: 48px; }
+  .plugins .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+</style>
+</head>
+<body>
+<main class="wrap" id="app"></main>
+<script src="shared.js"></script>
+<script>
+  let current = TODAY;
+  let tab = "day";
+  let open = null; // entry id whose ⋯ is open
+  const go = (d) => { current = d; tab = "day"; open = null; render(); };
+
+  function tile(d) {
+    const slots = MEAL_TYPES.map((m) => {
+      const es = d.entries.filter((x) => x.meal === m && eats(x));
+      return `<i class="${es.length ? (es.every((x) => x.logged) ? "done" : "full") : ""}"></i>`;
+    }).join("");
+    return `<button class="tile ${d.date === current ? "sel" : ""} ${d.date === TODAY ? "today" : ""}" onclick="go('${d.date}')" aria-pressed="${d.date === current}">
+      <span class="dow">${d.date === TODAY ? "Today" : dayShort(d.date)}</span><span class="num">${dayNum(d.date)}</span>
+      ${showsFuel() ? `<span class="train ${d.training.length ? "" : "rest"}">${d.training.length ? d.training.map(sessionShort).join(" + ") : "Rest"}</span>` : ""}
+      <span class="slots" title="Meals planned (amber: logged)">${slots}</span>
+      ${showsFuel() ? `<span class="kcal">${n(planned(d).kcal)} / ${n(d.target.kcal)}</span>` : ""}
+    </button>`;
+  }
+
+  function mealRow(en, day) {
+    const isOpen = open === en.id;
+    return `<div class="meal ${eats(en) ? "" : "others"}">
+      <span class="label mt">${MEAL_LABEL[en.meal]}</span>
+      <div><a class="name" href="#">${en.title}</a>
+        <div class="sub">${eats(en) ? shareText(en) : "Sam's"}${shared() && en.diners.length > 1 ? " · with " + MEMBERS.filter((m) => !m.you && en.diners.includes(m.id)).map((m) => m.name).join(", ") : ""}${eats(en) && showsFuel() ? ` · ${n(en.kcal)} kcal` : ""}</div></div>
+      <div class="right">
+        ${eats(en) ? (en.logged ? `<span class="logged">✓ Logged</span>` : `<button class="button small" onclick="act.log('${en.id}')">Log</button>`) : ""}
+        <button class="button ${isOpen ? "" : "secondary"} small" aria-expanded="${isOpen}" aria-label="More for ${esc(en.title)}" onclick="open = open === '${en.id}' ? null : '${en.id}'; render()">⋯</button>
+      </div>
+      ${isOpen ? `<div class="more">
+        <div><span class="label">${en.kind === "food" ? "Amount" : "Servings cooked"}</span><div class="stepper"><button class="button secondary small" onclick="act.servings('${en.id}',-1)">−</button><span>${servingsText(en)}</span><button class="button secondary small" onclick="act.servings('${en.id}',1)">+</button></div></div>
+        ${shared() ? `<div><span class="label">Who eats it</span>${memberChips(en, true)}</div>` : ""}
+        <div style="margin-left:auto"><button class="button danger small" onclick="act.remove('${en.id}')">Remove</button></div>
+      </div>` : ""}
+    </div>`;
+  }
+
+  function dayView() {
+    const day = dayOf(current);
+    const rows = MEAL_TYPES.map((m) => {
+      const es = inSlot(day, m);
+      return es.length
+        ? es.map((en) => mealRow(en, day)).join("")
+        : `<div class="meal empty"><span class="label mt">${MEAL_LABEL[m]}</span><span class="name muted">Nothing planned</span>
+           <div class="right"><button class="button secondary small" onclick="openPicker('${day.date}','${m}')">+ Add</button></div></div>`;
+    }).join("");
+    return `<div class="day">
+      <div>
+        <div class="dayhead"><span class="label">${day.date === TODAY ? "Today" : isPast(day.date) ? "Earlier this week" : "Coming up"}</span><h3>${dayFull(day.date)}</h3></div>
+        <div class="meals">${rows}</div>
+        <p><button class="button secondary" onclick="openPicker('${day.date}','SNACK')">+ Add another meal</button></p>
+      </div>
+      ${showsFuel() ? `<div class="side">
+        <div class="box"><span class="label">Training</span>
+          ${day.training.length ? day.training.map((s) => `<div class="session"><span><b>${sessionLong(s)}</b><br><span class="muted" style="font-size:13px">${s.done ? "Done" : "Planned"} · ${s.source}</span></span>${s.source === "By hand" ? `<button class="button secondary small" onclick="act.removeSession('${day.date}','${s.id}')" aria-label="Remove">✕</button>` : ""}</div>`).join("") : `<p class="muted" style="margin:0 0 8px">Rest day.</p>`}
+          <button class="button secondary small" style="margin-top:6px" onclick="act.addSession('${day.date}')">+ Add training</button></div>
+        <div class="box"><span class="label">Fuel</span>${fuelTable(day)}</div>
+      </div>` : ""}
+    </div>`;
+  }
+
+  function weekView() {
+    return `<div class="overview">${state.days.map((d) => `<div class="ov" onclick="go('${d.date}')">
+      <span class="label">${dayLabel(d.date)}</span>
+      ${MEAL_TYPES.map((m) => `<span class="n">${inSlot(d, m).map((x) => x.title).join(", ") || '<span class="muted">·</span>'}</span>`).join("")}
+    </div>`).join("")}</div>`;
+  }
+
+  window.render = () => {
+    document.getElementById("app").innerHTML = `${pageHeader()}
+      <p class="mocknote">Option 2, one day at a time. A strip of seven compact tiles shows the week at a glance: training, a square per meal (filled when planned, amber when logged), and kcal planned against the target. Below it, one day gets the full width, with servings, diners, and Remove behind ⋯ so Log is the only visible action. The Week tab lists meal names only, for checking variety.</p>
+      <div class="strip">${state.days.map(tile).join("")}</div>
+      <div class="tabs" role="tablist"><button role="tab" class="${tab === "day" ? "on" : ""}" onclick="tab='day';render()">${dayLong(current)}</button><button role="tab" class="${tab === "week" ? "on" : ""}" onclick="tab='week';render()">Whole week</button></div>
+      ${tab === "day" ? dayView() : weekView()}
+      <section class="plugins"><h2>From your plugins</h2><div class="grid">${pluginBits()}</div></section>
+      <div style="height:80px"></div>`;
+  };
+</script>
+</body>
+</html>
