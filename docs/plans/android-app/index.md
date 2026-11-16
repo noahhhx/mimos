@@ -27,7 +27,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 5. An item marked **Review** changes what people see in a way the web does
    not settle, or needs the owner's decision. Post its screenshots (or the
    question) and wait for the go before landing.
-6. Land on `feat/android-app`: conventional commits, present tense
+6. Land on `docs/mobile-app-plan`: conventional commits, present tense
    (`feat(mobile): ...`), each commit builds. In the item's last commit, set
    its row below to `done` with the commit's short SHA.
 7. Anything out of the item's scope goes in "Found along the way".
