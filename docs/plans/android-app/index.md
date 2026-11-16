@@ -36,7 +36,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 
 | #  | Item | Depends on | Status |
 | -- | ---- | ---------- | ------ |
-| 01 | [Scaffold, toolchain, and build gates](01-scaffold.md) | – | todo |
+| 01 | [Scaffold, toolchain, and build gates](01-scaffold.md) | – | done (73a86f9) |
 | 02 | [A virtual device for agents](02-emulator.md) | 01 | todo |
 | 03 | [Generated client and instance discovery](03-client-and-discovery.md) | 01 | todo |
 | 04 | [Sign-in and sign-up](04-sign-in.md) | 02, 03 | todo |
@@ -112,4 +112,18 @@ owner can overturn any of it:
 
 ## Found along the way
 
-Nothing yet.
+- Compose 1.12 needs `compileSdk` 37, but nixpkgs has no AOSP `default`
+  system image above API 36. So `compileSdk` is `37.0`, `targetSdk` is 36,
+  and the emulator image is API 36 (item 01). Move `targetSdk` up when
+  nixpkgs gets a newer AOSP image.
+- Debug builds permit cleartext to `localhost` only, not `10.0.2.2`: item
+  02 reaches the stack through `adb reverse`, so the device's `localhost`
+  is the host's and the token issuer matches.
+- The KMP Android library plugin gives lint no analysis of `commonMain`.
+  `shared` applies `com.android.lint` so `androidApp`'s lint
+  (`checkDependencies`) reads it.
+- `androidx.lifecycle` 2.9, which `activity-compose` brings, ships lint
+  checks this lint cannot load (`ObsoleteLintCustomCheck`, an error under
+  warnings-as-errors). `androidApp` pins `lifecycle-runtime` 2.11.0.
+- `gradle/actions/setup-gradle` caches with a proprietary provider by
+  default. CI sets `cache-provider: basic`, its MIT one.
