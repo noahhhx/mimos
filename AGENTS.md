@@ -58,6 +58,7 @@ change** — an out-of-date AGENTS.md is worse than none.
 | Plugins    | HTTP sidecar plugins, pull-only in v1: config registry (`mimos.plugins.*`), manifest at `GET /manifest`, two capabilities (`plan-suggestions` cards, `week-panel` declarative panels with buttons), library-only context, households named by a per-plugin pseudonym (`subject`) the plugin may keep its own data against. See ADR-0006, ADR-0017. Registered means available; each household opts in from the Plugins page (`/app/plugins`, linked from the profile menu; API `/api/v1/me/plugins`), and every plugin starts off. See ADR-0013. |
 | Agent access | MCP server inside `mimos-api` at `/mcp` (Spring AI 2.0.x MCP server starter, stateless Streamable HTTP; Spring AI's model layer excluded). Tools are derived from `contracts/api/openapi.yaml` at startup: every `/api/v1` operation is a tool unless it declares `x-mcp: false`, and a call loops back through the HTTP API with the caller's token. Agents sign in as the public Keycloak client `mimos-agent` (Authorization Code + PKCE), found through Protected Resource Metadata (RFC 9728). See ADR-0014. |
 | Agent harness | `tools/harness` (`@mimos/harness`, TypeScript on Node type stripping) behind a devenv `harness` script; all agent tooling from devenv/nixpkgs; Playwright pinned to nixpkgs' `playwright-driver`; `.mcp.json` committed; debug-only behavior in `deploy/docker/compose.debug.yml`; fakes of third-party services in `tools/harness/fakes/`, run by `deploy/docker/compose.fakes.yml`; scenarios run in CI via devenv. Plan and decisions in `docs/harness/`. |
+| Mobile | A native Android app in `apps/mobile` (planned, not built yet; plan in `docs/plans/android-app/`): Kotlin Multiplatform with only the Android target, Compose Multiplatform UI, Ktor and kotlinx.serialization, Gradle in its own wrapper. Platform services behind `commonMain` interfaces so iOS stays possible; iOS itself is not built (no Mac). No Google Play Services or proprietary dependencies, enforced by a Gradle check. Connects to any instance from its API URL; signs in as the public Keycloak client `mimos-mobile` (PKCE, custom-scheme redirect). Verified with `commonTest` and Maestro flows on an emulator from devenv (`harness mobile`), in CI on every PR. Released as a signed APK on GitHub Releases with the server's `v*` tag; no Play Store. See ADR-0029. |
 
 ## Open decisions — resolve with the owner before building against them
 
@@ -66,7 +67,6 @@ change** — an out-of-date AGENTS.md is worse than none.
 | AWS compute (ECS vs EKS vs other) | Deferred | Decide when we deploy. Do not let app code depend on the answer. |
 | IaC tool (CDK vs Terraform) | Deferred | Decide with the AWS deploy work. |
 | Object storage        | Deferred | Recipe pictures (ADR-0023) keep their bytes in Postgres behind `PictureStore`, so no object store runs today. When a deployment needs one: S3-compatible API only, as another `PictureStore` (plus a migration that moves the bytes and the orphan sweep the seam's contract names). MinIO's community edition is archived upstream, so the local stand-in is open too. |
-| Mobile                | Out of scope | Web must be responsive and mobile-usable so this stays cheap later. |
 | Docs generator        | Open | MkDocs has had no release since 1.6.1 (2024) and its 2.0 drops plugins and themes; Material for MkDocs is in maintenance mode (security fixes end around 2026-11). Its authors' successor, Zensical, reads `mkdocs.yml` and keeps Material's look as its `classic` variant. Decide whether and when to move; keep the docs theme CSS-only so the move stays cheap. Zensical does not support `exclude_docs` yet (on its backlog), so moving first means separating the contributor docs from the site's source, or they get published. |
 
 ## Architecture guidance
@@ -427,7 +427,8 @@ mimos/
 ├── docs/                 # MkDocs source. Published: user guide (guide/), self-hosting, plugin authoring; assets/ holds the site theme and app screenshots. Repo-only: design/, harness/, decisions/, plans/
 ├── apps/
 │   ├── api/              # Spring Boot modular monolith (the only deployable backend)
-│   └── web/              # Next.js frontend (src/fonts/: committed web fonts, ADR-0008)
+│   ├── web/              # Next.js frontend (src/fonts/: committed web fonts, ADR-0008)
+│   └── mobile/           # Android app, Kotlin Multiplatform + Compose (planned, ADR-0029)
 ├── contracts/
 │   ├── api/              # OpenAPI spec — the source of truth for the HTTP API (ADR-0003) and its MCP tools (ADR-0014)
 │   └── plugins/          # versioned plugin extension-API specs (ADR-0006)

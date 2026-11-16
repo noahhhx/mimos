@@ -240,3 +240,11 @@ Rules for using this file:
     - An intervals.icu sync takes "today" as the server's UTC date and
       reads a `Retry-After` given as an HTTP date as the 15-minute
       default (item 16 of `docs/plans/fuel-targets/`).
+
+## Phase 7 — Android app
+
+20. **A native Android app with parity.** Designed in ADR-0029: Kotlin
+    Multiplatform with only the Android target, no Google Play Services,
+    connected to any instance, verified with Maestro flows on an emulator
+    in CI, and released as a signed APK on GitHub Releases. Work items in
+    `docs/plans/android-app/`.
