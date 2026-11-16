@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Release builds refuse plain HTTP until the owner decides otherwise
+     (docs/plans/android-app/index.md, "Open, needs the owner"). -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

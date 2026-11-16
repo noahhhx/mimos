@@ -5,6 +5,19 @@
 # Python 3.13 for MkDocs. Docker itself is NOT provided here — Testcontainers
 # and compose need a host daemon (e.g. `virtualisation.docker.enable = true`
 # on NixOS); only the CLI is on the PATH.
+let
+  mobileVersions = (builtins.fromTOML (builtins.readFile ./apps/mobile/gradle/libs.versions.toml)).versions;
+  android = pkgs.androidenv.composeAndroidPackages {
+    # System images follow platformVersions; the emulator runs targetSdk.
+    platformVersions = [ mobileVersions.compileSdk mobileVersions.targetSdk ];
+    buildToolsVersions = [ mobileVersions.buildTools ];
+    includeEmulator = true;
+    includeSystemImages = true;
+    systemImageTypes = [ "default" ];
+    abiVersions = [ "x86_64" ];
+  };
+  androidSdk = "${android.androidsdk}/libexec/android-sdk";
+in
 {
   # Backend: Java 21 + the checked-in Maven wrapper (./mvnw), which pins and
   # downloads its own Maven version — no Maven package needed.
@@ -45,6 +58,8 @@
     # product build only uses the committed files.
     pkgs.python313Packages.fonttools
     pkgs.woff2
+    android.androidsdk
+    pkgs.maestro
   ];
 
   # Browsers for `harness ui` (Playwright scenarios) come from nixpkgs:
@@ -56,6 +71,10 @@
     PLAYWRIGHT_BROWSERS_PATH = "${pkgs.playwright-driver.browsers}";
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1";
     PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+    ANDROID_HOME = androidSdk;
+    ANDROID_SDK_ROOT = androidSdk;
+    # The aapt2 AGP downloads from Maven does not run on NixOS; use the SDK's.
+    GRADLE_OPTS = "-Dorg.gradle.project.android.aapt2FromMavenOverride=${androidSdk}/build-tools/${mobileVersions.buildTools}/aapt2";
   };
 
   # Agent harness (docs/harness/): deploy, drive, observe, and debug the local

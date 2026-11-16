@@ -58,7 +58,7 @@ change** — an out-of-date AGENTS.md is worse than none.
 | Plugins    | HTTP sidecar plugins, pull-only in v1: config registry (`mimos.plugins.*`), manifest at `GET /manifest`, two capabilities (`plan-suggestions` cards, `week-panel` declarative panels with buttons), library-only context, households named by a per-plugin pseudonym (`subject`) the plugin may keep its own data against. See ADR-0006, ADR-0017. Registered means available; each household opts in from the Plugins page (`/app/plugins`, linked from the profile menu; API `/api/v1/me/plugins`), and every plugin starts off. See ADR-0013. |
 | Agent access | MCP server inside `mimos-api` at `/mcp` (Spring AI 2.0.x MCP server starter, stateless Streamable HTTP; Spring AI's model layer excluded). Tools are derived from `contracts/api/openapi.yaml` at startup: every `/api/v1` operation is a tool unless it declares `x-mcp: false`, and a call loops back through the HTTP API with the caller's token. Agents sign in as the public Keycloak client `mimos-agent` (Authorization Code + PKCE), found through Protected Resource Metadata (RFC 9728). See ADR-0014. |
 | Agent harness | `tools/harness` (`@mimos/harness`, TypeScript on Node type stripping) behind a devenv `harness` script; all agent tooling from devenv/nixpkgs; Playwright pinned to nixpkgs' `playwright-driver`; `.mcp.json` committed; debug-only behavior in `deploy/docker/compose.debug.yml`; fakes of third-party services in `tools/harness/fakes/`, run by `deploy/docker/compose.fakes.yml`; scenarios run in CI via devenv. Plan and decisions in `docs/harness/`. |
-| Mobile | A native Android app in `apps/mobile` (planned, not built yet; plan in `docs/plans/android-app/`): Kotlin Multiplatform with only the Android target, Compose Multiplatform UI, Ktor and kotlinx.serialization, Gradle in its own wrapper. Platform services behind `commonMain` interfaces so iOS stays possible; iOS itself is not built (no Mac). No Google Play Services or proprietary dependencies, enforced by a Gradle check. Connects to any instance from its web address (`/runtime-config.json`); signs in as the public Keycloak client `mimos-mobile` (PKCE, redirect scheme `io.github.noahhhx.mimos.oauth`). Its Kotlin client is generated at build time and not committed; `PanelBlock`'s decoder is the one hand-written model. From the first app release `/api/v1` changes are additive only, since installed apps and self-hosted servers drift apart. Verified with `commonTest` and Maestro flows on an emulator from devenv (`harness mobile`); CI builds it without devenv and runs the flows (every PR for now; may move to main and tags if too slow). Released as a signed APK on GitHub Releases with the server's `v*` tag; no Play Store. See ADR-0029. |
+| Mobile | A native Android app in `apps/mobile` (scaffolded, features not built yet; plan in `docs/plans/android-app/`): Kotlin Multiplatform with only the Android target, Compose Multiplatform UI, Ktor and kotlinx.serialization, Gradle in its own wrapper. Platform services behind `commonMain` interfaces so iOS stays possible; iOS itself is not built (no Mac). No Google Play Services or proprietary dependencies, enforced by a Gradle check (`checkNoPlayServices`, in `apps/mobile/build-logic`, on `check`). Connects to any instance from its web address (`/runtime-config.json`); signs in as the public Keycloak client `mimos-mobile` (PKCE, redirect scheme `io.github.noahhhx.mimos.oauth`). Its Kotlin client is generated at build time and not committed; `PanelBlock`'s decoder is the one hand-written model. From the first app release `/api/v1` changes are additive only, since installed apps and self-hosted servers drift apart. Verified with `commonTest` and Maestro flows on an emulator from devenv (`harness mobile`); CI builds it without devenv and runs the flows (every PR for now; may move to main and tags if too slow). Released as a signed APK on GitHub Releases with the server's `v*` tag; no Play Store. See ADR-0029. |
 
 ## Open decisions — resolve with the owner before building against them
 
@@ -428,7 +428,7 @@ mimos/
 ├── apps/
 │   ├── api/              # Spring Boot modular monolith (the only deployable backend)
 │   ├── web/              # Next.js frontend (src/fonts/: committed web fonts, ADR-0008)
-│   └── mobile/           # Android app, Kotlin Multiplatform + Compose (planned, ADR-0029)
+│   └── mobile/           # Android app, Kotlin Multiplatform + Compose (ADR-0029): shared/ (commonMain UI and logic), androidApp/, build-logic/ (the Google Play Services ban)
 ├── contracts/
 │   ├── api/              # OpenAPI spec — the source of truth for the HTTP API (ADR-0003) and its MCP tools (ADR-0014)
 │   └── plugins/          # versioned plugin extension-API specs (ADR-0006)
@@ -462,7 +462,10 @@ mimos/
 - **Formatting:** Spotless formats Java (palantir-java-format: 4-space
   indent, 120 columns) and every `pom.xml` (sortPom, 4-space) — it applies
   automatically on every build; CI gates with `spotless:check`. Run
-  `./mvnw spotless:apply` to fix violations.
+  `./mvnw spotless:apply` to fix violations. The Android app's Kotlin and
+  Gradle scripts follow the same rule with Gradle's Spotless (ktfmt,
+  kotlinlang style): `./gradlew check` applies it, CI gates with
+  `./gradlew spotlessCheck`.
 - **Null safety:** NullAway (JSpecify mode) via Error Prone; nullness
   violations in `@NullMarked` code fail the build. Every package needs a
   `@NullMarked` `package-info.java` (the build fails otherwise); annotate
@@ -479,7 +482,9 @@ mimos/
   change; images build in CI and run as non-root. "Works on my machine,
   outside Docker" does not count. The web and plugin images `npm ci` the
   whole npm workspace from its manifests, so a new workspace's
-  `package.json` is copied into those Dockerfiles too.
+  `package.json` is copied into those Dockerfiles too. The Android APK is a
+  client artifact like a browser, not a deployable, so it has no Dockerfile
+  or compose service (ADR-0029); CI builds it in the `android` job.
 - **Dev environment:** `devenv.nix` (+ `devenv.yaml`, `devenv.lock`,
   `.envrc`) provides the toolchains for Nix users, pinned to match CI (JDK
   21, Node 22, Python 3.13 + `docs/requirements.txt`). Keep it in sync when
@@ -489,7 +494,19 @@ mimos/
   (the debug harness, browsers, MCP servers, `jdb`, `jq`) comes from
   `devenv.nix` / nixpkgs — never ad-hoc downloads or host installs — and
   agents invoke it as `devenv shell -- <cmd>`. The shell's banner goes to
-  stderr so that command's stdout stays clean.
+  stderr so that command's stdout stays clean. The Android SDK (unfree, so
+  `devenv.yaml` allows unfree and accepts its licence) is an `androidenv`
+  composition: platform tools, the emulator, platforms `android-37.0`
+  (`compileSdk`) and `android-36` (`targetSdk`), build tools 36.0.0, and
+  one x86_64 `default` (AOSP, no Google APIs) system image at `targetSdk`,
+  the newest API nixpkgs has an AOSP image for; `ANDROID_HOME` points at
+  it, and Maestro is on the PATH. `apps/mobile/gradle/libs.versions.toml`
+  is the one place the SDK versions are stated: `devenv.nix` reads
+  `compileSdk`, `targetSdk`, and `buildTools` from it, and CI's `android`
+  job reads `compileSdk` and `buildTools`, because Gradle cannot install
+  SDK pieces into the Nix store and must find them exactly.
+  devenv also sets `android.aapt2FromMavenOverride` (through `GRADLE_OPTS`)
+  to the SDK's `aapt2`, since the one AGP downloads does not run on NixOS.
 - **Agent harness:** `tools/harness` (`@mimos/harness`), on the PATH in the
   devenv shell as `harness`; how to use it is in "Debugging the running
   stack" below. Browser flows are Playwright scenarios in
@@ -621,6 +638,11 @@ writes evidence to `.harness/runs/<run>/` (gitignored), and
   frontend types and production build.
 - `npm test -w @mimos/country-week` — the reference plugin's tests
   (`node --test`; Node 22.18+ for native type stripping).
+- `cd apps/mobile && ./gradlew check assembleDebug` — the Android app:
+  `commonTest`, ktfmt through Spotless, Android lint (warnings are errors),
+  and the Google Play Services ban, with its TestKit tests. On NixOS run it
+  as `devenv shell -- bash -c 'cd apps/mobile && ./gradlew check
+  assembleDebug'`, which provides the SDK. JDK 21.
 - `npm test -w @mimos/web` — the web app's unit tests (`node --test`, as
   above).
 - `npm run typecheck -w @mimos/harness` and `npm test -w @mimos/harness` —
