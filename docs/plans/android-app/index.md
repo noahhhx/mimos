@@ -37,7 +37,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | #  | Item | Depends on | Status |
 | -- | ---- | ---------- | ------ |
 | 01 | [Scaffold, toolchain, and build gates](01-scaffold.md) | – | done (73a86f9) |
-| 02 | [A virtual device for agents](02-emulator.md) | 01 | todo |
+| 02 | [A virtual device for agents](02-emulator.md) | 01 | done (60f3a16) |
 | 03 | [Generated client and instance discovery](03-client-and-discovery.md) | 01 | todo |
 | 04 | [Sign-in and sign-up](04-sign-in.md) | 02, 03 | todo |
 | 05 | [Evening Kitchen in Compose](05-design-system.md) | 01 | todo |
