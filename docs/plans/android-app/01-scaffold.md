@@ -2,7 +2,7 @@
 
 **Depends on:** –
 
-An empty app that builds, from devenv and in CI, with every gate the later
+An empty app that builds on NixOS and in CI, with every gate the later
 items rely on already enforced.
 
 ## Build
@@ -13,35 +13,45 @@ items rely on already enforced.
     Compose Multiplatform. Package `io.github.noahhhx.mimos`.
   - `androidApp`: the application (`applicationId
     io.github.noahhhx.mimos`, `minSdk` 26, current `targetSdk`), one
-    activity hosting the shared UI. Debug builds allow cleartext HTTP to
-    `10.0.2.2` and `localhost` only (network security config); release
-    builds allow none. Item 05 settles whether the device reaches the stack
-  as `localhost` (through `adb reverse`) or `10.0.2.2`.
+    activity hosting the shared UI. Debug builds add
+    `applicationIdSuffix ".debug"`, so a debug and a release install live
+    side by side, and allow cleartext HTTP to `localhost` only (network
+    security config). Whether release builds allow cleartext is an open
+    decision in the index; until it is settled they allow none.
 - The Google Play Services ban: a Gradle task over the release runtime
   classpath that fails on any `com.google.android.gms`,
   `com.google.firebase`, `com.google.mlkit`, `com.google.android.play`,
-  or `com.android.billingclient` group, wired into `check`. A unit test of
-  the task adds a banned artifact to a test configuration and expects it to
-  fail.
+  or `com.android.billingclient` group, wired into `check`. A test of the
+  task adds a banned artifact to a test configuration and expects failure.
 - Formatting: Spotless with ktfmt (kotlinlang style) on `check`, matching
   the backend's "formats on build, CI gates" convention.
-- Android lint on `check`, warnings as errors for new code.
-- `devenv.nix`: an `androidenv` composition (platform tools, build tools,
-  the compile SDK, emulator, one x86_64 system image without Google APIs,
-  the `default` AOSP image), `ANDROID_HOME` and `ANDROID_SDK_ROOT`
-  pointing at it, the Android licence accepted in Nix config, and
-  `pkgs.maestro`. JDK 21 already present.
-- CI: an `android` job running `./gradlew check assembleDebug` with the
-  same SDK versions, uploading the debug APK as an artifact.
-- AGENTS.md: the layout tree gains `apps/mobile`, the verification list
-  gains the gradle command, and "Containers" notes the APK is a client
-  artifact with no Dockerfile (ADR-0029).
+- Android lint on `check`, warnings as errors.
+- devenv, for agents and local work:
+  - `devenv.yaml`: `allowUnfree: true` and the Android SDK licence
+    accepted (`android_sdk.accept_license`), which the SDK needs.
+  - `devenv.nix`: an `androidenv` composition (or devenv's `android`
+    integration, if it can be pinned to an image without Google APIs):
+    platform tools, build tools, the compile SDK, the emulator, and one
+    x86_64 `default` AOSP system image. `ANDROID_HOME` and
+    `ANDROID_SDK_ROOT` point at it. Plus `pkgs.maestro`.
+  - `compileSdk` and build tools in Gradle equal the Nix SDK's exactly:
+    Gradle cannot install into the store. One place states the versions,
+    and AGENTS.md's "Dev environment" names them.
+  - `android.aapt2FromMavenOverride` points at the SDK's `aapt2` (set by
+    devenv in `gradle.properties` or an env var, never committed as a
+    store path): the aapt2 AGP downloads from Maven does not run on NixOS.
+- CI `android` job, not through devenv (AGENTS.md: product paths must not
+  depend on it): `actions/setup-java` with JDK 21 and the runner's
+  Android SDK, with the same compile SDK and build tools as devenv. It runs
+  `./gradlew check assembleDebug` and uploads the APK.
+- AGENTS.md: the layout tree, the verification list gains the Gradle
+  command, "Containers" notes the APK is a client artifact with no
+  Dockerfile, and "User-facing copy" covers the app's strings.
 
 ## Checks
 
 - `devenv shell -- bash -c 'cd apps/mobile && ./gradlew check assembleDebug'`
-  passes on NixOS; the APK installs on an emulator and opens a blank
-  Evening Kitchen-coloured screen.
+  passes on NixOS.
 - The ban task fails when `com.google.android.gms:play-services-base` is
   added, and passes once it is removed.
 - CI's `android` job is green.

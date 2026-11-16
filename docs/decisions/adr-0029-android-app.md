@@ -44,19 +44,31 @@ Constraints the app inherits:
 - **Contract-first client.** The Kotlin API client is generated from
   `contracts/api/openapi.yaml` by openapi-generator's `kotlin` generator
   (`library=multiplatform`: Ktor and kotlinx.serialization) at build time,
-  as the server stubs are. Never hand-written per feature (ADR-0003).
-- **One address to connect.** A person gives the app their instance's API
-  URL, typed or scanned as a QR code the web app shows. Everything else is
-  discovered from it: the authorization server from Protected Resource
-  Metadata (RFC 9728, ADR-0014), and the instance's version and settings
-  from a new public endpoint. The app keeps one instance at a time.
+  as the server stubs are, and not committed: unlike `@mimos/api-client`
+  it has no consumer outside its own build. Never hand-written per feature
+  (ADR-0003); the one exception is `PanelBlock`'s decoder, which needs an
+  `Unknown` case.
+- **The API changes additively.** Until now the API's only client shipped
+  in step with it. A self-hosted server and an installed app drift apart,
+  so from the first app release `/api/v1` only gains operations, fields,
+  and enum values, and CI diffs the spec against the last release's. The
+  app reads tolerantly: unknown fields are ignored and unknown enum values
+  and panel blocks read as `Unknown`.
+- **One address to connect.** A person types their instance's web
+  address, the one they already open in a browser. The app reads the API
+  URL, OIDC authority, and sign-up policy from the web's
+  `/runtime-config.json` (a JSON twin of `/runtime-config.js`), then the
+  server's version from a new public `GET /api/v1/public/instance`. The
+  app keeps one instance at a time.
 - **Sign-in through Keycloak.** A new public client `mimos-mobile`
   (Authorization Code + PKCE S256, no password grant) with the custom
-  scheme redirect `io.github.noahhhx.mimos:/oauth2redirect`, via
+  scheme redirect `io.github.noahhhx.mimos.oauth:/oauth2redirect`, via
   AppAuth-Android in the device's browser (Custom Tabs when the browser
-  has them, which needs no GMS). Sessions follow ADR-0024: the realm's
-  lifetimes, no offline tokens. The refresh token is encrypted under an
-  Android Keystore key. Create account sends `prompt=create` (ADR-0020),
+  has them, which needs no GMS). The sign-in scheme is used for nothing
+  else; app links such as invites use `io.github.noahhhx.mimos`. Sessions
+  follow ADR-0024: the realm's lifetimes, no offline tokens. The refresh
+  token is encrypted under an Android Keystore key and kept out of
+  backups. Create account sends `prompt=create` (ADR-0020),
   and the `mimos_theme` parameter carries the app's theme to Keycloak's
   pages (ADR-0021). Realm import skips an existing realm, so existing
   instances add the client by hand, as they did `mimos-agent`.
@@ -73,9 +85,10 @@ Constraints the app inherits:
   the week panel's wheel, and the web's committed fonts (ADR-0008). Tokens
   change in the web, Keycloak's theme, the docs, and the app together.
   User-facing copy follows the same rules (no em-dashes).
-- **Phones and tablets.** Layouts adapt by window size class. A phone shows
-  the plan as a list of days; a tablet can show the ledger (ADR-0028).
-  `minSdk` 26 (Android 8.0) so older family phones work.
+- **Phones first.** The plan is a list of days with an inspector, since
+  the ledger (ADR-0028) does not fit a phone; tablets use the phone layout
+  until a later item gives them the ledger. `minSdk` 26 (Android 8.0) so
+  older family phones work.
 - **Verification on a virtual device.** Logic is unit tested on the JVM
   from `commonTest`. Flows are Maestro YAML flows run on an Android emulator
   against the compose stack and its fakes. The emulator, `adb`, the Android
@@ -84,18 +97,21 @@ Constraints the app inherits:
   installs the build, runs flows, and records screenshots, logcat, the
   Maestro report, and each API call's request ID in `.harness/runs/`.
   Agents explore with Maestro's MCP server (`maestro mcp`, in
-  `.mcp.json`). CI builds the APK and runs every flow on an emulator
-  (KVM on Linux runners) on every PR, as it runs the web scenarios.
-- **Version skew is handled, not hoped away.** An app and a self-hosted
-  server drift apart. The public instance endpoint answers the server's
-  version and the oldest app version it supports; the app tells the person
-  when either side is too old, rather than failing on a call. CI runs the
-  flows against the current stack and the last release's published images.
+  `.mcp.json`). CI builds and checks the APK without devenv, as every
+  product path does, and runs every flow on an emulator (KVM on Linux
+  runners) through devenv on every PR, as it runs the web scenarios.
+- **Version skew is handled, not hoped away.** The instance endpoint
+  answers the server's version (the release's, set from the tag in the
+  image build) and the oldest app version it supports; the app tells the
+  person when either side is too old, rather than failing on a call. Once a
+  release includes the app's Keycloak client, CI also runs the flows
+  against that release's published images.
 - **Released as a signed APK on GitHub Releases.** A `v*` tag builds a
-  release APK, signs it with the project's key (GitHub secrets; backed up
-  in sops), and attaches it and its SHA-256 to the tag's GitHub Release.
-  The app's version is the tag's version, so app and server release
-  together. Main builds publish an unsigned debug APK as a CI artifact for
+  release APK, signs it with the project's key (GitHub secrets, with an
+  offline backup outside this repo), and attaches it and its SHA-256 to
+  the tag's GitHub Release. The app's version is the tag's version, so
+  app and server release together. Main builds attach a debug-signed APK
+  (`.debug` application id, its own shared key) to the CI run for
   testers. No Play Store. People update by hand or with an updater that
   follows GitHub Releases (Obtainium). The app learns about a newer
   version from its own server, never by calling GitHub.
@@ -115,10 +131,14 @@ Constraints the app inherits:
 - Online only at first. Every screen needs the server, as the web does.
   An offline shopping list (ticks queued while the store has no signal) is
   its own later decision and plan item.
+- Rules both clients apply (units, nutrition estimates, sorting) are tested
+  from shared JSON cases in `libraries/test-cases/`, read by `node --test`
+  and `commonTest`, so the two copies cannot drift unnoticed. Where the
+  API can answer the value instead, it does (each meal's share).
 - Invite links are web URLs on each instance's domain, which an app
   cannot claim without each instance hosting Android App Links
   verification. The web's join page offers "Open in the app" through the
-  app's scheme instead.
+  app's scheme instead, naming the instance and the token.
 - Losing the signing key means every install must be removed and
   reinstalled. The key's backup is part of the release step.
 - iOS later needs a Mac, an `iosMain` for the platform services, an Apple

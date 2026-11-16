@@ -7,9 +7,10 @@ Android target, Compose UI, no Google Play Services, connected to any
 Mimos instance, and released as a signed APK on GitHub Releases. iOS is
 not built, but nothing here may close it off.
 
-The order is deliberate. The scaffold, the client, sign-in, the theme, and
-the emulator harness come first, so every feature item after them lands
-with a Maestro flow that CI runs. Feature items follow the web's pages.
+The order is deliberate. A virtual device comes right after the scaffold,
+so every item from sign-in onward checks itself on it. The client, sign-in,
+the theme, and Maestro flows in CI come next, so every feature item after
+them lands with a flow CI runs. Feature items follow the web's pages.
 
 ## How to work an item
 
@@ -36,26 +37,27 @@ with a Maestro flow that CI runs. Feature items follow the web's pages.
 | #  | Item | Depends on | Status |
 | -- | ---- | ---------- | ------ |
 | 01 | [Scaffold, toolchain, and build gates](01-scaffold.md) | – | todo |
-| 02 | [Generated client and instance discovery](02-client-and-discovery.md) | 01 | todo |
-| 03 | [Sign-in and sign-up](03-sign-in.md) | 02 | todo |
-| 04 | [Evening Kitchen in Compose](04-design-system.md) | 01 | todo |
-| 05 | [Emulator harness, Maestro, and CI flows](05-harness-and-flows.md) | 03, 04 | todo |
-| 06 | [Recipes and pictures](06-recipes.md) | 05 | todo |
-| 07 | [Household ingredients](07-ingredients.md) | 06 | todo |
-| 08 | [The week's plan](08-plan.md) **Review** | 06 | todo |
+| 02 | [A virtual device for agents](02-emulator.md) | 01 | todo |
+| 03 | [Generated client and instance discovery](03-client-and-discovery.md) | 01 | todo |
+| 04 | [Sign-in and sign-up](04-sign-in.md) | 02, 03 | todo |
+| 05 | [Evening Kitchen in Compose](05-design-system.md) | 01 | todo |
+| 06 | [Maestro flows and CI](06-flows-and-ci.md) | 04, 05 | todo |
+| 07 | [Recipes and pictures](07-recipes.md) | 06 | todo |
+| 08 | [The week's plan](08-plan.md) **Review** | 07 | todo |
 | 09 | [Plugins: page, suggestions, week panels](09-plugins.md) | 08 | todo |
 | 10 | [Shopping list](10-shopping-list.md) | 08 | todo |
 | 11 | [Log and barcode scanning](11-log-and-barcodes.md) | 08 | todo |
 | 12 | [Fuel and intervals.icu](12-fuel.md) | 11 | todo |
-| 13 | [Household and invites](13-household.md) | 05 | todo |
-| 14 | [Account, settings, export and import](14-account.md) | 05 | todo |
-| 15 | [Release: signing, versions, GitHub Releases](15-release.md) | 02, 05 | todo |
-| 16 | [Parity audit and user guide](16-parity-and-docs.md) | 06–15 | todo |
-| 17 | [Offline shopping list](17-offline-shopping-list.md) **Review** | 10, 16 | todo |
+| 13 | [Kitchen home](13-kitchen.md) | 08, 09, 10 | todo |
+| 14 | [Household and invites](14-household.md) | 06 | todo |
+| 15 | [Account, settings, export and import](15-account.md) | 06 | todo |
+| 16 | [Release: versions, signing, GitHub Releases](16-release.md) | 03, 06 | todo |
+| 17 | [Parity audit and user guide](17-parity-and-docs.md) | 07–16 | todo |
+| 18 | [Offline shopping list](18-offline-shopping-list.md) **Review** | 10, 17 | todo |
 
-Items 06 to 14 are independent once their dependencies are done; they can
-run in parallel in separate worktrees. Item 15 can land as soon as 05 has,
-so testers get signed builds while features arrive.
+Once their dependencies are done, items 09 to 12 and 14 to 16 are
+independent and can run in parallel in separate worktrees. Item 16 can
+land right after 06, so testers get signed builds while features arrive.
 
 ## Gates
 
@@ -65,7 +67,8 @@ so testers get signed builds while features arrive.
   `devenv shell -- harness mobile flow <flow>` for the item's flows.
 - Backend (items that touch it): `./mvnw -B verify`.
 - Contract (items that touch it): `npm run generate -w @mimos/api-client`
-  leaves no diff, and the mobile build regenerates its client cleanly.
+  leaves no diff, and `./gradlew check` compiles the regenerated Kotlin
+  client.
 - Web (items that touch it): `npm run typecheck -w @mimos/web`,
   `npm test -w @mimos/web`, `npm run build -w @mimos/web`.
 - Harness: `npm run typecheck -w @mimos/harness`, `npm test -w @mimos/harness`.
@@ -73,21 +76,39 @@ so testers get signed builds while features arrive.
 
 ## Decided by default, open to the owner
 
-The owner settled platforms (Android only), language (Kotlin), the
-verification approach, and distribution (signed APK on GitHub Releases, no
-Google Play Services). These were filled in by the planning agent and can
-be overturned:
+The owner settled the platform (Android only), the language (Kotlin), the
+verification approach, and distribution (a signed APK on GitHub Releases,
+no Google Play Services). The planning agent filled in the rest, and the
+owner can overturn any of it:
 
 - `minSdk` 26 (Android 8.0), for older family phones.
-- Phones and tablets, adapting by window size class.
-- `apps/mobile` as the project root, `io.github.noahhhx.mimos` as the
-  application id.
-- The API client generated at build time, not committed.
+- `apps/mobile` is the project root, and `io.github.noahhhx.mimos` the
+  application id (`.debug` for debug builds).
+- People connect with the instance's web address, not its API URL.
+- The Kotlin client is generated at build time, not committed.
 - The visual design mirrors Evening Kitchen exactly, not Material defaults.
 - App and server share one version and release on the same `v*` tag.
-- Online only until item 17.
-- Flows run on every PR in CI. If the emulator job costs too much (item 05
-  measures it), move it to main and tags only.
+- The app works online only until item 18.
+- Flows run on every PR in CI. If the emulator job costs too much (item 06
+  measures it), they move to main and tags only.
+
+## Open, needs the owner
+
+- **Plain HTTP in release builds.** Release builds refuse `http://` for
+  now, so a family instance on a home network without TLS cannot be used
+  from a release install. The alternative is allowing cleartext everywhere
+  and warning on the connect screen. Decide before item 16.
+
+## Later, not in this plan
+
+- The plan ledger on tablets (ADR-0028). Phones get a list of days first;
+  tablets use the phone layout until then.
+- An F-Droid build: reproducible APKs (pinned dependencies, Gradle
+  dependency verification, no timestamps) and a check that zxing-cpp's
+  prebuilt native libraries are acceptable there.
+- A QR code on the web for connecting, if typing the web address proves
+  to be a stumbling block.
+- iOS, which needs a Mac and its own ADR.
 
 ## Found along the way
 

@@ -1,6 +1,6 @@
-# 17. Offline shopping list
+# 18. Offline shopping list
 
-**Depends on:** 10, 16 · **Review**
+**Depends on:** 10, 17 · **Review**
 
 Shops have bad signal. Ticking the list should work without it.
 

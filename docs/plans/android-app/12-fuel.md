@@ -12,7 +12,7 @@ the intervals.icu connection.
   weight, sex, and FTP suggestions to apply).
 - Training sessions added and removed by hand on a day.
 - Targets beside planned and logged totals on the plan (item 08's rows)
-  and the Log page's week table, all from one `GET /api/v1/me/fuel`.
+  and the Log page's week totals table, all from one `GET /api/v1/me/fuel`.
 - The intervals.icu key is typed or pasted, sent once, and never stored on
   the device.
 

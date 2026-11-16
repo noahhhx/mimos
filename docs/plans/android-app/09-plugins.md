@@ -16,8 +16,9 @@ Plugins in the app, from the same declarative JSON the web renders
   plain text, attributed to the plugin.
 - The wheel spins, the one animation allowed, and lands at once when the
   system's "remove animations" setting is on.
-- An unknown block type is skipped, not a crash, so a newer plugin keeps
-  working in an older app.
+- An unknown block type is skipped, not a crash. Core already drops
+  blocks it does not know (ADR-0017), so the case is a newer server than
+  the app; the decoder's `Unknown` case comes from item 03.
 
 ## Checks
 
