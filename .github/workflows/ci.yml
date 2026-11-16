@@ -118,6 +118,46 @@ jobs:
           npm run typecheck -w @mimos/web
           npm run build -w @mimos/web
 
+  android:
+    name: Android app
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # Basic is the open-source (MIT) cache; the default provider is proprietary.
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+
+      - name: Install the catalog's Android platform and build tools
+        run: |
+          version() { sed -n "s/^$1 = \"\(.*\)\"$/\1/p" gradle/libs.versions.toml; }
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-$(version compileSdk)" "build-tools;$(version buildTools)"
+
+      - name: Check formatting
+        run: ./gradlew spotlessCheck
+
+      - name: Check and build
+        run: ./gradlew check assembleDebug
+
+      - name: Upload the debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mimos-debug-apk
+          path: apps/mobile/androidApp/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
   compose:
     name: Self-hosted stack (compose)
     runs-on: ubuntu-latest
@@ -270,7 +310,7 @@ jobs:
   publish:
     name: Publish images (${{ matrix.image }})
     if: github.event_name == 'push'
-    needs: [build, docs, clients, compose]
+    needs: [build, docs, clients, android, compose]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
