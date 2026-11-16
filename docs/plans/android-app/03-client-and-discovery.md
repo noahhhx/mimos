@@ -47,7 +47,9 @@ its API through a generated client.
 - `shared`: the connect screen. Type the web address, fetch
   `runtime-config.json`, then `getInstance`, store the instance, show
   its version. A wrong URL, a site that is not Mimos, an unreachable one,
-  and a server too old or an app too old each get their own message.
+  an `http://` address other than `localhost` (Mimos needs `https://`,
+  with a link to the self-hosting guide's "Why HTTPS"; ADR-0030), and a
+  server too old or an app too old each get their own message.
 
 ## Checks
 

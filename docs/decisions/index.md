@@ -35,6 +35,7 @@ right at the time.
 | [ADR-0027](adr-0027-shopping-list-added-items.md)                  | Items added to the shopping list by hand |
 | [ADR-0028](adr-0028-plan-ledger.md)                                | The plan page is a ledger |
 | [ADR-0029](adr-0029-android-app.md)                                | Native Android app |
+| [ADR-0030](adr-0030-app-https-only.md)                            | The Android app connects over HTTPS only |
 
 New ADRs are sequential: `adr-NNNN-title.md`, with the numbering in this
 index. Once accepted, an ADR is never rewritten — superseding decisions get

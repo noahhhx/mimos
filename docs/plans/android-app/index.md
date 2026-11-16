@@ -92,12 +92,14 @@ owner can overturn any of it:
 - Flows run on every PR in CI. If the emulator job costs too much (item 06
   measures it), they move to main and tags only.
 
-## Open, needs the owner
+## Settled by the owner's grant
 
-- **Plain HTTP in release builds.** Release builds refuse `http://` for
-  now, so a family instance on a home network without TLS cannot be used
-  from a release install. The alternative is allowing cleartext everywhere
-  and warning on the connect screen. Decide before item 16.
+- **Plain HTTP in release builds.** No. Release builds connect over
+  HTTPS only and trust user-installed CAs, so a home instance with a
+  private CA works as it does in the phone's browser. An instance on
+  plain HTTP cannot sign in from the web either (the self-hosting
+  guide's "Why HTTPS"). Item 03's connect screen names the reason. See
+  [ADR-0030](../../decisions/adr-0030-app-https-only.md).
 
 ## Later, not in this plan
 
