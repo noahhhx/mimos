@@ -17,6 +17,13 @@ let
     abiVersions = [ "x86_64" ];
   };
   androidSdk = "${android.androidsdk}/libexec/android-sdk";
+  # The emulator's browser (`harness mobile`): the default system image ships
+  # none, and sign-in (ADR-0029) runs in one. Cromite is free software and
+  # Chromium-based; the APK is fixed by hash here, never fetched at run time.
+  cromite = pkgs.fetchurl {
+    url = "https://github.com/uazo/cromite/releases/download/v153.0.8010.37-11507ac1061b5ea227806f5e84db5a57df6ccf6a/x64_ChromePublic.apk";
+    sha256 = "0sihb3ilz203z51ip4g3hj0sir8m67hqmhfjs616lyd1jy70qgpn";
+  };
 in
 {
   # Backend: Java 21 + the checked-in Maven wrapper (./mvnw), which pins and
@@ -73,6 +80,7 @@ in
     PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
     ANDROID_HOME = androidSdk;
     ANDROID_SDK_ROOT = androidSdk;
+    MIMOS_ANDROID_BROWSER_APK = "${cromite}";
     # The aapt2 AGP downloads from Maven does not run on NixOS; use the SDK's.
     GRADLE_OPTS = "-Dorg.gradle.project.android.aapt2FromMavenOverride=${androidSdk}/build-tools/${mobileVersions.buildTools}/aapt2";
   };
