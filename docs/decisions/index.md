@@ -38,6 +38,7 @@ right at the time.
 | [ADR-0030](adr-0030-app-https-only.md)                            | The Android app connects over HTTPS only |
 | [ADR-0031](adr-0031-no-cloud-provider.md)                         | Mimos depends on no cloud provider |
 | [ADR-0032](adr-0032-object-storage.md)                            | Object storage: any S3-compatible server, Garage as reference |
+| [ADR-0033](adr-0033-docs-on-zensical.md)                          | The docs site moves to Zensical |
 
 New ADRs are sequential: `adr-NNNN-title.md`, with the numbering in this
 index. Once accepted, an ADR is never rewritten — superseding decisions get
