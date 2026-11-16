@@ -123,7 +123,7 @@ export const apiCommand: Command = {
   <path>               /api/v1/... on the API (${endpoints().api}), or an absolute URL
   --body <file>|-      request body from a file or stdin; sets Content-Type: application/json
   -H, --header K:V     add or override a header (repeatable); "K:" removes one, e.g. -H 'Content-Type:'
-  --as <user>          authenticate as ${Object.keys(USERS).join(" | ")} (default ${DEFAULT_USER})
+  --as <user>          authenticate as ${Object.keys(USERS).join(" | ")}, or a \`harness user create\` account (default ${DEFAULT_USER})
   --anon               send no Authorization header
 ${RUN_USAGE}
 

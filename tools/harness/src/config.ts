@@ -67,6 +67,22 @@ export const USERS: Readonly<Record<string, string>> = {
 
 export const DEFAULT_USER = "test";
 
+/** Every account `harness user create` makes has this password, as the realm's test users do (local only). */
+export const FRESH_PASSWORD = "mimos-test";
+
+/** What `harness user create` names its accounts, as `ApiIntegrationTestSupport.createUser()` does. */
+export const FRESH_USER = /^user-[0-9a-f]{8}$/;
+
+/** The password of a realm test user or of an account `harness user create` made; undefined for any other name. */
+export function passwordOf(user: string): string | undefined {
+  return USERS[user] ?? (FRESH_USER.test(user) ? FRESH_PASSWORD : undefined);
+}
+
+/** Keycloak's master-realm admin, as compose.yml names it (`admin-cli` password grant). */
+export function keycloakAdmin(env: Env = process.env): { username: string; password: string } {
+  return { username: env.KEYCLOAK_ADMIN_USERNAME ?? "admin", password: env.KEYCLOAK_ADMIN_PASSWORD ?? "admin" };
+}
+
 /**
  * Repo paths whose changes make a service's image stale. Narrower than the
  * Dockerfiles' COPY sources where those over-copy (the API image copies all

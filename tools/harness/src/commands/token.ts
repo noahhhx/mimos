@@ -1,14 +1,16 @@
 import { HarnessError, parseCommandArgs, UsageError } from "../args.ts";
 import type { Command } from "../command.ts";
-import { DEFAULT_USER, endpoints, REALM, USERS } from "../config.ts";
+import { DEFAULT_USER, endpoints, passwordOf, REALM, USERS } from "../config.ts";
 import { isJson, send } from "../http.ts";
 
 /** Access tokens via the password grant on the public `mimos-web` client (direct access grants are enabled in the realm). */
 
 export function passwordFor(user: string): string {
-  const password = USERS[user];
+  const password = passwordOf(user);
   if (password === undefined) {
-    throw new UsageError(`unknown user ${user} — the realm's test users are: ${Object.keys(USERS).join(", ")}`);
+    throw new UsageError(
+      `unknown user ${user} — the realm's test users are ${Object.keys(USERS).join(", ")}; or one \`harness user create\` made (user-xxxxxxxx)`,
+    );
   }
   return password;
 }
@@ -57,7 +59,7 @@ export const tokenCommand: Command = {
   summary: "Print an access token for a test user (password grant)",
   usage: `harness token [--as <user>] [--decode]
 
-  --as <user>   ${Object.keys(USERS).join(" | ")} (default ${DEFAULT_USER})
+  --as <user>   ${Object.keys(USERS).join(" | ")}, or an account from \`harness user create\` (default ${DEFAULT_USER})
   --decode      print the JWT header and claims instead of the token (no signature check)
 
 Prints to stdout only; tokens are never written to a run folder.

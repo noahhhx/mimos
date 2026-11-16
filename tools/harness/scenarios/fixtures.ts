@@ -2,7 +2,7 @@ import { appendFileSync } from "node:fs";
 
 import { expect, test as base, type Locator, type Page } from "@playwright/test";
 
-import { DEFAULT_USER, USERS, endpoints } from "../src/config.ts";
+import { DEFAULT_USER, USERS, endpoints, passwordOf } from "../src/config.ts";
 import { redactText } from "../src/redact.ts";
 
 /**
@@ -50,7 +50,7 @@ export const test = base.extend<HarnessFixtures>({
   ],
 
   loggedInPage: async ({ page, user }, use) => {
-    const password = USERS[user];
+    const password = passwordOf(user);
     if (password === undefined) {
       throw new Error(`unknown user ${user} — the realm's test users are: ${Object.keys(USERS).join(", ")}`);
     }
