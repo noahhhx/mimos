@@ -2,7 +2,8 @@
 
 **Status:** done — steps 1–6 built stack control and API driving, browser
 driving, logs and request correlation, diagnostics, the debugger, and the
-agent skill, docs, and CI; step 7 used them to find and fix the recipe 415.
+agent skill, docs, and CI; step 7 used them to find and fix the recipe 415;
+step 8 added an Android emulator for the mobile app.
 Follow-ups from that first use are listed in [its
 retrospective](step-7-recipe-415.md#retrospective). **[Using the
 harness](usage.md) is the command reference.** This page is the
@@ -106,6 +107,8 @@ browsers.
 | `harness loglevel <logger> [<level>]` / `--reset` | Show or change a log level live via actuator; restore the changed ones | 4 |
 | `harness psql` / `harness sql "<query>" [--write] [--csv]` | Interactive / recorded (read-only by default) database access | 4 |
 | `harness debug break <Class:line\|Class.method> [--then "<harness cmd>"] [--print <expr>]... [--hits <n>] [--timeout <s>]` | Scripted `jdb` breakpoint capture: stack, locals, `this`, expressions — or an explicit "not hit" | 5 |
+| `harness mobile up [--no-build]` / `shot [name]` / `logs` / `down` | Headless Android emulator: boot, pinned browser, `adb reverse` to the stack, build and install the debug APK, screenshots, logcat | 8 |
+| `harness user create` / `harness household join <owner> <member>` | Accounts for flows that cannot make their own, printed as env values | 8 |
 
 ## Run folder
 
@@ -119,7 +122,8 @@ browsers.
 ├── logs/                 # <service>.log for each compose service
 ├── diag/                 # diagnostics snapshot: compose.json, actuator/, routes.txt, migrations.csv, plugins/, keycloak/
 ├── sql/                  # <n>.txt / <n>.csv — one per harness sql query
-└── debug/<n>/            # one per debug session: hits.md (stack, locals, expressions), jdb.log, trigger.log
+├── debug/<n>/            # one per debug session: hits.md (stack, locals, expressions), jdb.log, trigger.log
+└── mobile/               # probe.txt, build.log, emulator.log, adb.txt (on failure), up.png, other screenshots, logcat.txt
 ```
 
 `.harness/runs/latest` points at the most recent run.
@@ -138,6 +142,7 @@ and docs, per AGENTS.md.
 | 5 | [Debugger](step-5-debugger.md) | Done |
 | 6 | [Agent skill, docs, and CI](step-6-skill-docs-ci.md) | Done |
 | 7 | [First use: the recipe 415](step-7-recipe-415.md) | Done |
+| 8 | [A virtual device for agents](step-8-emulator.md) | Done |
 
 ## Decisions
 
@@ -152,4 +157,5 @@ and the affected step pages in the same change.
 | Playwright as a dependency | `@playwright/test` as a devDependency of `@mimos/harness` only, pinned to the exact `playwright-driver` version in nixpkgs. | Step 2 |
 | `.mcp.json` | Committed, so every agent session gets the browser MCP server. | Step 2 |
 | Actuator authorization in the debug overlay | Any valid token in v1; revisit with an admin realm role if actuator exposure ever reaches non-debug deployments. | Step 4 |
+| Android emulator | `harness mobile` boots an AVD written from a fixed profile under `.harness/android/`, reaches the stack with `adb reverse`, and installs a browser pinned by hash in `devenv.nix` (Cromite). Built for the Android app ([ADR-0029](../decisions/adr-0029-android-app.md)). | Step 8 |
 | Scenarios in CI | Run in the compose job after the stack is healthy; the run folder is uploaded as a CI artifact on failure. CI gets browsers **through devenv** (the harness needs the devenv shell anyway) — one source of tooling for agents and CI. | Step 6 |

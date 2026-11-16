@@ -10,7 +10,9 @@ behind its commands.
 
 The harness needs Nix, [devenv](https://devenv.sh), and a Docker daemon on
 the host. Everything else comes from the devenv shell — Node, the JDK
-(`jdb`), `jq`, Chromium, and the Playwright MCP server. Run `npm ci` once
+(`jdb`), `jq`, Chromium, the Playwright MCP server, and for `harness
+mobile` the Android SDK (emulator, `adb`), Maestro, and a pinned browser
+APK. `mobile` also needs `/dev/kvm`. Run `npm ci` once
 at the repo root (for `@playwright/test`), then call every command from
 the repo root as:
 
@@ -61,7 +63,7 @@ narrowing the recipe 415.
 
 | Command | What it does |
 | --- | --- |
-| `harness token [--as <user>] [--decode]` | An access token for `test` (default) or `test2`, printed only and never written to disk. |
+| `harness token [--as <user>] [--decode]` | An access token for `test` (default), `test2`, or an account `harness user create` made, printed only and never written to disk. |
 | `harness api <METHOD> <path> [--body <file>\|-] [-H Name:Value]... [--as <user>\|--anon]` | Sends exactly the recorded headers (`-H 'Name:'` removes one). Records the exchange in `api/exchanges.jsonl` and the run's logs. Exit 1 for a status of 400 or above. |
 | `harness ui <scenario> [--headed] [--as <user>]` | Runs `tools/harness/scenarios/<scenario>.spec.ts` in Chromium and writes a trace, HAR, console log, and screenshots (plus a video on failure) under `browser/<scenario>/`. `summary.md` gets the failing step, every API call with its request ID, and each failed request in full with its log lines. Exit 1 when a test failed. |
 
@@ -104,6 +106,29 @@ two fresh accounts: one writes a recipe and downloads its export, which
 it cannot import over its own data; the other imports it, ADR-0011). See [writing a scenario](step-2-browser.md#writing-a-scenario).
 For exploration before a scenario exists, `.mcp.json` registers a
 Playwright MCP browser ([step 2](step-2-browser.md#exploring-with-the-mcp-browser)).
+
+### The emulator — [step 8](step-8-emulator.md)
+
+| Command | What it does |
+| --- | --- |
+| `harness mobile up [--no-build]` | Creates the AVD `mimos-pixel` under `.harness/android/` if missing, boots it headless (KVM, software GPU), installs the pinned browser (Cromite, `MIMOS_ANDROID_BROWSER_APK`) once, forwards 8080, 8081, and 3000 with `adb reverse`, proves from the device that the web app, the API, and Keycloak each answer an HTTP request (exit 1 if one does not), builds the debug APK (`./gradlew :androidApp:assembleDebug`), installs it, launches `io.github.noahhhx.mimos.debug`, and screenshots it. Running it again converges. `--no-build` reuses the last APK. |
+| `harness mobile shot [name]` | Saves a screenshot to `mobile/<name>.png` (`shot.png`, `shot-2.png`, … without a name). |
+| `harness mobile logs` | Writes logcat for the app's process to `mobile/logcat.txt` (redacted); `summary.md` counts the lines and shows the last errors. With the app not running, the lines that name it. |
+| `harness mobile down` | `adb emu kill`. Fine when nothing is running. |
+| `harness user create` | A fresh Keycloak user through the admin API. Prints `MIMOS_USER=user-…` and `MIMOS_PASSWORD=mimos-test`. |
+| `harness household join <owner> <member>` | The owner invites and the member joins, through the API. Prints `MIMOS_OWNER`, `MIMOS_OWNER_PASSWORD`, `MIMOS_MEMBER`, and `MIMOS_MEMBER_PASSWORD`. |
+
+The device's `localhost:8080`, `:8081`, and `:3000` are the host's, so
+the app and its browser use the same URLs as a desktop browser and tokens
+carry the issuer the API accepts ([why](step-8-emulator.md#reaching-the-stack-adb-reverse)).
+The reverse rules belong to the adb server that made them: after an
+`adb kill-server` or a restart by another adb client, the device refuses
+connections to localhost until `harness mobile up` runs again. Accounts
+from `user create` work with `--as` in `token`, `api`, and `ui`
+(`harness ui login --as user-1a2b3c4d`). To start the AVD over, stop it and
+delete `.harness/android/`. A browser is one command away for
+exploration: `adb shell am start -a android.intent.action.VIEW -d
+http://localhost:3000/ org.cromite.cromite`, then `harness mobile shot`.
 
 ### Observing — steps [3](step-3-logs.md) and [4](step-4-diagnostics.md)
 

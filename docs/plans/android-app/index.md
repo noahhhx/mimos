@@ -127,3 +127,17 @@ owner can overturn any of it:
   warnings-as-errors). `androidApp` pins `lifecycle-runtime` 2.11.0.
 - `gradle/actions/setup-gradle` caches with a proprietary provider by
   default. CI sets `cache-provider: basic`, its MIT one.
+- `adb reverse` rules belong to the adb server that made them. Any server
+  restart (`adb kill-server`, or a client of another adb version) empties
+  them, and the device then refuses connections to `localhost`. `harness
+  mobile up` re-makes and proves them, but a flow run (item 06) must check
+  them first, or pin `ANDROID_ADB_SERVER_PORT` for the harness so nothing
+  else restarts its server. Maestro's own adb use is unchecked.
+- The first time the spike saw `ERR_CONNECTION_REFUSED` in the browser with
+  the rules listed, the cause was never found. Two things reproduce it
+  from the device's side: no rules after a server restart, and rules
+  listed while nothing answers on the host port. If it recurs, read
+  `mobile/adb.txt` and `mobile/probe.txt` from the failed `up`.
+- Cromite shows a toast ("loading flags from a command-line file") when
+  it opens, because of the command-line file `up` writes. A flow
+  that opens the browser should expect it.
