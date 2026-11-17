@@ -6,6 +6,7 @@ import {
   DEFAULT_PUBLIC_CONFIG,
   PUBLIC_CONFIG_GLOBAL,
   publicConfigFromEnv,
+  runtimeConfigJson,
   runtimeConfigScript,
 } from "../src/lib/public-config.ts";
 
@@ -64,5 +65,23 @@ describe("runtimeConfigScript", () => {
     const window: Record<string, unknown> = {};
     runInNewContext(script, { window });
     assert.equal((window[PUBLIC_CONFIG_GLOBAL] as { oidcClientId: string }).oidcClientId, "</script><b>");
+  });
+});
+
+describe("runtimeConfigJson", () => {
+  it("is the public config as JSON, with the same values the script sets", () => {
+    const config = publicConfigFromEnv({ MIMOS_API_URL: "https://api.example.com/", MIMOS_SIGNUP: "closed" });
+    assert.deepEqual(JSON.parse(runtimeConfigJson(config)), config);
+    assert.equal(JSON.parse(runtimeConfigJson(config)).apiUrl, "https://api.example.com");
+  });
+
+  it("names exactly the five fields an app reads", () => {
+    assert.deepEqual(Object.keys(JSON.parse(runtimeConfigJson(DEFAULT_PUBLIC_CONFIG))).sort(), [
+      "apiUrl",
+      "appUrl",
+      "oidcAuthority",
+      "oidcClientId",
+      "signup",
+    ]);
   });
 });

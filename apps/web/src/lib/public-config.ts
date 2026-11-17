@@ -65,3 +65,8 @@ function url(value: string | undefined): string | undefined {
   const trimmed = value?.trim().replace(/\/+$/, "");
   return trimmed || undefined;
 }
+
+/** The body of `/runtime-config.json`, the same values for apps that are not a browser. */
+export function runtimeConfigJson(config: PublicConfig): string {
+  return JSON.stringify(config);
+}
