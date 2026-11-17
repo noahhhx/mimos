@@ -14,6 +14,23 @@ val (compileSdkMajor, compileSdkMinor) =
     libs.versions.compileSdk.get().split(".").map(String::toInt)
 
 val generatedApi = layout.buildDirectory.dir("generated/openapi")
+val generatedVersion = layout.buildDirectory.dir("generated/version")
+
+val generateAppVersion by tasks.registering {
+    val version = providers.gradleProperty("mimos.version")
+    val output = generatedVersion
+    inputs.property("version", version)
+    outputs.dir(output)
+    doLast {
+        val file = output.get().file("io/github/noahhhx/mimos/instance/AppVersionName.kt").asFile
+        file.parentFile.mkdirs()
+        file.writeText(
+            "package io.github.noahhhx.mimos.instance\n\n" +
+                "internal const val APP_VERSION_NAME = \"${version.get()}\"\n"
+        )
+    }
+}
+
 kotlin {
     android {
         namespace = "io.github.noahhhx.mimos.shared"
@@ -30,9 +47,10 @@ kotlin {
                     generatedApi.get().dir("src/commonMain/kotlin")
                 }
             )
+            kotlin.srcDir(generateAppVersion.map { generatedVersion.get() })
         }
         commonMain.dependencies {
-            implementation(libs.ktor.client.core)
+            api(libs.ktor.client.core)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)

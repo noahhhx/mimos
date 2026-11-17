@@ -1,15 +1,17 @@
 package io.github.noahhhx.mimos
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.remember
+import io.github.noahhhx.mimos.connect.ConnectModel
+import io.github.noahhhx.mimos.connect.ConnectScreen
+import io.github.noahhhx.mimos.instance.InstanceStore
+import io.github.noahhhx.mimos.instance.discover
+import io.ktor.client.engine.HttpClientEngine
 
 const val APP_NAME = "Mimos"
 
 @Composable
-fun App() {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BasicText(APP_NAME) }
+fun App(store: InstanceStore, engine: HttpClientEngine) {
+    val model = remember { ConnectModel(store) { discover(it, engine) } }
+    ConnectScreen(model)
 }

@@ -17,7 +17,7 @@ android {
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 1
-        versionName = "0.0.0"
+        versionName = providers.gradleProperty("mimos.version").get()
     }
 
     buildTypes { debug { applicationIdSuffix = ".debug" } }
@@ -41,6 +41,7 @@ android {
 dependencies {
     implementation(project(":shared"))
     implementation(libs.androidx.activity.compose)
+    implementation(libs.ktor.client.okhttp)
     // Newer than activity-compose brings: 2.9's lint checks fail to load in this
     // lint (ObsoleteLintCustomCheck).
     implementation(libs.androidx.lifecycle.runtime)
