@@ -39,7 +39,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 01 | [Scaffold, toolchain, and build gates](01-scaffold.md) | – | done (73a86f9) |
 | 02 | [A virtual device for agents](02-emulator.md) | 01 | done (60f3a16) |
 | 03 | [Generated client and instance discovery](03-client-and-discovery.md) | 01 | done (30ca9b9) |
-| 04 | [Sign-in and sign-up](04-sign-in.md) | 02, 03 | done (SHA) |
+| 04 | [Sign-in and sign-up](04-sign-in.md) | 02, 03 | done (cc91ea8) |
 | 05 | [Evening Kitchen in Compose](05-design-system.md) | 01 | todo |
 | 06 | [Maestro flows and CI](06-flows-and-ci.md) | 04, 05 | todo |
 | 07 | [Recipes and pictures](07-recipes.md) | 06 | todo |
