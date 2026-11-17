@@ -79,6 +79,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -96,6 +98,16 @@ jobs:
 
       - name: Fail on drift between specs and committed generated code
         run: git diff --exit-code -- libraries
+
+      - name: Fail on API contract removals since the last release
+        run: |
+          tag=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+          if [ -z "$tag" ]; then
+            echo "No v* tag yet; nothing to compare the API contract against."
+            exit 0
+          fi
+          git show "$tag:contracts/api/openapi.yaml" > "$RUNNER_TEMP/openapi-$tag.yaml"
+          node tools/harness/src/contract-additive.ts "$RUNNER_TEMP/openapi-$tag.yaml" contracts/api/openapi.yaml
 
       - name: Typecheck
         run: |
