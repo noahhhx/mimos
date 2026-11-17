@@ -33,6 +33,7 @@ kotlin {
         }
         commonMain.dependencies {
             implementation(libs.ktor.client.core)
+            implementation(libs.kotlinx.coroutines.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.kotlinx.serialization.json)
@@ -41,7 +42,11 @@ kotlin {
             implementation(libs.compose.foundation)
             implementation(libs.compose.ui)
         }
-        commonTest.dependencies { implementation(libs.kotlin.test) }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.ktor.client.mock)
+        }
     }
 }
 
@@ -58,6 +63,7 @@ openApiGenerate {
     packageName = "io.github.noahhhx.mimos.api"
     templateDir = layout.projectDirectory.dir("openapi-templates")
     typeMappings = mapOf("object" to "JsonObject")
+    schemaMappings = mapOf("PanelBlock" to "io.github.noahhhx.mimos.client.PanelBlock")
     inlineSchemaOptions = mapOf("RESOLVE_INLINE_ENUMS" to "true")
     importMappings = mapOf("JsonObject" to "kotlinx.serialization.json.JsonObject")
     configOptions =
