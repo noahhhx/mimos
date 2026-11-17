@@ -197,7 +197,7 @@ main.wrap {
 
 .brand {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   font-family: var(--serif);
   font-size: 26px;
@@ -205,12 +205,12 @@ main.wrap {
   text-decoration: none;
 }
 
-/* A short amber dash, sitting at the x-height. */
+/* The chef duck doubles as the favicon and the brand's pictorial mark. */
 .brand-mark {
-  width: 18px;
-  height: 2px;
-  background: var(--accent);
-  transform: translateY(-6px);
+  flex: none;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
 }
 
 .site-nav {

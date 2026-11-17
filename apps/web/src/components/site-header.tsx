@@ -1,8 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import duckIcon from "@/app/icon.png";
 import { ProfileMenu } from "@/components/profile-menu";
 
 /**
@@ -17,7 +19,7 @@ export function SiteHeader() {
     <header className="site-header">
       <div className="wrap site-header-inner">
         <Link href="/" className="brand">
-          <span className="brand-mark" aria-hidden="true" />
+          <Image className="brand-mark" src={duckIcon} alt="" width={40} height={40} aria-hidden="true" />
           Mimos
         </Link>
         <nav className="site-nav" aria-label="Site">
