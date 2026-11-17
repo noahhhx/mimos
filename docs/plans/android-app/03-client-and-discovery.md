@@ -65,7 +65,7 @@ its API through a generated client.
 
 ## Done
 
-Landed in five commits on `docs/mobile-app-plan`. `getInstance` answers
+Landed on `docs/mobile-app-plan`. `getInstance` answers
 the server's Maven version without its qualifier (`0.1.0` today) and
 `minAppVersion` `0.0.0`. Its tag is `instance`, not `public`: the spring
 generator makes one interface per tag, and `PublicRecipesController`
@@ -75,7 +75,6 @@ and `http://localhost:3000` connects and shows server version 0.1.0, and
 the connection survives a restart of the app.
 
 ### The spike
-
 
 openapi-generator 7.27.0 (`org.openapi.generator` Gradle plugin, pinned in
 `gradle/libs.versions.toml`), generator `kotlin`, `library=multiplatform`,
@@ -144,3 +143,22 @@ of a schema the spec drops. Tests and docs generation are off.
 - **Generated warnings.** Kotlin reports 9 "unnecessary safe call"
   warnings in the generated APIs. Warnings do not fail the Kotlin compile,
   and lint does not flag them.
+
+## Review fixes
+
+An independent review of the first build changed four things:
+
+1. `http://` is allowed only for `localhost`, and only in a debuggable
+   build (`allowLocalhostHttp`, from `FLAG_DEBUGGABLE`), matching the
+   network security configs. `127.0.0.1` is refused, and a release build
+   refuses every `http://` address, so no address passes the check and
+   then fails as a generic network error.
+2. The "server too old" message names no version while the minimum is
+   0.0.0 or the server did not say one.
+3. A runtime config whose `apiUrl` is `http://` is `InsecureServer`, with
+   copy that blames the server's setup, not the address typed.
+4. The contract checker matches parameters by name and `in` and
+   `oneOf`/`anyOf`/`allOf` members by `$ref`, and also reports a removed
+   parameter, response status code, or union member, a property dropped
+   from `required`, and a changed `type`. It still misses a swapped `$ref`
+   and a new required request field.
