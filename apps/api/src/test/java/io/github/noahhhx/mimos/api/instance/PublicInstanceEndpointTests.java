@@ -37,5 +37,7 @@ class PublicInstanceEndpointTests extends ApiIntegrationTestSupport {
     void dropsTheBuildQualifier() {
         assertThat(PublicInstanceController.release("0.1.0-SNAPSHOT")).isEqualTo("0.1.0");
         assertThat(PublicInstanceController.release("1.2.3")).isEqualTo("1.2.3");
+        assertThat(PublicInstanceController.release("1.2.3+20260101")).isEqualTo("1.2.3");
+        assertThat(PublicInstanceController.release("1.2.3-rc.1+abc")).isEqualTo("1.2.3");
     }
 }

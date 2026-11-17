@@ -29,9 +29,15 @@ public class PublicInstanceController implements InstanceApi {
         return ResponseEntity.ok(new Instance(version, MIN_APP_VERSION));
     }
 
-    /** The contract promises MAJOR.MINOR.PATCH, so a build qualifier such as -SNAPSHOT is dropped. */
+    /** The contract promises MAJOR.MINOR.PATCH, so a qualifier such as -SNAPSHOT or +build metadata is dropped. */
     static String release(String buildVersion) {
-        int qualifier = buildVersion.indexOf('-');
-        return qualifier < 0 ? buildVersion : buildVersion.substring(0, qualifier);
+        int suffix = buildVersion.length();
+        for (char marker : new char[] {'-', '+'}) {
+            int at = buildVersion.indexOf(marker);
+            if (at >= 0) {
+                suffix = Math.min(suffix, at);
+            }
+        }
+        return buildVersion.substring(0, suffix);
     }
 }
