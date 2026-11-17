@@ -18,7 +18,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,33 +30,27 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.noahhhx.mimos.APP_NAME
-import kotlinx.coroutines.launch
 
 @Composable
-fun ConnectScreen(model: ConnectModel, brandMark: Painter) {
+fun ConnectScreen(model: ConnectModel, brandMark: Painter, connect: () -> Unit) {
     val state by model.state.collectAsState()
-    val scope = rememberCoroutineScope()
-    val connect: () -> Unit = { scope.launch { model.connect() } }
     Column(
         Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        val title = if (state is ConnectState.Connected) APP_NAME else "Connect to Mimos"
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             // Decorative, as on the web: the title beside it names the app.
             Image(brandMark, contentDescription = null, modifier = Modifier.size(40.dp))
-            BasicText(title, style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold))
+            BasicText(
+                "Connect to Mimos",
+                style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold),
+            )
         }
         when (val current = state) {
-            is ConnectState.Connected -> {
-                BasicText("Connected to ${current.instance.config.webUrl.origin}")
-                BasicText("Server version ${current.instance.serverVersion}")
-                Action("Disconnect", onClick = model::disconnect)
-            }
+            is ConnectState.Connected -> Unit
             is ConnectState.Addressing -> {
                 // One call site for every state, so the field keeps its focus and cursor
                 // when a failure turns back into editing.
@@ -103,7 +96,7 @@ private fun AddressForm(
 }
 
 @Composable
-private fun Action(label: String, onClick: () -> Unit, enabled: Boolean = true) {
+internal fun Action(label: String, onClick: () -> Unit, enabled: Boolean = true) {
     BasicText(
         label,
         style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold),

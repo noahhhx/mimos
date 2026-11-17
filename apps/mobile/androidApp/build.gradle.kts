@@ -18,6 +18,9 @@ android {
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 1
         versionName = providers.gradleProperty("mimos.version").get()
+        // AppAuth claims this whole scheme for the sign-in redirect. App links such as
+        // invites use the separate io.github.noahhhx.mimos scheme (ADR-0029).
+        manifestPlaceholders["appAuthRedirectScheme"] = "io.github.noahhhx.mimos.oauth"
     }
 
     buildTypes { debug { applicationIdSuffix = ".debug" } }
@@ -42,6 +45,9 @@ dependencies {
     implementation(project(":shared"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.ktor.client.okhttp)
+    implementation(libs.appauth)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.lifecycle.viewmodel)
     // Newer than activity-compose brings: 2.9's lint checks fail to load in this
     // lint (ObsoleteLintCustomCheck).
     implementation(libs.androidx.lifecycle.runtime)
