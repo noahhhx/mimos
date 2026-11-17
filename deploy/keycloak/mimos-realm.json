@@ -43,6 +43,25 @@
         "pkce.code.challenge.method": "S256",
         "oauth2.device.authorization.grant.enabled": "false"
       }
+    },
+    {
+      "clientId": "mimos-mobile",
+      "name": "Mimos Android App",
+      "description": "Public client for the Android app (ADR-0029). The redirect scheme is claimed by the app's sign-in alone.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["io.github.noahhhx.mimos.oauth:/oauth2redirect"],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "io.github.noahhhx.mimos.oauth:/oauth2redirect",
+        "oauth2.device.authorization.grant.enabled": "false"
+      }
     }
   ],
   "users": [
