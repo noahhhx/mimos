@@ -2,15 +2,18 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.compose.multiplatform)
     // The KMP library plugin gives lint no main-source analysis; this adds it,
     // so androidApp's lint (checkDependencies) reads commonMain.
     alias(libs.plugins.android.lint)
+    alias(libs.plugins.openapi.generator)
 }
 
 val (compileSdkMajor, compileSdkMinor) =
     libs.versions.compileSdk.get().split(".").map(String::toInt)
 
+val generatedApi = layout.buildDirectory.dir("generated/openapi")
 kotlin {
     android {
         namespace = "io.github.noahhhx.mimos.shared"
@@ -21,11 +24,46 @@ kotlin {
     }
 
     sourceSets {
+        commonMain {
+            kotlin.srcDir(
+                tasks.named("openApiGenerate").map {
+                    generatedApi.get().dir("src/commonMain/kotlin")
+                }
+            )
+        }
         commonMain.dependencies {
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.datetime)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.ui)
         }
         commonTest.dependencies { implementation(libs.kotlin.test) }
     }
+}
+
+openApiGenerate {
+    generatorName = "kotlin"
+    library = "multiplatform"
+    inputSpec = rootProject.layout.projectDirectory.file("../../contracts/api/openapi.yaml")
+    outputDir = generatedApi
+    cleanupOutput = true
+    generateApiTests = false
+    generateModelTests = false
+    generateApiDocumentation = false
+    generateModelDocumentation = false
+    packageName = "io.github.noahhhx.mimos.api"
+    templateDir = layout.projectDirectory.dir("openapi-templates")
+    typeMappings = mapOf("object" to "JsonObject")
+    inlineSchemaOptions = mapOf("RESOLVE_INLINE_ENUMS" to "true")
+    importMappings = mapOf("JsonObject" to "kotlinx.serialization.json.JsonObject")
+    configOptions =
+        mapOf(
+            "hideGenerationTimestamp" to "true",
+            "dateLibrary" to "kotlinx-datetime",
+            "enumUnknownDefaultCase" to "true",
+        )
 }

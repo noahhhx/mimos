@@ -4,8 +4,10 @@ plugins {
     alias(libs.plugins.android.lint) apply false
     alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.kotlin.compose) apply false
+    alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.compose.multiplatform) apply false
     alias(libs.plugins.spotless)
+    alias(libs.plugins.openapi.generator) apply false
 }
 
 // check applies the formatting, as the backend's build does; CI runs spotlessCheck.

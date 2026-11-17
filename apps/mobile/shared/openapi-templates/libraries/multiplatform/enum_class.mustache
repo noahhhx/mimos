@@ -1,0 +1,34 @@
+import kotlinx.serialization.*
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+
+/**
+{{#description}}
+ * {{{.}}}
+ *
+{{/description}}
+ * Values: {{#allowableValues}}{{#enumVars}}{{&name}}{{^-last}},{{/-last}}{{/enumVars}}{{/allowableValues}}
+ */
+@Serializable(with = {{classname}}Serializer::class)
+enum class {{classname}}(val value: {{{dataType}}}) {
+{{#allowableValues}}{{#enumVars}}
+    {{&name}}({{{value}}}){{^-last}},{{/-last}}{{#-last}};{{/-last}}
+{{/enumVars}}{{/allowableValues}}
+
+    override fun toString(): kotlin.String = value{{^isString}}.toString(){{/isString}}
+}
+
+internal object {{classname}}Serializer : KSerializer<{{classname}}> {
+    override val descriptor = {{{dataType}}}.serializer().descriptor
+
+    override fun deserialize(decoder: Decoder): {{classname}} {
+        val value = decoder.decodeSerializableValue({{{dataType}}}.serializer())
+        return {{classname}}.entries.firstOrNull { it.value == value }
+            ?: {{classname}}.{{#allowableValues}}{{#enumVars}}{{#-last}}{{&name}}{{/-last}}{{/enumVars}}{{/allowableValues}}
+    }
+
+    override fun serialize(encoder: Encoder, value: {{classname}}) {
+        encoder.encodeSerializableValue({{{dataType}}}.serializer(), value.value)
+    }
+}
