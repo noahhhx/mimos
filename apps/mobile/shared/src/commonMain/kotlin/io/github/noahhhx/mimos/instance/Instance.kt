@@ -18,7 +18,6 @@ data class InstanceConfig(
     val signup: SignupPolicy,
 )
 
-/** The instance the app is connected to. */
 data class Instance(val config: InstanceConfig, val serverVersion: Version)
 
 /** Keeps the connected instance between launches. The app keeps one at a time. */
@@ -36,20 +35,18 @@ private data class RuntimeConfig(
     val apiUrl: String,
     val oidcAuthority: String,
     val oidcClientId: String,
-    val appUrl: String,
-    val signup: String,
+    val signup: String? = null,
 )
 
 /**
- * Reads the web's `/runtime-config.json`. Anything missing, blank, or of the wrong type means the
- * site is not Mimos. A sign-up policy other than `open` reads as closed, as the web's does.
+ * Reads the web's `/runtime-config.json`. Anything the app uses that is missing, blank, or of the
+ * wrong type means the site is not Mimos. A sign-up policy other than `open` reads as closed, and
+ * an absent or blank one as open, as the web's does.
  */
 internal fun parseInstanceConfig(webUrl: WebAddress, body: String): InstanceConfig? {
     val read =
         runCatching { MimosJson.decodeFromString<RuntimeConfig>(body) }.getOrNull() ?: return null
-    if (
-        listOf(read.apiUrl, read.oidcAuthority, read.oidcClientId, read.appUrl).any { it.isBlank() }
-    ) {
+    if (listOf(read.apiUrl, read.oidcAuthority, read.oidcClientId).any { it.isBlank() }) {
         return null
     }
     return InstanceConfig(
@@ -57,8 +54,14 @@ internal fun parseInstanceConfig(webUrl: WebAddress, body: String): InstanceConf
         apiUrl = read.apiUrl.trimEnd('/'),
         oidcAuthority = read.oidcAuthority,
         oidcClientId = read.oidcClientId,
-        signup = if (read.signup == "open") SignupPolicy.OPEN else SignupPolicy.CLOSED,
+        signup = signupPolicy(read.signup),
     )
+}
+
+private fun signupPolicy(value: String?): SignupPolicy {
+    val trimmed = value?.trim()?.lowercase()
+    return if (trimmed.isNullOrEmpty() || trimmed == "open") SignupPolicy.OPEN
+    else SignupPolicy.CLOSED
 }
 
 @Serializable
@@ -71,7 +74,6 @@ private data class StoredInstance(
     val serverVersion: String,
 )
 
-/** An [Instance] as an [InstanceStore] keeps it. */
 fun Instance.encode(): String =
     MimosJson.encodeToString(
         StoredInstance(
@@ -91,7 +93,9 @@ fun decodeInstance(text: String): Instance? {
     return Instance(
         config =
             InstanceConfig(
-                webUrl = parseWebAddress(stored.webUrl) as? WebAddress ?: return null,
+                webUrl =
+                    parseWebAddress(stored.webUrl, allowLocalhostHttp = true) as? WebAddress
+                        ?: return null,
                 apiUrl = stored.apiUrl,
                 oidcAuthority = stored.oidcAuthority,
                 oidcClientId = stored.oidcClientId,

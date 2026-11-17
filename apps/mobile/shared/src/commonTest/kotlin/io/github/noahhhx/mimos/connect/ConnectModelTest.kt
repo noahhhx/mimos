@@ -12,6 +12,7 @@ import io.github.noahhhx.mimos.instance.WebAddress
 import io.github.noahhhx.mimos.instance.parseWebAddress
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
@@ -33,7 +34,7 @@ private class MemoryInstanceStore(var instance: Instance? = null) : InstanceStor
 private val instance =
     Instance(
         InstanceConfig(
-            webUrl = parseWebAddress("mimos.example.com") as WebAddress,
+            webUrl = parseWebAddress("mimos.example.com", allowLocalhostHttp = false) as WebAddress,
             apiUrl = "https://api.mimos.example.com",
             oidcAuthority = "https://id.mimos.example.com/realms/mimos",
             oidcClientId = "mimos-web",
@@ -95,13 +96,33 @@ class ConnectModelTest {
             listOf(
                 InvalidAddress,
                 InsecureAddress,
+                Discovery.InsecureServer,
                 Discovery.Unreachable,
                 Discovery.NotMimos,
-                Discovery.ServerTooOld(Version(0, 1, 0)),
+                Discovery.ServerTooOld(null),
                 Discovery.AppTooOld(Version(2, 0, 0)),
             )
         val messages = failures.map { it.message() }
         assertEquals(messages.size, messages.toSet().size)
         assertEquals(listOf(false), messages.map { '\u2014' in it }.distinct())
+    }
+
+    @Test
+    fun `a too-old server's message names no version while the minimum is zero`() {
+        assertEquals(
+            Discovery.ServerTooOld(null).message(),
+            Discovery.ServerTooOld(Version(0, 1, 0)).message(),
+        )
+        assertFalse("0.0.0" in Discovery.ServerTooOld(null).message())
+    }
+
+    @Test
+    fun `both insecure failures offer the Why HTTPS link`() {
+        assertEquals(
+            listOf(true, true, false),
+            listOf(InsecureAddress, Discovery.InsecureServer, Discovery.NotMimos).map {
+                it.needsHttpsLink()
+            },
+        )
     }
 }

@@ -27,7 +27,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.noahhhx.mimos.APP_NAME
-import io.github.noahhhx.mimos.instance.InsecureAddress
 import kotlinx.coroutines.launch
 
 @Composable
@@ -55,7 +54,7 @@ fun ConnectScreen(model: ConnectModel) {
                 if (connecting) BasicText("Connecting…")
                 if (current is ConnectState.Failed) {
                     BasicText(current.failure.message())
-                    if (current.failure == InsecureAddress) {
+                    if (current.failure.needsHttpsLink()) {
                         val uriHandler = LocalUriHandler.current
                         Link("Why Mimos needs HTTPS") { uriHandler.openUri(WHY_HTTPS_URL) }
                     }

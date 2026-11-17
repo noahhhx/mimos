@@ -14,27 +14,27 @@ import io.ktor.serialization.ContentConvertException
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.serialization.SerializationException
 
-/** What connecting to a typed web address came to. */
 sealed interface Discovery {
     data class Connected(val instance: Instance) : Discovery
 
-    /** Each reason the app did not connect; each gets its own message. */
     sealed interface Failure : Discovery
 
     /** The server is older than the app supports; its version when it said. */
     data class ServerTooOld(val serverVersion: Version?) : Failure
 
-    /** The server needs at least [minAppVersion] of the app. */
     data class AppTooOld(val minAppVersion: Version) : Failure
 
     data object Unreachable : Failure
 
     data object NotMimos : Failure
+
+    /** The server's own config sends the app to an `http://` address. */
+    data object InsecureServer : Failure
 }
 
 data object InvalidAddress : AddressResult, Discovery.Failure
 
-/** An `http://` address other than this device's own (ADR-0030). */
+/** An `http://` address the app may not use (ADR-0030). */
 data object InsecureAddress : AddressResult, Discovery.Failure
 
 /**
@@ -44,11 +44,12 @@ data object InsecureAddress : AddressResult, Discovery.Failure
 suspend fun discover(
     input: String,
     engine: HttpClientEngine,
+    allowLocalhostHttp: Boolean,
     appVersion: Version = APP_VERSION,
     minServerVersion: Version = MIN_SERVER_VERSION,
 ): Discovery {
     val webUrl =
-        when (val address = parseWebAddress(input)) {
+        when (val address = parseWebAddress(input, allowLocalhostHttp)) {
             is WebAddress -> address
             InvalidAddress -> return InvalidAddress
             InsecureAddress -> return InsecureAddress
@@ -58,7 +59,7 @@ suspend fun discover(
     if (status.value >= 500) return Discovery.Unreachable
     if (!status.isSuccess()) return Discovery.NotMimos
     val config = parseInstanceConfig(webUrl, body) ?: return Discovery.NotMimos
-    if (!isSecureUrl(config.apiUrl)) return InsecureAddress
+    if (!isSecureUrl(config.apiUrl, allowLocalhostHttp)) return Discovery.InsecureServer
     val served =
         try {
             MimosHttp(engine, config.apiUrl).use { it.api(::InstanceApi).getInstance().body() }

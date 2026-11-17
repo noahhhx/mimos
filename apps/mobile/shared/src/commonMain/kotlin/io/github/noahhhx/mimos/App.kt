@@ -11,7 +11,7 @@ import io.ktor.client.engine.HttpClientEngine
 const val APP_NAME = "Mimos"
 
 @Composable
-fun App(store: InstanceStore, engine: HttpClientEngine) {
-    val model = remember { ConnectModel(store) { discover(it, engine) } }
+fun App(store: InstanceStore, engine: HttpClientEngine, allowLocalhostHttp: Boolean) {
+    val model = remember { ConnectModel(store) { discover(it, engine, allowLocalhostHttp) } }
     ConnectScreen(model)
 }

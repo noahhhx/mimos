@@ -18,22 +18,32 @@ class WebAddressTest {
             )
         for ((input, origin) in cases) assertEquals(
             WebAddress(origin),
-            parseWebAddress(input),
+            parseWebAddress(input, allowLocalhostHttp = false),
             input,
         )
     }
 
     @Test
-    fun `plain http is only for this device's own loopback`() {
-        assertEquals(WebAddress("http://localhost:3000"), parseWebAddress("http://localhost:3000/"))
-        assertEquals(WebAddress("http://127.0.0.1:3000"), parseWebAddress("http://127.0.0.1:3000"))
+    fun `plain http is only for localhost, and only when the build allows it`() {
+        assertEquals(
+            WebAddress("http://localhost:3000"),
+            parseWebAddress("http://localhost:3000/", allowLocalhostHttp = true),
+        )
         for (input in
             listOf(
                 "http://mimos.example.com",
                 "http://192.168.1.20:3000",
+                "http://127.0.0.1:3000",
                 "http://localhost.example.com",
             )) {
-            assertEquals(InsecureAddress, parseWebAddress(input), input)
+            assertEquals(InsecureAddress, parseWebAddress(input, allowLocalhostHttp = true), input)
+        }
+    }
+
+    @Test
+    fun `a release build refuses every plain http address`() {
+        for (input in listOf("http://localhost:3000", "http://mimos.example.com")) {
+            assertEquals(InsecureAddress, parseWebAddress(input, allowLocalhostHttp = false), input)
         }
     }
 
@@ -52,6 +62,10 @@ class WebAddressTest {
                 "https://me@mimos.example.com",
                 "mailto:me@example.com",
             )
-        for (input in garbage) assertEquals(InvalidAddress, parseWebAddress(input), input)
+        for (input in garbage) assertEquals(
+            InvalidAddress,
+            parseWebAddress(input, allowLocalhostHttp = true),
+            input,
+        )
     }
 }

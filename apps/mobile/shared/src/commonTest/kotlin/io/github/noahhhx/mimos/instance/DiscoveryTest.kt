@@ -56,6 +56,13 @@ private fun MockRequestHandleScope.html() =
 
 private val problem404 = """{"title":"Not Found","status":404}"""
 
+private suspend fun discoverInRelease(
+    input: String,
+    engine: MockEngine,
+    appVersion: Version = APP_VERSION,
+    minServerVersion: Version = MIN_SERVER_VERSION,
+) = discover(input, engine, allowLocalhostHttp = false, appVersion, minServerVersion)
+
 /** A site answering at its web address and at its API, by default as a Mimos instance. */
 private fun site(
     runtimeConfig: MockRequestHandleScope.() -> HttpResponseData = { json(runtimeConfigJson) },
@@ -71,11 +78,14 @@ private fun site(
 class DiscoveryTest {
     @Test
     fun `a Mimos instance connects, reading only the fields the app knows`() = runTest {
-        assertEquals(Discovery.Connected(goodInstance), discover("mimos.example.com", site()))
+        assertEquals(
+            Discovery.Connected(goodInstance),
+            discoverInRelease("mimos.example.com", site()),
+        )
     }
 
     @Test
-    fun `the local stack connects over plain http`() = runTest {
+    fun `the local stack connects over plain http in a debug build`() = runTest {
         val engine = MockEngine { request ->
             when (request.url.toString()) {
                 "http://localhost:3000/runtime-config.json" ->
@@ -88,7 +98,7 @@ class DiscoveryTest {
                 else -> respondError(HttpStatusCode.NotFound)
             }
         }
-        val outcome = discover("http://localhost:3000", engine)
+        val outcome = discover("http://localhost:3000", engine, allowLocalhostHttp = true)
         val instance = (outcome as Discovery.Connected).instance
         assertEquals("http://localhost:3000", instance.config.webUrl.origin)
         assertEquals(SignupPolicy.OPEN, instance.config.signup)
@@ -96,10 +106,21 @@ class DiscoveryTest {
     }
 
     @Test
+    fun `a release build refuses the local stack before any request is made`() = runTest {
+        val requests = mutableListOf<HttpRequestData>()
+        val engine = MockEngine { request ->
+            requests += request
+            json(runtimeConfigJson)
+        }
+        assertEquals(InsecureAddress, discoverInRelease("http://localhost:3000", engine))
+        assertTrue(requests.isEmpty())
+    }
+
+    @Test
     fun `a site without a runtime config is not Mimos`() = runTest {
         assertEquals(
             Discovery.NotMimos,
-            discover(WEB, site(runtimeConfig = { respondError(HttpStatusCode.NotFound) })),
+            discoverInRelease(WEB, site(runtimeConfig = { respondError(HttpStatusCode.NotFound) })),
         )
     }
 
@@ -114,29 +135,48 @@ class DiscoveryTest {
         for (body in notMimos) {
             assertEquals(
                 Discovery.NotMimos,
-                discover(WEB, site(runtimeConfig = { json(body) })),
+                discoverInRelease(WEB, site(runtimeConfig = { json(body) })),
                 body,
             )
         }
     }
 
     @Test
+    fun `a runtime config needs only what the app uses`() = runTest {
+        val minimal =
+            """{"apiUrl":"$API","oidcAuthority":"https://id.mimos.example.com/realms/mimos","oidcClientId":"mimos-web"}"""
+        val outcome = discoverInRelease(WEB, site(runtimeConfig = { json(minimal) }))
+        assertEquals(
+            Discovery.Connected(
+                goodInstance.copy(config = goodInstance.config.copy(signup = SignupPolicy.OPEN))
+            ),
+            outcome,
+        )
+    }
+
+    @Test
     fun `an HTML page is not Mimos`() = runTest {
-        assertEquals(Discovery.NotMimos, discover(WEB, site(runtimeConfig = { html() })))
-        assertEquals(Discovery.NotMimos, discover(WEB, site(instance = { html() })))
+        assertEquals(Discovery.NotMimos, discoverInRelease(WEB, site(runtimeConfig = { html() })))
+        assertEquals(Discovery.NotMimos, discoverInRelease(WEB, site(instance = { html() })))
     }
 
     @Test
     fun `a site that cannot be reached or fails is unreachable`() = runTest {
         val refused = MockEngine { throw IOException("Connection refused") }
-        assertEquals(Discovery.Unreachable, discover(WEB, refused))
+        assertEquals(Discovery.Unreachable, discoverInRelease(WEB, refused))
         assertEquals(
             Discovery.Unreachable,
-            discover(WEB, site(runtimeConfig = { respondError(HttpStatusCode.BadGateway) })),
+            discoverInRelease(
+                WEB,
+                site(runtimeConfig = { respondError(HttpStatusCode.BadGateway) }),
+            ),
         )
         assertEquals(
             Discovery.Unreachable,
-            discover(WEB, site(instance = { respondError(HttpStatusCode.ServiceUnavailable) })),
+            discoverInRelease(
+                WEB,
+                site(instance = { respondError(HttpStatusCode.ServiceUnavailable) }),
+            ),
         )
     }
 
@@ -144,7 +184,7 @@ class DiscoveryTest {
     fun `a server without getInstance is too old`() = runTest {
         assertEquals(
             Discovery.ServerTooOld(null),
-            discover(WEB, site(instance = { json(problem404, HttpStatusCode.NotFound) })),
+            discoverInRelease(WEB, site(instance = { json(problem404, HttpStatusCode.NotFound) })),
         )
     }
 
@@ -152,7 +192,7 @@ class DiscoveryTest {
     fun `a server older than the app supports is too old`() = runTest {
         assertEquals(
             Discovery.ServerTooOld(Version(0, 9, 2)),
-            discover(
+            discoverInRelease(
                 WEB,
                 site(instance = { json(instanceJson("0.9.2")) }),
                 minServerVersion = Version(1, 0, 0),
@@ -164,7 +204,7 @@ class DiscoveryTest {
     fun `an app older than the server supports is too old`() = runTest {
         assertEquals(
             Discovery.AppTooOld(Version(2, 0, 0)),
-            discover(
+            discoverInRelease(
                 WEB,
                 site(instance = { json(instanceJson(minAppVersion = "2.0.0")) }),
                 appVersion = Version(1, 9, 9),
@@ -179,18 +219,29 @@ class DiscoveryTest {
             requests += request
             json(runtimeConfigJson)
         }
-        assertEquals(InsecureAddress, discover("http://mimos.example.com", engine))
+        assertEquals(InsecureAddress, discoverInRelease("http://mimos.example.com", engine))
         assertTrue(requests.isEmpty())
     }
 
     @Test
-    fun `an instance whose API is plain http is refused`() = runTest {
+    fun `an instance whose API is plain http is a misconfigured server`() = runTest {
         val insecureApi = runtimeConfigJson.replace("\"$API/\"", "\"http://api.mimos.example.com\"")
-        assertEquals(InsecureAddress, discover(WEB, site(runtimeConfig = { json(insecureApi) })))
+        assertEquals(
+            Discovery.InsecureServer,
+            discoverInRelease(WEB, site(runtimeConfig = { json(insecureApi) })),
+        )
     }
 
     @Test
+    fun `an instance whose API is plain localhost http is a misconfigured server in a release build`() =
+        runTest {
+            val localApi = runtimeConfigJson.replace("\"$API/\"", "\"http://localhost:8080\"")
+            val engine = site(runtimeConfig = { json(localApi) })
+            assertEquals(Discovery.InsecureServer, discoverInRelease(WEB, engine))
+        }
+
+    @Test
     fun `something that is not a web address is refused`() = runTest {
-        assertEquals(InvalidAddress, discover("not a web address", site()))
+        assertEquals(InvalidAddress, discoverInRelease("not a web address", site()))
     }
 }

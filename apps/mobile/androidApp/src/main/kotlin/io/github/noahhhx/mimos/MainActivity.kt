@@ -1,5 +1,6 @@
 package io.github.noahhhx.mimos
 
+import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,6 +11,7 @@ private val engine by lazy { OkHttp.create() }
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { App(SharedPreferencesInstanceStore(applicationContext), engine) }
+        val debuggable = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+        setContent { App(SharedPreferencesInstanceStore(applicationContext), engine, debuggable) }
     }
 }

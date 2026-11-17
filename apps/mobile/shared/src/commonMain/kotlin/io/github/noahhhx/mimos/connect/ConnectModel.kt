@@ -7,9 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/** Where the connect screen is. */
 sealed interface ConnectState {
-    /** Not connected: the address form shows [text]. */
     sealed interface Addressing : ConnectState {
         val text: String
     }
@@ -23,7 +21,6 @@ sealed interface ConnectState {
     data class Connected(val instance: Instance) : ConnectState
 }
 
-/** The connect screen: type a web address, connect to it, and disconnect again. */
 class ConnectModel(
     private val store: InstanceStore,
     private val discover: suspend (String) -> Discovery,
