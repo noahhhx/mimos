@@ -5,7 +5,6 @@
 mvnw
 mvnw.cmd
 docs
-deploy/aws
 deploy/docker
 site
 **/target

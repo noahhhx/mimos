@@ -9,12 +9,15 @@ change** — an out-of-date AGENTS.md is worse than none.
 
 1. **Self-hosted parity.** `deploy/docker` must bring up the entire product
    (backend, frontend, auth, database) with no code changes. Any change that
-   only works on AWS is rejected. CI runs the self-hosted path on every PR.
-2. **Cloud-ready, not cloud-locked.** AWS is the scale target, so prefer
-   choices that are portable: containerized services, Postgres, S3-compatible
-   object storage, standard OIDC. AWS-native services are allowed when the
-   underlying interface is portable (RDS) or hidden behind an internal
-   abstraction; never when they leak into domain code.
+   only works on a particular cloud provider is rejected. CI runs the
+   self-hosted path on every PR.
+2. **No cloud provider dependency.** Mimos relies on no provider's
+   services, AWS included; a hosted instance runs the same published images
+   through `deploy/selfhost` as a home server does. Use only standard,
+   self-hostable pieces: containers, Postgres, an S3-compatible API,
+   standard OIDC. An operator may point Mimos at a managed service that
+   speaks one of those interfaces; nothing in the repo may require one or
+   call a provider's own API. See ADR-0031.
 3. **Plugins are a product surface.** Every significant design decision gets
    judged against: "could a third party build the country-picker plugin
    without modifying core?" (see below).
@@ -42,7 +45,7 @@ change** — an out-of-date AGENTS.md is worse than none.
 | Config     | 12-factor: environment variables + Spring profiles. `local` profile is the default and must always work. |
 | Runtime    | Docker. Every deployable (API, web, plugins) ships a Dockerfile that is built in CI; no bare-metal assumptions in app code. |
 | Docs       | MkDocs with Material; `mkdocs.yml` at repo root, source in `docs/`. The published site is the user guide only (using the app, self-hosting, writing plugins); contributor docs (`docs/design/`, `docs/harness/`, `docs/decisions/`, `docs/plans/`) stay in the repo and are kept off the site by `exclude_docs`. ADRs live in `docs/decisions/`. A build that takes more than one session gets a folder in `docs/plans/`: an `index.md` that tracks its work items, and one file per item. CI publishes the site from `main` to GitHub Pages (`https://noahhhx.github.io/mimos/`, the `site_url`), and the web home page links to it. Styled as Evening Kitchen by `docs/assets/stylesheets/mimos.css` only: no template overrides or hooks (see "Documentation site" in `docs/design/index.md`). |
-| Deploy     | Build-from-source and CI parity via `deploy/docker` (compose); servers run the published images via `deploy/selfhost` (compose, production-mode Keycloak, operator's TLS proxy); AWS via IaC in `deploy/aws`. No click-ops. |
+| Deploy     | Build-from-source and CI parity via `deploy/docker` (compose); servers run the published images via `deploy/selfhost` (compose, production-mode Keycloak, operator's TLS proxy); no provider-specific deployment: a hosted instance is `deploy/selfhost` on any servers (ADR-0031). No click-ops. |
 | Images     | CI publishes `ghcr.io/noahhhx/mimos-{api,web,keycloak,country-week}` (amd64) after every other job passes: `main` + `sha-*` from main, semver + `latest` from `v*` tags. Images carry no deployment-specific config. See ADR-0012. |
 | Training and fuel | Per-person daily fuel targets in `core/core-fueling`, off until a person turns them on. Calories are an energy-availability level times fat-free mass plus exercise energy (45 kcal/kg FFM to fuel training, 40 and 35 to lose weight, 50 to gain). Carbs follow published g/kg ranges by the day's training duration, protein is set in g/kg, and fat takes the remainder within 20–35% of calories. Targets are calculated when read, never stored. Training comes from intervals.icu (`integrations/intervals-icu`: a personal API key encrypted under `MIMOS_SECRET_KEY`, polled, feature-gated by `mimos.intervals-icu.enabled`; connected, refreshed, and disconnected in the Fuel page's intervals.icu section, which also offers its weight, sex, and FTP as suggestions for the profile) or is entered by hand. Shown as "Fuel for the day" with no scoring: on the plan page's ledger (ADR-0028), the Mine view (and a household of one) has a Training row and a Planned row of each day's calories against it, and a selected day's inspector shows its training and a table of it and Planned, all read in one `GET /api/v1/me/fuel` for the week; sessions are added and removed in that inspector, and every change reloads that read. On the Log page, the week's totals table puts it under each day's logged totals, from the same read. Plugins never see any of it. Built as ROADMAP step 14 (done). See ADR-0022. |
 | Food products | Packaged food by barcode from Open Food Facts (open data, ODbL, no key): `GET /api/v1/food-products/{barcode}` (`lookUpFoodProduct`, an MCP tool), 8 to 14 digits or a 400, answers a name (`product_name`, else `generic_name`; none is a 404), the first brand, nutrition per 100 g or per 100 ml (each value absent when Open Food Facts lacks it), and a serving size in that unit when it has one. The API looks it up, never the browser, so Open Food Facts sees the server and the barcode only; `integrations/open-food-facts`, on by default and switched off by `mimos.open-food-facts.enabled` (a 404, and no call ever made). Nothing is cached or stored; a product is logged as an ad-hoc meal log. Open Food Facts not answering is a 502. The web shows a looked-up product as "From Open Food Facts". The Log page's "Scan a barcode" dialog (`ScanBarcode`, with the camera in `BarcodeCamera`) reads EAN and UPC codes from the rear camera in any browser with `getUserMedia` (a secure context): the browser's own `BarcodeDetector` when it reads a food format (`chooseDetector`), or else the `barcode-detector` ponyfill on `zxing-wasm` (Safari, Firefox), imported only when the dialog opens. It always offers a typed Barcode number (`apps/web/src/lib/barcode.ts`). A found product is picked into What and logged by amount like an ingredient. See ADR-0025. |
@@ -64,8 +67,6 @@ change** — an out-of-date AGENTS.md is worse than none.
 
 | Area                  | Status | Notes / decision criteria                                                                                                                              |
 | --------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| AWS compute (ECS vs EKS vs other) | Deferred | Decide when we deploy. Do not let app code depend on the answer. |
-| IaC tool (CDK vs Terraform) | Deferred | Decide with the AWS deploy work. |
 | Object storage        | Deferred | Recipe pictures (ADR-0023) keep their bytes in Postgres behind `PictureStore`, so no object store runs today. When a deployment needs one: S3-compatible API only, as another `PictureStore` (plus a migration that moves the bytes and the orphan sweep the seam's contract names). MinIO's community edition is archived upstream, so the local stand-in is open too. |
 | Docs generator        | Open | MkDocs has had no release since 1.6.1 (2024) and its 2.0 drops plugins and themes; Material for MkDocs is in maintenance mode (security fixes end around 2026-11). Its authors' successor, Zensical, reads `mkdocs.yml` and keeps Material's look as its `classic` variant. Decide whether and when to move; keep the docs theme CSS-only so the move stays cheap. Zensical does not support `exclude_docs` yet (on its backlog), so moving first means separating the contributor docs from the site's source, or they get published. |
 
@@ -449,9 +450,8 @@ mimos/
 │   └── harness/          # agent harness: deploy, drive, observe, debug the stack (docs/harness); fakes/ of third-party services
 └── deploy/
     ├── docker/           # compose: postgres, keycloak, api, web, plugin, (minio); compose.debug.yml and compose.fakes.yml overlays (harness only)
-    ├── selfhost/         # compose + .env.example for servers, from the published images (ADR-0012)
-    ├── keycloak/         # realm export, mimos login theme, Keycloak image (ADR-0010)
-    └── aws/              # IaC (tool TBD)
+    ├── selfhost/         # compose + .env.example for servers, from the published images (ADR-0012); also how any hosted instance runs (ADR-0031)
+    └── keycloak/         # realm export, mimos login theme, Keycloak image (ADR-0010)
 ```
 
 ## Conventions and defaults

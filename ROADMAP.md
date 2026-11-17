@@ -178,11 +178,11 @@ Rules for using this file:
     one. The `fuel-profile`, `fuel-targets`, and `intervals-icu`
     scenarios keep it so.
 
-15. **AWS deployment.** Resolve the deferred decisions (compute, IaC tool),
-    stand up `deploy/aws`, with the self-hosted path still the CI-checked
-    default.
-    *Done when: the stack runs on AWS from IaC alone, no click-ops, and the
-    compose path is untouched.*
+15. **Hosted instance.** Run a public instance from `deploy/selfhost`
+    itself, on any provider, with nothing provider-specific in the repo
+    (ADR-0031).
+    *Done when: the public instance runs the published images through
+    `deploy/selfhost` unchanged, so hosting and self-hosting are one path.*
 
 16. **Self-host release readiness.** Versioned images, documented upgrade
     path (pull and restart), backups story, and the plugin authoring docs.
