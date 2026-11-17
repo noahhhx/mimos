@@ -64,10 +64,16 @@ AVD gets it again) and never downloads anything at run time. Bump the URL
 and hash together.
 
 Chromium's first-run screens would block every flow, so `up` also writes
-`_ --disable-fre --no-default-browser-check --no-first-run` to
+`_ --disable-fre --no-default-browser-check --no-first-run
+--enable-features=AllowExternalIntentRequests` to
 `/data/local/tmp/chrome-command-line` (mode 644; the file belongs to
 `shell`, which is allowed there, so no `adb root`). Chromium reads it on a
-userdebug image. It shows a one-line toast saying so. Firefox (Fenix) was
+userdebug image. It shows a one-line toast saying so. The last switch is
+Cromite's "Allow forward URL requests to external intents", off by
+default: without it Cromite logs "Navigation is blocked" for the redirect
+to the app's own scheme (`io.github.noahhhx.mimos.oauth:`), the sign-in
+tab never returns, and AppAuth waits forever (found in item 04). Cromite
+reads it when it starts, so an old process needs a force-stop. Firefox (Fenix) was
 rejected: its onboarding wall needs taps first.
 
 ### Reaching the stack: `adb reverse`
