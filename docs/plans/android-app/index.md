@@ -39,7 +39,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 01 | [Scaffold, toolchain, and build gates](01-scaffold.md) | – | done (73a86f9) |
 | 02 | [A virtual device for agents](02-emulator.md) | 01 | done (60f3a16) |
 | 03 | [Generated client and instance discovery](03-client-and-discovery.md) | 01 | done (30ca9b9) |
-| 04 | [Sign-in and sign-up](04-sign-in.md) | 02, 03 | todo |
+| 04 | [Sign-in and sign-up](04-sign-in.md) | 02, 03 | done (SHA) |
 | 05 | [Evening Kitchen in Compose](05-design-system.md) | 01 | todo |
 | 06 | [Maestro flows and CI](06-flows-and-ci.md) | 04, 05 | todo |
 | 07 | [Recipes and pictures](07-recipes.md) | 06 | todo |
@@ -150,12 +150,22 @@ owner can overturn any of it:
   it. The connect screen emits its form from one call site for every
   `ConnectState.Addressing` state (item 03). Item 05's components should
   keep that shape.
-- The connect screen keeps its model in `remember`, so a connect in
-  flight is lost when the phone rotates; the stored instance survives.
-  Item 04 or 05 should hold screen models across configuration changes.
+- Models are held in `AppViewModel` since item 04, so a connect or a
+  sign-in in flight survives a rotation. New screen models belong in
+  `AppModel`, with their coroutines in its scope, not in `remember`.
 - The Kotlin client cannot read a binary body with `body()`
   (`getRecipePicture`); `.response.readRawBytes()` works. Multipart upload
   compiles but has not run against a server. Both are item 07's.
-- `/runtime-config.json` names `mimos-web` as its OIDC client. Item 04
-  signs in as `mimos-mobile`, so the app takes the authority from it and
-  its own client id.
+- `/runtime-config.json` names `mimos-web` as its OIDC client. The app takes
+  the authority from it and signs in as its own `mimos-mobile`
+  (`OIDC_CLIENT_ID`), so `InstanceConfig.oidcClientId` is unused.
+- Cromite blocks a redirect to an app's own scheme unless "Allow forward URL
+  requests to external intents" is on. The harness turns it on with a
+  command-line feature switch; an AVD that predates item 04 needs `harness
+  mobile up` and a force-stop of the browser. Item 06's flows depend on it.
+- Driving a Keycloak page with `adb input`: tap a field or Tab between
+  fields, type, and press Enter (keyevent 66). A tap at fixed coordinates
+  misses when the page's zoom differs.
+- AppAuth checks more than its docs say: it refuses an `http://` issuer
+  when validating the ID token (`setSkipIssuerHttpsCheck`, debug only) and
+  refuses `prompt` as an additional parameter.
