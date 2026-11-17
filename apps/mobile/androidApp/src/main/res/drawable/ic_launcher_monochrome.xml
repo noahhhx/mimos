@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Line art from brand_duck.png (only its alpha is used for themed icons), placed as the foreground. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/brand_duck_monochrome"
+    android:inset="18%" />

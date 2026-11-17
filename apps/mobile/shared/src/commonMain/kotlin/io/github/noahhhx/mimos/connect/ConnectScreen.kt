@@ -1,13 +1,16 @@
 package io.github.noahhhx.mimos.connect
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -16,8 +19,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -30,7 +35,7 @@ import io.github.noahhhx.mimos.APP_NAME
 import kotlinx.coroutines.launch
 
 @Composable
-fun ConnectScreen(model: ConnectModel) {
+fun ConnectScreen(model: ConnectModel, brandMark: Painter) {
     val state by model.state.collectAsState()
     val scope = rememberCoroutineScope()
     val connect: () -> Unit = { scope.launch { model.connect() } }
@@ -39,7 +44,14 @@ fun ConnectScreen(model: ConnectModel) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         val title = if (state is ConnectState.Connected) APP_NAME else "Connect to Mimos"
-        BasicText(title, style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            // Decorative, as on the web: the title beside it names the app.
+            Image(brandMark, contentDescription = null, modifier = Modifier.size(40.dp))
+            BasicText(title, style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold))
+        }
         when (val current = state) {
             is ConnectState.Connected -> {
                 BasicText("Connected to ${current.instance.config.webUrl.origin}")
