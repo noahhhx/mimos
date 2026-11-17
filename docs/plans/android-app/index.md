@@ -143,3 +143,19 @@ owner can overturn any of it:
 - Cromite shows a toast ("loading flags from a command-line file") when
   it opens, because of the command-line file `up` writes. A flow
   that opens the browser should expect it.
+- Compose drops a field's focus when the same field is emitted from two
+  branches of a `when`: the first keystroke after a failed connect moved
+  the screen from `Failed` to `Editing`, and the field lost every later
+  key. Unit tests of the state machine passed; only the emulator showed
+  it. The connect screen emits its form from one call site for every
+  `ConnectState.Addressing` state (item 03). Item 05's components should
+  keep that shape.
+- The connect screen keeps its model in `remember`, so a connect in
+  flight is lost when the phone rotates; the stored instance survives.
+  Item 04 or 05 should hold screen models across configuration changes.
+- The Kotlin client cannot read a binary body with `body()`
+  (`getRecipePicture`); `.response.readRawBytes()` works. Multipart upload
+  compiles but has not run against a server. Both are item 07's.
+- `/runtime-config.json` names `mimos-web` as its OIDC client. Item 04
+  signs in as `mimos-mobile`, so the app takes the authority from it and
+  its own client id.
