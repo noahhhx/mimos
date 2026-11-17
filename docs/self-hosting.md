@@ -255,3 +255,34 @@ console:
 
 The loopback redirect URIs have no port on purpose: Keycloak then accepts
 any port, which agents on your computer pick at random.
+
+## The Android app
+
+People can use Mimos from the Android app. They type your web address, the
+one they open in a browser, and sign in through Keycloak in their phone's
+browser as the `mimos-mobile` client, which the realm includes. The app
+needs your web, API, and Keycloak on HTTPS URLs, as the web app does (see
+[Why HTTPS](#why-https)).
+
+### Add the Android app client to an existing instance
+
+Keycloak imports the realm only on the first start, so an instance set up
+before the app has no `mimos-mobile` client. Add it in the admin console:
+
+1. Open `KEYCLOAK_PUBLIC_URL/admin`, sign in as an admin, and switch to the
+   `mimos` realm.
+2. Go to **Clients** and choose **Create client**.
+3. Set **Client ID** to `mimos-mobile` and choose **Next**.
+4. Leave **Client authentication** off. Under **Authentication flow**,
+   tick only **Standard flow**, then choose **Next**.
+5. Set **Valid redirect URIs** to
+   `io.github.noahhhx.mimos.oauth:/oauth2redirect`, then choose **Save**.
+   Open the client's **Settings** tab again and, under **Logout
+   settings**, set **Valid post logout redirect URIs** to the same value
+   and choose **Save**.
+6. Open the client's **Advanced** tab. Under **Advanced settings**, set
+   **Proof Key for Code Exchange Code Challenge Method** to `S256` and
+   choose **Save**.
+
+The redirect URI is the app's own, not a web address: Android hands it to
+the app when Keycloak redirects there. Leave **Web origins** empty.
