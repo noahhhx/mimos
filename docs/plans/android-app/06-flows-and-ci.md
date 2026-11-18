@@ -39,8 +39,8 @@ later item lands with a flow.
 
 ## Built
 
-What the item built. The local and emulator checks are recorded under
-"Verified"; the CI run is still pending.
+What the item built. The local, emulator, and CI checks are recorded
+under "Verified".
 
 - `harness mobile flow <name>` (`tools/harness/src/commands/mobile.ts`)
   runs `apps/mobile/flows/<name>.yaml`. It builds and installs nothing.
@@ -161,13 +161,17 @@ with the fakes:
 - A flow with an assertion on absent text opens its section with Maestro's
   `Assertion is false: ...` and keeps the failure screenshot.
 
-### Pending
+In CI, on PR #2 (run 44379730247), the `android-flows` job passed on its
+first run:
 
-The `android-flows` job's first green run and its wall time. Record both
-here. If the job adds more than about 10 minutes per PR, take the decision
-in the index to the owner.
+- The job took 12 min 47 s. Nix, devenv, and the npm install took
+  33 s from the cache, booting the stack and the emulator 7 min 5 s, and
+  both flows 2 min 21 s.
+- It runs beside the other jobs, so it costs a PR its lead over the
+  slowest of them, `compose` at 8 min 38 s: about 4 minutes. That is under
+  the 10-minute bar, so flows stay on every PR.
 
-To watch after that run:
+### To watch
 
 - The Nix cache entry. Saves happen on `main` only, capped at 8 GB, with
   no purge, and GitHub keeps 10 GB of cache per repository. Check its size
