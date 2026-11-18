@@ -18,7 +18,7 @@ import io.ktor.client.engine.okhttp.OkHttp
  */
 class AppViewModel(application: Application, debuggable: Boolean) : AndroidViewModel(application) {
     val browser = BrowserLauncher()
-    val engine = OkHttp.create()
+    val engine = OkHttp.create { if (debuggable) addInterceptor(RequestLog()) }
     private val theme = ThemeModel(SharedPreferencesThemeStore(application))
 
     val app =
