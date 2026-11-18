@@ -1,3 +1,6 @@
+import io.github.noahhhx.mimos.gradle.GENERATE_DESIGN_TOKENS
+import io.github.noahhhx.mimos.gradle.GenerateDesignTokens
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
@@ -8,6 +11,7 @@ plugins {
     // so androidApp's lint (checkDependencies) reads commonMain.
     alias(libs.plugins.android.lint)
     alias(libs.plugins.openapi.generator)
+    id("mimos.design-tokens")
 }
 
 val (compileSdkMajor, compileSdkMinor) =
@@ -48,6 +52,9 @@ kotlin {
                 }
             )
             kotlin.srcDir(generateAppVersion.map { generatedVersion.get() })
+            kotlin.srcDir(
+                tasks.named<GenerateDesignTokens>(GENERATE_DESIGN_TOKENS).flatMap { it.outputDir }
+            )
         }
         commonMain.dependencies {
             api(libs.ktor.client.core)

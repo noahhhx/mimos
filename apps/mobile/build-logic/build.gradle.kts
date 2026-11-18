@@ -6,6 +6,10 @@ gradlePlugin {
             id = "mimos.no-play-services"
             implementationClass = "io.github.noahhhx.mimos.gradle.NoPlayServicesPlugin"
         }
+        create("designTokens") {
+            id = "mimos.design-tokens"
+            implementationClass = "io.github.noahhhx.mimos.gradle.DesignTokensPlugin"
+        }
     }
 }
 
