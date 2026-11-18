@@ -82,10 +82,7 @@ fun MimosDialog(
 fun BottomSheet(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     Overlay(onDismiss, Alignment.BottomCenter) {
         Panel(Modifier.fillMaxWidth(), PaddingValues(top = 2.dp)) {
-            Column(
-                Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.m),
-            ) {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
                 content()
                 Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.safeDrawing))
             }

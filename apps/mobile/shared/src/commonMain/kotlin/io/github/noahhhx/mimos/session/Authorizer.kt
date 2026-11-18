@@ -6,9 +6,6 @@ const val OIDC_CLIENT_ID = "mimos-mobile"
 /** The redirect Keycloak sends the browser back to, for sign-in and for ending the session. */
 const val OIDC_REDIRECT_URI = "io.github.noahhhx.mimos.oauth:/oauth2redirect"
 
-/** The theme sent to Keycloak's pages as `mimos_theme` (ADR-0021). The theme toggle replaces it. */
-const val AUTH_THEME = "light"
-
 enum class AuthorizeKind {
     SignIn,
     CreateAccount,

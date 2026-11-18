@@ -2,6 +2,9 @@
 
 package io.github.noahhhx.mimos.session
 
+import io.github.noahhhx.mimos.ui.MemoryThemeStore
+import io.github.noahhhx.mimos.ui.ThemeChoice
+import io.github.noahhhx.mimos.ui.ThemeModel
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -68,7 +71,8 @@ private class Rig(
     scope: CoroutineScope,
 ) {
     val store = MemoryTokenStore(stored)
-    val model = SessionModel(authorizer, store, scope, clock)
+    val theme = ThemeModel(MemoryThemeStore())
+    val model = SessionModel(authorizer, store, { theme.authTheme }, scope, clock)
     val state
         get() = model.state.value
 }
@@ -91,7 +95,7 @@ class SessionModelTest {
             rig.model.signIn()
             runCurrent()
             assertEquals(SessionState.SigningIn, rig.state)
-            assertEquals(listOf(AuthorizeKind.SignIn to AUTH_THEME), rig.authorizer.authorized)
+            assertEquals(listOf(AuthorizeKind.SignIn to "light"), rig.authorizer.authorized)
             rig.authorizer.authorizeAnswer.complete(AuthorizeResult.Granted(tokens("a")))
             runCurrent()
             assertEquals(SessionState.SignedIn(tokens("a")), rig.state)
@@ -105,7 +109,17 @@ class SessionModelTest {
         runCurrent()
         rig.model.createAccount()
         runCurrent()
-        assertEquals(listOf(AuthorizeKind.CreateAccount to AUTH_THEME), rig.authorizer.authorized)
+        assertEquals(listOf(AuthorizeKind.CreateAccount to "light"), rig.authorizer.authorized)
+    }
+
+    @Test
+    fun `keycloak's pages are asked for the theme chosen in the app`() = runTest {
+        val rig = Rig(scope = backgroundScope)
+        runCurrent()
+        rig.theme.choose(ThemeChoice.Dark)
+        rig.model.createAccount()
+        runCurrent()
+        assertEquals(listOf(AuthorizeKind.CreateAccount to "dark"), rig.authorizer.authorized)
     }
 
     @Test

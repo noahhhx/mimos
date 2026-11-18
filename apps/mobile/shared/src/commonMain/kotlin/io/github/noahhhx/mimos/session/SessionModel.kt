@@ -17,6 +17,10 @@ import kotlinx.coroutines.sync.withLock
 class SessionModel(
     private val authorizer: Authorizer,
     private val store: TokenStore,
+    /**
+     * The theme to send Keycloak's pages as `mimos_theme`, read when a sign-in starts (ADR-0021).
+     */
+    private val authTheme: () -> String,
     private val scope: CoroutineScope,
     private val clock: Clock = Clock.System,
 ) {
@@ -121,7 +125,7 @@ class SessionModel(
         if (from !is SessionState.SignedOut) return
         if (!mutableState.compareAndSet(from, SessionState.SigningIn)) return
         scope.launch {
-            when (val result = authorizer.authorize(kind, AUTH_THEME)) {
+            when (val result = authorizer.authorize(kind, authTheme())) {
                 is AuthorizeResult.Granted -> {
                     if (
                         settle(SessionState.SignedIn(result.tokens), from = SessionState.SigningIn)
