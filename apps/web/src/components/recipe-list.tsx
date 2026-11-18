@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import type { RecipeSummary } from "@mimos/api-client";
 
+import { StarRating } from "@/components/star-rating";
 import { formatServings } from "@/lib/format";
 
 /**
@@ -35,6 +36,8 @@ export function RecipeList({
             )}
           </div>
           <p className="recipe-list-meta">
+            <StarRating rating={recipe.rating} />
+            {recipe.rating !== undefined ? " · " : ""}
             {formatServings(recipe.servings)}
             {recipe.nutrition?.calories != null ? ` · ${Math.round(recipe.nutrition.calories)} kcal` : ""}
           </p>
