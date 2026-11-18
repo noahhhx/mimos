@@ -5,6 +5,7 @@ import android.content.pm.ApplicationInfo
 import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -57,11 +58,21 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+        // The system's back button steps back through a followed recipe trail, and otherwise
+        // leaves the app as usual.
+        val back =
+            object : OnBackPressedCallback(false) {
+                override fun handleOnBackPressed() {
+                    models.app.goBack()
+                }
+            }
+        onBackPressedDispatcher.addCallback(this, back)
+        lifecycleScope.launch { models.app.canGoBack.collect { back.isEnabled = it } }
         if (savedInstanceState == null && intent.getBooleanExtra(EXTRA_GALLERY, false)) {
             models.app.openGallery()
         }
         setContent {
-            App(models.app, models.engine, brandMark = painterResource(R.drawable.brand_duck))
+            App(models.app, brandMark = painterResource(R.drawable.brand_duck))
         }
     }
 

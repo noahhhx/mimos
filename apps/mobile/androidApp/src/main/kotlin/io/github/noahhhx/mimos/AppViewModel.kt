@@ -30,6 +30,8 @@ class AppViewModel(application: Application, debuggable: Boolean) : AndroidViewM
                 },
             theme = theme,
             debug = debuggable,
+            engine = engine,
+            recipeSortStore = SharedPreferencesRecipeSortStore(application),
             createSession = { instance ->
                 SessionModel(
                     authorizer =

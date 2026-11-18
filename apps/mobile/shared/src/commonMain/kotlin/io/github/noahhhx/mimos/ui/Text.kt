@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 
 /** Text in the theme's body style and `fg`; pass a style and colour for anything else. */
@@ -20,11 +21,14 @@ fun Text(
     style: TextStyle = MimosTheme.typography.body,
     color: Color = MimosTheme.colors.fg,
     textAlign: TextAlign? = null,
+    maxLines: Int = Int.MAX_VALUE,
 ) {
     BasicText(
         text,
         modifier,
         style = style.copy(color = color, textAlign = textAlign ?: style.textAlign),
+        overflow = TextOverflow.Ellipsis,
+        maxLines = maxLines,
     )
 }
 

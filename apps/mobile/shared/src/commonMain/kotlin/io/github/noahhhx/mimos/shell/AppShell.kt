@@ -22,6 +22,8 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.dp
+import io.github.noahhhx.mimos.recipes.RecipesModel
+import io.github.noahhhx.mimos.recipes.RecipesScreen
 import io.github.noahhhx.mimos.ui.BottomSheet
 import io.github.noahhhx.mimos.ui.Brand
 import io.github.noahhhx.mimos.ui.Button
@@ -53,6 +55,7 @@ class ShellActions(
 @Composable
 fun AppShell(
     shell: ShellModel,
+    recipes: RecipesModel,
     theme: ThemeModel,
     profile: Profile,
     webOrigin: String,
@@ -70,15 +73,19 @@ fun AppShell(
         )
         Rule()
         Box(Modifier.weight(1f).fillMaxWidth()) {
-            Column(
-                Modifier.fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(
-                        horizontal = MimosTheme.spacing.page,
-                        vertical = MimosTheme.spacing.xxl,
-                    )
-            ) {
-                ComingToTheApp(destination, webOrigin)
+            when (destination) {
+                Destination.Recipes -> RecipesScreen(recipes, webOrigin)
+                else ->
+                    Column(
+                        Modifier.fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(
+                                horizontal = MimosTheme.spacing.page,
+                                vertical = MimosTheme.spacing.xxl,
+                            )
+                    ) {
+                        ComingToTheApp(destination, webOrigin)
+                    }
             }
         }
         TabBar(selected = destination, onSelect = shell::go)

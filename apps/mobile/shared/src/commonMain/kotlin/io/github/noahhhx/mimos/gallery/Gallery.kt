@@ -40,6 +40,8 @@ import io.github.noahhhx.mimos.ui.Notice
 import io.github.noahhhx.mimos.ui.NoticeKind
 import io.github.noahhhx.mimos.ui.PageHeader
 import io.github.noahhhx.mimos.ui.ProfileGlyph
+import io.github.noahhhx.mimos.ui.Tabs
+import io.github.noahhhx.mimos.ui.Tag
 import io.github.noahhhx.mimos.ui.Text
 import io.github.noahhhx.mimos.ui.TextField
 import io.github.noahhhx.mimos.ui.ThemeGlyph
@@ -58,6 +60,7 @@ fun Gallery(theme: ThemeModel, brandMark: Painter, onClose: () -> Unit) {
     var dialog by remember { mutableStateOf(false) }
     var sheet by remember { mutableStateOf(false) }
     var tab by remember { mutableStateOf(Destination.Plan) }
+    var pageTab by remember { mutableStateOf(0) }
     var field by rememberSaveable { mutableStateOf("mimos.example.com") }
     var broken by rememberSaveable { mutableStateOf("mimos") }
     Column(
@@ -104,6 +107,7 @@ fun Gallery(theme: ThemeModel, brandMark: Painter, onClose: () -> Unit) {
             style = type.body.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
         )
         Label("Label, eyebrow and section heading")
+        Text("Cook text: ingredients and steps, 20", style = type.cook)
 
         Section("Buttons")
         Row(horizontalArrangement = Arrangement.spacedBy(MimosTheme.spacing.s)) {
@@ -165,6 +169,18 @@ fun Gallery(theme: ThemeModel, brandMark: Painter, onClose: () -> Unit) {
 
         Section("Tab bar")
         TabBar(selected = tab, onSelect = { tab = it })
+
+        Section("Tabs and tags")
+        Tabs(
+            listOf("My recipes (3)", "Library (13)"),
+            selected = pageTab,
+            onSelect = { pageTab = it },
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(MimosTheme.spacing.xs)) {
+            Tag("breakfast")
+            Tag("vegetarian")
+            Tag("quick")
+        }
 
         Section("Dialog and bottom sheet")
         Row(horizontalArrangement = Arrangement.spacedBy(MimosTheme.spacing.s)) {

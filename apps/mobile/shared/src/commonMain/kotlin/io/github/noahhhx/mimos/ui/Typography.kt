@@ -43,6 +43,11 @@ data class MimosTypography(
     val input: TextStyle,
     /** A tab's label: 15. */
     val tab: TextStyle,
+    /**
+     * Ingredients and steps while cooking: 20, so they read at arm's length. The web's cook view
+     * uses its body size; a phone propped on a counter is further away.
+     */
+    val cook: TextStyle,
 )
 
 private val letterSpacedLabel = 0.12.em
@@ -129,6 +134,7 @@ internal fun rememberMimosTypography(): MimosTypography {
                 body.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold, lineHeight = 1.2.em),
             input = body.copy(fontSize = 16.sp, lineHeight = 1.3.em),
             tab = body.copy(fontSize = 15.sp, lineHeight = 1.2.em),
+            cook = body.copy(fontSize = 20.sp, lineHeight = 1.4.em),
         )
     }
 }

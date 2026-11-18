@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -12,7 +11,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
 import io.github.noahhhx.mimos.api.apis.MeApi
-import io.github.noahhhx.mimos.client.MimosHttp
 import io.github.noahhhx.mimos.connect.ConnectScreen
 import io.github.noahhhx.mimos.connect.ConnectState
 import io.github.noahhhx.mimos.gallery.Gallery
@@ -21,7 +19,6 @@ import io.github.noahhhx.mimos.shell.AppShell
 import io.github.noahhhx.mimos.shell.Profile
 import io.github.noahhhx.mimos.shell.ShellActions
 import io.github.noahhhx.mimos.ui.MimosTheme
-import io.ktor.client.engine.HttpClientEngine
 import kotlinx.coroutines.CancellationException
 
 const val APP_NAME = "Mimos"
@@ -31,7 +28,7 @@ const val APP_NAME = "Mimos"
  * supplies it from its own resources.
  */
 @Composable
-fun App(model: AppModel, engine: HttpClientEngine, brandMark: Painter) {
+fun App(model: AppModel, brandMark: Painter) {
     val theme by model.theme.state.collectAsState()
     val gallery by model.gallery.collectAsState()
     MimosTheme(theme) {
@@ -39,24 +36,20 @@ fun App(model: AppModel, engine: HttpClientEngine, brandMark: Painter) {
             if (gallery) {
                 Gallery(model.theme, brandMark, onClose = model::closeGallery)
             } else {
-                Connection(model, engine, brandMark)
+                Connection(model, brandMark)
             }
         }
     }
 }
 
 @Composable
-private fun Connection(model: AppModel, engine: HttpClientEngine, brandMark: Painter) {
+private fun Connection(model: AppModel, brandMark: Painter) {
     when (val connected = model.connect.state.collectAsState().value) {
         is ConnectState.Addressing -> ConnectScreen(model.connect, brandMark, model::connect)
         is ConnectState.Connected -> {
             val instance = connected.instance
             val session = remember(instance) { model.session(instance) }
-            val http =
-                remember(instance) {
-                    MimosHttp(engine, instance.config.apiUrl, session::accessToken)
-                }
-            DisposableEffect(http) { onDispose(http::close) }
+            val http = remember(instance) { model.http(instance) }
             SessionScreen(
                 session,
                 instance,
@@ -80,6 +73,7 @@ private fun Connection(model: AppModel, engine: HttpClientEngine, brandMark: Pai
                     }
                 AppShell(
                     shell = model.shell,
+                    recipes = model.recipes,
                     theme = model.theme,
                     profile = profile,
                     webOrigin = instance.config.webUrl.origin,
