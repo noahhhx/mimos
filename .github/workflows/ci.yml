@@ -316,13 +316,103 @@ jobs:
         if: always()
         run: docker compose -f deploy/docker/compose.yml -f deploy/docker/compose.fakes.yml down -v --remove-orphans
 
+  android-flows:
+    name: Android flows (emulator)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+
+      # The emulator needs KVM, and the runner's /dev/kvm is not open to its user.
+      - name: Open /dev/kvm to the runner
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: cachix/install-nix-action@v31
+
+      - uses: cachix/cachix-action@v16
+        with:
+          name: devenv
+
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('devenv.nix', 'devenv.lock', 'devenv.yaml', 'apps/mobile/gradle/libs.versions.toml') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          gc-max-store-size-linux: 8G
+          save: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Install devenv
+        run: nix profile install nixpkgs#devenv
+
+      # Basic is the open-source (MIT) cache; the default provider is proprietary.
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+
+      - name: Install the npm workspace in the devenv shell
+        run: devenv shell -- npm ci
+
+      - name: Boot the stack and the emulator
+        timeout-minutes: 25
+        run: |
+          devenv shell -- harness up
+          devenv shell -- harness mobile up --run latest
+
+      - name: Android flows
+        timeout-minutes: 20
+        env:
+          KNOWN_FAILING: ""
+        run: |
+          failed=0
+          for file in apps/mobile/flows/*.yaml; do
+            name=$(basename "$file" .yaml)
+            if devenv shell -- harness mobile flow "$name" --run latest; then outcome=passed; else outcome=failed; fi
+            if [[ " $KNOWN_FAILING " == *" $name "* ]]; then
+              if [ "$outcome" = passed ]; then
+                echo "::error::flow $name passed but is listed in KNOWN_FAILING; remove it from the list"
+                failed=1
+              else
+                echo "::warning::flow $name failed as expected (KNOWN_FAILING)"
+              fi
+            elif [ "$outcome" = failed ]; then
+              echo "::error::flow $name failed; see the harness-runs-android artifact, summary.md first"
+              failed=1
+            fi
+          done
+          exit $failed
+
+      - name: Add the run summary to the job
+        if: always()
+        run: '[ -f .harness/runs/latest/summary.md ] && cat .harness/runs/latest/summary.md >> "$GITHUB_STEP_SUMMARY" || true'
+
+      - name: Upload harness evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harness-runs-android
+          # `latest` is a symlink to the run; leave it out so the run is not uploaded twice.
+          path: |
+            .harness/runs/
+            !.harness/runs/latest
+          include-hidden-files: true
+          if-no-files-found: ignore
+
+      - name: Tear down
+        if: always()
+        run: |
+          devenv shell -- harness mobile down || true
+          docker compose -f deploy/docker/compose.yml -f deploy/docker/compose.fakes.yml down -v --remove-orphans
+
   # Images for self-hosting (ADR-0012, deploy/selfhost): only what passed
   # every job above. main publishes `main` and `sha-<commit>`; a release tag
   # v1.2.3 publishes `1.2.3`, `1.2` and `latest`.
   publish:
     name: Publish images (${{ matrix.image }})
     if: github.event_name == 'push'
-    needs: [build, docs, clients, android, compose]
+    needs: [build, docs, clients, android, compose, android-flows]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
