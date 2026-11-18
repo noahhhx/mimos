@@ -41,7 +41,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 03 | [Generated client and instance discovery](03-client-and-discovery.md) | 01 | done (30ca9b9) |
 | 04 | [Sign-in and sign-up](04-sign-in.md) | 02, 03 | done (cc91ea8) |
 | 05 | [Evening Kitchen in Compose](05-design-system.md) | 01 | done (6577f8b) |
-| 06 | [Maestro flows and CI](06-flows-and-ci.md) | 04, 05 | todo |
+| 06 | [Maestro flows and CI](06-flows-and-ci.md) | 04, 05 | done (43e67dc) |
 | 07 | [Recipes and pictures](07-recipes.md) | 06 | todo |
 | 08 | [The week's plan](08-plan.md) **Review** | 07 | todo |
 | 09 | [Plugins: page, suggestions, week panels](09-plugins.md) | 08 | todo |
@@ -90,7 +90,8 @@ owner can overturn any of it:
 - App and server share one version and release on the same `v*` tag.
 - The app works online only until item 18.
 - Flows run on every PR in CI. If the emulator job costs too much (item 06
-  measures it), they move to main and tags only.
+  measures it), they move to main and tags only. Item 06 measured about 4 minutes added
+  per PR, so they stay on every PR.
 
 ## Settled by the owner's grant
 
