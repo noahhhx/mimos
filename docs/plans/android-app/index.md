@@ -169,3 +169,28 @@ owner can overturn any of it:
 - AppAuth checks more than its docs say: it refuses an `http://` issuer
   when validating the ID token (`setSkipIssuerHttpsCheck`, debug only) and
   refuses `prompt` as an additional parameter.
+- Compose Resources only packages a KMP library's files when its
+  `android {}` block has `androidResources { enable = true }`. Without it
+  the build passes and the fonts silently fall back to Roboto. Check a
+  screenshot, not the build, after touching resources.
+- `woff2_decompress` writes the `.ttf` next to its input, in the web's
+  `src/fonts/`. Run it on copies (the README's "Mobile" does).
+- Newsreader is variable in `opsz` as well as `wght`. Setting
+  `FontVariation.weight` and `opticalSizing` per style renders correctly on
+  API 36; the weights differ visibly (Public Sans 400 against 600).
+- A Compose `Dialog` window fades in by default. Setting its window
+  animations to `android.R.style.Animation` (the empty style) turns that
+  off; `dumpsys window` shows `wanim=0x1030000` on the dialog's window.
+  The dialog's window also reports 84px surface insets, which draw
+  nothing here because the content fills the window.
+- The compose stack left running from an earlier session was built before
+  `/runtime-config.json` existed, so the connect screen said the address
+  "does not answer as Mimos". `harness up` rebuilds; item 06 should
+  start from it.
+- A typed `localhost:3000` is read as `https://localhost:3000`; debug
+  builds accept `http://` only when it is typed.
+- The splash and first frame use the activity theme's light window colour
+  before `MainActivity` sets the chosen theme's `bg`. A dark-theme user may
+  see a light flash at cold start; a night-neutral splash theme would fix it
+  if it matters.
+
