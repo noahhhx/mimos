@@ -289,6 +289,24 @@ class ExportFixturesTests extends ApiIntegrationTestSupport {
         assertThat(exported.get(2).get("added").asBoolean()).isTrue();
     }
 
+    @Test
+    void version9RestoresRecipeRatings() {
+        RestClient api = api();
+        String token = accessToken(createUser());
+
+        importFixture(api, token, 9);
+
+        JsonNode recipes = get(api, token, "/api/v1/recipes");
+        long rated = 0;
+        for (JsonNode recipe : recipes) {
+            if (recipe.has("rating")) {
+                rated++;
+                assertThat(recipe.get("rating").asInt()).isEqualTo(4);
+            }
+        }
+        assertThat(rated).isEqualTo(1);
+    }
+
     private JsonNode importFixture(RestClient api, String token, int version) {
         JsonNode document;
         try (InputStream in = new ClassPathResource(fixturePath(version)).getInputStream()) {

@@ -185,6 +185,7 @@ public class AccountExporter {
                                 .data(pictures.content(householdId, recipe.id(), picture.id())
                                         .bytes()))
                         .toList())
+                .rating(recipe.rating())
                 .createdAt(toOffset(recipe.createdAt()))
                 .updatedAt(toOffset(recipe.updatedAt()));
     }

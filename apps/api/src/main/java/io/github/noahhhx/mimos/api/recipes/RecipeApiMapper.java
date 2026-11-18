@@ -38,7 +38,8 @@ public final class RecipeApiMapper {
                 .createdAt(recipe.createdAt().atOffset(ZoneOffset.UTC))
                 .updatedAt(recipe.updatedAt().atOffset(ZoneOffset.UTC))
                 .tags(recipe.tags())
-                .nutrition(toApiNutrition(recipe.nutrition()));
+                .nutrition(toApiNutrition(recipe.nutrition()))
+                .rating(recipe.rating());
     }
 
     /** A recipe with its pictures, which every detail carries (library recipes have none). */
@@ -53,6 +54,7 @@ public final class RecipeApiMapper {
                 .cookMinutes(recipe.cookMinutes())
                 .isLibrary(recipe.isLibrary())
                 .tags(recipe.tags())
+                .rating(recipe.rating())
                 .nutrition(toApiNutrition(recipe.nutrition()))
                 .nutritionSource(toApiSource(recipe.nutritionSource()))
                 .ingredients(toApiIngredients(recipe.ingredients()))

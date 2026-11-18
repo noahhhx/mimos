@@ -11,6 +11,8 @@ import org.jspecify.annotations.Nullable;
  * created it (null when that profile is gone, and for library recipes).
  * Nutrition is per serving: typed in, or calculated from the ingredient
  * lines when the source is {@link NutritionSource#INGREDIENTS} (ADR-0015).
+ * The household's star rating (1 to 5) is null until set and always null for
+ * library recipes (ADR-0035).
  */
 public record Recipe(
         UUID id,
@@ -28,7 +30,8 @@ public record Recipe(
         List<Ingredient> ingredients,
         List<RecipeStep> steps,
         Instant createdAt,
-        Instant updatedAt) {
+        Instant updatedAt,
+        @Nullable Integer rating) {
 
     public boolean isLibrary() {
         return ownerId == null;

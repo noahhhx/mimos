@@ -114,7 +114,8 @@ public class LibrarySeeder implements ApplicationRunner {
                         .toList(),
                 seed.steps().stream().map(RecipeStep::new).toList(),
                 createdAt,
-                clock.instant());
+                clock.instant(),
+                null);
     }
 
     private List<LibrarySeed> readSeeds() {

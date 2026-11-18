@@ -34,6 +34,8 @@ public class RecipeService {
     static final int MAX_STEPS = 50;
     static final int MAX_TAGS = 12;
     static final int MAX_TAG_LENGTH = 30;
+    static final int MIN_RATING = 1;
+    static final int MAX_RATING = 5;
 
     private final RecipeRepository repository;
     private final IngredientService ingredients;
@@ -77,6 +79,21 @@ public class RecipeService {
                 existing.createdAt(),
                 clock.instant(),
                 false);
+    }
+
+    /**
+     * Sets or clears the household's star rating of a personal recipe
+     * (ADR-0035). Last write wins, and the recipe's {@code updatedAt} stays:
+     * a rating is not a field the form saves.
+     */
+    @Transactional
+    public Recipe rate(UUID ownerId, UUID recipeId, @Nullable Integer rating) {
+        Recipe existing = requireOwned(ownerId, recipeId);
+        if (rating != null && (rating < MIN_RATING || rating > MAX_RATING)) {
+            throw new IllegalArgumentException("rating must be between " + MIN_RATING + " and " + MAX_RATING);
+        }
+        repository.setRating(existing.id(), rating);
+        return repository.findById(existing.id()).orElseThrow();
     }
 
     /**
@@ -125,7 +142,8 @@ public class RecipeService {
                 draft.ingredients(),
                 draft.steps(),
                 createdAt,
-                updatedAt);
+                updatedAt,
+                null);
         if (isNew) {
             repository.insert(recipe);
         } else {

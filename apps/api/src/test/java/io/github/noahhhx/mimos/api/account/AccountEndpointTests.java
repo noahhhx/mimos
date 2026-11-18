@@ -73,6 +73,13 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
         TestPictures.add(api, source, UUID.fromString(soupId), TestPictures.PNG);
         TestPictures.add(api, source, UUID.fromString(soupId), jpeg);
 
+        send(
+                api,
+                source,
+                "PUT",
+                "/api/v1/recipes/" + soupId + "/rating",
+                objectMapper.createObjectNode().put("stars", 4));
+
         plan(api, source, MONDAY, "DINNER", soupId, 2);
         plan(api, source, MONDAY.plusDays(1), "BREAKFAST", shakshukaId, 1);
         plan(api, source, MONDAY.plusDays(2), "LUNCH", toastId, 1.5);
@@ -110,6 +117,8 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
         assertThat(pictureData(recipeTitled(exported, "Export Soup")))
                 .containsExactly(base64(TestPictures.PNG), base64(jpeg));
         assertThat(pictureData(recipeTitled(exported, "Export Toast"))).isEmpty();
+        assertThat(recipeTitled(exported, "Export Soup").get("rating").asInt()).isEqualTo(4);
+        assertThat(recipeTitled(exported, "Export Toast").has("rating")).isFalse();
 
         String target = accessToken(createUser());
         JsonNode report = importInto(api, target, exported, 200);
@@ -132,6 +141,10 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
         String importedSoup = recipeTitled(reexported, "Export Soup").get("id").asText();
         JsonNode pictures = get(api, target, "/api/v1/recipes/" + importedSoup).get("pictures");
         assertThat(pictures).hasSize(2);
+        assertThat(get(api, target, "/api/v1/recipes/" + importedSoup)
+                        .get("rating")
+                        .asInt())
+                .isEqualTo(4);
         assertThat(api.get()
                         .uri(
                                 "/api/v1/recipes/{recipe}/pictures/{picture}",

@@ -28,7 +28,8 @@ public final class ExportUpgrader {
             ExportUpgrader::addTraining,
             ExportUpgrader::addRecipePictures,
             ExportUpgrader::allowPlannedFoods,
-            ExportUpgrader::allowAddedShoppingItems);
+            ExportUpgrader::allowAddedShoppingItems,
+            ExportUpgrader::allowRecipeRatings);
 
     /** The version this instance exports. */
     public static final int CURRENT_VERSION = STEPS.size() + 1;
@@ -145,6 +146,15 @@ public final class ExportUpgrader {
      * flag is generated, so its data comes through unchanged.
      */
     private static ObjectNode allowAddedShoppingItems(ObjectNode document) {
+        return document;
+    }
+
+    /**
+     * Version 9 (ADR-0035): a recipe may carry its household's {@code rating},
+     * 1 to 5. Version 8 had none, and a recipe without one is unrated, so its
+     * data comes through unchanged.
+     */
+    private static ObjectNode allowRecipeRatings(ObjectNode document) {
         return document;
     }
 
