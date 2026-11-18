@@ -1,0 +1,155 @@
+{
+  "orderCases": [
+    {
+      "name": "title sort ignores input order and case",
+      "recipes": [
+        { "id": "2", "title": "banana bread" },
+        { "id": "3", "title": "Carrot soup" },
+        { "id": "1", "title": "Apple tart" }
+      ],
+      "sort": "title",
+      "tags": [],
+      "expected": ["1", "2", "3"]
+    },
+    {
+      "name": "title sort ignores accents, then breaks ties by id",
+      "recipes": [
+        { "id": "d", "title": "Zucchini" },
+        { "id": "c", "title": "Éclair" },
+        { "id": "b", "title": "eclair" },
+        { "id": "a", "title": "Eclair" }
+      ],
+      "sort": "title",
+      "tags": [],
+      "expected": ["a", "b", "c", "d"]
+    },
+    {
+      "name": "newest first, then by title",
+      "recipes": [
+        { "id": "1", "title": "Apple tart", "createdAt": "2025-01-02T00:00:00Z" },
+        { "id": "3", "title": "Carrot soup", "createdAt": "2025-01-01T00:00:00Z" },
+        { "id": "2", "title": "banana bread", "createdAt": "2025-01-03T00:00:00Z" },
+        { "id": "4", "title": "Apple crumble", "createdAt": "2025-01-01T00:00:00Z" }
+      ],
+      "sort": "newest",
+      "tags": [],
+      "expected": ["2", "1", "4", "3"]
+    },
+    {
+      "name": "oldest first, then by title",
+      "recipes": [
+        { "id": "2", "title": "banana bread", "createdAt": "2025-01-03T00:00:00Z" },
+        { "id": "1", "title": "Apple tart", "createdAt": "2025-01-02T00:00:00Z" },
+        { "id": "3", "title": "Carrot soup", "createdAt": "2025-01-01T00:00:00Z" }
+      ],
+      "sort": "oldest",
+      "tags": [],
+      "expected": ["3", "1", "2"]
+    },
+    {
+      "name": "recently edited uses the update time, not the creation time",
+      "recipes": [
+        { "id": "a", "title": "A", "createdAt": "2025-01-01T00:00:00Z", "updatedAt": "2025-01-01T00:00:00Z" },
+        { "id": "b", "title": "B", "createdAt": "2025-01-02T00:00:00Z", "updatedAt": "2025-01-03T00:00:00Z" },
+        { "id": "c", "title": "C", "createdAt": "2025-01-03T00:00:00Z", "updatedAt": "2025-01-02T00:00:00Z" }
+      ],
+      "sort": "edited",
+      "tags": [],
+      "expected": ["b", "c", "a"]
+    },
+    {
+      "name": "date sorts compare instants, not strings of different precision",
+      "recipes": [
+        { "id": "b", "title": "Late", "createdAt": "2025-01-01T00:00:00.5Z" },
+        { "id": "a", "title": "Early", "createdAt": "2025-01-01T00:00:00Z" }
+      ],
+      "sort": "oldest",
+      "tags": [],
+      "expected": ["a", "b"]
+    },
+    {
+      "name": "date sorts compare instants across offsets",
+      "recipes": [
+        { "id": "b", "title": "B", "createdAt": "2025-01-01T01:00:00+02:00" },
+        { "id": "a", "title": "A", "createdAt": "2025-01-01T00:00:00Z" }
+      ],
+      "sort": "oldest",
+      "tags": [],
+      "expected": ["b", "a"]
+    },
+    {
+      "name": "one tag keeps the recipes that have it",
+      "recipes": [
+        { "id": "1", "title": "Apple tart", "tags": ["dessert", "fruit"] },
+        { "id": "2", "title": "banana bread", "tags": ["dessert"] },
+        { "id": "3", "title": "Carrot soup", "tags": ["savoury"] }
+      ],
+      "sort": "title",
+      "tags": ["dessert"],
+      "expected": ["1", "2"]
+    },
+    {
+      "name": "several tags keep the recipes that have all of them",
+      "recipes": [
+        { "id": "1", "title": "Apple tart", "tags": ["dessert", "fruit"] },
+        { "id": "2", "title": "banana bread", "tags": ["dessert"] },
+        { "id": "3", "title": "Carrot soup", "tags": ["savoury"] }
+      ],
+      "sort": "title",
+      "tags": ["dessert", "fruit"],
+      "expected": ["1"]
+    },
+    {
+      "name": "a tag no recipe has keeps none",
+      "recipes": [
+        { "id": "1", "title": "Apple tart", "tags": ["dessert", "fruit"] },
+        { "id": "2", "title": "banana bread", "tags": ["dessert"] }
+      ],
+      "sort": "title",
+      "tags": ["missing"],
+      "expected": []
+    },
+    {
+      "name": "tags match exactly, case included",
+      "recipes": [
+        { "id": "1", "title": "Apple tart", "tags": ["Dessert"] },
+        { "id": "2", "title": "banana bread", "tags": ["dessert"] }
+      ],
+      "sort": "title",
+      "tags": ["dessert"],
+      "expected": ["2"]
+    }
+  ],
+  "tagCases": [
+    {
+      "name": "distinct tags, ordered without regard to case",
+      "recipes": [
+        { "id": "1", "title": "A", "tags": ["Dinner", "quick"] },
+        { "id": "2", "title": "B", "tags": ["dinner", "vegetarian"] }
+      ],
+      "expected": ["Dinner", "dinner", "quick", "vegetarian"]
+    },
+    {
+      "name": "a tag spelled two ways keeps its first spelling first",
+      "recipes": [
+        { "id": "1", "title": "A", "tags": ["dinner"] },
+        { "id": "2", "title": "B", "tags": ["Dinner", "Brunch"] }
+      ],
+      "expected": ["Brunch", "dinner", "Dinner"]
+    },
+    {
+      "name": "no tags",
+      "recipes": [{ "id": "1", "title": "A" }],
+      "expected": []
+    }
+  ],
+  "sortKeys": [
+    { "key": "title", "expected": "title" },
+    { "key": "newest", "expected": "newest" },
+    { "key": "oldest", "expected": "oldest" },
+    { "key": "edited", "expected": "edited" },
+    { "key": "recent", "expected": "title" },
+    { "key": "", "expected": "title" },
+    { "key": null, "expected": "title" }
+  ]
+}
