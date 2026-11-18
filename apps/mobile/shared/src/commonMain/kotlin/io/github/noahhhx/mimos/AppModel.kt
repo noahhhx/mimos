@@ -9,11 +9,13 @@ import io.github.noahhhx.mimos.recipes.RecipeRoute
 import io.github.noahhhx.mimos.recipes.RecipeSortStore
 import io.github.noahhhx.mimos.recipes.RecipesModel
 import io.github.noahhhx.mimos.session.SessionModel
+import io.github.noahhhx.mimos.session.SessionState
 import io.github.noahhhx.mimos.shell.Destination
 import io.github.noahhhx.mimos.shell.ShellModel
 import io.github.noahhhx.mimos.ui.ThemeModel
 import io.ktor.client.engine.HttpClientEngine
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,7 +41,17 @@ class AppModel(
 ) {
     val shell = ShellModel()
 
-    private class Connection(val instance: Instance, val session: SessionModel, val http: MimosHttp)
+    private class Connection(
+        val instance: Instance,
+        val session: SessionModel,
+        val http: MimosHttp,
+        val watch: Job,
+    ) {
+        fun close() {
+            watch.cancel()
+            http.close()
+        }
+    }
 
     private var current: Connection? = null
 
@@ -78,14 +90,23 @@ class AppModel(
             ?.let {
                 return it
             }
-        current?.http?.close()
+        current?.close()
         val session = createSession(instance)
         val http = MimosHttp(engine, instance.config.apiUrl, session::accessToken)
-        return Connection(instance, session, http).also { current = it }
+        // A session can end without signOut (its refresh token refused), and whoever signs in
+        // next must not see what the last person had open.
+        val watch = scope.launch {
+            session.state.collect { if (it is SessionState.SignedOut) forgetPerson() }
+        }
+        return Connection(instance, session, http, watch).also { current = it }
     }
 
     fun signOut() {
         current?.session?.signOut()
+        forgetPerson()
+    }
+
+    private fun forgetPerson() {
         shell.reset()
         recipes.reset()
     }
@@ -94,10 +115,9 @@ class AppModel(
     fun changeInstance() {
         val connected = connect.state.value as? ConnectState.Connected ?: return
         session(connected.instance).signOut()
-        current?.http?.close()
+        current?.close()
         current = null
-        shell.reset()
-        recipes.reset()
+        forgetPerson()
         connect.disconnect()
     }
 
