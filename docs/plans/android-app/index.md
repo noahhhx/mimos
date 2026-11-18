@@ -42,7 +42,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 04 | [Sign-in and sign-up](04-sign-in.md) | 02, 03 | done (cc91ea8) |
 | 05 | [Evening Kitchen in Compose](05-design-system.md) | 01 | done (6577f8b) |
 | 06 | [Maestro flows and CI](06-flows-and-ci.md) | 04, 05 | done (43e67dc) |
-| 07 | [Recipes: browse, read, and cook](07-recipes.md) | 06 | todo |
+| 07 | [Recipes: browse, read, and cook](07-recipes.md) | 06 | done (dc1354c) |
 | 07b | [The recipe form](07b-recipe-form.md) | 07 | todo |
 | 07c | [Recipe pictures](07c-recipe-pictures.md) | 07b | todo |
 | 08 | [The week's plan](08-plan.md) **Review** | 07 | todo |
@@ -196,4 +196,30 @@ owner can overturn any of it:
   before `MainActivity` sets the chosen theme's `bg`. A dark-theme user may
   see a light flash at cold start; a night-neutral splash theme would fix it
   if it matters.
-
+- `java.text.Collator` at primary strength ignores spaces and marks, so on a
+  desktop JVM "Apple tart" follows "Applesauce", which `Intl.Collator` does
+  not do. `commonTest` runs on a desktop JVM, so item 07 ports the web's
+  order by hand (`recipes/Collation.kt`: whitespace, then marks in the CLDR
+  order, then digits, then letters, with Latin accents folded) and tests it
+  against `libraries/test-cases/recipe-order.json`, which the web's tests run
+  through `Intl`. It is exact for Latin text. If other scripts matter, the
+  phone has ICU (`android.icu.text.Collator`), but a unit test cannot run it.
+- Maestro on a Compose toggle: the tick state is on the row's `View`
+  (`checked`), and the text is on a child. Assert it with `checked: true`
+  and `containsChild: <text>`. `checked: false` with `containsChild` never
+  matched, and an element under the tab bar is not visible to Maestro even
+  when `scrollUntilVisible` stopped on it, so assert a row before scrolling
+  past it.
+- `AppModel` owns the connected instance's `MimosHttp` (`AppModel.http`), not
+  the composition: a model's request must not die with a rotation. `App` no
+  longer takes the engine.
+- The recipe list's tag filter is one scrolling line, not the web's wrapped
+  row. The seed library has 22 tags, which pushed every recipe off a phone's
+  first screen.
+- "Edit" and "+ New recipe" open the web's pages until item 07b, and a
+  recipe's pictures are not shown until 07c. The web shows "0 min cook" for
+  a recipe with `cookMinutes` 0, and so does the app.
+- Followed recipe links (the ingredient that is one of your recipes) are
+  tested in `commonTest` (route, trail, cook book) but have no flow: a
+  flow's fresh account has no recipe of its own to link until 07b lets the
+  app write one.
