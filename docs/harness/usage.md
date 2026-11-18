@@ -113,6 +113,7 @@ Playwright MCP browser ([step 2](step-2-browser.md#exploring-with-the-mcp-browse
 | --- | --- |
 | `harness mobile up [--no-build]` | Creates the AVD `mimos-pixel` under `.harness/android/` if missing, boots it headless (KVM, software GPU), installs the pinned browser (Cromite, `MIMOS_ANDROID_BROWSER_APK`) once, forwards 8080, 8081, and 3000 with `adb reverse`, proves from the device that the web app, the API, and Keycloak each answer an HTTP request (exit 1 if one does not), builds the debug APK (`./gradlew :androidApp:assembleDebug`), installs it, launches `io.github.noahhhx.mimos.debug`, and screenshots it. Running it again converges. `--no-build` reuses the last APK. |
 | `harness mobile shot [name]` | Saves a screenshot to `mobile/<name>.png` (`shot.png`, `shot-2.png`, … without a name). |
+| `harness mobile flow <name> [--run <run>]` | Runs `apps/mobile/flows/<name>.yaml` with Maestro on the installed app (`connect-and-sign-in`, `stay-signed-in`). It builds and installs nothing (that is `up`): it checks the emulator and the installed app, re-makes the reverse rules and probes the stack, clears the app's and Cromite's data, creates a fresh account as `harness user create` does, and passes `MIMOS_USER`, `MIMOS_PASSWORD`, and `MIMOS_WEB_ADDRESS` to the flow. Maestro's output is captured rather than streamed, because it echoes what a flow types. The run gets `mobile/flows/<name>/` (`-2`, `-3` for a repeat in the same run): Maestro's JUnit `report.xml`, its screenshots and debug logs, `output.log`, `probe.txt`, and `app-requests.log`, with the account's password replaced by value. `summary.md` leads with the failed prerequisite or Maestro assertion, then the steps, then every request the app sent (ID, method, path) for `harness logs --request-id <id>`. A flow that passes with no request IDs in `app-requests.log` fails. Exit 1 on any failure. |
 | `harness mobile logs` | Writes logcat for the app's process to `mobile/logcat.txt` (redacted); `summary.md` counts the lines and shows the last errors. With the app not running, the lines that name it. |
 | `harness mobile down` | `adb emu kill`. Fine when nothing is running. |
 | `harness user create` | A fresh Keycloak user through the admin API. Prints `MIMOS_USER=user-…` and `MIMOS_PASSWORD=mimos-test`. |
@@ -123,12 +124,22 @@ the app and its browser use the same URLs as a desktop browser and tokens
 carry the issuer the API accepts ([why](step-8-emulator.md#reaching-the-stack-adb-reverse)).
 The reverse rules belong to the adb server that made them: after an
 `adb kill-server` or a restart by another adb client, the device refuses
-connections to localhost until `harness mobile up` runs again. Accounts
+connections to localhost until `harness mobile up` or `harness mobile flow` runs again
+(`flow` re-makes the rules itself). Accounts
 from `user create` work with `--as` in `token`, `api`, and `ui`
 (`harness ui login --as user-1a2b3c4d`). To start the AVD over, stop it and
 delete `.harness/android/`. A browser is one command away for
 exploration: `adb shell am start -a android.intent.action.VIEW -d
 http://localhost:3000/ org.cromite.cromite`, then `harness mobile shot`.
+
+The debug app logs each API request it sends (request ID, method, path; no
+headers, query, or body) as a `MimosRequest` line in logcat; `flow` reads those
+lines into the summary. Release builds do not log them.
+
+`node tools/harness/src/api-parity.ts` lists the API operations the web's code
+calls and the ones the app's code calls (a call to the generated client, not an
+import), as web only, app only, both, and neither. Run it before and after a
+feature lands on either side ([plan item 17](../plans/android-app/17-parity-and-docs.md)).
 
 ### Observing — steps [3](step-3-logs.md) and [4](step-4-diagnostics.md)
 

@@ -1,0 +1,24 @@
+appId: io.github.noahhhx.mimos.debug
+---
+- launchApp
+- assertVisible: Connect to Mimos
+- tapOn: Web address
+- inputText: ${MIMOS_WEB_ADDRESS}
+- tapOn: Connect
+- assertVisible: Sign in to ${MIMOS_WEB_ADDRESS}
+- tapOn:
+    text: Sign in
+    index: 1
+- assertVisible: Username or email
+- tapOn: Username or email
+- inputText: ${MIMOS_USER}
+- tapOn: Password
+- inputText: ${MIMOS_PASSWORD}
+- tapOn: Sign In
+- assertVisible: Coming to the app
+- tapOn: Profile
+- assertVisible: ${MIMOS_USER}
+- takeScreenshot: signed-in
+- back
+- assertVisible: Coming to the app
+- assertNotVisible: Member since.*

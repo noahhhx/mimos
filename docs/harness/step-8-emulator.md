@@ -17,6 +17,7 @@ devenv shell -- harness up            # the stack, as always
 devenv shell -- harness mobile up     # AVD, boot, browser, ports, build, install, launch
 devenv shell -- harness mobile shot   # a screenshot into the run
 devenv shell -- harness mobile logs   # logcat for the app's process
+devenv shell -- harness mobile flow connect-and-sign-in   # a Maestro flow (item 06)
 devenv shell -- harness mobile down   # stop the emulator
 eval "$(devenv shell -- harness user create | sed 's/^/export /')"   # MIMOS_USER, MIMOS_PASSWORD
 devenv shell -- harness household join <owner> <member>
@@ -153,9 +154,28 @@ still a usage error rather than a failed login.
 
 ## Not in this step
 
-- Maestro and `harness mobile flow` (item 06). Item 04 confirms sign-in
-  works in Cromite.
 - A pinned adb server port. If other tools start adb servers of another
   version on the default port, they will drop the reverse rules; `up`
-  repairs that, but a flow run does not. Item 06 should check the rules
-  before it runs a flow.
+  repairs that, and `harness mobile flow` re-makes them before every flow
+  and probes the stack again.
+
+## Flows (item 06)
+
+`harness mobile flow <name>` is the device-state owner's next action, beside
+`up`, in `src/commands/mobile.ts`; Maestro's argument list, JUnit failure,
+and the request-log parser are in `src/maestro.ts`, and the summary in
+`src/mobile-report.ts`. It builds and installs nothing, so a flow run after
+`up` tests that APK. Each run clears the app's and Cromite's data and
+creates a fresh account, so no earlier sign-in (the browser's single sign-on
+session included) changes the outcome. Maestro writes into a temporary
+directory, and the harness copies it into `mobile/flows/<name>/` through the
+usual redaction plus a literal replacement of the account's password, which
+Maestro prints in `commands.json` and its logs. The failing assertion comes
+from the JUnit report; with no report (a YAML error), the last lines of
+Maestro's redacted output stand in.
+
+Request IDs reach the summary through logcat: a debug-only OkHttp
+interceptor in `androidApp` (`RequestLog.kt`) logs `requestId=… method=…
+path=…` for each request that carries `X-Request-Id`, and the harness reads
+them after the flow. A flow that passes with none fails as an evidence
+error, so the two sides cannot drift apart silently.

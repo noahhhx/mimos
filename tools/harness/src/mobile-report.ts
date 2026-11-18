@@ -1,6 +1,7 @@
 import { displayCommand } from "./args.ts";
 import { fenced } from "./command.ts";
 import { probeOk, type ProbeResult } from "./adb.ts";
+import type { AppRequest, FlowFailure } from "./maestro.ts";
 
 /** What `harness mobile` writes into summary.md. Pure: the commands gather the facts, these render them. */
 
@@ -91,4 +92,35 @@ export function renderLogcatSection(report: LogcatReport): string {
 
 export function renderShotSection(argv: string[], file: string): string {
   return [`## \`${displayCommand(["mobile", ...argv])}\``, "", `- **Screenshot:** \`${file}\``].join("\n");
+}
+
+export interface FlowReport {
+  argv: string[];
+  flow: string;
+  account: string | undefined;
+  steps: StepRecord[];
+  requests: AppRequest[];
+  files: string[];
+  failure: FlowFailure | undefined;
+  ms: number;
+}
+
+export function renderFlowSection(report: FlowReport): string {
+  const { failure } = report;
+  const lines = [`## \`${displayCommand(["mobile", ...report.argv])}\` — ${failure ? "failed" : "passed"} (${seconds(report.ms)})`, ""];
+  if (failure) lines.push(`**Failed at:** ${failure.at}`, "", ...(failure.message === failure.at ? [] : [fenced(failure.message), ""]));
+  lines.push(
+    `- **Flow:** \`apps/mobile/flows/${report.flow}.yaml\`${report.account ? ` as \`${report.account}\`` : ""}`,
+    ...report.steps.map((step) => `- ${step.ok ? "✓" : "✗"} **${step.name}** (${seconds(step.ms)})${step.detail ? `: ${step.detail}` : ""}`),
+  );
+  if (report.requests.length > 0) {
+    lines.push(
+      "",
+      `Requests the app sent (${report.requests.length}); \`harness logs --request-id <id>\` finds the API's side:`,
+      "",
+      ...report.requests.map((request) => `- \`${request.requestId}\` ${request.method} ${request.path}`),
+    );
+  }
+  if (report.files.length > 0) lines.push("", "Evidence:", "", ...report.files.map((file) => `- \`${file}\``));
+  return lines.join("\n");
 }

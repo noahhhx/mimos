@@ -1,6 +1,8 @@
 import { spawn } from "node:child_process";
-import { closeSync, existsSync, mkdirSync, openSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
+import { stripVTControlCharacters } from "node:util";
 
 import { adb, parseDevices, parseReverseList, probe, probeOk, probeTargets, type Adb, type ProbeResult } from "../adb.ts";
 import {
@@ -18,12 +20,22 @@ import {
   renderAvdConfig,
   renderAvdIni,
 } from "../avd.ts";
+import { createUser } from "../accounts.ts";
 import { HarnessError, parseCommandArgs, UsageError } from "../args.ts";
 import { finishRun, RUN_OPTION, RUN_USAGE, startRun, type Command } from "../command.ts";
-import { endpoints, REALM, REPO_ROOT } from "../config.ts";
+import { endpoints, FRESH_PASSWORD, REALM, REPO_ROOT } from "../config.ts";
+import { copyRedacted } from "../evidence.ts";
 import { exec } from "../exec.ts";
-import { renderLogcatSection, renderShotSection, renderUpSection, summarizeLogcat, type StepRecord } from "../mobile-report.ts";
-import { redactText } from "../redact.ts";
+import { flowFailure, flowNames, FLOWS_DIR, maestroArgs, parseAppRequests, REQUEST_TAG, type AppRequest, type FlowEnv, type FlowFailure } from "../maestro.ts";
+import {
+  renderFlowSection,
+  renderLogcatSection,
+  renderShotSection,
+  renderUpSection,
+  summarizeLogcat,
+  type StepRecord,
+} from "../mobile-report.ts";
+import { redactLiterals, redactText } from "../redact.ts";
 import { appendSummary, writeRunFile, type Run } from "../run.ts";
 
 /**
@@ -33,7 +45,7 @@ import { appendSummary, writeRunFile, type Run } from "../run.ts";
  * issuer the API accepts (docs/harness/step-8-emulator.md).
  */
 
-const ACTIONS = ["up", "shot", "logs", "down"] as const;
+const ACTIONS = ["up", "shot", "flow", "logs", "down"] as const;
 type Action = (typeof ACTIONS)[number];
 
 export interface MobileArgs {
@@ -53,11 +65,12 @@ export function parseMobileArgs(argv: string[]): MobileArgs {
   if (action === undefined || !ACTIONS.includes(action as Action)) {
     throw new UsageError(`expected an action: ${ACTIONS.join(" | ")}`);
   }
-  if (extra.length > 0 || (name !== undefined && action !== "shot")) {
-    throw new UsageError(action === "shot" ? "expected at most one screenshot name" : `${action} takes no arguments`);
+  if (action === "flow" && name === undefined) throw new UsageError("flow needs a flow name");
+  if (extra.length > 0 || (name !== undefined && action !== "shot" && action !== "flow")) {
+    throw new UsageError(action === "shot" ? "expected at most one screenshot name" : action === "flow" ? "expected one flow name" : `${action} takes no arguments`);
   }
   if (name !== undefined && !/^[\w.-]+$/.test(name)) {
-    throw new UsageError(`screenshot name ${name} must be letters, digits, dots, dashes, and underscores`);
+    throw new UsageError(`${action === "flow" ? "flow" : "screenshot"} name ${name} must be letters, digits, dots, dashes, and underscores`);
   }
   if (values["no-build"] && action !== "up") throw new UsageError("--no-build only applies to up");
   if (values.run !== undefined && action === "down") throw new UsageError("down records no run, so it takes no --run");
@@ -160,19 +173,19 @@ async function diagnostics(): Promise<string> {
   return [`$ adb version\n${version.stdout.trim()}`, `$ adb devices -l\n${devices.stdout.trim()}`, `$ adb reverse --list\n${reverse.stdout.trim() || "(none)"}`].join("\n\n");
 }
 
-async function probeStack(run: Run): Promise<ProbeResult[]> {
+async function probeStack(run: Run, file: string): Promise<ProbeResult[]> {
   const results = await Promise.all(probeTargets(endpoints(), REALM).map((target) => probe(device(), target)));
   writeRunFile(
     run,
-    "mobile/probe.txt",
+    file,
     `${results.map((result) => `${result.name} localhost:${result.port}${result.path} → ${result.status ?? "no HTTP response"}`).join("\n")}\n`,
   );
   return results;
 }
 
-async function unreachable(run: Run, failed: readonly ProbeResult[]): Promise<HarnessError> {
+async function unreachable(run: Run, failed: readonly ProbeResult[], adbFile: string): Promise<HarnessError> {
   const detail = await diagnostics();
-  writeRunFile(run, "mobile/adb.txt", `${detail}\n`);
+  writeRunFile(run, adbFile, `${detail}\n`);
   return new HarnessError(
     `the device cannot reach ${failed.map((result) => `localhost:${result.port}`).join(", ")}. Is the stack up (harness status)?\n` +
       `Rules listed but no answer: nothing on the host answers that port. No rules listed: the adb server restarted and dropped them.\n${detail}`,
@@ -224,15 +237,8 @@ async function requireBooted(): Promise<void> {
   if ((await deviceState()) !== "device") throw new HarnessError(`no emulator is running: harness mobile up`);
 }
 
-async function up(args: MobileArgs, argv: string[]): Promise<number> {
-  const startedAt = new Date();
-  const run = startRun("mobile-up", startedAt, args.run);
-  const steps: StepRecord[] = [];
-  const files: string[] = [];
-  let probes: ProbeResult[] = [];
-  let failure: string | undefined;
-
-  const step = async (name: string, action: () => Promise<string> | string): Promise<void> => {
+function stepper(steps: StepRecord[]): (name: string, action: () => Promise<string> | string) => Promise<void> {
+  return async (name, action) => {
     const began = Date.now();
     try {
       steps.push({ name, ok: true, detail: await action(), ms: Date.now() - began });
@@ -241,6 +247,17 @@ async function up(args: MobileArgs, argv: string[]): Promise<number> {
       throw error;
     }
   };
+}
+
+async function up(args: MobileArgs, argv: string[]): Promise<number> {
+  const startedAt = new Date();
+  const run = startRun("mobile-up", startedAt, args.run);
+  const steps: StepRecord[] = [];
+  const files: string[] = [];
+  let probes: ProbeResult[] = [];
+  let failure: string | undefined;
+
+  const step = stepper(steps);
 
   try {
     await step("AVD", ensureAvd);
@@ -248,10 +265,10 @@ async function up(args: MobileArgs, argv: string[]): Promise<number> {
     await step("Browser", ensureBrowser);
     await step("Reverse ports", () => reversePorts(probeTargets(endpoints(), REALM).map((target) => target.port)));
     await step("Reach the stack from the device", async () => {
-      probes = await probeStack(run);
+      probes = await probeStack(run, "mobile/probe.txt");
       files.push("mobile/probe.txt");
       const failed = probes.filter((result) => !probeOk(result));
-      if (failed.length > 0) throw await unreachable(run, failed);
+      if (failed.length > 0) throw await unreachable(run, failed, "mobile/adb.txt");
       return `${probes.length} of ${probes.length} answered`;
     });
     if (args.noBuild) {
@@ -278,6 +295,108 @@ async function up(args: MobileArgs, argv: string[]): Promise<number> {
   const exitCode = failure === undefined ? 0 : 1;
   await finishRun(run, ["mobile", ...argv], startedAt, exitCode);
   process.stdout.write(failure === undefined ? `up: ${AVD_SERIAL} running ${APP_ID}\n` : `up failed: ${failure.split("\n")[0]}\n`);
+  process.stdout.write(`summary: ${relative(process.cwd(), join(run.dir, "summary.md"))}\n`);
+  return exitCode;
+}
+
+const errorText = (error: unknown): string => (error instanceof Error ? error.message : String(error));
+
+async function flow(args: MobileArgs, argv: string[]): Promise<number> {
+  const name = args.name ?? "";
+  if (!flowNames().includes(name)) {
+    throw new UsageError(`no flow ${name}; apps/mobile/flows/ has: ${flowNames().join(" | ") || "none"}`);
+  }
+  const startedAt = new Date();
+  const run = startRun(`mobile-flow-${name}`, startedAt, args.run);
+  const dir = nextFile(run, `mobile/flows/${name}`, "");
+  const target = join(run.dir, dir);
+  const steps: StepRecord[] = [];
+  const files: string[] = [];
+  const step = stepper(steps);
+  const secrets = [FRESH_PASSWORD];
+  const clean = (text: string): string => redactLiterals(redactText(text), secrets);
+  let account = "";
+  let requests: AppRequest[] = [];
+  let failure: FlowFailure | undefined;
+  let maestro: { code: number; output: string } | undefined;
+  const staging = mkdtempSync(join(tmpdir(), "harness-flow-"));
+
+  try {
+    try {
+      await step("Emulator", async () => {
+        await requireBooted();
+        return AVD_SERIAL;
+      });
+      await step("App installed", async () => {
+        if ((await device().run(["shell", "pm", "path", APP_ID])).stdout.trim() === "") {
+          throw new HarnessError(`${APP_ID} is not installed: harness mobile up`);
+        }
+        return APP_ID;
+      });
+      await step("Reverse ports", () => reversePorts(probeTargets(endpoints(), REALM).map((each) => each.port)));
+      await step("Reach the stack from the device", async () => {
+        const probes = await probeStack(run, `${dir}/probe.txt`);
+        files.push(`${dir}/probe.txt`);
+        const failed = probes.filter((result) => !probeOk(result));
+        if (failed.length > 0) throw await unreachable(run, failed, `${dir}/adb.txt`);
+        return `${probes.length} of ${probes.length} answered`;
+      });
+      await step("Clear app and browser data", async () => {
+        for (const id of [APP_ID, BROWSER_ID]) await device().ok(["shell", "pm", "clear", id]);
+        return `${APP_ID}, ${BROWSER_ID}; ${await ensureBrowser()}`;
+      });
+      await step("Account", async () => {
+        account = await createUser();
+        return `${account} (fresh)`;
+      });
+      await device().ok(["logcat", "-c"]);
+
+      const env: FlowEnv = { MIMOS_USER: account, MIMOS_PASSWORD: FRESH_PASSWORD, MIMOS_WEB_ADDRESS: endpoints().web };
+      const flowFile = join(FLOWS_DIR, `${name}.yaml`);
+      const began = Date.now();
+      const result = await exec("maestro", maestroArgs({ serial: AVD_SERIAL, flowFile, env, staging }), { env: toolEnv }).catch((error: unknown) => {
+        steps.push({ name: "Maestro", ok: false, detail: "", ms: Date.now() - began });
+        throw error;
+      });
+      maestro = { code: result.code, output: result.stdout + result.stderr };
+      steps.push({ name: "Maestro", ok: result.code === 0, detail: `${relative(REPO_ROOT, flowFile)}, exit ${result.code}`, ms: Date.now() - began });
+    } catch (error) {
+      failure = { at: steps.findLast((each) => !each.ok)?.name ?? "Setup", message: clean(errorText(error)) };
+      if (existsSync(join(run.dir, dir, "adb.txt"))) files.push(`${dir}/adb.txt`);
+    }
+
+    if (maestro !== undefined) {
+      const rewrite = (text: string): string => clean(text.replaceAll(staging, relative(REPO_ROOT, target)));
+      files.push(...copyRedacted(staging, target, rewrite).map((file) => `${dir}/${file}`));
+      writeRunFile(run, `${dir}/output.log`, rewrite(stripVTControlCharacters(maestro.output)));
+      files.push(`${dir}/output.log`);
+      const reportPath = join(staging, "report.xml");
+      const logcat = await device()
+        .run(["logcat", "-d", "-v", "threadtime", "-s", `${REQUEST_TAG}:I`])
+        .then((result) => result.stdout)
+        .catch(() => "");
+      writeRunFile(run, `${dir}/app-requests.log`, clean(logcat));
+      files.push(`${dir}/app-requests.log`);
+      const parsed = parseAppRequests(clean(logcat));
+      requests = parsed.requests;
+      failure = flowFailure({
+        junit: existsSync(reportPath) ? clean(readFileSync(reportPath, "utf8")) : undefined,
+        code: maestro.code,
+        output: rewrite(stripVTControlCharacters(maestro.output)),
+        requests: parsed.requests,
+        unreadable: parsed.unreadable,
+        requestLog: `${dir}/app-requests.log`,
+      });
+    }
+  } finally {
+    rmSync(staging, { recursive: true, force: true });
+  }
+
+  const ms = Date.now() - startedAt.getTime();
+  appendSummary(run, clean(renderFlowSection({ argv, flow: name, account: account || undefined, steps, requests, files, failure, ms })));
+  const exitCode = failure === undefined ? 0 : 1;
+  await finishRun(run, ["mobile", ...argv], startedAt, exitCode);
+  process.stdout.write(failure === undefined ? `flow ${name}: passed (${requests.length} requests)\n` : `flow ${name} failed at ${failure.at}\n`);
   process.stdout.write(`summary: ${relative(process.cwd(), join(run.dir, "summary.md"))}\n`);
   return exitCode;
 }
@@ -333,7 +452,7 @@ async function down(): Promise<number> {
 export const mobileCommand: Command = {
   name: "mobile",
   summary: "Boot an Android emulator, install the app, and read its evidence",
-  usage: `harness mobile up [--no-build] | shot [name] | logs | down
+  usage: `harness mobile up [--no-build] | shot [name] | flow <name> | logs | down
 
   up [--no-build]  create the AVD ${AVD_NAME} under .harness/android/ if missing, boot it headless (KVM,
                    software GPU), install the pinned browser (Cromite) once, forward 8080, 8081, and
@@ -343,6 +462,16 @@ export const mobileCommand: Command = {
                    Running it again converges: a booted device is kept, the reverse rules are
                    re-made, the app is reinstalled and relaunched.
   shot [name]      save a screenshot to mobile/<name>.png (default shot.png, then shot-2.png, …)
+  flow <name>      run apps/mobile/flows/<name>.yaml with Maestro on the installed app:
+                   recheck the reverse rules and what the device reaches, clear the app's and the
+                   browser's data, create a fresh account (harness user create), and run the flow
+                   with MIMOS_USER, MIMOS_PASSWORD, and MIMOS_WEB_ADDRESS. Builds and installs
+                   nothing, so run \`up\` first. Maestro's output is captured, not streamed (it
+                   echoes typed values); evidence is redacted, the password by value, into
+                   mobile/flows/<name>/: report.xml, screenshots, Maestro's logs, and the
+                   requests the app sent (app-requests.log). summary.md starts with the failing
+                   assertion and lists each request ID for \`harness logs --request-id\`. A
+                   passing flow with no request IDs fails.
   logs             write logcat for the app's process to mobile/logcat.txt, redacted; summary.md
                    lists the lines at error level. Without a running app, the lines naming it.
   down             stop the emulator; fine when none is running.
@@ -358,6 +487,8 @@ the command did what it says, 1 otherwise.`,
         return up(args, argv);
       case "shot":
         return shot(args, argv);
+      case "flow":
+        return flow(args, argv);
       case "logs":
         return logs(args, argv);
       case "down":

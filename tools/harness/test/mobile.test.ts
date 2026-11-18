@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 
 import {
@@ -20,7 +23,10 @@ import {
   SYSTEM_IMAGE,
 } from "../src/avd.ts";
 import { parseMobileArgs } from "../src/commands/mobile.ts";
-import { renderLogcatSection, renderUpSection, summarizeLogcat } from "../src/mobile-report.ts";
+import { copyRedacted } from "../src/evidence.ts";
+import { flowFailure, flowNames, maestroArgs, maestroFailure, parseAppRequests } from "../src/maestro.ts";
+import { redactLiterals, redactText } from "../src/redact.ts";
+import { renderFlowSection, renderLogcatSection, renderUpSection, summarizeLogcat } from "../src/mobile-report.ts";
 
 function ini(text: string): Map<string, string> {
   return new Map(text.trim().split("\n").map((line) => [line.slice(0, line.indexOf("=")), line.slice(line.indexOf("=") + 1)]));
@@ -170,4 +176,178 @@ test("logcat summary says which process it covers", () => {
   assert.match(running, /4 lines, 2 at error or fatal/);
   const stopped = renderLogcatSection({ argv: ["logs"], file: "mobile/logcat.txt", pid: undefined, appId: "app.id", summary });
   assert.match(stopped, /`app\.id` is not running/);
+});
+
+test("flow: a name is required, and only shot and flow take one", () => {
+  assert.deepEqual(parseMobileArgs(["flow", "stay-signed-in", "--run", "latest"]), {
+    action: "flow",
+    noBuild: false,
+    name: "stay-signed-in",
+    run: "latest",
+  });
+  for (const argv of [["flow"], ["flow", "a", "b"], ["flow", "../x"], ["flow", "a", "--no-build"]]) {
+    assert.throws(() => parseMobileArgs(argv), UsageError, argv.join(" "));
+  }
+});
+
+const JUNIT_PASS = `<?xml version='1.0' encoding='UTF-8'?>
+<testsuites>
+  <testsuite name="Test Suite" tests="1" failures="0">
+    <testcase id="connect-and-sign-in" name="connect-and-sign-in" status="SUCCESS"/>
+  </testsuite>
+</testsuites>`;
+
+const JUNIT_FAIL = `<?xml version='1.0' encoding='UTF-8'?>
+<testsuites>
+  <testsuite name="Test Suite" tests="1" failures="1">
+    <testcase id="probe-failure" name="probe-failure" status="ERROR">
+      <failure>Assertion is false: &quot;Coming to the app&quot; is visible &amp; more</failure>
+    </testcase>
+  </testsuite>
+</testsuites>`;
+
+test("maestro: a JUnit failure is the assertion Maestro reported, and a pass has none", () => {
+  assert.equal(maestroFailure(JUNIT_PASS), undefined);
+  assert.equal(maestroFailure(JUNIT_FAIL), 'Assertion is false: "Coming to the app" is visible & more');
+  assert.equal(maestroFailure('<testcase status="ERROR"><failure message="Element not found: &apos;Sign in&apos;"/></testcase>'), "Element not found: 'Sign in'");
+  assert.match(maestroFailure("<testcase><failure></failure></testcase>") ?? "", /no message/);
+});
+
+test("maestro: the command runs one flow on the emulator, with the flow's values and every output under staging", () => {
+  const env = { MIMOS_USER: "user-1", MIMOS_PASSWORD: "pw", MIMOS_WEB_ADDRESS: "http://localhost:3000" };
+  const args = maestroArgs({ serial: "emulator-5554", flowFile: "/repo/apps/mobile/flows/a.yaml", env, staging: "/tmp/s" });
+  assert.deepEqual(args.slice(0, 3), ["test", "--udid", "emulator-5554"]);
+  assert.equal(args.at(-1), "/repo/apps/mobile/flows/a.yaml");
+  assert.equal(args[args.indexOf("--format") + 1], "JUNIT");
+  assert.equal(args[args.indexOf("--output") + 1], "/tmp/s/report.xml");
+  assert.equal(args[args.indexOf("--debug-output") + 1], "/tmp/s/debug");
+  assert.ok(args.includes("--flatten-debug-output"));
+  const passed = args.flatMap((arg, index) => (args[index - 1] === "-e" ? [arg] : []));
+  assert.deepEqual(passed, ["MIMOS_USER=user-1", "MIMOS_PASSWORD=pw", "MIMOS_WEB_ADDRESS=http://localhost:3000"]);
+});
+
+test("maestro: flows are the yaml files of the directory, sorted by name", () => {
+  const dir = mkdtempSync(join(tmpdir(), "flows-"));
+  try {
+    for (const file of ["stay-signed-in.yaml", "connect-and-sign-in.yaml", "notes.md"]) writeFileSync(join(dir, file), "");
+    assert.deepEqual(flowNames(dir), ["connect-and-sign-in", "stay-signed-in"]);
+    assert.deepEqual(flowNames(join(dir, "missing")), []);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+  assert.ok(flowNames().includes("connect-and-sign-in"));
+  assert.ok(flowNames().includes("stay-signed-in"));
+});
+
+const REQUEST_LOGCAT = [
+  "--------- beginning of main",
+  "11-18 09:39:10.100  2518  2560 I MimosRequest: requestId=3f2a9c1e-0000-4000-8000-000000000001 method=GET path=/api/v1/public/instance",
+  "11-18 09:39:10.200  2518  2560 D OkHttp  : --> GET http://localhost:8080/api/v1/public/instance",
+  "11-18 09:39:20.300  2518  2561 I MimosRequest: requestId=3f2a9c1e-0000-4000-8000-000000000002 method=GET path=/api/v1/me",
+  "11-18 09:39:20.301  2518  2561 I MimosRequest: requestId=3f2a9c1e-0000-4000-8000-000000000002 method=GET path=/api/v1/me",
+  "11-18 09:39:21.000  2518  2561 I MimosRequest: something else entirely",
+].join("\n");
+
+test("app requests: each logged request once, in order, and the lines it could not read", () => {
+  const { requests, unreadable } = parseAppRequests(REQUEST_LOGCAT);
+  assert.deepEqual(requests, [
+    { requestId: "3f2a9c1e-0000-4000-8000-000000000001", method: "GET", path: "/api/v1/public/instance" },
+    { requestId: "3f2a9c1e-0000-4000-8000-000000000002", method: "GET", path: "/api/v1/me" },
+  ]);
+  assert.equal(unreadable.length, 1);
+  assert.deepEqual(parseAppRequests("11-18 I Other: nothing"), { requests: [], unreadable: [] });
+});
+
+const FLOW_STEPS = [
+  { name: "Emulator", ok: true, detail: "emulator-5554", ms: 100 },
+  { name: "Maestro", ok: false, detail: "exit 1", ms: 18500 },
+];
+const FLOW_REQUESTS = [{ requestId: "id-1", method: "GET", path: "/api/v1/me" }];
+
+test("flow summary: the failed assertion leads, then steps, request IDs, and evidence", () => {
+  const text = renderFlowSection({
+    argv: ["flow", "connect-and-sign-in"],
+    flow: "connect-and-sign-in",
+    account: "user-1a2b",
+    steps: FLOW_STEPS,
+    requests: FLOW_REQUESTS,
+    files: ["mobile/flows/connect-and-sign-in/report.xml"],
+    failure: { at: 'Assertion is false: "Coming to the app" is visible', message: 'Assertion is false: "Coming to the app" is visible' },
+    ms: 20000,
+  });
+  const lines = text.split("\n");
+  assert.match(lines[0] ?? "", /^## `harness mobile flow connect-and-sign-in` — failed \(20\.0 s\)/);
+  assert.match(lines[2] ?? "", /^\*\*Failed at:\*\* Assertion is false: "Coming to the app" is visible/);
+  assert.ok(text.indexOf("Failed at") < text.indexOf("Emulator"));
+  assert.match(text, /as `user-1a2b`/);
+  assert.match(text, /- ✗ \*\*Maestro\*\* \(18\.5 s\): exit 1/);
+  assert.match(text, /- `id-1` GET \/api\/v1\/me/);
+  assert.match(text, /harness logs --request-id/);
+  assert.match(text, /- `mobile\/flows\/connect-and-sign-in\/report\.xml`/);
+});
+
+test("flow summary: a prerequisite failure names it with its message, and a pass has no failure block", () => {
+  const failed = renderFlowSection({
+    argv: ["flow", "a"],
+    flow: "a",
+    account: undefined,
+    steps: [{ name: "Reach the stack from the device", ok: false, detail: "", ms: 3000 }],
+    requests: [],
+    files: [],
+    failure: { at: "Reach the stack from the device", message: "the device cannot reach localhost:8080" },
+    ms: 3000,
+  });
+  assert.match(failed, /\*\*Failed at:\*\* Reach the stack from the device\n\n```\nthe device cannot reach localhost:8080\n```/);
+  assert.doesNotMatch(failed, /Requests the app sent/);
+
+  const passed = renderFlowSection({ argv: ["flow", "a"], flow: "a", account: "u", steps: [FLOW_STEPS[0]!], requests: FLOW_REQUESTS, files: [], failure: undefined, ms: 1000 });
+  assert.match(passed, /— passed/);
+  assert.doesNotMatch(passed, /Failed at/);
+});
+
+const SENT = [{ requestId: "8c0ba77d-1d05-4184-a608-c0b95df648ae", method: "GET", path: "/api/v1/public/instance" }];
+const outcome = (input: Partial<Parameters<typeof flowFailure>[0]>) =>
+  flowFailure({ junit: JUNIT_PASS, code: 0, output: "", requests: SENT, unreadable: [], requestLog: "mobile/flows/x/app-requests.log", ...input });
+
+test("flow outcome: a passing report with the app's requests passes", () => {
+  assert.equal(outcome({}), undefined);
+});
+
+test("flow outcome: the report's assertion leads, whatever Maestro's exit code", () => {
+  assert.deepEqual(outcome({ junit: JUNIT_FAIL, code: 1, output: "noise" }), {
+    at: 'Assertion is false: "Coming to the app" is visible & more',
+    message: 'Assertion is false: "Coming to the app" is visible & more',
+  });
+});
+
+test("flow outcome: with no report, a failed Maestro run shows its last output lines", () => {
+  const output = Array.from({ length: 40 }, (_, n) => `line ${n + 1}`).join("\n");
+  const failure = outcome({ junit: undefined, code: 1, output });
+  assert.equal(failure?.at, "Maestro");
+  assert.equal(failure?.message.split("\n").length, 30);
+  assert.match(failure?.message ?? "", /^line 11\n[\s\S]*line 40$/);
+  assert.match(outcome({ junit: undefined, code: 2, output: "" })?.message ?? "", /exited 2 with no output/);
+});
+
+test("flow outcome: a passing flow with no request IDs fails as request evidence", () => {
+  const failure = outcome({ requests: [], unreadable: ["I MimosRequest: id=1"] });
+  assert.equal(failure?.at, "Request evidence");
+  assert.match(failure?.message ?? "", /mobile\/flows\/x\/app-requests\.log/);
+  assert.match(failure?.message ?? "", /id=1/);
+});
+
+test("flow evidence: the account's password is gone from every copied Maestro file", () => {
+  const root = mkdtempSync(join(tmpdir(), "flow-evidence-"));
+  try {
+    const from = join(root, "staging");
+    mkdirSync(join(from, "debug", "connect-and-sign-in", "logs"), { recursive: true });
+    writeFileSync(join(from, "debug", "connect-and-sign-in", "commands.json"), '{"env":{"MIMOS_PASSWORD":"mimos-test"},"text":"mimos-test"}');
+    writeFileSync(join(from, "debug", "connect-and-sign-in", "logs", "maestro.log"), "Inputting text: mimos-test\n");
+    const to = join(root, "run");
+    const copied = copyRedacted(from, to, (text) => redactLiterals(redactText(text), ["mimos-test"]));
+    assert.equal(copied.length, 2);
+    for (const file of copied) assert.doesNotMatch(readFileSync(join(to, file), "utf8"), /mimos-test/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
