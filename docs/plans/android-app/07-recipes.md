@@ -1,42 +1,37 @@
-# 07. Recipes and pictures
+# 07. Recipes: browse, read, and cook
 
 **Depends on:** 06
 
-Recipes as on the web's Recipes pages: the library, the household's own
-recipes, the form, pictures, and cooking. ADRs 0005, 0015, 0016, 0018,
-0023.
+Recipes as on the web's Recipes pages, read-only for now: the library, the
+household's own recipes, a recipe's detail, cooking it, and deleting it.
+ADRs 0005, 0015, 0016, 0018. The form is item
+[07b](07b-recipe-form.md) and pictures are item
+[07c](07c-recipe-pictures.md); this item was split from one that held all
+three.
 
 ## Build
 
-- Recipes list (library and own, search, the web's sorts in
-  `apps/web/src/lib/recipe-order.ts`).
-- Recipe detail: ingredients, method, nutrition as the API calculates it,
-  "Added by", linked recipes, and cooking: ingredient and step ticks and the
-  linked-recipe trail (`lib/cook-trail.ts`, ADR-0018), readable at arm's
-  length, the screen kept awake while cooking.
-- Recipe form: fields, ingredient lines searching the catalog, own
-  ingredients, and recipes (`catalogSlug` or `recipeId`), creating a new
-  own ingredient inline (as `new-ingredient.tsx`), metric units,
-  `nutritionSource`, the live nutrition estimate
-  (`estimateRecipeNutrition`), and the API's problems as field errors.
-- Pictures: take a photo or pick one (Android photo picker, no storage
-  permission), shrink to 1600 px and re-encode as JPEG without metadata
-  (the rule in `apps/web/src/lib/recipe-pictures.ts`), save fields, then
-  removals, then uploads, as the web does. Shrinking sits behind the image
-  service interface (ADR-0029).
-- Delete a recipe.
+- Recipes list (library and own, search, the web's sorts and tag filter in
+  `apps/web/src/lib/recipe-order.ts`, the sort remembered on the device).
+- Recipe detail: ingredients, method, nutrition per serving as the API
+  calculates it, "Added by", linked recipes, and cooking: ingredient and
+  step ticks and the linked-recipe trail (`lib/cook-trail.ts`, ADR-0018),
+  readable at arm's length, the screen kept awake while a recipe is open.
+  Ticks last while the app is open, as the web's last for the tab.
+- Library recipes open in the app, read-only, with a way to their public
+  page. Until item 07b, "New recipe" and "Edit" open the web's pages.
+- Delete a recipe, after a confirmation.
 
 ## Shared test cases
 
-Rules the app repeats from the web (units, the estimate, sorting) are
-tested from one set of cases: JSON fixtures in `libraries/test-cases/`,
-read by the web's `node --test` suites and by `commonTest`. Move the
-web's existing cases there in this item rather than copying them.
+Rules the app repeats from the web are tested from one set of cases: JSON
+fixtures in `libraries/test-cases/`, read by the web's `node --test` suites
+and by `commonTest`. This item moves the recipe sort cases there; 07b
+moves the units and the estimate.
 
 ## Checks
 
 - `commonTest` and the web's tests over the shared fixtures.
-- Flows: `create-recipe` (mirrors the web scenario, including an inline
-  new ingredient), `recipe-picture` (a fixture image pushed to the
-  emulator), `cook-a-recipe`.
+- Flow: `cook-a-recipe` (a library recipe: tick an ingredient and a step,
+  leave, come back, the ticks remain).
 - Gates: mobile, web.

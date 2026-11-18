@@ -42,7 +42,9 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 04 | [Sign-in and sign-up](04-sign-in.md) | 02, 03 | done (cc91ea8) |
 | 05 | [Evening Kitchen in Compose](05-design-system.md) | 01 | done (6577f8b) |
 | 06 | [Maestro flows and CI](06-flows-and-ci.md) | 04, 05 | done (43e67dc) |
-| 07 | [Recipes and pictures](07-recipes.md) | 06 | todo |
+| 07 | [Recipes: browse, read, and cook](07-recipes.md) | 06 | todo |
+| 07b | [The recipe form](07b-recipe-form.md) | 07 | todo |
+| 07c | [Recipe pictures](07c-recipe-pictures.md) | 07b | todo |
 | 08 | [The week's plan](08-plan.md) **Review** | 07 | todo |
 | 09 | [Plugins: page, suggestions, week panels](09-plugins.md) | 08 | todo |
 | 10 | [Shopping list](10-shopping-list.md) | 08 | todo |
@@ -52,7 +54,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 14 | [Household and invites](14-household.md) | 06 | todo |
 | 15 | [Account, settings, export and import](15-account.md) | 06 | todo |
 | 16 | [Release: versions, signing, GitHub Releases](16-release.md) | 03, 06 | todo |
-| 17 | [Parity audit and user guide](17-parity-and-docs.md) | 07–16 | todo |
+| 17 | [Parity audit and user guide](17-parity-and-docs.md) | 07–16 (07b and 07c included) | todo |
 | 18 | [Offline shopping list](18-offline-shopping-list.md) **Review** | 10, 17 | todo |
 
 Once their dependencies are done, items 09 to 12 and 14 to 16 are
