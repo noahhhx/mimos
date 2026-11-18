@@ -35,6 +35,54 @@ val generateAppVersion by tasks.registering {
     }
 }
 
+// The cases the web's tests also read (libraries/test-cases/README.md), embedded as Kotlin strings:
+// a unit test has no way to reach a file outside the module.
+val testCasesDirectory = rootProject.layout.projectDirectory.dir("../../libraries/test-cases")
+val generatedTestCases = layout.buildDirectory.dir("generated/testcases")
+
+val generateTestCases by tasks.registering {
+    val input = testCasesDirectory
+    val output = generatedTestCases
+    inputs.dir(input)
+    outputs.dir(output)
+    doLast {
+        // A string constant holds at most 65535 bytes, so each file goes in as joined chunks.
+        fun literal(text: String) =
+            "\"" +
+                text
+                    .replace("\\", "\\\\")
+                    .replace("\"", "\\\"")
+                    .replace("\$", "\\\$")
+                    .replace("\n", "\\n") +
+                "\""
+        val entries =
+            input.asFile
+                .listFiles { file -> file.extension == "json" }!!
+                .sortedBy { it.name }
+                .joinToString(",\n") { file ->
+                    val chunks = file.readText().chunked(10_000).joinToString(", ") { literal(it) }
+                    "        ${literal(file.name)} to listOf($chunks).joinToString(\"\")"
+                }
+        val target = output.get().file("io/github/noahhhx/mimos/testcases/TestCases.kt").asFile
+        target.parentFile.mkdirs()
+        target.writeText(
+            "package io.github.noahhhx.mimos.testcases\n\n" +
+                "/** Generated from libraries/test-cases by the generateTestCases task. */\n" +
+                "internal object TestCases {\n" +
+                "    val files: Map<String, String> =\n        mapOf(\n$entries\n        )\n" +
+                "\n    fun read(name: String): String =\n" +
+                "        files[name] ?: error(\"no test case file named \$name\")\n" +
+                "}\n"
+        )
+    }
+}
+
+// Lint reads the unit-test sources too, and does not learn from the source set that this task makes
+// them.
+tasks
+    .matching { it.name.startsWith("lintAnalyze") || it.name.endsWith("LintModel") }
+    .configureEach { dependsOn(generateTestCases) }
+
 kotlin {
     android {
         namespace = "io.github.noahhhx.mimos.shared"
@@ -69,6 +117,9 @@ kotlin {
             implementation(libs.compose.foundation)
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
+        }
+        commonTest {
+            kotlin.srcDir(generateTestCases.map { generatedTestCases.get() })
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
