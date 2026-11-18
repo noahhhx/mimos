@@ -582,6 +582,11 @@ export type RecipeSummary = {
     updatedAt: string;
     tags: Array<string>;
     nutrition: Nutrition;
+    /**
+     * The household's star rating, 1 to 5. Absent when unrated, and always absent for library recipes.
+     *
+     */
+    rating?: number;
 };
 
 /**
@@ -612,6 +617,11 @@ export type RecipeDetail = {
     createdBy?: Person;
     tags: Array<string>;
     nutrition: Nutrition;
+    /**
+     * The household's star rating, 1 to 5. Absent when unrated, and always absent for library recipes.
+     *
+     */
+    rating?: number;
     nutritionSource: NutritionSource;
     ingredients: Array<IngredientQuantity>;
     steps: Array<RecipeStep>;
@@ -619,6 +629,10 @@ export type RecipeDetail = {
      * The recipe's pictures in display order. Always empty for library recipes.
      */
     pictures: Array<RecipePicture>;
+};
+
+export type RecipeRatingInput = {
+    stars: number;
 };
 
 /**
@@ -1056,13 +1070,13 @@ export type DailyLogSummary = {
 };
 
 /**
- * One person's data, in export format version 8 (ADR-0011, ADR-0019, ADR-0022, ADR-0023, ADR-0026, ADR-0027). Any change to this schema, or to what a section holds, bumps the version and adds an upgrade step from the previous one.
+ * One person's data, in export format version 9 (ADR-0011, ADR-0019, ADR-0022, ADR-0023, ADR-0026, ADR-0027, ADR-0035). Any change to this schema, or to what a section holds, bumps the version and adds an upgrade step from the previous one.
  *
  */
 export type AccountExport = {
     format: 'mimos.export';
     /**
-     * The format version. This instance exports version 8.
+     * The format version. This instance exports version 9.
      */
     version: number;
     exportedAt: string;
@@ -1150,6 +1164,11 @@ export type ExportedRecipe = {
      * The recipe's pictures in display order.
      */
     pictures: Array<ExportedRecipePicture>;
+    /**
+     * The household's star rating, 1 to 5. Absent when unrated, and always absent for library recipes.
+     *
+     */
+    rating?: number;
     createdAt: string;
     updatedAt: string;
 };
@@ -2120,6 +2139,80 @@ export type ReplaceRecipeResponses = {
 };
 
 export type ReplaceRecipeResponse = ReplaceRecipeResponses[keyof ReplaceRecipeResponses];
+
+export type ClearRecipeRatingData = {
+    body?: never;
+    path: {
+        recipeId: string;
+    };
+    query?: never;
+    url: '/api/v1/recipes/{recipeId}/rating';
+};
+
+export type ClearRecipeRatingErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type ClearRecipeRatingError = ClearRecipeRatingErrors[keyof ClearRecipeRatingErrors];
+
+export type ClearRecipeRatingResponses = {
+    /**
+     * Cleared.
+     */
+    204: void;
+};
+
+export type ClearRecipeRatingResponse = ClearRecipeRatingResponses[keyof ClearRecipeRatingResponses];
+
+export type RateRecipeData = {
+    body: RecipeRatingInput;
+    path: {
+        recipeId: string;
+    };
+    query?: never;
+    url: '/api/v1/recipes/{recipeId}/rating';
+};
+
+export type RateRecipeErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    403: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type RateRecipeError = RateRecipeErrors[keyof RateRecipeErrors];
+
+export type RateRecipeResponses = {
+    /**
+     * The recipe with its new rating.
+     */
+    200: RecipeDetail;
+};
+
+export type RateRecipeResponse = RateRecipeResponses[keyof RateRecipeResponses];
 
 export type AddRecipePictureData = {
     body: {
