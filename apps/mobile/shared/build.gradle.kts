@@ -41,6 +41,8 @@ kotlin {
         compileSdk { version = release(compileSdkMajor) { minorApiLevel = compileSdkMinor } }
         minSdk = libs.versions.minSdk.get().toInt()
         buildToolsVersion = libs.versions.buildTools.get()
+        // Compose Resources packages the fonts as Android assets only with this on.
+        androidResources { enable = true }
         withHostTest {}
     }
 
@@ -66,6 +68,7 @@ kotlin {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.ui)
+            implementation(libs.compose.components.resources)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -73,6 +76,12 @@ kotlin {
             implementation(libs.ktor.client.mock)
         }
     }
+}
+
+// The fonts' TTFs: apps/web/src/fonts/README.md, "Mobile".
+compose.resources {
+    packageOfResClass = "io.github.noahhhx.mimos.resources"
+    publicResClass = false
 }
 
 openApiGenerate {
