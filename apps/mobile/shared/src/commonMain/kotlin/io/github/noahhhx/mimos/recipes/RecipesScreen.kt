@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
@@ -150,26 +151,28 @@ private fun RecipeListScreen(
         }
         if (available.isNotEmpty()) {
             item(key = "tags") {
-                FlowRow(
-                    gutter,
+                // One scrolling line: twenty tags would otherwise push the recipes off a phone.
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = MimosTheme.spacing.page),
                     horizontalArrangement = Arrangement.spacedBy(MimosTheme.spacing.s),
-                    verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.s),
                 ) {
-                    for (tag in available) {
+                    if (active.isNotEmpty()) {
+                        item(key = "clear") {
+                            Button(
+                                "Clear tags",
+                                onClick = model::clearTags,
+                                kind = ButtonKind.Secondary,
+                                small = true,
+                            )
+                        }
+                    }
+                    items(available, key = { it }) { tag ->
                         val on = tag in active
                         Button(
                             tag,
                             onClick = { model.toggleTag(tag) },
                             modifier = Modifier.semantics { selected = on },
                             kind = if (on) ButtonKind.Primary else ButtonKind.Secondary,
-                            small = true,
-                        )
-                    }
-                    if (active.isNotEmpty()) {
-                        Button(
-                            "Clear tags",
-                            onClick = model::clearTags,
-                            kind = ButtonKind.Secondary,
                             small = true,
                         )
                     }

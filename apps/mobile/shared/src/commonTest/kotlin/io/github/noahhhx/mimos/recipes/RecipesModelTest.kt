@@ -42,7 +42,8 @@ private class MemorySortStore(var saved: RecipeSort? = null) : RecipeSortStore {
 }
 
 private class Server {
-    val requests = mutableListOf<HttpRequestData>()
+    /** Every request as it arrives, for a test to read on its own thread. */
+    val requests = Channel<HttpRequestData>(Channel.UNLIMITED)
     var mine = "[${summary("m1", "Soup")}]"
     var library = "[${summary("l1", "Greek Salad")},${summary("l2", "Shakshuka")}]"
     var failList = false
@@ -53,7 +54,7 @@ private class Server {
     val searched = Channel<String?>(Channel.UNLIMITED)
 
     val engine = MockEngine { request ->
-        requests += request
+        requests.trySend(request)
         val path = request.url.encodedPath
         if (path == "/api/v1/recipes") searched.trySend(request.url.parameters["q"])
         val json = headersOf(HttpHeaders.ContentType, "application/json")
@@ -73,8 +74,12 @@ private class Server {
         }
     }
 
-    fun searches() =
-        requests.filter { it.url.encodedPath == "/api/v1/recipes" }.map { it.url.parameters["q"] }
+    suspend fun awaitRequest(method: HttpMethod, path: String) {
+        while (true) {
+            val request = requests.receive()
+            if (request.method == method && request.url.encodedPath == path) return
+        }
+    }
 }
 
 private fun TestScope.model(server: Server, store: RecipeSortStore = MemorySortStore()) =
@@ -121,7 +126,8 @@ class RecipesModelTest {
 
         assertEquals("greek", server.searched.receive())
         assertEquals("greek", model.query.value)
-        assertEquals(1, server.searches().count { it != null })
+        model.list.first { it is RecipeListState.Loaded }
+        assertTrue(server.searched.tryReceive().isFailure, "only the last text was searched")
     }
 
     @Test
@@ -133,7 +139,7 @@ class RecipesModelTest {
 
         assertNull(server.searched.receive())
         model.list.first { it is RecipeListState.Loaded }
-        assertEquals(listOf<String?>(null), server.searches())
+        assertTrue(server.searched.tryReceive().isFailure)
     }
 
     @Test
@@ -235,14 +241,10 @@ class RecipesModelTest {
                 .recipe
         model.cookBook.toggleStep(RecipeId("m1"), 0)
         model.delete(recipe)
+        server.awaitRequest(HttpMethod.Delete, "/api/v1/recipes/m1")
         server.searched.receive()
 
         assertEquals(RecipeRoute.List, model.route.value)
-        assertTrue(
-            server.requests.any {
-                it.method == HttpMethod.Delete && it.url.encodedPath == "/api/v1/recipes/m1"
-            }
-        )
         assertNull(model.cookBook.title(RecipeId("m1")))
     }
 

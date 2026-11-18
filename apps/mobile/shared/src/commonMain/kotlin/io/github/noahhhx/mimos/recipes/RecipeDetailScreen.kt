@@ -139,7 +139,7 @@ private fun LoadedRecipe(model: RecipesModel, recipe: RecipeDetail, webOrigin: S
     val gutter = Modifier.padding(horizontal = MimosTheme.spacing.page)
     val origin = webOrigin.trimEnd('/')
 
-    Column(verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.l)) {
+    Column(verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.xl)) {
         Column(gutter, verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.m)) {
             Text(whose(recipe), color = colors.muted)
             FlowRow(
@@ -282,7 +282,10 @@ private fun PerServing(recipe: RecipeDetail) {
                 "Carbs" to figure(n.carbsG, "g"),
                 "Fat" to figure(n.fatG, "g"),
             )) {
-            Column(Modifier.weight(1f)) {
+            Column(
+                Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.xs),
+            ) {
                 Label(label)
                 Text(value, style = MimosTheme.typography.heading)
             }
