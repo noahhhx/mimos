@@ -1,0 +1,49 @@
+{
+  "quantityCases": [
+    { "quantity": 2, "unit": "cups", "expected": "2 cups" },
+    { "quantity": 1.333, "unit": "tbsp", "expected": "1.33 tbsp" },
+    { "quantity": 0.5, "unit": "tsp", "expected": "0.5 tsp" },
+    { "quantity": 0.25, "unit": "tsp", "expected": "0.25 tsp" },
+    { "quantity": 3, "unit": null, "expected": "3" },
+    { "quantity": 3, "unit": "", "expected": "3" },
+    { "quantity": 1, "unit": "recipe", "expected": "1x" },
+    { "quantity": 2, "unit": " Recipes ", "expected": "2x" },
+    { "quantity": 0.5, "unit": "recipe", "expected": "0.5x" },
+    { "quantity": null, "unit": "recipe", "expected": "" },
+    { "quantity": 2, "unit": "servings", "expected": "2 servings" },
+    { "quantity": 1, "unit": "servings", "expected": "1 serving" },
+    { "quantity": 0.5, "unit": "servings", "expected": "0.5 servings" },
+    { "quantity": null, "unit": "pinch", "expected": "pinch" },
+    { "quantity": null, "unit": null, "expected": "" }
+  ],
+  "nameCases": [
+    { "name": "Egg", "quantity": 2, "unit": null, "expected": "Eggs" },
+    { "name": "Egg", "quantity": 1, "unit": null, "expected": "Egg" },
+    { "name": "Egg", "quantity": 1.001, "unit": null, "expected": "Egg" },
+    { "name": "Onion", "quantity": 0.5, "unit": "", "expected": "Onions" },
+    { "name": "Flour", "quantity": 200, "unit": "g", "expected": "Flour" },
+    { "name": "Pancakes", "quantity": 2, "unit": "servings", "expected": "Pancakes" },
+    { "name": "Salt", "quantity": null, "unit": null, "expected": "Salt" },
+    { "name": "garlic cloves", "quantity": 3, "unit": null, "expected": "garlic cloves" },
+    { "name": "Anchovy fillet, in oil (drained)", "quantity": 2, "unit": null, "expected": "Anchovy fillets, in oil (drained)" },
+    { "name": "Bacon, streaky (rasher)", "quantity": 2, "unit": null, "expected": "Bacon, streaky (rashers)" },
+    { "name": "Baking potato (large)", "quantity": 2, "unit": null, "expected": "Baking potatoes (large)" },
+    { "name": "Bay leaf", "quantity": 2, "unit": null, "expected": "Bay leaves" },
+    { "name": "Beef stock cube (10 g)", "quantity": 2, "unit": null, "expected": "Beef stock cubes (10 g)" },
+    { "name": "Chicken thigh, bone-in, skin-on", "quantity": 2, "unit": null, "expected": "Chicken thighs, bone-in, skin-on" },
+    { "name": "Corn on the cob", "quantity": 2, "unit": null, "expected": "Corns on the cob" },
+    { "name": "Garlic bulb (whole head)", "quantity": 2, "unit": null, "expected": "Garlic bulbs (whole head)" },
+    { "name": "Peach", "quantity": 2, "unit": null, "expected": "Peaches" },
+    { "name": "Rye bread (slice)", "quantity": 2, "unit": null, "expected": "Rye bread (slices)" },
+    { "name": "Tomato", "quantity": 2, "unit": null, "expected": "Tomatoes" },
+    { "name": "Jalapeño", "quantity": 2, "unit": null, "expected": "Jalapeños" },
+    { "name": "Courgette (zucchini)", "quantity": 2, "unit": null, "expected": "Courgettes (zucchini)" },
+    { "name": "Cherry", "quantity": 2, "unit": null, "expected": "Cherries" },
+    { "name": "Wine bottle of red", "quantity": 2, "unit": null, "expected": "Wine bottles of red" }
+  ],
+  "servingsCases": [
+    { "servings": 1, "expected": "1 serving" },
+    { "servings": 2, "expected": "2 servings" },
+    { "servings": 12, "expected": "12 servings" }
+  ]
+}

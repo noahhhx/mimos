@@ -118,6 +118,92 @@
       "sort": "title",
       "tags": ["dessert"],
       "expected": ["2"]
+    },
+    {
+      "name": "a space sorts before a letter, so a shorter word first",
+      "recipes": [
+        { "id": "a0", "title": "Applesauce" },
+        { "id": "b0", "title": "Apple tart" },
+        { "id": "c0", "title": "Apple pie" }
+      ],
+      "sort": "title",
+      "tags": [],
+      "expected": ["c0", "b0", "a0"]
+    },
+    {
+      "name": "a space sorts before a digit, and a digit before a letter",
+      "recipes": [
+        { "id": "a0", "title": "10 pie" },
+        { "id": "b0", "title": "1 pie" },
+        { "id": "c0", "title": "1pie" },
+        { "id": "d0", "title": "Pie" }
+      ],
+      "sort": "title",
+      "tags": [],
+      "expected": ["b0", "a0", "c0", "d0"]
+    },
+    {
+      "name": "a mark sorts before a letter",
+      "recipes": [
+        { "id": "a0", "title": "ab" },
+        { "id": "b0", "title": "a-b" },
+        { "id": "c0", "title": "a b" },
+        { "id": "d0", "title": "a_b" }
+      ],
+      "sort": "title",
+      "tags": [],
+      "expected": ["c0", "d0", "b0", "a0"]
+    },
+    {
+      "name": "a parenthesis sorts before a letter",
+      "recipes": [
+        { "id": "a0", "title": "Chicken roast" },
+        { "id": "b0", "title": "Chicken (roast)" },
+        { "id": "c0", "title": "Chicken, roast" }
+      ],
+      "sort": "title",
+      "tags": [],
+      "expected": ["b0", "a0", "c0"]
+    },
+    {
+      "name": "ASCII marks, digits, and letters in the collation order",
+      "recipes": [
+        { "id": "a0", "title": "~" },
+        { "id": "b0", "title": "a" },
+        { "id": "c0", "title": "9" },
+        { "id": "d0", "title": "$" },
+        { "id": "e0", "title": "_" },
+        { "id": "f0", "title": "-" },
+        { "id": "g0", "title": "(" },
+        { "id": "h0", "title": "!" },
+        { "id": "i0", "title": "?" },
+        { "id": "j0", "title": "#" },
+        { "id": "k0", "title": "%" },
+        { "id": "l0", "title": "0" },
+        { "id": "m0", "title": "z" }
+      ],
+      "sort": "title",
+      "tags": [],
+      "expected": ["e0", "f0", "h0", "i0", "g0", "j0", "k0", "a0", "d0", "l0", "c0", "b0", "m0"]
+    },
+    {
+      "name": "accented capitals and ligatures fold to their base letters",
+      "recipes": [
+        { "id": "a0", "title": "Zeta" },
+        { "id": "b0", "title": "Æther" },
+        { "id": "c0", "title": "Aether" },
+        { "id": "d0", "title": "Ça va" },
+        { "id": "e0", "title": "Cab" },
+        { "id": "f0", "title": "Ølund" },
+        { "id": "g0", "title": "Olive" },
+        { "id": "h0", "title": "Œuvre" },
+        { "id": "i0", "title": "Oeuf" },
+        { "id": "j0", "title": "Straße" },
+        { "id": "k0", "title": "Strasse" }
+      ],
+      "sort": "title",
+      "tags": [],
+      "expected": ["b0", "c0", "d0", "e0", "i0", "h0", "g0", "f0", "j0", "k0", "a0"]
     }
   ],
   "tagCases": [
