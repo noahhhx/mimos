@@ -47,7 +47,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 07c | [Recipe pictures](07c-recipe-pictures.md) | 07b | done (bba561e) |
 | 08 | [The week's plan](08-plan.md) **Review** | 07 | review (branch `mobile/08-plan`) |
 | 08b | [A new ingredient from the plan's picker](08b-plan-new-ingredient.md) | 08 | done (93c15ac) |
-| 09 | [Plugins: page, suggestions, week panels](09-plugins.md) | 08 | todo |
+| 09 | [Plugins: page, suggestions, week panels](09-plugins.md) | 08 | done (f9e9c8e) |
 | 10 | [Shopping list](10-shopping-list.md) | 08 | todo |
 | 11 | [Log and barcode scanning](11-log-and-barcodes.md) | 08 | todo |
 | 12 | [Fuel and intervals.icu](12-fuel.md) | 11 | todo |
@@ -319,3 +319,28 @@ owner can overturn any of it:
   still waits for review.
 - Item 16 is stacked on `mobile/15-account`, since it changes `App.kt`,
   `AppModel.kt`, and the shell as 14 and 15 do. It needs nothing from them.
+- The seed library has one cuisine a Country of the Week card can match
+  (Italian: Minestrone and Spaghetti Aglio e Olio), so a random spin almost
+  never brings a suggestion. A flow tagged `country-week` starts with Italy
+  chosen for its account's next week through the API, the plugin turned off
+  again (item 09). Next week is counted in the host's time zone, which the
+  emulator takes as its own; a run across midnight on a Sunday could pick
+  the wrong week.
+- The web names the wheel "A wheel of 24: Peru, Japan, …" for a screen
+  reader. Read aloud, 24 country names before the result is too much, so the
+  app says "A wheel of 24", then where it stopped, as a polite live region
+  (item 09).
+- Maestro waits for the screen to settle after a tap, so the Spin tap takes
+  about 4.9 s with the 3-second spin and 1.9 s with the system's animator
+  duration scale at 0 (`adb shell settings put global
+  animator_duration_scale 0`; `settings delete` puts it back). That is how
+  item 09 checked that the wheel lands at once with animations off; no flow
+  asserts it.
+- The panel's toggle row carries its plugin's name and summary as its
+  content description ("Country of the Week Italy", the flag left out as on
+  the web), so a flow matches it by that text.
+- Applying a Country of the Week card leaves a card on screen: the plugin
+  then suggests the same dishes for the next free dinners, as on the web.
+- The web reloads panels each time the plan page opens. The app loads them
+  once per week, so turning a plugin on or off on the Plugins screen reloads
+  the plan's panels and suggestions (`PlanModel.pluginsChanged`).
