@@ -1,0 +1,60 @@
+appId: io.github.noahhhx.mimos.debug
+---
+- runFlow: connect-and-sign-in.yaml
+- tapOn: Plan
+- assertVisible: Week of .*
+- tapOn:
+    text: Add Dinner for .*
+    index: 0
+- tapOn: Search recipes and ingredients
+- inputText: greek
+- tapOn: Greek Salad
+- assertVisible: Greek Salad
+- tapOn: Shopping
+- assertVisible: Shopping list
+- assertVisible: No list for this week yet.*
+- takeScreenshot: shopping-empty
+- tapOn: Generate from this week's plan
+- assertVisible: Regenerate
+- assertVisible: Produce
+- assertVisible: .*cucumber
+- tapOn: .*cucumber
+- scrollUntilVisible:
+    element:
+      checked: true
+      containsChild: .*cucumber
+    centerElement: true
+- takeScreenshot: shopping-list
+- scrollUntilVisible:
+    element: Add an item
+    centerElement: true
+- tapOn: Item
+- inputText: Bin bags
+- hideKeyboard
+- tapOn: Add
+- scrollUntilVisible:
+    element: Remove Bin bags
+    centerElement: true
+- assertVisible: Bin bags
+- assertVisible: Added
+- takeScreenshot: shopping-added
+- scrollUntilVisible:
+    element: Regenerate
+    direction: UP
+- tapOn: Regenerate
+- scrollUntilVisible:
+    element:
+      checked: true
+      containsChild: .*cucumber
+    centerElement: true
+- scrollUntilVisible:
+    element: Remove Bin bags
+    centerElement: true
+- tapOn: Remove Bin bags
+- assertNotVisible: Bin bags
+- scrollUntilVisible:
+    element: Shopping list
+    direction: UP
+- tapOn: Toggle light and dark mode
+- takeScreenshot: shopping-list-dark
+- tapOn: Toggle light and dark mode
