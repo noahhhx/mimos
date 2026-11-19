@@ -2,6 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Barcode scanning; asked for only when a scan starts. Declaring it makes the camera app
+         need it too, so the recipe form asks before "Take a photo". -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature
+        android:name="android.hardware.camera.any"
+        android:required="false" />
 
     <!-- Whether the phone has a camera app to take a recipe's photo with. -->
     <queries>

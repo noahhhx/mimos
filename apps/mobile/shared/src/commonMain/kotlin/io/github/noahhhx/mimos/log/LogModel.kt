@@ -1,5 +1,6 @@
 package io.github.noahhhx.mimos.log
 
+import io.github.noahhhx.mimos.api.apis.FoodProductsApi
 import io.github.noahhhx.mimos.api.apis.LoggingApi
 import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.api.models.CatalogIngredient
@@ -7,6 +8,7 @@ import io.github.noahhhx.mimos.api.models.DailyLogSummary
 import io.github.noahhhx.mimos.api.models.MealLog
 import io.github.noahhhx.mimos.api.models.MealType
 import io.github.noahhhx.mimos.api.models.RecipeSummary
+import io.github.noahhhx.mimos.barcode.ScanModel
 import io.github.noahhhx.mimos.plan.mondayOf
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -63,14 +65,19 @@ data class LogChoices(
 /**
  * The Log tab, as the web's Log page: a week's per-day totals by its Monday, the selected day's
  * entries, and a form that logs a recipe in servings, an ingredient by amount, or anything else by
- * hand. Information, not judgement. [today] is the phone's date.
+ * hand, or a packaged product found by its barcode. Information, not judgement. [today] is the
+ * phone's date.
  */
 class LogModel(
     private val scope: CoroutineScope,
     private val logging: () -> LoggingApi,
     private val recipes: () -> RecipesApi,
+    foodProducts: () -> FoodProductsApi,
     private val today: () -> LocalDate,
 ) {
+    /** A found product is picked into What, to log by amount. */
+    val scanner = ScanModel(scope, foodProducts, onFound = { pick(LogWhat.Product(it)) })
+
     private val mutableMonday = MutableStateFlow(mondayOf(today()))
     val monday: StateFlow<LocalDate> = mutableMonday.asStateFlow()
 
@@ -254,6 +261,7 @@ class LogModel(
 
     /** Forgets everything, for when the person signs out or the household changes. */
     fun reset() {
+        scanner.close()
         weekJob?.cancel()
         weekJob = null
         choicesJob?.cancel()

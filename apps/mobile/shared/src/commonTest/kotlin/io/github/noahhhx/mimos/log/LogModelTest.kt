@@ -1,5 +1,6 @@
 package io.github.noahhhx.mimos.log
 
+import io.github.noahhhx.mimos.api.apis.FoodProductsApi
 import io.github.noahhhx.mimos.api.apis.LoggingApi
 import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.api.models.CatalogIngredient
@@ -138,6 +139,12 @@ private class LogServer {
                         headers = json,
                     )
             }
+            path.startsWith("/api/v1/food-products/") ->
+                respond(
+                    """{"barcode":"50184453","name":"Yeast Extract","brand":"Marmite",
+                        "basis":"PER_100_G","servingSize":8,"nutrition":{"calories":260}}""",
+                    headers = json,
+                )
             path == "/api/v1/recipes" ->
                 respond(
                     MimosJson.encodeToString(
@@ -156,6 +163,7 @@ private fun TestScope.model(server: LogServer) =
         this,
         logging = { MimosHttp(server.engine, API).api(::LoggingApi) },
         recipes = { MimosHttp(server.engine, API).api(::RecipesApi) },
+        foodProducts = { MimosHttp(server.engine, API).api(::FoodProductsApi) },
         today = { THURSDAY },
     )
 
@@ -300,4 +308,20 @@ class LogModelTest {
             model.opened()
             assertEquals(2, server.catalogReads)
         }
+
+    @Test
+    fun `a scanned product is picked into What at one serving`() = runTest {
+        val model = model(LogServer())
+        model.opened()
+        model.loaded()
+
+        model.scanner.open()
+        model.scanner.type("50184453")
+        model.scanner.lookUpTyped()
+
+        val form = model.form.first { it.what is LogWhat.Product }
+        assertEquals("Yeast Extract (Marmite)", whatText(form.what))
+        assertEquals(AmountFields("8", "g"), form.amount)
+        assertEquals(null, model.scanner.scan.value)
+    }
 }

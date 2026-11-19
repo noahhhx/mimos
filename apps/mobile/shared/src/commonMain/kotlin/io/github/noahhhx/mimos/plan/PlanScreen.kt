@@ -37,6 +37,8 @@ import io.github.noahhhx.mimos.api.models.MealPlanEntry
 import io.github.noahhhx.mimos.api.models.MealType
 import io.github.noahhhx.mimos.api.models.Nutrition
 import io.github.noahhhx.mimos.api.models.Person
+import io.github.noahhhx.mimos.barcode.ScanButton
+import io.github.noahhhx.mimos.barcode.ScanSheet
 import io.github.noahhhx.mimos.ingredients.NewIngredientPanel
 import io.github.noahhhx.mimos.recipes.form.describeEntry
 import io.github.noahhhx.mimos.recipes.form.numberText
@@ -527,6 +529,7 @@ private fun PlannedFigures(total: Nutrition?) {
 
 @Composable
 private fun Picker(model: PlanModel, slot: PlanRoute.Pick) {
+    ScanSheet(model.scanner)
     val gutter = Modifier.padding(horizontal = MimosTheme.spacing.page)
     val picker by model.picker.collectAsState()
     val error by model.error.collectAsState()
@@ -556,6 +559,7 @@ private fun Picker(model: PlanModel, slot: PlanRoute.Pick) {
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             )
         }
+        item(key = "scan") { ScanButton(model.scanner, gutter) }
         error?.let { message -> item(key = "error") { Notice(message, gutter) } }
         val adding = picker.adding
         val recipes = picker.recipes

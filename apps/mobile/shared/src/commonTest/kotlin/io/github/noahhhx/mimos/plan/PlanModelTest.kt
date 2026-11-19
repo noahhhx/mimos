@@ -1,5 +1,6 @@
 package io.github.noahhhx.mimos.plan
 
+import io.github.noahhhx.mimos.api.apis.FoodProductsApi
 import io.github.noahhhx.mimos.api.apis.HouseholdApi
 import io.github.noahhhx.mimos.api.apis.LoggingApi
 import io.github.noahhhx.mimos.api.apis.PlanningApi
@@ -52,6 +53,8 @@ private class Server {
     var failWrites = false
     var failIngredient = false
     var suggestions = "[]"
+    /** What looking up any barcode finds. */
+    var product = ""
     var failSuggestions = false
     /** The recipes whose plan entries the server refuses. */
     var failRecipes = setOf<String>()
@@ -81,6 +84,7 @@ private class Server {
                 else respond("""{"suggestions":$suggestions}""", headers = json)
             }
             path.endsWith("/panels") -> respond("""{"panels":[]}""", headers = json)
+            path.startsWith("/api/v1/food-products/") -> respond(product, headers = json)
             path == "/api/v1/household" ->
                 if (failHousehold) respondError(HttpStatusCode.InternalServerError)
                 else respond("""{"members":[${members.joinToString(",")}]}""", headers = json)
@@ -161,6 +165,7 @@ private fun TestScope.model(server: Server, store: PlanViewStore = MemoryViewSto
         recipes = { MimosHttp(server.engine, API).api(::RecipesApi) },
         plugins = { MimosHttp(server.engine, API).api(::PluginsApi) },
         logging = { MimosHttp(server.engine, API).api(::LoggingApi) },
+        foodProducts = { MimosHttp(server.engine, API).api(::FoodProductsApi) },
         today = { THURSDAY },
         searchDelayMillis = 0,
     )
@@ -449,6 +454,62 @@ class PlanModelTest {
     }
 
     @Test
+    fun `a scanned product becomes the household's ingredient, planned at a serving`() = runTest {
+        val server =
+            Server().apply {
+                product =
+                    """{"barcode":"3017620422003","name":"Nutella","brand":"Ferrero",
+                        "basis":"PER_100_G","servingSize":15,
+                        "nutrition":{"calories":539,"proteinG":6.3,"carbsG":57.5,"fatG":30.9}}"""
+            }
+        val model = model(server)
+        model.ensureLoaded()
+        model.loaded()
+        model.openPicker(LocalDate(2026, 11, 17), MealType.SNACK)
+
+        model.scanner.open()
+        model.scanner.type("3017620422003")
+        model.scanner.lookUpTyped()
+
+        val (created, ingredient) = server.nextWrite()
+        assertEquals("POST /api/v1/ingredients", created)
+        assertEquals("Nutella (Ferrero)", ingredient!!["name"]!!.jsonPrimitive.content)
+        val (planned, entry) = server.nextWrite()
+        assertEquals("POST /api/v1/plans/$MONDAY/entries", planned)
+        assertEquals(
+            "dragon-fruit-x1",
+            entry!!["food"]!!.jsonObject["catalogSlug"]!!.jsonPrimitive.content,
+        )
+        assertEquals(15.0, entry["servings"]!!.jsonPrimitive.content.toDouble())
+        model.route.first { it == PlanRoute.Week }
+    }
+
+    @Test
+    fun `a scanned product missing a value opens the new ingredient with what is known`() =
+        runTest {
+            val server =
+                Server().apply {
+                    product =
+                        """{"barcode":"50184453","name":"Yeast Extract","brand":"Marmite",
+                            "basis":"PER_100_G","servingSize":8,"nutrition":{"calories":260}}"""
+                }
+            val model = model(server)
+            model.ensureLoaded()
+            model.loaded()
+            model.openPicker(LocalDate(2026, 11, 17), MealType.SNACK)
+
+            model.scanner.open()
+            model.scanner.type("50184453")
+            model.scanner.lookUpTyped()
+
+            val adding = model.picker.first { it.adding != null }.adding!!
+            assertEquals("Yeast Extract (Marmite)", adding.name)
+            assertEquals("260", adding.calories)
+            assertEquals("", adding.fatG)
+            assertTrue(server.writes.tryReceive().isFailure)
+        }
+
+    @Test
     fun `removing a meal closes its inspector and reloads the week`() = runTest {
         val server = Server().apply { entries += recipeEntry("e1", "DINNER", 2.0, ME) }
         val model = model(server)
@@ -521,6 +582,7 @@ class PlanModelTest {
                 recipes = { MimosHttp(server.engine, API).api(::RecipesApi) },
                 plugins = { MimosHttp(server.engine, API).api(::PluginsApi) },
                 logging = { MimosHttp(server.engine, API).api(::LoggingApi) },
+                foodProducts = { MimosHttp(server.engine, API).api(::FoodProductsApi) },
                 today = { THURSDAY },
             )
 

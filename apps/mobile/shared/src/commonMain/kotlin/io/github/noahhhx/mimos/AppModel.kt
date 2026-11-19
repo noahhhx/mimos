@@ -3,6 +3,7 @@ package io.github.noahhhx.mimos
 import io.github.noahhhx.mimos.account.AccountModel
 import io.github.noahhhx.mimos.account.DocumentStore
 import io.github.noahhhx.mimos.api.apis.AccountApi
+import io.github.noahhhx.mimos.api.apis.FoodProductsApi
 import io.github.noahhhx.mimos.api.apis.HouseholdApi
 import io.github.noahhhx.mimos.api.apis.LoggingApi
 import io.github.noahhhx.mimos.api.apis.PlanningApi
@@ -107,6 +108,7 @@ class AppModel(
             recipes = { connected().api(::RecipesApi) },
             plugins = { connected().api(::PluginsApi) },
             logging = { connected().api(::LoggingApi) },
+            foodProducts = { connected().api(::FoodProductsApi) },
             today = today,
         )
 
@@ -118,6 +120,7 @@ class AppModel(
             scope,
             logging = { connected().api(::LoggingApi) },
             recipes = { connected().api(::RecipesApi) },
+            foodProducts = { connected().api(::FoodProductsApi) },
             today = today,
         )
 

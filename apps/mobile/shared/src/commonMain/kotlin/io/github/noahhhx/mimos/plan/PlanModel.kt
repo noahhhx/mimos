@@ -1,11 +1,13 @@
 package io.github.noahhhx.mimos.plan
 
+import io.github.noahhhx.mimos.api.apis.FoodProductsApi
 import io.github.noahhhx.mimos.api.apis.HouseholdApi
 import io.github.noahhhx.mimos.api.apis.LoggingApi
 import io.github.noahhhx.mimos.api.apis.PlanningApi
 import io.github.noahhhx.mimos.api.apis.PluginsApi
 import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.api.models.CatalogIngredient
+import io.github.noahhhx.mimos.api.models.FoodProduct
 import io.github.noahhhx.mimos.api.models.MealLogInput
 import io.github.noahhhx.mimos.api.models.MealPlanEntry
 import io.github.noahhhx.mimos.api.models.MealPlanEntryInput
@@ -16,6 +18,10 @@ import io.github.noahhhx.mimos.api.models.Person
 import io.github.noahhhx.mimos.api.models.PlanSuggestion
 import io.github.noahhhx.mimos.api.models.PlannedDayTotal
 import io.github.noahhhx.mimos.api.models.RecipeSummary
+import io.github.noahhhx.mimos.barcode.ScanModel
+import io.github.noahhhx.mimos.barcode.existingIngredient
+import io.github.noahhhx.mimos.barcode.productDraft
+import io.github.noahhhx.mimos.barcode.productIngredient
 import io.github.noahhhx.mimos.ingredients.CheckedIngredient
 import io.github.noahhhx.mimos.ingredients.NewIngredientDraft
 import io.github.noahhhx.mimos.ingredients.SavedIngredient
@@ -97,13 +103,14 @@ data class Logged(val entryId: String, val text: String)
 
 /**
  * The picker's search: recipes (the household's, then the library's) and catalog foods, and the new
- * ingredient being added when the catalog lacks one.
+ * ingredient being added when the catalog lacks one, or [scanned] lacks a value.
  */
 data class PickerState(
     val query: String = "",
     val recipes: List<RecipeSummary>? = null,
     val foods: List<CatalogIngredient> = emptyList(),
     val adding: NewIngredientDraft? = null,
+    val scanned: FoodProduct? = null,
 ) {
     /** "+ Add" is offered once the search has answered and found no food by that name. */
     val offersNewIngredient: Boolean
@@ -124,9 +131,13 @@ class PlanModel(
     private val recipes: () -> RecipesApi,
     private val plugins: () -> PluginsApi,
     private val logging: () -> LoggingApi,
+    foodProducts: () -> FoodProductsApi,
     private val today: () -> LocalDate,
     private val searchDelayMillis: Long = SEARCH_DELAY_MILLIS,
 ) {
+    /** The picker's scanner: a found product is planned in the picker's slot (ADR-0026). */
+    val scanner = ScanModel(scope, foodProducts, onFound = ::planProduct)
+
     /** The week's panels, which a button press can change the suggestions of. */
     val panels = WeekPanelsModel(scope, plugins, onPressed = ::refreshSuggestions)
 
@@ -236,7 +247,10 @@ class PlanModel(
         mutableNotice.value = null
         mutableSharing.value = null
         mutableLogged.value = null
-        if (to !is PlanRoute.Pick) searchJob?.cancel()
+        if (to !is PlanRoute.Pick) {
+            searchJob?.cancel()
+            scanner.close()
+        }
         mutableRoute.value = to
     }
 
@@ -364,7 +378,10 @@ class PlanModel(
 
     /** Opens a new ingredient named as the search, counted per 100 g until the person says. */
     fun startNewIngredient() = mutablePicker.update {
-        it.copy(adding = NewIngredientDraft(it.query.trim(), NutritionBasis.PER_100_G))
+        it.copy(
+            adding = NewIngredientDraft(it.query.trim(), NutritionBasis.PER_100_G),
+            scanned = null,
+        )
     }
 
     fun editNewIngredient(change: (NewIngredientDraft) -> NewIngredientDraft) =
@@ -372,7 +389,7 @@ class PlanModel(
             it.copy(adding = it.adding?.let(change))
         }
 
-    fun cancelNewIngredient() = mutablePicker.update { it.copy(adding = null) }
+    fun cancelNewIngredient() = mutablePicker.update { it.copy(adding = null, scanned = null) }
 
     /**
      * Saves the new ingredient as one of the household's own, then plans it in the picker's slot at
@@ -396,22 +413,59 @@ class PlanModel(
                 is SavedIngredient.Failed ->
                     editNewIngredient { it.copy(saving = false, error = saved.message) }
                 is SavedIngredient.Created -> {
-                    catalog = catalog?.let { withIngredient(it, saved.ingredient) }
+                    val created = saved.ingredient
+                    catalog = catalog?.let { withIngredient(it, created) }
+                    // A scanned product's serving still fits unless its basis was changed.
+                    val serving =
+                        picker.value.scanned?.takeIf { it.basis == created.basis }?.servingSize
                     cancelNewIngredient()
                     if (route.value != slot) return@launch
                     startSearch(waitFirst = false)
-                    plan(slot, saved.ingredient)
+                    plan(slot, created, serving)
                 }
             }
         }
     }
 
-    private fun plan(slot: PlanRoute.Pick, food: CatalogIngredient) {
-        val planned = newFoodEntry(food, slot.mealType, memberCount())
-        add(
-            slot,
-            MealPlanEntryInput(slot.date, slot.mealType, planned.servings, food = planned.food),
-        )
+    /**
+     * Plans a scanned product as the household's own ingredient, made once from the lookup and
+     * found again on the next scan, at a serving each; one missing a value opens the new-ingredient
+     * panel with what Open Food Facts knew.
+     */
+    private fun planProduct(product: FoodProduct) {
+        val slot = route.value as? PlanRoute.Pick ?: return
+        val input = productIngredient(product)
+        if (input == null) {
+            mutablePicker.update { it.copy(adding = productDraft(product), scanned = product) }
+            return
+        }
+        change("Could not add that product.") {
+            val food =
+                existingIngredient(input, loadedCatalog())
+                    ?: recipes().createIngredient(input).body().also { created ->
+                        catalog = catalog?.let { withIngredient(it, created) }
+                    }
+            addEntry(slot, food, product.servingSize)
+        }
+    }
+
+    private fun plan(slot: PlanRoute.Pick, food: CatalogIngredient, servingSize: Double? = null) {
+        change("Could not plan that meal.") { addEntry(slot, food, servingSize) }
+    }
+
+    private suspend fun addEntry(
+        slot: PlanRoute.Pick,
+        food: CatalogIngredient,
+        servingSize: Double?,
+    ) {
+        val planned = newFoodEntry(food.slug, food.basis, servingSize, slot.mealType, memberCount())
+        planning()
+            .addMealPlanEntry(
+                monday.value,
+                MealPlanEntryInput(slot.date, slot.mealType, planned.servings, food = planned.food),
+            )
+            .body()
+        if (route.value == slot) mutableRoute.value = PlanRoute.Week
     }
 
     private fun add(slot: PlanRoute.Pick, input: MealPlanEntryInput) {
@@ -586,6 +640,7 @@ class PlanModel(
 
     /** Back to the start, for when the person signs out and someone else may sign in. */
     fun reset() {
+        scanner.close()
         weekJob?.cancel()
         weekJob = null
         searchJob?.cancel()

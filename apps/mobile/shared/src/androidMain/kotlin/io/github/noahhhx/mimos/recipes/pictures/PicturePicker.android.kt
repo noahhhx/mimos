@@ -1,7 +1,9 @@
 package io.github.noahhhx.mimos.recipes.pictures
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -12,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import java.io.File
 
@@ -35,18 +38,34 @@ actual fun rememberPicturePicker(onPicked: (List<PickedPicture>) -> Unit): Pictu
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
             if (taken) picked(listOf(PickedPicture(photo.toString())))
         }
+    // The app declares CAMERA for barcodes, and then the camera app's launch throws without it.
+    val ask =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) camera.launch(photo)
+        }
     val hasCamera =
         remember(context) {
             Intent(MediaStore.ACTION_IMAGE_CAPTURE).resolveActivity(context.packageManager) != null
         }
-    return remember(gallery, camera, hasCamera) {
+    return remember(gallery, camera, ask, hasCamera) {
         PicturePicker(
             pick = {
                 gallery.launch(
                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                 )
             },
-            takePhoto = if (hasCamera) ({ camera.launch(photo) }) else null,
+            takePhoto =
+                if (hasCamera) {
+                    {
+                        val allowed =
+                            ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.CAMERA,
+                            ) == PackageManager.PERMISSION_GRANTED
+                        if (allowed) camera.launch(photo)
+                        else ask.launch(Manifest.permission.CAMERA)
+                    }
+                } else null,
         )
     }
 }
