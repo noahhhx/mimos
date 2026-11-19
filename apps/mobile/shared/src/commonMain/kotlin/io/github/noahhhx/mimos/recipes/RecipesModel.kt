@@ -5,6 +5,8 @@ import io.github.noahhhx.mimos.api.models.RecipeDetail
 import io.github.noahhhx.mimos.api.models.RecipeSummary
 import io.github.noahhhx.mimos.client.ApiProblem
 import io.github.noahhhx.mimos.recipes.form.RecipeFormModel
+import io.github.noahhhx.mimos.recipes.pictures.PictureShrinker
+import io.github.noahhhx.mimos.recipes.pictures.RecipePictures
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -66,12 +68,14 @@ sealed interface DeleteState {
  * The Recipes tab: the library and the household's recipes, cooking from one, and the [form] that
  * writes them. It owns the route (see [RecipeRoute]), the list with its search, tab, sort, and tag
  * filter, the recipe on screen, and the [cookBook]. [api] is asked for on every call, because the
- * instance can change.
+ * instance can change. [pictures] shows recipes' pictures and saves the form's.
  */
 class RecipesModel(
     private val scope: CoroutineScope,
     private val sortStore: RecipeSortStore,
     private val api: () -> RecipesApi,
+    val pictures: RecipePictures,
+    shrinker: PictureShrinker,
     val cookBook: CookBook = CookBook(),
     private val searchDelayMillis: Long = SEARCH_DELAY_MILLIS,
 ) {
@@ -102,7 +106,7 @@ class RecipesModel(
     private var listJob: Job? = null
     private var detailJob: Job? = null
 
-    val form = RecipeFormModel(scope, api, onSaved = ::saved)
+    val form = RecipeFormModel(scope, api, pictures, shrinker, onSaved = ::saved)
 
     /** Loads the lists the first time the tab is shown. */
     fun ensureLoaded() {
@@ -201,6 +205,7 @@ class RecipesModel(
         mutableDeletion.value = DeleteState.Idle
         form.close()
         cookBook.clear()
+        pictures.clear()
     }
 
     private fun go(to: RecipeRoute) {

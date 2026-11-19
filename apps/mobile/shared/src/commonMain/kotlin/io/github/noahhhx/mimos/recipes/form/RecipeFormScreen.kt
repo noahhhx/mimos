@@ -35,6 +35,7 @@ import io.github.noahhhx.mimos.api.models.NutritionBasis
 import io.github.noahhhx.mimos.api.models.NutritionSource
 import io.github.noahhhx.mimos.api.models.RecipeSummary
 import io.github.noahhhx.mimos.recipes.PerServing
+import io.github.noahhhx.mimos.recipes.pictures.RecipePictures
 import io.github.noahhhx.mimos.ui.Button
 import io.github.noahhhx.mimos.ui.ButtonKind
 import io.github.noahhhx.mimos.ui.Choice
@@ -58,7 +59,13 @@ private val DECIMAL = KeyboardOptions(keyboardType = KeyboardType.Decimal)
  * none loses its focus when the state around it changes.
  */
 @Composable
-fun RecipeFormScreen(model: RecipeFormModel, title: String, back: String, onCancel: () -> Unit) {
+fun RecipeFormScreen(
+    model: RecipeFormModel,
+    pictures: RecipePictures,
+    title: String,
+    back: String,
+    onCancel: () -> Unit,
+) {
     val state by model.state.collectAsState()
     val scroll = rememberScrollState()
     val gutter = Modifier.padding(horizontal = MimosTheme.spacing.page)
@@ -82,7 +89,7 @@ fun RecipeFormScreen(model: RecipeFormModel, title: String, back: String, onCanc
                 LaunchedEffect(current.errors) {
                     if (current.errors.isNotEmpty()) scroll.scrollTo(0)
                 }
-                Form(model, current, onCancel, gutter)
+                Form(model, current, pictures, onCancel, gutter)
             }
         }
     }
@@ -92,6 +99,7 @@ fun RecipeFormScreen(model: RecipeFormModel, title: String, back: String, onCanc
 private fun Form(
     model: RecipeFormModel,
     form: RecipeFormState.Editing,
+    pictures: RecipePictures,
     onCancel: () -> Unit,
     modifier: Modifier,
 ) {
@@ -146,6 +154,9 @@ private fun Form(
             "Tags (comma-separated)",
             placeholder = "dinner, vegetarian",
         )
+
+        Heading("Pictures")
+        PicturesField(model, form, pictures)
 
         Heading("Ingredients")
         Text(
@@ -232,7 +243,7 @@ private fun Form(
                     else -> "Create recipe"
                 },
                 model::save,
-                enabled = !form.saving,
+                enabled = !form.saving && !form.shrinking,
             )
             Button("Cancel", onCancel, kind = ButtonKind.Secondary, enabled = !form.saving)
         }

@@ -8,6 +8,7 @@ import io.github.noahhhx.mimos.auth.BrowserLauncher
 import io.github.noahhhx.mimos.auth.KeystoreTokenStore
 import io.github.noahhhx.mimos.connect.ConnectModel
 import io.github.noahhhx.mimos.instance.discover
+import io.github.noahhhx.mimos.recipes.pictures.AndroidPictureShrinker
 import io.github.noahhhx.mimos.session.SessionModel
 import io.github.noahhhx.mimos.ui.ThemeModel
 import io.ktor.client.engine.okhttp.OkHttp
@@ -32,6 +33,7 @@ class AppViewModel(application: Application, debuggable: Boolean) : AndroidViewM
             debug = debuggable,
             engine = engine,
             recipeSortStore = SharedPreferencesRecipeSortStore(application),
+            pictureShrinker = AndroidPictureShrinker(application),
             createSession = { instance ->
                 SessionModel(
                     authorizer =

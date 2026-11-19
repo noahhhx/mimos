@@ -11,6 +11,8 @@ import io.github.noahhhx.mimos.recipes.RecipeId
 import io.github.noahhhx.mimos.recipes.RecipeRoute
 import io.github.noahhhx.mimos.recipes.RecipeSort
 import io.github.noahhhx.mimos.recipes.RecipeSortStore
+import io.github.noahhhx.mimos.recipes.pictures.PickedPicture
+import io.github.noahhhx.mimos.recipes.pictures.PictureShrinker
 import io.github.noahhhx.mimos.session.AuthorizeKind
 import io.github.noahhhx.mimos.session.AuthorizeResult
 import io.github.noahhhx.mimos.session.Authorizer
@@ -63,6 +65,10 @@ private fun model(
         debug = debug,
         engine = MockEngine { respondError(HttpStatusCode.ServiceUnavailable) },
         recipeSortStore = NoSort(),
+        pictureShrinker =
+            object : PictureShrinker {
+                override suspend fun shrink(picked: PickedPicture) = error("nothing is picked")
+            },
         createSession = createSession,
     )
 

@@ -1,13 +1,21 @@
 package io.github.noahhhx.mimos.recipes.form
 
+import io.github.noahhhx.mimos.api.apis.RecipePicturesApi
 import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.api.models.IngredientLineStatus
 import io.github.noahhhx.mimos.api.models.NutritionSource
 import io.github.noahhhx.mimos.api.models.RecipeDetail
 import io.github.noahhhx.mimos.client.MimosHttp
+import io.github.noahhhx.mimos.recipes.pictures.PickedPicture
+import io.github.noahhhx.mimos.recipes.pictures.PictureShrinker
+import io.github.noahhhx.mimos.recipes.pictures.PictureSlot
+import io.github.noahhhx.mimos.recipes.pictures.PreparedPicture
+import io.github.noahhhx.mimos.recipes.pictures.RecipePictures
+import io.github.noahhhx.mimos.recipes.pictures.Shrunk
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.respondError
+import io.ktor.client.engine.mock.toByteArray
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -48,22 +56,46 @@ private fun detail(id: String, title: String) =
         "ingredients":[{"name":"olive oil","quantity":1,"unit":"tbsp","catalogSlug":"olive-oil"}],
         "steps":[{"instruction":"Simmer."}],"pictures":[]}"""
 
-/** A request as the server saw it: its method, path, and JSON body, if any. */
-private class Seen(val method: HttpMethod, val path: String, val body: JsonObject?)
+/** A request as the server saw it: its method, path, JSON body, and other body as text. */
+private class Seen(
+    val method: HttpMethod,
+    val path: String,
+    val body: JsonObject?,
+    val contentType: String? = null,
+    val raw: String? = null,
+)
+
+/** Shrinks a picked picture to its URI's bytes; one whose URI ends in "bad" cannot be read. */
+private class FakeShrinker : PictureShrinker {
+    override suspend fun shrink(picked: PickedPicture): Shrunk =
+        if (picked.uri.endsWith("bad")) Shrunk.Failed("${picked.uri} can't be read as a picture.")
+        else Shrunk.Ready(PreparedPicture(picked.uri.encodeToByteArray()))
+}
 
 private class Server {
     val seen = mutableListOf<Seen>()
     var recipeStatus = HttpStatusCode.OK
     var problem: String? = null
     var estimateFails = false
+    var pictureFails = false
+    private var uploads = 0
 
     val engine = MockEngine { request ->
         val body =
             (request.body as? TextContent)?.text?.let { Json.parseToJsonElement(it).jsonObject }
         val path = request.url.encodedPath
-        seen += Seen(request.method, path, body)
+        val raw = if (body == null) request.body.toByteArray().decodeToString() else null
+        seen += Seen(request.method, path, body, request.body.contentType?.toString(), raw)
         val json = headersOf(HttpHeaders.ContentType, "application/json")
         when {
+            path.endsWith("/pictures") && pictureFails ->
+                respond(
+                    """{"title":"Bad Request","status":400,"detail":"Not a picture."}""",
+                    HttpStatusCode.BadRequest,
+                    headersOf(HttpHeaders.ContentType, "application/problem+json"),
+                )
+            path.endsWith("/pictures") ->
+                respond("""{"id":"picture-${++uploads}"}""", HttpStatusCode.Created, json)
             path == "/api/v1/ingredients" && request.method == HttpMethod.Get ->
                 respond(CATALOG, headers = json)
             path == "/api/v1/ingredients" ->
@@ -98,6 +130,12 @@ private class Server {
     }
 
     fun estimates() = seen.filter { it.path == "/api/v1/recipes/nutrition-estimate" }
+
+    /** What changed the recipe, in order: "POST /api/v1/recipes", and the like. */
+    fun writes() =
+        seen
+            .filter { it.method != HttpMethod.Get && !it.path.endsWith("/nutrition-estimate") }
+            .map { "${it.method.value} ${it.path}" }
 }
 
 private class Harness(scope: TestScope, val server: Server = Server()) {
@@ -106,6 +144,8 @@ private class Harness(scope: TestScope, val server: Server = Server()) {
         RecipeFormModel(
             scope,
             { MimosHttp(server.engine, API).api(::RecipesApi) },
+            RecipePictures({ MimosHttp(server.engine, API).api(::RecipePicturesApi) }),
+            FakeShrinker(),
             onSaved = { saved.value += it },
         )
 
@@ -271,6 +311,69 @@ class RecipeFormModelTest {
             h.server.seen.any { it.method == HttpMethod.Put && it.path == "/api/v1/recipes/r1" }
         )
     }
+
+    @Test
+    fun `picked pictures are shrunk at once, and uploaded after the recipe is created`() = runTest {
+        val h = Harness(this)
+        h.model.open(null)
+        h.model.awaitEditing()
+        fill(h.model)
+        h.model.addPictures(listOf(PickedPicture("content://one"), PickedPicture("content://bad")))
+        val picked =
+            h.model.state.first { !(it as RecipeFormState.Editing).shrinking }
+                as RecipeFormState.Editing
+
+        assertEquals(listOf("content://bad can't be read as a picture."), picked.pictureProblems)
+        assertEquals(1, picked.pictures.slots.size)
+        assertTrue(h.server.writes().isEmpty())
+
+        h.model.save()
+
+        assertEquals(listOf("new-id"), h.savedIds())
+        assertEquals(
+            listOf("POST /api/v1/recipes", "POST /api/v1/recipes/new-id/pictures"),
+            h.server.writes(),
+        )
+        val upload = h.server.seen.last()
+        assertTrue(upload.contentType!!.startsWith("multipart/form-data"), upload.contentType)
+        assertTrue("name=\"file\"" in upload.raw!! && "filename=" in upload.raw, upload.raw)
+        assertTrue("content://one" in upload.raw)
+    }
+
+    @Test
+    fun `a picture that fails keeps the form on the saved recipe, so saving again replaces it`() =
+        runTest {
+            val h = Harness(this)
+            h.server.pictureFails = true
+            h.model.open(null)
+            h.model.awaitEditing()
+            fill(h.model)
+            h.model.addPictures(listOf(PickedPicture("content://one")))
+            h.model.state.first { (it as RecipeFormState.Editing).pictures.slots.isNotEmpty() }
+            h.model.save()
+            val stopped =
+                h.model.state.first { (it as RecipeFormState.Editing).errors.isNotEmpty() }
+                    as RecipeFormState.Editing
+
+            assertEquals(listOf("Not a picture."), stopped.errors)
+            assertEquals("new-id", stopped.recipeId)
+            assertIs<PictureSlot.New>(stopped.pictures.slots.single())
+            assertTrue(h.saved.value.isEmpty())
+
+            h.server.pictureFails = false
+            h.model.save()
+
+            assertEquals(listOf("new-id"), h.savedIds())
+            assertEquals(
+                listOf(
+                    "POST /api/v1/recipes",
+                    "POST /api/v1/recipes/new-id/pictures",
+                    "PUT /api/v1/recipes/new-id",
+                    "POST /api/v1/recipes/new-id/pictures",
+                ),
+                h.server.writes(),
+            )
+        }
 
     @Test
     fun `a refused save shows the API's detail and can be tried again`() = runTest {

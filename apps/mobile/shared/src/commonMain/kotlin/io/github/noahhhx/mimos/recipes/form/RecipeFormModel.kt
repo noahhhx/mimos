@@ -12,6 +12,14 @@ import io.github.noahhhx.mimos.api.models.RecipeSummary
 import io.github.noahhhx.mimos.client.ApiProblem
 import io.github.noahhhx.mimos.recipes.collationKey
 import io.github.noahhhx.mimos.recipes.compareKeys
+import io.github.noahhhx.mimos.recipes.pictures.MAX_PICTURES
+import io.github.noahhhx.mimos.recipes.pictures.Pick
+import io.github.noahhhx.mimos.recipes.pictures.PickedPicture
+import io.github.noahhhx.mimos.recipes.pictures.PictureApi
+import io.github.noahhhx.mimos.recipes.pictures.PictureDraft
+import io.github.noahhhx.mimos.recipes.pictures.PictureShrinker
+import io.github.noahhhx.mimos.recipes.pictures.Shrunk
+import io.github.noahhhx.mimos.recipes.pictures.syncPictures
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -62,18 +70,23 @@ sealed interface RecipeFormState {
     data class Failed(val message: String) : RecipeFormState
 
     /**
-     * The form. [recipeId] is the recipe being edited, null for a new one. [recipes] are the
-     * household's own, never the recipe itself. [errors] are the last save's, shown at the top.
+     * The form. [recipeId] is the recipe being edited, null for a new one until its first save.
+     * [recipes] are the household's own, never the recipe itself. [errors] are the last save's,
+     * shown at the top. [pictures] are kept apart from [draft] because they are saved apart from it
+     * (ADR-0023); [pictureProblems] are the last pick's, said beside them.
      */
     data class Editing(
         val recipeId: String?,
         val draft: RecipeDraft,
         val catalog: List<CatalogIngredient>,
         val recipes: List<RecipeSummary>,
+        val pictures: PictureDraft = PictureDraft(),
         val estimate: Estimate = Estimate.None,
         val adding: NewIngredientDraft? = null,
         val errors: List<String> = emptyList(),
         val saving: Boolean = false,
+        val shrinking: Boolean = false,
+        val pictureProblems: List<String> = emptyList(),
     ) : RecipeFormState {
         val bySlug: Map<String, CatalogIngredient> = catalog.associateBy { it.slug }
         val byRecipeId: Map<String, RecipeSummary> = recipes.associateBy { it.id }
@@ -84,12 +97,16 @@ sealed interface RecipeFormState {
  * The recipe form, for a new recipe or an edit, as the web's `recipe-form.tsx`: ingredient lines
  * linked to the catalog or the household's recipes as they are typed and picked, a new ingredient
  * added from a line, and the nutrition estimate kept up to date [estimateDelayMillis] after the
- * last change to what it is sent. [onSaved] gets the saved recipe. [api] is asked for on every
- * call, because the instance can change.
+ * last change to what it is sent. Save sends the fields, then the picture changes through
+ * [pictureApi]; if a picture fails, the form stays open with the rest still to send, now editing
+ * the recipe it saved, so saving again never creates it twice. [onSaved] gets the saved recipe.
+ * [api] is asked for on every call, because the instance can change.
  */
 class RecipeFormModel(
     private val scope: CoroutineScope,
     private val api: () -> RecipesApi,
+    private val pictureApi: PictureApi,
+    private val shrinker: PictureShrinker,
     private val onSaved: (RecipeDetail) -> Unit,
     private val estimateDelayMillis: Long = ESTIMATE_DELAY_MILLIS,
 ) {
@@ -101,7 +118,9 @@ class RecipeFormModel(
     private var saveJob: Job? = null
     private var ingredientJob: Job? = null
     private var estimateJob: Job? = null
+    private var shrinkJob: Job? = null
     private var requested: EstimateRequest? = null
+    private var picks = 0
 
     /** Opens the form for the recipe [recipeId], or for a new recipe. */
     fun open(recipeId: String?) {
@@ -114,10 +133,11 @@ class RecipeFormModel(
                     coroutineScope {
                         val catalog = async { api().listIngredients().body() }
                         val mine = async { api().listMyRecipes().body() }
-                        val recipe = recipeId?.let { async { api().getRecipe(it).body() } }
+                        val recipe = recipeId?.let { async { api().getRecipe(it).body() } }?.await()
                         RecipeFormState.Editing(
                             recipeId = recipeId,
-                            draft = draftOf(recipe?.await()),
+                            draft = draftOf(recipe),
+                            pictures = PictureDraft.of(recipe?.pictures.orEmpty().map { it.id }),
                             catalog = catalog.await(),
                             // A recipe never offers itself as something it can use.
                             recipes = mine.await().filter { it.id != recipeId },
@@ -137,7 +157,7 @@ class RecipeFormModel(
 
     /** Closes the form, dropping what was typed and anything in flight. */
     fun close() {
-        for (job in listOf(loadJob, saveJob, ingredientJob, estimateJob)) job?.cancel()
+        for (job in listOf(loadJob, saveJob, ingredientJob, estimateJob, shrinkJob)) job?.cancel()
         requested = null
         mutableState.value = RecipeFormState.Closed
     }
@@ -273,10 +293,49 @@ class RecipeFormModel(
         }
     }
 
+    /**
+     * Shrinks each of [picked] in turn and adds those that could be after the form's pictures, up
+     * to [MAX_PICTURES]. Nothing reaches the API until the form is saved.
+     */
+    fun addPictures(picked: List<PickedPicture>) {
+        val form = mutableState.value as? RecipeFormState.Editing ?: return
+        if (form.shrinking || form.saving || picked.isEmpty()) return
+        changeEditing { it.copy(shrinking = true, pictureProblems = emptyList()) }
+        shrinkJob = scope.launch {
+            val ready = mutableListOf<Pick>()
+            val problems = mutableListOf<String>()
+            for (each in picked) {
+                when (val shrunk = shrinker.shrink(each)) {
+                    is Shrunk.Ready -> ready += Pick("pick-${++picks}", shrunk.prepared)
+                    is Shrunk.Failed -> problems += shrunk.message
+                }
+            }
+            changeEditing { current ->
+                val (pictures, leftOut) = current.pictures.add(ready)
+                val full =
+                    if (leftOut == 0) emptyList()
+                    else
+                        listOf(
+                            "A recipe can have $MAX_PICTURES pictures, so $leftOut of them were " +
+                                "left out."
+                        )
+                current.copy(
+                    pictures = pictures,
+                    shrinking = false,
+                    pictureProblems = problems + full,
+                )
+            }
+        }
+    }
+
+    fun removePicture(index: Int) = changeEditing {
+        if (it.saving || it.shrinking) it else it.copy(pictures = it.pictures.remove(index))
+    }
+
     /** Saves the recipe, or shows every problem with the form at its top. */
     fun save() {
         val form = mutableState.value as? RecipeFormState.Editing ?: return
-        if (form.saving) return
+        if (form.saving || form.shrinking) return
         val input =
             when (val checked = form.draft.toRecipeInput()) {
                 is CheckedRecipe.Invalid -> {
@@ -299,6 +358,15 @@ class RecipeFormModel(
                     changeEditing { it.copy(saving = false, errors = listOf(message)) }
                     return@launch
                 }
+            changeEditing { it.copy(recipeId = saved.id) }
+            if (form.pictures.hasChanges) {
+                val synced = syncPictures(pictureApi, saved.id, form.pictures)
+                changeEditing { it.copy(pictures = synced.draft) }
+                if (synced.error != null) {
+                    changeEditing { it.copy(saving = false, errors = listOf(synced.error)) }
+                    return@launch
+                }
+            }
             onSaved(saved)
         }
     }

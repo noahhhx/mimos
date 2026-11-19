@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import io.github.noahhhx.mimos.api.models.Nutrition
 import io.github.noahhhx.mimos.api.models.NutritionSource
 import io.github.noahhhx.mimos.api.models.RecipeDetail
+import io.github.noahhhx.mimos.recipes.pictures.PictureRow
 import io.github.noahhhx.mimos.ui.Button
 import io.github.noahhhx.mimos.ui.ButtonKind
 import io.github.noahhhx.mimos.ui.ErrorState
@@ -186,14 +187,12 @@ private fun LoadedRecipe(model: RecipesModel, recipe: RecipeDetail, webOrigin: S
                     recipe.tags.forEach { Tag(it) }
                 }
             }
-            if (recipe.description.isNotEmpty()) {
-                Text(
-                    recipe.description,
-                    Modifier.padding(top = MimosTheme.spacing.l),
-                    style = type.lede,
-                    color = colors.muted,
-                )
-            }
+        }
+
+        PictureRow(model.pictures, recipe.id, recipe.title, recipe.pictures.map { it.id })
+
+        if (recipe.description.isNotEmpty()) {
+            Text(recipe.description, gutter, style = type.lede, color = colors.muted)
         }
 
         Column {

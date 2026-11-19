@@ -1,5 +1,6 @@
 package io.github.noahhhx.mimos
 
+import io.github.noahhhx.mimos.api.apis.RecipePicturesApi
 import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.client.MimosHttp
 import io.github.noahhhx.mimos.connect.ConnectModel
@@ -8,6 +9,8 @@ import io.github.noahhhx.mimos.instance.Instance
 import io.github.noahhhx.mimos.recipes.RecipeRoute
 import io.github.noahhhx.mimos.recipes.RecipeSortStore
 import io.github.noahhhx.mimos.recipes.RecipesModel
+import io.github.noahhhx.mimos.recipes.pictures.PictureShrinker
+import io.github.noahhhx.mimos.recipes.pictures.RecipePictures
 import io.github.noahhhx.mimos.session.SessionModel
 import io.github.noahhhx.mimos.session.SessionState
 import io.github.noahhhx.mimos.shell.Destination
@@ -37,6 +40,7 @@ class AppModel(
     val debug: Boolean,
     private val engine: HttpClientEngine,
     recipeSortStore: RecipeSortStore,
+    pictureShrinker: PictureShrinker,
     private val createSession: (Instance) -> SessionModel,
 ) {
     val shell = ShellModel()
@@ -55,11 +59,15 @@ class AppModel(
 
     private var current: Connection? = null
 
+    private fun connected(): MimosHttp = (current ?: error("not connected")).http
+
     val recipes =
         RecipesModel(
             scope,
             recipeSortStore,
-            api = { (current ?: error("not connected")).http.api(::RecipesApi) },
+            api = { connected().api(::RecipesApi) },
+            pictures = RecipePictures({ connected().api(::RecipePicturesApi) }),
+            shrinker = pictureShrinker,
         )
 
     /** Whether the system's back button has a step to take inside the app. */

@@ -1,8 +1,12 @@
 package io.github.noahhhx.mimos.recipes
 
+import io.github.noahhhx.mimos.api.apis.RecipePicturesApi
 import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.client.MimosHttp
 import io.github.noahhhx.mimos.recipes.form.RecipeFormState
+import io.github.noahhhx.mimos.recipes.pictures.PickedPicture
+import io.github.noahhhx.mimos.recipes.pictures.PictureShrinker
+import io.github.noahhhx.mimos.recipes.pictures.RecipePictures
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.respondError
@@ -89,7 +93,15 @@ private class Server {
 }
 
 private fun TestScope.model(server: Server, store: RecipeSortStore = MemorySortStore()) =
-    RecipesModel(this, store, { MimosHttp(server.engine, API).api(::RecipesApi) })
+    RecipesModel(
+        this,
+        store,
+        { MimosHttp(server.engine, API).api(::RecipesApi) },
+        RecipePictures({ MimosHttp(server.engine, API).api(::RecipePicturesApi) }),
+        object : PictureShrinker {
+            override suspend fun shrink(picked: PickedPicture) = error("nothing is picked")
+        },
+    )
 
 class RecipesModelTest {
     @Test

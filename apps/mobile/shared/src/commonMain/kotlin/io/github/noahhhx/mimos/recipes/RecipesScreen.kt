@@ -64,8 +64,10 @@ fun RecipesScreen(model: RecipesModel, webOrigin: String) {
     when (val current = route) {
         RecipeRoute.List -> RecipeListScreen(model, listState)
         is RecipeRoute.Recipe -> RecipeDetailScreen(model, current, webOrigin)
-        RecipeRoute.New -> RecipeFormScreen(model.form, "New recipe", "Recipes", model::back)
-        is RecipeRoute.Edit -> RecipeFormScreen(model.form, "Edit recipe", "Recipe", model::back)
+        RecipeRoute.New ->
+            RecipeFormScreen(model.form, model.pictures, "New recipe", "Recipes", model::back)
+        is RecipeRoute.Edit ->
+            RecipeFormScreen(model.form, model.pictures, "Edit recipe", "Recipe", model::back)
     }
 }
 
