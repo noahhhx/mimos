@@ -18,6 +18,7 @@ here, so the two cannot drift apart. Each file is plain JSON.
 | `plan.json` | A new meal's servings and diners, toggling a diner, the diners' chip labels, how a planned amount reads, a new planned food's amount, a typed food amount, the note on meals with unknown nutrition, and the log of a planned food's amount | `apps/web/test/plan-cases.test.ts`; the app's `commonTest` (`PlanRulesTest`) |
 | `shopping.json` | The shopping list's aisles and their order, the add-an-item form's units, and the item it makes or what to fix | `apps/web/test/shopping.test.ts`; the app's `commonTest` (`ShoppingRulesTest`) |
 | `log-entry.json` | What the Log page's form logs (a recipe in servings, an ingredient or a product by amount, anything else by hand), the totals it previews, a food's units and starting amount, the What search, and the week table's cells | `apps/web/test/log-entry.test.ts`; the app's `commonTest` (`LogRulesTest`) |
+| `barcode.json` | What a typed barcode is, the lookup's messages and the product's page, and the ingredient a scanned product becomes and when one already exists | `apps/web/test/barcode.test.ts` and `planned-item.test.ts`; the app's `commonTest` (`BarcodeTest`) |
 
 A recipe in a case is a sketch: `id` and `title`, with `tags`, `createdAt`,
 and `updatedAt` defaulting to none and `2025-01-01T00:00:00Z`. Expected

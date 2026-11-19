@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 import type { CatalogIngredient, FoodProduct } from "@mimos/api-client";
@@ -31,6 +32,15 @@ const bagelEntry: CatalogIngredient = {
   isShared: false,
   basis: "PER_100_G",
   nutrition: { calories: 270, proteinG: 10, carbsG: 53, fatG: 1.6 },
+};
+// The app's commonTest reads the same file (libraries/test-cases/README.md).
+const barcodeCases = JSON.parse(
+  readFileSync(new URL("../../../libraries/test-cases/barcode.json", import.meta.url), "utf8"),
+) as {
+  product: FoodProduct;
+  productIngredient: ReturnType<typeof productIngredient>;
+  nameLimit: { length: number; limit: number };
+  existingIngredientCases: { about: string; isShared: boolean; calories: number; found: boolean }[];
 };
 
 describe("entryLabel", () => {
@@ -67,20 +77,10 @@ describe("plannedWhat", () => {
 });
 
 describe("productIngredient", () => {
-  const product: FoodProduct = {
-    barcode: "3017620422003",
-    name: "Nutella",
-    brand: "Ferrero",
-    basis: "PER_100_G",
-    nutrition: { calories: 539, proteinG: 6.3, carbsG: 57.5, fatG: 30.9 },
-  };
+  const { product, productIngredient: expected, nameLimit, existingIngredientCases } = barcodeCases;
 
   it("makes an ingredient of a product with all four values, named with its brand", () => {
-    assert.deepEqual(productIngredient(product), {
-      name: "Nutella (Ferrero)",
-      basis: "PER_100_G",
-      nutrition: product.nutrition,
-    });
+    assert.deepEqual(productIngredient(product), expected);
   });
 
   it("needs the person for a product missing a value", () => {
@@ -88,16 +88,22 @@ describe("productIngredient", () => {
   });
 
   it("keeps a name within the ingredient name limit", () => {
-    assert.equal(productIngredient({ ...product, name: "x".repeat(150) })?.name.length, 100);
+    assert.equal(productIngredient({ ...product, name: "x".repeat(nameLimit.length) })?.name.length, nameLimit.limit);
   });
 
-  it("finds the household's own ingredient it already made, and no other", () => {
-    const input = productIngredient(product)!;
-    const own = { slug: "nutella-k3", name: "Nutella (Ferrero)", isShared: false, basis: input.basis, nutrition: input.nutrition };
-    assert.equal(existingIngredient(input, [own]), own);
-    assert.equal(existingIngredient(input, [{ ...own, isShared: true }]), undefined);
-    assert.equal(existingIngredient(input, [{ ...own, nutrition: { ...own.nutrition, calories: 540 } }]), undefined);
-  });
+  for (const each of existingIngredientCases) {
+    it(each.about, () => {
+      const input = productIngredient(product)!;
+      const own: CatalogIngredient = {
+        slug: "nutella-k3",
+        name: input.name,
+        isShared: each.isShared,
+        basis: input.basis,
+        nutrition: { ...input.nutrition, calories: each.calories },
+      };
+      assert.equal(existingIngredient(input, [own]), each.found ? own : undefined);
+    });
+  }
 });
 
 describe("user-facing copy", () => {
