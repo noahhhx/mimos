@@ -50,7 +50,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 09 | [Plugins: page, suggestions, week panels](09-plugins.md) | 08 | done (f9e9c8e) |
 | 10 | [Shopping list](10-shopping-list.md) | 08 | done (24d83bc) |
 | 11 | [Log](11-log.md) | 08 | done (31cfef3) |
-| 11b | [Barcode scanning](11b-barcodes.md) | 11 | todo |
+| 11b | [Barcode scanning](11b-barcodes.md) | 11 | done (9cda160) |
 | 12 | [Fuel and intervals.icu](12-fuel.md) | 11 | todo |
 | 13 | [Kitchen home](13-kitchen.md) | 08, 09, 10 | todo |
 | 14 | [Household and invites](14-household.md) | 06 | done (e5731f5, branch `mobile/14-household`, stacked on 08) |
