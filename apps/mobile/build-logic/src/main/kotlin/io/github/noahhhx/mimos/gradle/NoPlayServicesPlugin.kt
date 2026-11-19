@@ -63,7 +63,7 @@ abstract class NoPlayServicesCheck : DefaultTask() {
     }
 }
 
-private fun reachableModules(root: ResolvedComponentResult): List<ModuleComponentIdentifier> {
+internal fun reachableModules(root: ResolvedComponentResult): List<ModuleComponentIdentifier> {
     val seen = mutableSetOf<ResolvedComponentResult>()
     val queue = ArrayDeque(listOf(root))
     while (queue.isNotEmpty()) {

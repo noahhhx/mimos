@@ -10,6 +10,10 @@ gradlePlugin {
             id = "mimos.design-tokens"
             implementationClass = "io.github.noahhhx.mimos.gradle.DesignTokensPlugin"
         }
+        create("licences") {
+            id = "mimos.licences"
+            implementationClass = "io.github.noahhhx.mimos.gradle.LicencesPlugin"
+        }
     }
 }
 
