@@ -13,14 +13,14 @@ plugins {
 // check applies the formatting, as the backend's build does; CI runs spotlessCheck.
 spotless {
     isEnforceCheck = false
+    // Source roots only: a "**" target walks build directories while other tasks rewrite them,
+    // and fails reading a file that has just gone.
     kotlin {
-        target("**/*.kt")
-        targetExclude("**/build/**")
+        target("*/src/**/*.kt")
         ktfmt(libs.versions.ktfmt.get()).kotlinlangStyle()
     }
     kotlinGradle {
-        target("**/*.gradle.kts")
-        targetExclude("**/build/**")
+        target("*.gradle.kts", "*/*.gradle.kts")
         ktfmt(libs.versions.ktfmt.get()).kotlinlangStyle()
     }
 }
