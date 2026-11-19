@@ -36,6 +36,8 @@ import io.github.noahhhx.mimos.recipes.RecipesModel
 import io.github.noahhhx.mimos.recipes.RecipesScreen
 import io.github.noahhhx.mimos.settings.OpenSource
 import io.github.noahhhx.mimos.settings.SettingsScreen
+import io.github.noahhhx.mimos.shopping.ShoppingModel
+import io.github.noahhhx.mimos.shopping.ShoppingScreen
 import io.github.noahhhx.mimos.ui.BottomSheet
 import io.github.noahhhx.mimos.ui.Brand
 import io.github.noahhhx.mimos.ui.Button
@@ -82,6 +84,7 @@ fun AppShell(
     household: HouseholdModel,
     account: AccountModel,
     plugins: PluginsModel,
+    shopping: ShoppingModel,
     theme: ThemeModel,
     profile: Profile,
     webOrigin: String,
@@ -106,6 +109,7 @@ fun AppShell(
             when (destination) {
                 Destination.Recipes -> RecipesScreen(recipes, webOrigin)
                 Destination.Plan -> PlanScreen(plan, actions.onOpenRecipe)
+                Destination.Shopping -> ShoppingScreen(shopping)
                 Destination.Household ->
                     HouseholdScreen(household, actions.onShare, actions.onSwitchInstance)
                 Destination.YourData -> AccountScreen(account)

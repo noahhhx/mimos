@@ -9,6 +9,7 @@ import io.github.noahhhx.mimos.api.apis.PluginSettingsApi
 import io.github.noahhhx.mimos.api.apis.PluginsApi
 import io.github.noahhhx.mimos.api.apis.RecipePicturesApi
 import io.github.noahhhx.mimos.api.apis.RecipesApi
+import io.github.noahhhx.mimos.api.apis.ShoppingListsApi
 import io.github.noahhhx.mimos.client.MimosHttp
 import io.github.noahhhx.mimos.connect.ConnectModel
 import io.github.noahhhx.mimos.connect.ConnectState
@@ -32,6 +33,7 @@ import io.github.noahhhx.mimos.session.SessionModel
 import io.github.noahhhx.mimos.session.SessionState
 import io.github.noahhhx.mimos.shell.Destination
 import io.github.noahhhx.mimos.shell.ShellModel
+import io.github.noahhhx.mimos.shopping.ShoppingModel
 import io.github.noahhhx.mimos.ui.ThemeModel
 import io.ktor.client.engine.HttpClientEngine
 import kotlin.time.Clock
@@ -105,6 +107,9 @@ class AppModel(
             today = today,
         )
 
+    val shopping =
+        ShoppingModel(scope, api = { connected().api(::ShoppingListsApi) }, today = today)
+
     val plugins =
         PluginsModel(
             scope,
@@ -122,6 +127,7 @@ class AppModel(
                 recipes.reset()
                 plan.reset()
                 plugins.reset()
+                shopping.reset()
             },
         )
 
@@ -133,6 +139,7 @@ class AppModel(
             onImported = {
                 recipes.reset()
                 plan.reset()
+                shopping.reset()
             },
         )
 
@@ -253,6 +260,7 @@ class AppModel(
         recipes.reset()
         plan.reset()
         plugins.reset()
+        shopping.reset()
         household.reset()
         account.reset()
     }

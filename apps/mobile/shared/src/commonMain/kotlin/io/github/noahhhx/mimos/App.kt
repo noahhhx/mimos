@@ -114,6 +114,7 @@ private fun Connection(
                     household = model.household,
                     account = model.account,
                     plugins = model.plugins,
+                    shopping = model.shopping,
                     theme = model.theme,
                     profile = profile,
                     webOrigin = instance.config.webUrl.origin,
