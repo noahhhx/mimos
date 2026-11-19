@@ -49,7 +49,8 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 08b | [A new ingredient from the plan's picker](08b-plan-new-ingredient.md) | 08 | done (93c15ac) |
 | 09 | [Plugins: page, suggestions, week panels](09-plugins.md) | 08 | done (f9e9c8e) |
 | 10 | [Shopping list](10-shopping-list.md) | 08 | done (24d83bc) |
-| 11 | [Log and barcode scanning](11-log-and-barcodes.md) | 08 | todo |
+| 11 | [Log](11-log.md) | 08 | todo |
+| 11b | [Barcode scanning](11b-barcodes.md) | 11 | todo |
 | 12 | [Fuel and intervals.icu](12-fuel.md) | 11 | todo |
 | 13 | [Kitchen home](13-kitchen.md) | 08, 09, 10 | todo |
 | 14 | [Household and invites](14-household.md) | 06 | done (e5731f5, branch `mobile/14-household`, stacked on 08) |
@@ -59,7 +60,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 17 | [Parity audit and user guide](17-parity-and-docs.md) | 07–16 (07b, 07c, and 08b included) | todo |
 | 18 | [Offline shopping list](18-offline-shopping-list.md) **Review** | 10, 17 | todo |
 
-Once their dependencies are done, items 09 to 12 and 14 to 16 are
+Once their dependencies are done, items 09 to 12 (11b included) and 14 to 16 are
 independent and can run in parallel in separate worktrees. Item 16 can
 land right after 06, so testers get signed builds while features arrive.
 
