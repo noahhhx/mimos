@@ -46,7 +46,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 07b | [The recipe form](07b-recipe-form.md) | 07 | done (fcbdc80) |
 | 07c | [Recipe pictures](07c-recipe-pictures.md) | 07b | done (bba561e) |
 | 08 | [The week's plan](08-plan.md) **Review** | 07 | review (branch `mobile/08-plan`) |
-| 08b | [A new ingredient from the plan's picker](08b-plan-new-ingredient.md) | 08 | todo |
+| 08b | [A new ingredient from the plan's picker](08b-plan-new-ingredient.md) | 08 | done (93c15ac) |
 | 09 | [Plugins: page, suggestions, week panels](09-plugins.md) | 08 | todo |
 | 10 | [Shopping list](10-shopping-list.md) | 08 | todo |
 | 11 | [Log and barcode scanning](11-log-and-barcodes.md) | 08 | todo |
