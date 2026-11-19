@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
-import type { MealType, NutritionBasis, PlannedFood } from "@mimos/api-client";
+import type { CatalogIngredient, MealLogInput, MealType, NutritionBasis, PlannedFood } from "@mimos/api-client";
 
 import { chipLabels, defaultDinerCount, defaultServings, toggleDiner } from "../src/lib/diners.ts";
-import { amountText, newFoodEntry, parseFoodAmount } from "../src/lib/planned-item.ts";
+import { amountText, foodLogBody, newFoodEntry, parseFoodAmount } from "../src/lib/planned-item.ts";
 import { withoutNutritionNote } from "../src/lib/planned-totals.ts";
 
 type Sized = { mealType: MealType; members: number; expected: number };
@@ -28,6 +28,15 @@ const cases = JSON.parse(
   }[];
   parseFoodAmountCases: { text: string; expected: number | null }[];
   withoutNutritionNoteCases: { mealsWithoutNutrition: number; expected: string | null }[];
+  foodLogCatalog: CatalogIngredient[];
+  foodLogCases: {
+    about: string;
+    food: PlannedFood;
+    catalog: string[];
+    amount: number;
+    expected?: MealLogInput;
+    logsNothing?: boolean;
+  }[];
 };
 
 describe("the shared plan cases", () => {
@@ -82,4 +91,18 @@ describe("the shared plan cases", () => {
       assert.equal(withoutNutritionNote(each), each.expected);
     }
   });
+});
+
+describe("foodLogBody", () => {
+  for (const each of cases.foodLogCases) {
+    it(each.about, () => {
+      const catalog = cases.foodLogCatalog.filter((entry) => each.catalog.includes(entry.slug));
+      const body = foodLogBody({ date: "2026-11-16", mealType: "SNACK", food: each.food }, catalog, each.amount);
+      if (each.logsNothing) {
+        assert.equal(body, undefined);
+      } else {
+        assert.deepEqual(body, each.expected);
+      }
+    });
+  }
 });

@@ -66,32 +66,6 @@ describe("plannedWhat", () => {
   });
 });
 
-describe("foodLogBody", () => {
-  const catalog = [bananaEntry, bagelEntry];
-  const slot = { date: "2026-11-16", mealType: "SNACK" as const };
-
-  it("logs a shared food's share as an ad-hoc meal with the calculated nutrition", () => {
-    assert.deepEqual(foodLogBody({ ...slot, food: bagel.food }, catalog, 42.5), {
-      date: "2026-11-16",
-      mealType: "SNACK",
-      description: "Bagel, 42.5 g",
-      servings: 1,
-      nutrition: { calories: 114.8, proteinG: 4.3, carbsG: 22.5, fatG: 0.7 },
-    });
-  });
-
-  it("logs pieces", () => {
-    const body = foodLogBody({ ...slot, food: banana.food }, catalog, 1);
-    assert.equal(body?.description, "Banana, 1 piece");
-    assert.equal(body?.nutrition?.calories, 105);
-  });
-
-  it("logs nothing for an ingredient the catalog lacks or a unit that does not fit", () => {
-    assert.equal(foodLogBody({ ...slot, food: bagel.food }, [bananaEntry], 85), undefined);
-    assert.equal(foodLogBody({ ...slot, food: { ...bagel.food, unit: "ml" } }, catalog, 85), undefined);
-  });
-});
-
 describe("productIngredient", () => {
   const product: FoodProduct = {
     barcode: "3017620422003",
