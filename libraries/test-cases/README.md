@@ -7,8 +7,15 @@ here, so the two cannot drift apart. Each file is plain JSON.
 | ---- | ------------ | ------- |
 | `recipe-text.json` | How a recipe's ingredient amounts, counted names, and servings read | `apps/web/test/format.test.ts`; the app's `commonTest` (`RecipeFormatTest`) |
 | `recipe-order.json` | The recipes list's sorts, tag filter, and tag list, and the sort keys | `apps/web/test/recipe-order.test.ts` (`node --test`); the app's `commonTest`, through a generated constant (`generateTestCases` in `apps/mobile/shared/build.gradle.kts`) |
+| `recipe-input.json` | The recipe form's values from a recipe, the `RecipeInput` and per-row errors it makes, the nutrition estimate's request and rows, and the unit choices | `apps/web/test/recipe-input.test.ts`; the app's `commonTest` (`RecipeDraftTest`) |
+| `ingredient-links.json` | What an ingredient line links to as it is typed and picked, and how the form describes the link and why it did not count | `apps/web/test/ingredient-links.test.ts`; the app's `commonTest` (`IngredientLinksTest`) |
+| `catalog-match.json` | Searching the ingredient catalog, the entry a line's name suggests, and how an entry reads | `apps/web/test/catalog-match.test.ts`; the app's `commonTest` (`CatalogMatchTest`) |
 
 A recipe in a case is a sketch: `id` and `title`, with `tags`, `createdAt`,
 and `updatedAt` defaulting to none and `2025-01-01T00:00:00Z`. Expected
-orders are lists of ids. A change to a rule changes its cases first; both
+orders are lists of ids. A catalog entry is a sketch too: its calories, with
+the other three values 0. A `RecipeInput` a case expects is as the API is sent
+it, with absent fields left out, and names only the fields the case is about;
+form rows are as the web holds them, `catalogSlug: ""` meaning a line its
+author chose not to count. A change to a rule changes its cases first; both
 readers must pass.

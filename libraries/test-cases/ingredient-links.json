@@ -1,0 +1,170 @@
+{
+  "catalog": [
+    { "slug": "olive-oil", "name": "Olive oil", "basis": "PER_100_ML", "calories": 813 },
+    { "slug": "garlic-clove", "name": "Garlic clove", "basis": "PER_PIECE", "calories": 4 },
+    { "slug": "all-purpose-flour", "name": "All-purpose flour", "basis": "PER_100_G", "calories": 364 }
+  ],
+  "recipes": [
+    {
+      "id": "r-focaccia",
+      "title": "Focaccia",
+      "servings": 8,
+      "nutrition": { "calories": 278.4, "proteinG": 6.4, "carbsG": 47.7, "fatG": 6.4 }
+    },
+    { "id": "r-pesto", "title": "Basil pesto", "servings": 1, "nutrition": { "calories": 120 } },
+    { "id": "r-sandwich", "title": "Focaccia sandwich", "servings": 2, "nutrition": {} }
+  ],
+  "searchRecipesCases": [
+    { "query": "foc", "expected": ["r-focaccia", "r-sandwich"] },
+    { "query": "sandwich", "expected": ["r-sandwich"] },
+    { "query": "pesto", "expected": ["r-pesto"] },
+    { "query": "cacc", "expected": [] },
+    { "query": "  ", "expected": [] }
+  ],
+  "describeRecipeCases": [
+    { "recipe": "r-focaccia", "isLibrary": false, "expected": "Your recipe · 278 kcal per serving" },
+    { "recipe": "r-pesto", "isLibrary": false, "expected": "Your recipe · nutrition unknown" },
+    { "recipe": "r-focaccia", "isLibrary": true, "expected": "Library · 278 kcal per serving" }
+  ],
+  "pickEntryCases": [
+    {
+      "name": "names a picked entry as it is written",
+      "row": { "quantity": "2", "unit": "", "name": "olive oil " },
+      "entry": "olive-oil",
+      "expected": { "quantity": "2", "unit": "", "name": "Olive oil", "catalogSlug": "olive-oil" }
+    },
+    {
+      "name": "keeps the typed name when it names the entry and says more",
+      "row": { "quantity": "2", "unit": "", "name": "garlic cloves, crushed" },
+      "entry": "garlic-clove",
+      "expected": { "quantity": "2", "unit": "", "name": "garlic cloves, crushed", "catalogSlug": "garlic-clove" }
+    },
+    {
+      "name": "drops a recipe link, keeping the unit",
+      "row": { "quantity": "2", "unit": "tbsp", "name": "oli", "recipeId": "r-focaccia" },
+      "entry": "olive-oil",
+      "expected": { "quantity": "2", "unit": "tbsp", "name": "Olive oil", "catalogSlug": "olive-oil" }
+    },
+    {
+      "name": "keeps the note, and counts a line its author had chosen not to count",
+      "row": { "quantity": "2", "unit": "", "name": "oil", "note": "extra virgin", "catalogSlug": "" },
+      "entry": "olive-oil",
+      "expected": { "quantity": "2", "unit": "", "name": "Olive oil", "note": "extra virgin", "catalogSlug": "olive-oil" }
+    }
+  ],
+  "pickRecipeCases": [
+    {
+      "name": "links a recipe in servings, named by its title, dropping a catalog link",
+      "row": { "quantity": "2", "unit": "g", "name": "foc", "catalogSlug": "all-purpose-flour" },
+      "recipe": "r-focaccia",
+      "expected": { "quantity": "2", "unit": "servings", "name": "Focaccia", "recipeId": "r-focaccia" }
+    },
+    {
+      "name": "keeps the typed name when it names the recipe and says more",
+      "row": { "quantity": "2", "unit": "", "name": "rosemary focaccia, halved" },
+      "recipe": "r-focaccia",
+      "expected": { "quantity": "2", "unit": "servings", "name": "rosemary focaccia, halved", "recipeId": "r-focaccia" }
+    },
+    {
+      "name": "writes the title as written when the typed name is just the title",
+      "row": { "quantity": "2", "unit": "", "name": "focaccia" },
+      "recipe": "r-focaccia",
+      "expected": { "quantity": "2", "unit": "servings", "name": "Focaccia", "recipeId": "r-focaccia" }
+    }
+  ],
+  "dontCountCases": [
+    {
+      "row": { "quantity": "2", "unit": "", "name": "focaccia", "recipeId": "r-focaccia" },
+      "expected": { "quantity": "2", "unit": "", "name": "focaccia", "catalogSlug": "" }
+    },
+    {
+      "row": { "quantity": "200", "unit": "g", "name": "flour", "note": "sifted", "catalogSlug": "all-purpose-flour" },
+      "expected": { "quantity": "200", "unit": "g", "name": "flour", "note": "sifted", "catalogSlug": "" }
+    }
+  ],
+  "retypeCases": [
+    {
+      "name": "keeps a recipe link while the name still names the recipe",
+      "row": { "quantity": "2", "unit": "servings", "name": "focaccia", "recipeId": "r-focaccia" },
+      "typed": "focaccia, toasted",
+      "expected": { "quantity": "2", "unit": "servings", "name": "focaccia, toasted", "recipeId": "r-focaccia" }
+    },
+    {
+      "name": "drops a recipe link when the name stops naming the recipe",
+      "row": { "quantity": "2", "unit": "servings", "name": "focaccia", "recipeId": "r-focaccia" },
+      "typed": "ciabatta",
+      "expected": { "quantity": "2", "unit": "servings", "name": "ciabatta" }
+    },
+    {
+      "name": "never links a recipe by its name",
+      "row": { "quantity": "2", "unit": "", "name": "" },
+      "typed": "focaccia",
+      "expected": { "quantity": "2", "unit": "", "name": "focaccia" }
+    },
+    {
+      "name": "links a catalog entry by name once a recipe link is dropped",
+      "row": { "quantity": "2", "unit": "", "name": "focaccia", "recipeId": "r-focaccia" },
+      "typed": "garlic cloves",
+      "expected": { "quantity": "2", "unit": "", "name": "garlic cloves", "catalogSlug": "garlic-clove" }
+    },
+    {
+      "name": "keeps a recipe link whose recipe is still loading",
+      "row": { "quantity": "2", "unit": "", "name": "", "recipeId": "r-focaccia" },
+      "typed": "bread",
+      "recipesLoaded": false,
+      "expected": { "quantity": "2", "unit": "", "name": "bread", "recipeId": "r-focaccia" }
+    },
+    {
+      "name": "keeps a catalog link while the name names its entry",
+      "row": { "quantity": "2", "unit": "", "name": "garlic clove", "catalogSlug": "garlic-clove" },
+      "typed": "garlic cloves",
+      "expected": { "quantity": "2", "unit": "", "name": "garlic cloves", "catalogSlug": "garlic-clove" }
+    },
+    {
+      "name": "drops a catalog link when the name stops naming its entry",
+      "row": { "quantity": "2", "unit": "", "name": "garlic clove", "catalogSlug": "garlic-clove" },
+      "typed": "garlic",
+      "expected": { "quantity": "2", "unit": "", "name": "garlic" }
+    },
+    {
+      "name": "links the entry a new name names",
+      "row": { "quantity": "2", "unit": "", "name": "oliv" },
+      "typed": "olive oil",
+      "expected": { "quantity": "2", "unit": "", "name": "olive oil", "catalogSlug": "olive-oil" }
+    },
+    {
+      "name": "leaves a line its author chose not to count",
+      "row": { "quantity": "2", "unit": "", "name": "olive", "catalogSlug": "" },
+      "typed": "olive oil",
+      "expected": { "quantity": "2", "unit": "", "name": "olive oil", "catalogSlug": "" }
+    }
+  ],
+  "linkOfCases": [
+    { "row": { "quantity": "2", "unit": "", "name": "pesto", "recipeId": "r-pesto" }, "expected": { "recipe": "r-pesto" } },
+    { "row": { "quantity": "2", "unit": "", "name": "oil", "catalogSlug": "olive-oil" }, "expected": { "entry": "olive-oil" } },
+    { "row": { "quantity": "2", "unit": "", "name": "oil", "catalogSlug": "" }, "expected": null },
+    { "row": { "quantity": "2", "unit": "", "name": "oil" }, "expected": null },
+    { "row": { "quantity": "2", "unit": "", "name": "bread", "recipeId": "r-gone" }, "expected": null },
+    { "row": { "quantity": "2", "unit": "", "name": "bread", "catalogSlug": "gone" }, "expected": null }
+  ],
+  "describeLinkCases": [
+    { "link": { "entry": "olive-oil" }, "expected": "Matched to Olive oil (813 kcal per 100 ml)." },
+    { "link": { "entry": "garlic-clove" }, "expected": "Matched to Garlic clove (4 kcal each)." },
+    { "link": { "recipe": "r-focaccia" }, "expected": "Uses your recipe Focaccia (makes 8 servings)." },
+    { "link": { "recipe": "r-pesto" }, "expected": "Uses your recipe Basil pesto (makes 1 serving)." }
+  ],
+  "lineHintCases": [
+    { "status": "UNIT_NOT_SUPPORTED", "link": { "entry": "olive-oil" }, "expected": "Not counted. Olive oil counts in ml, l, tsp or tbsp." },
+    { "status": "UNIT_NOT_SUPPORTED", "link": { "entry": "garlic-clove" }, "expected": "Not counted. Garlic clove counts in pieces." },
+    { "status": "UNIT_NOT_SUPPORTED", "link": { "entry": "all-purpose-flour" }, "expected": "Not counted. All-purpose flour counts in g or kg." },
+    { "status": "UNIT_NOT_SUPPORTED", "link": { "recipe": "r-focaccia" }, "expected": "Not counted. A recipe counts in servings or as a whole recipe." },
+    { "status": "NUTRITION_UNKNOWN", "link": { "recipe": "r-pesto" }, "expected": "Not counted. Basil pesto's nutrition isn't known yet." },
+    { "status": "NUTRITION_UNKNOWN", "link": { "entry": "olive-oil" }, "expected": null },
+    { "status": "UNMEASURED", "link": { "recipe": "r-focaccia" }, "expected": "No amount, so it adds nothing." },
+    { "status": "UNMEASURED", "link": { "entry": "olive-oil" }, "expected": "No amount, so it adds nothing." },
+    { "status": "UNMEASURED", "link": null, "expected": null },
+    { "status": "COUNTED", "link": { "entry": "garlic-clove" }, "expected": null },
+    { "status": "NOT_LINKED", "link": null, "expected": null },
+    { "status": null, "link": { "entry": "olive-oil" }, "expected": null }
+  ]
+}

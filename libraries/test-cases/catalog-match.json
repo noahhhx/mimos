@@ -1,0 +1,67 @@
+{
+  "catalog": [
+    { "slug": "garlic-clove", "name": "Garlic clove", "basis": "PER_PIECE", "calories": 4 },
+    { "slug": "olive-oil", "name": "Olive oil", "basis": "PER_100_ML", "calories": 813 },
+    { "slug": "vegetable-oil", "name": "Vegetable oil", "basis": "PER_100_ML", "calories": 1 },
+    { "slug": "olives", "name": "Olives", "basis": "PER_100_G", "calories": 1 },
+    { "slug": "parsley", "name": "Fresh parsley", "basis": "PER_100_ML", "calories": 1 },
+    { "slug": "egg", "name": "Egg", "basis": "PER_PIECE", "calories": 1 },
+    { "slug": "onion", "name": "Onion", "basis": "PER_PIECE", "calories": 1 },
+    { "slug": "red-lentils", "name": "Red lentils, dry", "basis": "PER_100_G", "calories": 1 },
+    { "slug": "beef-mince", "name": "Beef mince (20% fat)", "basis": "PER_100_G", "calories": 1 },
+    { "slug": "all-purpose-flour", "name": "All-purpose flour", "basis": "PER_100_G", "calories": 364.5 },
+    { "slug": "dragon-fruit-k3f9q2", "name": "Dragon fruit", "basis": "PER_PIECE", "calories": 60, "isShared": false }
+  ],
+  "searchCases": [
+    { "name": "names that start with the query come first, the rest by name", "query": "oil", "expected": ["olive-oil", "vegetable-oil"] },
+    { "name": "ties go by name", "query": "ol", "expected": ["olive-oil", "olives"] },
+    { "name": "a match inside a word is no match", "query": "on", "expected": ["onion"] },
+    { "name": "case and spacing are ignored", "query": "  OLIVE   oil ", "expected": ["olive-oil"] },
+    { "name": "a hyphen starts a word", "query": "purpose", "expected": ["all-purpose-flour"] },
+    { "name": "the user's own ingredients are found too", "query": "dragon", "expected": ["dragon-fruit-k3f9q2"] },
+    { "name": "an empty query finds nothing", "query": "  ", "expected": [] }
+  ],
+  "suggestCases": [
+    { "name": "garlic cloves", "expected": "garlic-clove" },
+    { "name": "Eggs", "expected": "egg" },
+    { "name": "parsley", "expected": "parsley" },
+    { "name": "red lentils", "expected": "red-lentils" },
+    { "name": "beef mince", "expected": "beef-mince" },
+    { "name": "olive oil", "expected": "olive-oil" },
+    { "name": "kalamata olives", "expected": "olives" },
+    { "name": "scallion", "expected": null },
+    { "name": "oil", "expected": null },
+    { "name": "", "expected": null }
+  ],
+  "mentionsCases": [
+    { "name": "garlic cloves", "entry": "garlic-clove", "expected": true },
+    { "name": "ginger", "entry": "garlic-clove", "expected": false },
+    { "name": "chopped parsley", "entry": "parsley", "expected": true },
+    { "name": "lentils", "entry": "red-lentils", "expected": false }
+  ],
+  "containsCases": [
+    { "text": "rosemary focaccia, halved", "phrase": "Focaccia", "expected": true },
+    { "text": "Focaccia", "phrase": "cacc", "expected": false },
+    { "text": "all-purpose flour", "phrase": "purpose", "expected": true },
+    { "text": "anything", "phrase": " ", "expected": false }
+  ],
+  "lineNameCases": [
+    { "entry": "red-lentils", "expected": "Red lentils" },
+    { "entry": "beef-mince", "expected": "Beef mince" },
+    { "entry": "olive-oil", "expected": "Olive oil" }
+  ],
+  "describeEntryCases": [
+    { "entry": "olive-oil", "expected": "813 kcal per 100 ml" },
+    { "entry": "garlic-clove", "expected": "4 kcal each" },
+    { "entry": "all-purpose-flour", "expected": "365 kcal per 100 g" }
+  ],
+  "basisCases": [
+    { "unit": "", "expected": "PER_PIECE" },
+    { "unit": "  ", "expected": "PER_PIECE" },
+    { "unit": "tbsp", "expected": "PER_100_ML" },
+    { "unit": " ML ", "expected": "PER_100_ML" },
+    { "unit": "l", "expected": "PER_100_ML" },
+    { "unit": "kg", "expected": "PER_100_G" },
+    { "unit": "cups", "expected": "PER_100_G" }
+  ]
+}
