@@ -66,6 +66,12 @@ What joining does depends on whether you share a household already:
 Either way, your food log, fuel settings, and training stay yours. Nobody else in
 the household sees them.
 
+If you use the Mimos app on Android, choose **Open in the app** on the
+invite page to see the invite in the app instead. You can also paste the
+link into the app: in the profile menu, choose **Household**, then paste it
+under **Join a household** and choose **Open invite**. An invite made on
+another Mimos server offers to switch the app to that server.
+
 ## Leave a household
 
 On the Household page, choose **Leave household**. Mimos says what stays

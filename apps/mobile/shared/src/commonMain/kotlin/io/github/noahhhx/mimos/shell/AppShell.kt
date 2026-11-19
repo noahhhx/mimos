@@ -22,6 +22,9 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.dp
+import io.github.noahhhx.mimos.household.HouseholdModel
+import io.github.noahhhx.mimos.household.HouseholdScreen
+import io.github.noahhhx.mimos.household.InviteLink
 import io.github.noahhhx.mimos.plan.PlanModel
 import io.github.noahhhx.mimos.plan.PlanScreen
 import io.github.noahhhx.mimos.recipes.RecipesModel
@@ -47,6 +50,10 @@ class ShellActions(
     val onChangeInstance: () -> Unit,
     /** Shows a planned recipe in the Recipes tab. */
     val onOpenRecipe: (String) -> Unit,
+    /** Hands a link to the phone's share sheet. */
+    val onShare: (String) -> Unit,
+    /** Signs out and connects to the instance an invite is for. */
+    val onSwitchInstance: (InviteLink) -> Unit,
     /** Debug builds only: the component gallery. Null hides its entry. */
     val onOpenGallery: (() -> Unit)? = null,
 )
@@ -61,6 +68,7 @@ fun AppShell(
     shell: ShellModel,
     recipes: RecipesModel,
     plan: PlanModel,
+    household: HouseholdModel,
     theme: ThemeModel,
     profile: Profile,
     webOrigin: String,
@@ -81,6 +89,8 @@ fun AppShell(
             when (destination) {
                 Destination.Recipes -> RecipesScreen(recipes, webOrigin)
                 Destination.Plan -> PlanScreen(plan, actions.onOpenRecipe)
+                Destination.Household ->
+                    HouseholdScreen(household, actions.onShare, actions.onSwitchInstance)
                 else ->
                     Column(
                         Modifier.fillMaxSize()

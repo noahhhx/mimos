@@ -13,7 +13,8 @@ sealed interface Profile {
     data class Failed(val message: String) : Profile
 }
 
-private val months =
+/** The months as the web's dates name them in English. */
+internal val monthNames =
     listOf(
         "January",
         "February",
@@ -32,5 +33,5 @@ private val months =
 /** "Member since 18 November 2026": the web's menu line, in the phone's time zone. */
 fun memberSinceText(since: Instant, zone: TimeZone = TimeZone.currentSystemDefault()): String {
     val date = since.toLocalDateTime(zone)
-    return "Member since ${date.day} ${months[date.month.ordinal]} ${date.year}"
+    return "Member since ${date.day} ${monthNames[date.month.ordinal]} ${date.year}"
 }

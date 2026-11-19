@@ -1,6 +1,7 @@
 package io.github.noahhhx.mimos
 
 import android.app.Application
+import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.graphics.Color
 import android.os.Bundle
@@ -68,12 +69,31 @@ class MainActivity : ComponentActivity() {
             }
         onBackPressedDispatcher.addCallback(this, back)
         lifecycleScope.launch { models.app.canGoBack.collect { back.isEnabled = it } }
-        if (savedInstanceState == null && intent.getBooleanExtra(EXTRA_GALLERY, false)) {
-            models.app.openGallery()
+        if (savedInstanceState == null) {
+            if (intent.getBooleanExtra(EXTRA_GALLERY, false)) models.app.openGallery()
+            openLink(intent)
         }
         setContent {
-            App(models.app, brandMark = painterResource(R.drawable.brand_duck))
+            App(models.app, brandMark = painterResource(R.drawable.brand_duck), share = ::share)
         }
+    }
+
+    // The activity is singleTask, so a link opened while the app runs arrives here rather than in a
+    // second activity with models of its own.
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        openLink(intent)
+    }
+
+    /** An invite from the web's "Open in the app" link. */
+    private fun openLink(intent: Intent) {
+        if (intent.action == Intent.ACTION_VIEW) intent.dataString?.let(models.app::openInvite)
+    }
+
+    private fun share(text: String) {
+        val send =
+            Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
+        startActivity(Intent.createChooser(send, null))
     }
 
     companion object {

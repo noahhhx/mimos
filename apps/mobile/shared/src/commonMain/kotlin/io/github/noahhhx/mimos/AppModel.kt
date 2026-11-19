@@ -7,6 +7,10 @@ import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.client.MimosHttp
 import io.github.noahhhx.mimos.connect.ConnectModel
 import io.github.noahhhx.mimos.connect.ConnectState
+import io.github.noahhhx.mimos.household.HouseholdModel
+import io.github.noahhhx.mimos.household.HouseholdRoute
+import io.github.noahhhx.mimos.household.InviteLink
+import io.github.noahhhx.mimos.household.parseInviteLink
 import io.github.noahhhx.mimos.instance.Instance
 import io.github.noahhhx.mimos.plan.PlanModel
 import io.github.noahhhx.mimos.plan.PlanRoute
@@ -41,7 +45,7 @@ import kotlinx.datetime.todayIn
  * What the app keeps while it is open: the theme, the connection, the session of the connected
  * instance with its HTTP client, and where the person is in the app. A platform holds one across
  * screen rotations, so a connect, a sign-in, or a request in flight is not lost. [debug] builds may
- * open the component gallery.
+ * open the component gallery, and take invites to `http://localhost`, as they connect to it.
  */
 class AppModel(
     private val scope: CoroutineScope,
@@ -92,6 +96,48 @@ class AppModel(
             today = today,
         )
 
+    val household =
+        HouseholdModel(
+            scope,
+            api = { connected().api(::HouseholdApi) },
+            connected = { (current ?: error("not connected")).instance.config.webUrl },
+            allowLocalhostHttp = debug,
+            onChanged = {
+                recipes.reset()
+                plan.reset()
+            },
+        )
+
+    /** An invite opened from a link, held until someone is signed in to see it. */
+    private var pendingInvite: InviteLink? = null
+
+    /**
+     * Opens an invite from a link to the app. Before an instance is connected, its web address is
+     * filled in for the person to connect to; the invite shows once they are signed in.
+     */
+    fun openInvite(link: String) {
+        val invite = parseInviteLink(link, allowLocalhostHttp = debug) ?: return
+        pendingInvite = invite
+        if (connect.state.value is ConnectState.Addressing) connect.edit(invite.instance.origin)
+        if (current?.session?.state?.value is SessionState.SignedIn) showPendingInvite()
+    }
+
+    /**
+     * Signs out of the connected instance and fills in [invite]'s, to connect and sign in there.
+     */
+    fun switchInstance(invite: InviteLink) {
+        changeInstance()
+        pendingInvite = invite
+        connect.edit(invite.instance.origin)
+    }
+
+    private fun showPendingInvite() {
+        val invite = pendingInvite ?: return
+        pendingInvite = null
+        shell.go(Destination.Household)
+        household.openJoin(invite)
+    }
+
     /** Shows a planned recipe in the Recipes tab. */
     fun openRecipe(recipeId: String) {
         shell.go(Destination.Recipes)
@@ -100,10 +146,15 @@ class AppModel(
 
     /** Whether the system's back button has a step to take inside the app. */
     val canGoBack: Flow<Boolean> =
-        combine(shell.destination, recipes.route, plan.route) { destination, recipe, planned ->
+        combine(shell.destination, recipes.route, plan.route, household.route) {
+                destination,
+                recipe,
+                planned,
+                invite ->
                 when (destination) {
                     Destination.Recipes -> recipe != RecipeRoute.List
                     Destination.Plan -> planned != PlanRoute.Week
+                    Destination.Household -> invite != HouseholdRoute.Page
                     else -> false
                 }
             }
@@ -114,6 +165,7 @@ class AppModel(
         when (shell.destination.value) {
             Destination.Recipes -> recipes.back()
             Destination.Plan -> plan.back()
+            Destination.Household -> household.back()
             else -> false
         }
 
@@ -141,7 +193,13 @@ class AppModel(
         // A session can end without signOut (its refresh token refused), and whoever signs in
         // next must not see what the last person had open.
         val watch = scope.launch {
-            session.state.collect { if (it is SessionState.SignedOut) forgetPerson() }
+            session.state.collect {
+                when (it) {
+                    is SessionState.SignedOut -> forgetPerson()
+                    is SessionState.SignedIn -> showPendingInvite()
+                    else -> {}
+                }
+            }
         }
         return Connection(instance, session, http, watch).also { current = it }
     }
@@ -155,6 +213,7 @@ class AppModel(
         shell.reset()
         recipes.reset()
         plan.reset()
+        household.reset()
     }
 
     /** Signs out of the connected instance, then forgets it so another can be typed in. */

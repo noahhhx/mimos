@@ -25,10 +25,10 @@ const val APP_NAME = "Mimos"
 
 /**
  * [brandMark] is the chef duck, the web app's icon, drawn beside the app's name. The platform
- * supplies it from its own resources.
+ * supplies it from its own resources, and [share] opens its share sheet with a text.
  */
 @Composable
-fun App(model: AppModel, brandMark: Painter) {
+fun App(model: AppModel, brandMark: Painter, share: (String) -> Unit) {
     val theme by model.theme.state.collectAsState()
     val gallery by model.gallery.collectAsState()
     MimosTheme(theme) {
@@ -36,14 +36,14 @@ fun App(model: AppModel, brandMark: Painter) {
             if (gallery) {
                 Gallery(model.theme, brandMark, onClose = model::closeGallery)
             } else {
-                Connection(model, brandMark)
+                Connection(model, brandMark, share)
             }
         }
     }
 }
 
 @Composable
-private fun Connection(model: AppModel, brandMark: Painter) {
+private fun Connection(model: AppModel, brandMark: Painter, share: (String) -> Unit) {
     when (val connected = model.connect.state.collectAsState().value) {
         is ConnectState.Addressing -> ConnectScreen(model.connect, brandMark, model::connect)
         is ConnectState.Connected -> {
@@ -75,6 +75,7 @@ private fun Connection(model: AppModel, brandMark: Painter) {
                     shell = model.shell,
                     recipes = model.recipes,
                     plan = model.plan,
+                    household = model.household,
                     theme = model.theme,
                     profile = profile,
                     webOrigin = instance.config.webUrl.origin,
@@ -84,6 +85,8 @@ private fun Connection(model: AppModel, brandMark: Painter) {
                             onSignOut = model::signOut,
                             onChangeInstance = model::changeInstance,
                             onOpenRecipe = model::openRecipe,
+                            onShare = share,
+                            onSwitchInstance = model::switchInstance,
                             onOpenGallery = if (model.debug) model::openGallery else null,
                         ),
                 )

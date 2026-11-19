@@ -11,6 +11,7 @@ here, so the two cannot drift apart. Each file is plain JSON.
 | `ingredient-links.json` | What an ingredient line links to as it is typed and picked, and how the form describes the link and why it did not count | `apps/web/test/ingredient-links.test.ts`; the app's `commonTest` (`IngredientLinksTest`) |
 | `catalog-match.json` | Searching the ingredient catalog, the entry a line's name suggests, and how an entry reads | `apps/web/test/catalog-match.test.ts`; the app's `commonTest` (`CatalogMatchTest`) |
 | `recipe-pictures.json` | The picture limits, the size a picture is shrunk to, and the JPEG qualities tried | `apps/web/test/recipe-pictures.test.ts`; the app's `commonTest` (`PictureDraftTest`) |
+| `household.json` | How a household and its members are named, and an invite's web link and the app link the web's join page offers (`io.github.noahhhx.mimos://join?instance=…&token=…`), which the app reads back | `apps/web/test/household.test.ts`; the app's `commonTest` (`InviteLinkTest`) |
 | `plan.json` | A new meal's servings and diners, toggling a diner, the diners' chip labels, how a planned amount reads, a new planned food's amount, a typed food amount, and the note on meals with unknown nutrition | `apps/web/test/plan-cases.test.ts`; the app's `commonTest` (`PlanRulesTest`) |
 
 A recipe in a case is a sketch: `id` and `title`, with `tags`, `createdAt`,
