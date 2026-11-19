@@ -16,6 +16,7 @@ here, so the two cannot drift apart. Each file is plain JSON.
 | `panels.json` | Which of a plugin's week-panel blocks show while its wheel spins, their keys, and whether a wheel has a landing (an unknown block type included) | `apps/web/test/panels.test.ts`; the app's `commonTest` (`PanelRulesTest`) |
 | `wheel.json` | The wheel's geometry: segment angles, where it rests and where a spin ends, when two angles are one position, the segments' fills, and the icons' size | `apps/web/test/wheel.test.ts`; the app's `commonTest` (`PanelRulesTest`) |
 | `plan.json` | A new meal's servings and diners, toggling a diner, the diners' chip labels, how a planned amount reads, a new planned food's amount, a typed food amount, and the note on meals with unknown nutrition | `apps/web/test/plan-cases.test.ts`; the app's `commonTest` (`PlanRulesTest`) |
+| `shopping.json` | The shopping list's aisles and their order, the add-an-item form's units, and the item it makes or what to fix | `apps/web/test/shopping.test.ts`; the app's `commonTest` (`ShoppingRulesTest`) |
 
 A recipe in a case is a sketch: `id` and `title`, with `tags`, `createdAt`,
 and `updatedAt` defaulting to none and `2025-01-01T00:00:00Z`. Expected
