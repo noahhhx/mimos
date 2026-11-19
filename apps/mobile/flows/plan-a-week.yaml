@@ -65,3 +65,27 @@ appId: io.github.noahhhx.mimos.debug
 - takeScreenshot: plan-meal-dark
 - tapOn: ← Plan
 - tapOn: Toggle light and dark mode
+- tapOn:
+    text: Add Breakfast for .*
+    index: 0
+- tapOn: Search recipes and ingredients
+- inputText: Dragon fruit
+- tapOn: \+ Add “Dragon fruit” as a new ingredient
+- hideKeyboard
+- assertVisible: A new ingredient of your own.*
+- tapOn: New ingredient calories
+- inputText: "60"
+- tapOn: New ingredient protein g
+- inputText: "1"
+- tapOn: New ingredient carbs g
+- inputText: "13"
+- tapOn: New ingredient fat g
+- inputText: "0"
+- hideKeyboard
+- scrollUntilVisible:
+    element: Save and plan
+- takeScreenshot: plan-new-ingredient
+- tapOn: Save and plan
+- assertVisible: Week of .*
+- assertVisible: Dragon fruit
+- assertVisible: 100 g

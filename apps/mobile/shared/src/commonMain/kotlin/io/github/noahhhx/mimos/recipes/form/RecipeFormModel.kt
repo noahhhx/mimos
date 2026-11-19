@@ -2,16 +2,18 @@ package io.github.noahhhx.mimos.recipes.form
 
 import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.api.models.CatalogIngredient
-import io.github.noahhhx.mimos.api.models.IngredientInput
 import io.github.noahhhx.mimos.api.models.IngredientLineStatus
 import io.github.noahhhx.mimos.api.models.Nutrition
-import io.github.noahhhx.mimos.api.models.NutritionBasis
 import io.github.noahhhx.mimos.api.models.NutritionSource
 import io.github.noahhhx.mimos.api.models.RecipeDetail
 import io.github.noahhhx.mimos.api.models.RecipeSummary
 import io.github.noahhhx.mimos.client.ApiProblem
-import io.github.noahhhx.mimos.recipes.collationKey
-import io.github.noahhhx.mimos.recipes.compareKeys
+import io.github.noahhhx.mimos.ingredients.CheckedIngredient
+import io.github.noahhhx.mimos.ingredients.NewIngredientDraft
+import io.github.noahhhx.mimos.ingredients.SavedIngredient
+import io.github.noahhhx.mimos.ingredients.checkInput
+import io.github.noahhhx.mimos.ingredients.saveIngredient
+import io.github.noahhhx.mimos.ingredients.withIngredient
 import io.github.noahhhx.mimos.recipes.pictures.MAX_PICTURES
 import io.github.noahhhx.mimos.recipes.pictures.Pick
 import io.github.noahhhx.mimos.recipes.pictures.PickedPicture
@@ -47,18 +49,8 @@ sealed interface Estimate {
         Estimate
 }
 
-/** The new ingredient being added from ingredient row [row] (ADR-0016), as typed. */
-data class NewIngredientDraft(
-    val row: Int,
-    val name: String,
-    val basis: NutritionBasis,
-    val calories: String = "",
-    val proteinG: String = "",
-    val carbsG: String = "",
-    val fatG: String = "",
-    val error: String? = null,
-    val saving: Boolean = false,
-)
+/** The new ingredient being added from ingredient row [row] (ADR-0016). */
+data class RowIngredient(val row: Int, val draft: NewIngredientDraft)
 
 sealed interface RecipeFormState {
     /** No form is open. */
@@ -82,7 +74,7 @@ sealed interface RecipeFormState {
         val recipes: List<RecipeSummary>,
         val pictures: PictureDraft = PictureDraft(),
         val estimate: Estimate = Estimate.None,
-        val adding: NewIngredientDraft? = null,
+        val adding: RowIngredient? = null,
         val errors: List<String> = emptyList(),
         val saving: Boolean = false,
         val shrinking: Boolean = false,
@@ -226,12 +218,15 @@ class RecipeFormModel(
     /** Opens the new ingredient on row [index], named as the row is, its basis from the unit. */
     fun startNewIngredient(index: Int) = changeEditing { form ->
         val row = form.draft.ingredients.getOrNull(index) ?: return@changeEditing form
-        form.copy(adding = NewIngredientDraft(index, row.name.trim(), basisForUnit(row.unit)))
+        form.copy(
+            adding =
+                RowIngredient(index, NewIngredientDraft(row.name.trim(), basisForUnit(row.unit)))
+        )
     }
 
     fun editNewIngredient(change: (NewIngredientDraft) -> NewIngredientDraft) =
         changeEditing { form ->
-            form.copy(adding = form.adding?.let(change))
+            form.copy(adding = form.adding?.let { it.copy(draft = change(it.draft)) })
         }
 
     fun cancelNewIngredient() = changeEditing { it.copy(adding = null) }
@@ -243,51 +238,29 @@ class RecipeFormModel(
      */
     fun saveNewIngredient() {
         val form = mutableState.value as? RecipeFormState.Editing ?: return
-        val adding = form.adding?.takeIf { !it.saving } ?: return
-        val values = listOf(adding.calories, adding.proteinG, adding.carbsG, adding.fatG)
-        val numbers = values.map(::jsNumber)
-        val error =
-            when {
-                adding.name.isBlank() -> "Give the ingredient a name."
-                values.any { it.isBlank() } || numbers.any { !(it >= 0) } ->
-                    "Fill in all four values, using 0 when there is none."
-                else -> null
+        val adding = form.adding?.draft?.takeIf { !it.saving } ?: return
+        val input =
+            when (val checked = adding.checkInput()) {
+                is CheckedIngredient.Invalid -> {
+                    editNewIngredient { it.copy(error = checked.message) }
+                    return
+                }
+                is CheckedIngredient.Valid -> checked.input
             }
-        if (error != null) {
-            editNewIngredient { it.copy(error = error) }
-            return
-        }
         editNewIngredient { it.copy(saving = true) }
         ingredientJob = scope.launch {
-            val created =
-                try {
-                    api()
-                        .createIngredient(
-                            IngredientInput(
-                                name = adding.name.trim(),
-                                basis = adding.basis,
-                                nutrition =
-                                    Nutrition(numbers[0], numbers[1], numbers[2], numbers[3]),
-                            )
-                        )
-                        .body()
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (failure: Exception) {
-                    val message = describe(failure, "The ingredient could not be saved.")
-                    editNewIngredient { it.copy(saving = false, error = message) }
-                    return@launch
-                }
-            changeEditing { current ->
-                val open = current.adding
-                val catalog =
-                    (current.catalog + created).sortedWith { a, b ->
-                        compareKeys(collationKey(a.name), collationKey(b.name))
-                    }
-                if (open == null) current.copy(catalog = catalog)
-                else
-                    current.copy(catalog = catalog, adding = null).withRow(open.row) {
-                        pickEntry(it, created)
+            when (val saved = api().saveIngredient(input)) {
+                is SavedIngredient.Failed ->
+                    editNewIngredient { it.copy(saving = false, error = saved.message) }
+                is SavedIngredient.Created ->
+                    changeEditing { current ->
+                        val open = current.adding
+                        val catalog = withIngredient(current.catalog, saved.ingredient)
+                        if (open == null) current.copy(catalog = catalog)
+                        else
+                            current.copy(catalog = catalog, adding = null).withRow(open.row) {
+                                pickEntry(it, saved.ingredient)
+                            }
                     }
             }
         }

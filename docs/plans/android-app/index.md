@@ -312,5 +312,10 @@ owner can overturn any of it:
   build minified with the release rules, and all passed, but a dependency
   update could break the release APK while every job stays green. A flow
   against a minified build in `android-flows` would catch it.
+- The picker's new ingredient starts at 100 g, where the recipe form's takes
+  its basis from the line's unit: a picker search has no unit to go by
+  (item 08b).
+- Item 08b was built on `mobile/16-release`, the top of the stack, since 08
+  still waits for review.
 - Item 16 is stacked on `mobile/15-account`, since it changes `App.kt`,
   `AppModel.kt`, and the shell as 14 and 15 do. It needs nothing from them.

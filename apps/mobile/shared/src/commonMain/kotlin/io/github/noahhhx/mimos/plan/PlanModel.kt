@@ -8,9 +8,16 @@ import io.github.noahhhx.mimos.api.models.MealPlanEntry
 import io.github.noahhhx.mimos.api.models.MealPlanEntryInput
 import io.github.noahhhx.mimos.api.models.MealPlanEntryPatch
 import io.github.noahhhx.mimos.api.models.MealType
+import io.github.noahhhx.mimos.api.models.NutritionBasis
 import io.github.noahhhx.mimos.api.models.Person
 import io.github.noahhhx.mimos.api.models.PlannedDayTotal
 import io.github.noahhhx.mimos.api.models.RecipeSummary
+import io.github.noahhhx.mimos.ingredients.CheckedIngredient
+import io.github.noahhhx.mimos.ingredients.NewIngredientDraft
+import io.github.noahhhx.mimos.ingredients.SavedIngredient
+import io.github.noahhhx.mimos.ingredients.checkInput
+import io.github.noahhhx.mimos.ingredients.saveIngredient
+import io.github.noahhhx.mimos.ingredients.withIngredient
 import io.github.noahhhx.mimos.recipes.form.searchCatalog
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
@@ -75,12 +82,20 @@ sealed interface WeekState {
     data class Failed(val message: String) : WeekState
 }
 
-/** The picker's search: recipes (the household's, then the library's) and catalog foods. */
+/**
+ * The picker's search: recipes (the household's, then the library's) and catalog foods, and the new
+ * ingredient being added when the catalog lacks one.
+ */
 data class PickerState(
     val query: String = "",
     val recipes: List<RecipeSummary>? = null,
     val foods: List<CatalogIngredient> = emptyList(),
-)
+    val adding: NewIngredientDraft? = null,
+) {
+    /** "+ Add" is offered once the search has answered and found no food by that name. */
+    val offersNewIngredient: Boolean
+        get() = recipes != null && adding == null && offersNewIngredient(query, foods)
+}
 
 /**
  * The Plan tab, as the web's plan page (ADR-0028, ADR-0019, ADR-0026): a week by its Monday, the
@@ -120,6 +135,7 @@ class PlanModel(
 
     private var weekJob: Job? = null
     private var searchJob: Job? = null
+    private var ingredientJob: Job? = null
     private var catalog: List<CatalogIngredient>? = null
 
     fun ensureLoaded() {
@@ -229,6 +245,54 @@ class PlanModel(
 
     fun plan(food: CatalogIngredient) {
         val slot = route.value as? PlanRoute.Pick ?: return
+        plan(slot, food)
+    }
+
+    /** Opens a new ingredient named as the search, counted per 100 g until the person says. */
+    fun startNewIngredient() = mutablePicker.update {
+        it.copy(adding = NewIngredientDraft(it.query.trim(), NutritionBasis.PER_100_G))
+    }
+
+    fun editNewIngredient(change: (NewIngredientDraft) -> NewIngredientDraft) =
+        mutablePicker.update {
+            it.copy(adding = it.adding?.let(change))
+        }
+
+    fun cancelNewIngredient() = mutablePicker.update { it.copy(adding = null) }
+
+    /**
+     * Saves the new ingredient as one of the household's own, then plans it in the picker's slot at
+     * a new food's amount. Saved but not planned, it stays searchable for another try.
+     */
+    fun saveNewIngredient() {
+        val slot = route.value as? PlanRoute.Pick ?: return
+        val adding = picker.value.adding?.takeIf { !it.saving } ?: return
+        if (busy.value) return
+        val input =
+            when (val checked = adding.checkInput()) {
+                is CheckedIngredient.Invalid -> {
+                    editNewIngredient { it.copy(error = checked.message) }
+                    return
+                }
+                is CheckedIngredient.Valid -> checked.input
+            }
+        editNewIngredient { it.copy(saving = true, error = null) }
+        ingredientJob = scope.launch {
+            when (val saved = recipes().saveIngredient(input)) {
+                is SavedIngredient.Failed ->
+                    editNewIngredient { it.copy(saving = false, error = saved.message) }
+                is SavedIngredient.Created -> {
+                    catalog = catalog?.let { withIngredient(it, saved.ingredient) }
+                    cancelNewIngredient()
+                    if (route.value != slot) return@launch
+                    startSearch(waitFirst = false)
+                    plan(slot, saved.ingredient)
+                }
+            }
+        }
+    }
+
+    private fun plan(slot: PlanRoute.Pick, food: CatalogIngredient) {
         val planned = newFoodEntry(food, slot.mealType, memberCount())
         add(
             slot,
@@ -354,6 +418,7 @@ class PlanModel(
     fun reset() {
         weekJob?.cancel()
         searchJob?.cancel()
+        ingredientJob?.cancel()
         catalog = null
         mutableMonday.value = mondayOf(today())
         mutableRoute.value = PlanRoute.Week

@@ -6,6 +6,7 @@ import io.github.noahhhx.mimos.api.models.IngredientLineStatus
 import io.github.noahhhx.mimos.api.models.NutritionSource
 import io.github.noahhhx.mimos.api.models.RecipeDetail
 import io.github.noahhhx.mimos.client.MimosHttp
+import io.github.noahhhx.mimos.ingredients.NewIngredientDraft
 import io.github.noahhhx.mimos.recipes.pictures.PickedPicture
 import io.github.noahhhx.mimos.recipes.pictures.PictureShrinker
 import io.github.noahhhx.mimos.recipes.pictures.PictureSlot
@@ -402,7 +403,7 @@ class RecipeFormModelTest {
             h.model.typeName(0, " dragon fruit ")
             h.model.startNewIngredient(0)
             assertEquals(
-                NewIngredientDraft(0, "dragon fruit", basisForUnit("")),
+                RowIngredient(0, NewIngredientDraft("dragon fruit", basisForUnit(""))),
                 h.editing().adding,
             )
 
@@ -410,7 +411,7 @@ class RecipeFormModelTest {
             h.model.saveNewIngredient()
             assertEquals(
                 "Fill in all four values, using 0 when there is none.",
-                h.editing().adding?.error,
+                h.editing().adding?.draft?.error,
             )
 
             h.model.editNewIngredient { it.copy(carbsG = "13", fatG = "0") }

@@ -48,6 +48,7 @@ private class Server {
     var failHousehold = false
     var failTotals = false
     var failWrites = false
+    var failIngredient = false
 
     /** Each write as "METHOD path" with its body, as it arrives. */
     val writes = Channel<Pair<String, JsonObject?>>(Channel.UNLIMITED)
@@ -91,6 +92,20 @@ private class Server {
                 entries.removeAll { it.contains("\"id\":\"${path.substringAfterLast('/')}\"") }
                 respond("", HttpStatusCode.NoContent)
             }
+            request.method == HttpMethod.Post && path == "/api/v1/ingredients" ->
+                if (failIngredient) {
+                    respond(
+                        """{"title":"Bad Request","status":400,"detail":"Name is taken."}""",
+                        HttpStatusCode.BadRequest,
+                        headersOf(HttpHeaders.ContentType, "application/problem+json"),
+                    )
+                } else {
+                    respond(
+                        """{"slug":"dragon-fruit-x1","name":"Dragon fruit","isShared":false,
+                            "basis":"PER_100_G","nutrition":{"calories":60}}""",
+                        headers = json,
+                    )
+                }
             request.method == HttpMethod.Post ->
                 respond(recipeEntry("new", "DINNER", 2.0, ME), headers = json)
             request.method == HttpMethod.Patch ->
@@ -226,6 +241,79 @@ class PlanModelTest {
         assertEquals(1.0, body!!["servings"]!!.jsonPrimitive.content.toDouble())
         assertEquals("banana", body["food"]!!.jsonObject["catalogSlug"]!!.jsonPrimitive.content)
         assertTrue("unit" !in body["food"]!!.jsonObject, "a piece has no unit")
+    }
+
+    @Test
+    fun `a food the catalog lacks is added, then planned at a new food's amount`() = runTest {
+        val server = Server()
+        val model = model(server)
+        model.ensureLoaded()
+        model.loaded()
+        model.openPicker(LocalDate(2026, 11, 16), MealType.LUNCH)
+
+        model.search("ban")
+        val banana = model.picker.first { it.query == "ban" && it.recipes != null }
+        assertTrue(banana.offersNewIngredient, "nothing is called ban")
+        model.search("Banana")
+        assertTrue(
+            !model.picker.first { it.query == "Banana" && it.recipes != null }.offersNewIngredient,
+            "Banana is in the catalog",
+        )
+
+        model.search(" Dragon fruit ")
+        model.picker.first { it.query == " Dragon fruit " && it.recipes != null }
+        model.startNewIngredient()
+        assertEquals("Dragon fruit", model.picker.value.adding?.name)
+        assertTrue(!model.picker.value.offersNewIngredient, "the panel replaces the offer")
+
+        model.editNewIngredient { it.copy(calories = "60") }
+        model.saveNewIngredient()
+        assertEquals(
+            "Fill in all four values, using 0 when there is none.",
+            model.picker.value.adding?.error,
+        )
+
+        model.editNewIngredient { it.copy(proteinG = "1", carbsG = "13", fatG = "0") }
+        model.saveNewIngredient()
+        val (created, ingredient) = server.nextWrite()
+        assertEquals("POST /api/v1/ingredients", created)
+        assertEquals("Dragon fruit", ingredient!!["name"]!!.jsonPrimitive.content)
+        assertEquals("PER_100_G", ingredient["basis"]!!.jsonPrimitive.content)
+
+        val (planned, body) = server.nextWrite()
+        assertEquals("POST /api/v1/plans/$MONDAY/entries", planned)
+        assertEquals(100.0, body!!["servings"]!!.jsonPrimitive.content.toDouble())
+        val food = body["food"]!!.jsonObject
+        assertEquals("dragon-fruit-x1", food["catalogSlug"]!!.jsonPrimitive.content)
+        assertEquals("g", food["unit"]!!.jsonPrimitive.content)
+        model.settled()
+        assertEquals(PlanRoute.Week, model.route.value)
+        assertNull(model.picker.value.adding)
+    }
+
+    @Test
+    fun `a new ingredient the API refuses keeps the panel open with its reason`() = runTest {
+        val server = Server()
+        server.failIngredient = true
+        val model = model(server)
+        model.ensureLoaded()
+        model.loaded()
+        model.openPicker(LocalDate(2026, 11, 16), MealType.LUNCH)
+        model.search("Dragon fruit")
+        model.picker.first { it.recipes != null }
+        model.startNewIngredient()
+        model.editNewIngredient {
+            it.copy(calories = "60", proteinG = "1", carbsG = "13", fatG = "0")
+        }
+
+        model.saveNewIngredient()
+
+        val refused = model.picker.first { it.adding?.error != null }.adding!!
+        assertEquals("Name is taken.", refused.error)
+        assertTrue(!refused.saving)
+        assertEquals("POST /api/v1/ingredients", server.nextWrite().first)
+        assertTrue(server.writes.tryReceive().isFailure, "nothing is planned")
+        assertIs<PlanRoute.Pick>(model.route.value)
     }
 
     @Test

@@ -196,6 +196,12 @@ fun newFoodEntry(
 fun newFoodEntry(food: CatalogIngredient, mealType: MealType, memberCount: Int): NewFood =
     newFoodEntry(food.slug, food.basis, null, mealType, memberCount)
 
+/** Whether [query] names a food none of [foods], the catalog's matches for it, is called. */
+fun offersNewIngredient(query: String, foods: List<CatalogIngredient>): Boolean {
+    val typed = query.trim().lowercase()
+    return typed != "" && foods.none { it.name.lowercase() == typed }
+}
+
 /** The note under a day's planned totals when some of its meals' nutrition is unknown. */
 fun withoutNutritionNote(day: PlannedDayTotal): String? =
     withoutNutritionNote(day.mealsWithoutNutrition)

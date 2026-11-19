@@ -37,6 +37,7 @@ import io.github.noahhhx.mimos.api.models.MealPlanEntry
 import io.github.noahhhx.mimos.api.models.MealType
 import io.github.noahhhx.mimos.api.models.Nutrition
 import io.github.noahhhx.mimos.api.models.Person
+import io.github.noahhhx.mimos.ingredients.NewIngredientPanel
 import io.github.noahhhx.mimos.recipes.form.describeEntry
 import io.github.noahhhx.mimos.recipes.form.numberText
 import io.github.noahhhx.mimos.ui.Button
@@ -485,8 +486,21 @@ private fun Picker(model: PlanModel, slot: PlanRoute.Pick) {
             )
         }
         error?.let { message -> item(key = "error") { Notice(message, gutter) } }
+        val adding = picker.adding
         val recipes = picker.recipes
         when {
+            adding != null ->
+                item(key = "new-ingredient") {
+                    NewIngredientPanel(
+                        adding,
+                        onEdit = model::editNewIngredient,
+                        onSave = model::saveNewIngredient,
+                        onCancel = model::cancelNewIngredient,
+                        saveLabel = "Save and plan",
+                        enabled = !busy,
+                        modifier = gutter,
+                    )
+                }
             recipes == null ->
                 item(key = "searching") {
                     Text("Searching…", gutter, color = MimosTheme.colors.muted)
@@ -512,6 +526,14 @@ private fun Picker(model: PlanModel, slot: PlanRoute.Pick) {
                         onClick = { if (!busy) model.plan(food) },
                     )
                 }
+            }
+        }
+        if (picker.offersNewIngredient) {
+            item(key = "add-ingredient") {
+                ListRow(
+                    "+ Add “${picker.query.trim()}” as a new ingredient",
+                    onClick = model::startNewIngredient,
+                )
             }
         }
     }

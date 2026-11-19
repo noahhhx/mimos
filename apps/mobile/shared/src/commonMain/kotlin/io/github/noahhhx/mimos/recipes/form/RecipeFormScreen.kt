@@ -31,9 +31,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import io.github.noahhhx.mimos.api.models.CatalogIngredient
 import io.github.noahhhx.mimos.api.models.IngredientLineStatus
 import io.github.noahhhx.mimos.api.models.Nutrition
-import io.github.noahhhx.mimos.api.models.NutritionBasis
 import io.github.noahhhx.mimos.api.models.NutritionSource
 import io.github.noahhhx.mimos.api.models.RecipeSummary
+import io.github.noahhhx.mimos.ingredients.NewIngredientPanel
+import io.github.noahhhx.mimos.ingredients.NutritionFields
 import io.github.noahhhx.mimos.recipes.PerServing
 import io.github.noahhhx.mimos.recipes.pictures.RecipePictures
 import io.github.noahhhx.mimos.ui.Button
@@ -366,7 +367,16 @@ private fun IngredientEditor(
                 Text(it, style = MimosTheme.typography.small, color = colors.muted)
             }
         }
-        form.adding?.takeIf { it.row == index }?.let { NewIngredientPanel(model, it) }
+        form.adding
+            ?.takeIf { it.row == index }
+            ?.let {
+                NewIngredientPanel(
+                    it.draft,
+                    onEdit = model::editNewIngredient,
+                    onSave = model::saveNewIngredient,
+                    onCancel = model::cancelNewIngredient,
+                )
+            }
     }
 }
 
@@ -453,113 +463,6 @@ private fun IngredientPicker(
                             open = false
                             onAdd()
                         },
-                    )
-                }
-            }
-        }
-    }
-}
-
-private val BASES =
-    listOf(NutritionBasis.PER_100_G, NutritionBasis.PER_100_ML, NutritionBasis.PER_PIECE)
-
-private fun basisLabel(basis: NutritionBasis): String =
-    when (basis) {
-        NutritionBasis.PER_100_G -> "100 g"
-        NutritionBasis.PER_100_ML -> "100 ml"
-        NutritionBasis.PER_PIECE -> "One piece"
-        NutritionBasis.unknown_default_open_api -> "Other"
-    }
-
-/** Adds an ingredient of the household's own (ADR-0016) from inside the recipe form. */
-@Composable
-private fun NewIngredientPanel(model: RecipeFormModel, adding: NewIngredientDraft) {
-    val spacing = MimosTheme.spacing
-    val colors = MimosTheme.colors
-    Column(
-        Modifier.fillMaxWidth().border(spacing.hairline, colors.line).padding(spacing.m),
-        verticalArrangement = Arrangement.spacedBy(spacing.m),
-    ) {
-        Label("New ingredient")
-        Text(
-            "A new ingredient of your own. Copy its nutrition from the label; only you will see it.",
-            style = MimosTheme.typography.small,
-            color = colors.muted,
-        )
-        adding.error?.let { Text(it, style = MimosTheme.typography.small, color = colors.danger) }
-        TextField(
-            adding.name,
-            { v -> model.editNewIngredient { it.copy(name = v) } },
-            "Name",
-            description = "New ingredient name",
-            maxLength = 100,
-        )
-        SelectField(
-            "Nutrition per",
-            selected = adding.basis,
-            options = BASES,
-            optionLabel = ::basisLabel,
-            onSelect = { v -> model.editNewIngredient { it.copy(basis = v) } },
-            description = "New ingredient nutrition per",
-        )
-        NutritionFields(
-            listOf(adding.calories, adding.proteinG, adding.carbsG, adding.fatG),
-            labels = listOf("Calories", "Protein g", "Carbs g", "Fat g"),
-            descriptions =
-                listOf(
-                    "New ingredient calories",
-                    "New ingredient protein g",
-                    "New ingredient carbs g",
-                    "New ingredient fat g",
-                ),
-            onChange = { field, v ->
-                model.editNewIngredient {
-                    when (field) {
-                        0 -> it.copy(calories = v)
-                        1 -> it.copy(proteinG = v)
-                        2 -> it.copy(carbsG = v)
-                        else -> it.copy(fatG = v)
-                    }
-                }
-            },
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(spacing.s)) {
-            Button(
-                if (adding.saving) "Saving…" else "Save ingredient",
-                model::saveNewIngredient,
-                enabled = !adding.saving,
-            )
-            Button(
-                "Cancel",
-                model::cancelNewIngredient,
-                kind = ButtonKind.Secondary,
-                enabled = !adding.saving,
-                description = "Cancel the new ingredient",
-            )
-        }
-    }
-}
-
-/** Four nutrition values, two to a row. */
-@Composable
-private fun NutritionFields(
-    values: List<String>,
-    labels: List<String>,
-    descriptions: List<String>,
-    onChange: (Int, String) -> Unit,
-) {
-    val spacing = MimosTheme.spacing
-    Column(verticalArrangement = Arrangement.spacedBy(spacing.m)) {
-        for (pair in listOf(0, 2)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(spacing.m)) {
-                for (field in pair..pair + 1) {
-                    TextField(
-                        values[field],
-                        { onChange(field, it) },
-                        labels[field],
-                        Modifier.weight(1f),
-                        description = descriptions[field],
-                        keyboardOptions = DECIMAL,
                     )
                 }
             }
