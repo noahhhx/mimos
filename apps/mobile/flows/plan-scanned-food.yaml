@@ -1,0 +1,41 @@
+appId: io.github.noahhhx.mimos.debug
+---
+- runFlow: connect-and-sign-in.yaml
+- tapOn: Plan
+- assertVisible: Week of .*
+- tapOn:
+    text: Add Snack for .*
+    index: 0
+- tapOn: Scan a barcode
+- assertVisible: Barcode number
+- takeScreenshot: plan-scan-camera
+- tapOn: Barcode number
+- inputText: "3017620422003"
+- hideKeyboard
+- tapOn: Look up
+- assertVisible: Week of .*
+- assertVisible: Nutella
+- assertVisible: 100 g
+- tapOn:
+    text: Add Lunch for .*
+    index: 0
+- tapOn: Scan a barcode
+- tapOn: Barcode number
+- inputText: "50184453"
+- hideKeyboard
+- tapOn: Look up
+- assertVisible: New ingredient
+- assertVisible: Yeast Extract \(Marmite\)
+- assertVisible: "260"
+- tapOn: New ingredient fat g
+- inputText: "0"
+- hideKeyboard
+- takeScreenshot: plan-scan-unfinished
+- scrollUntilVisible:
+    element: Save and plan
+    centerElement: true
+- tapOn: Save and plan
+- assertVisible: Week of .*
+- assertVisible: Yeast Extract \(Marmite\)
+- assertVisible: 8 g.*
+- takeScreenshot: plan-scanned

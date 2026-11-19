@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -94,7 +95,13 @@ private fun CameraPreview(
     val stillLooking by rememberUpdatedState(looking)
     val detect by rememberUpdatedState(onDetect)
     val fail by rememberUpdatedState(onFailed)
-    val preview = remember(context) { PreviewView(context) }
+    // A TextureView: the default SurfaceView draws outside its bounds in the sheet's own window.
+    val preview =
+        remember(context) {
+            PreviewView(context).apply {
+                implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+            }
+        }
     DisposableEffect(lifecycleOwner) {
         val frames = Executors.newSingleThreadExecutor()
         val main = ContextCompat.getMainExecutor(context)
@@ -144,5 +151,6 @@ private fun CameraPreview(
             frames.shutdown()
         }
     }
-    AndroidView({ preview }, modifier.height(240.dp))
+    // Filling the box scales the picture past it, so it is cut to the box.
+    AndroidView({ preview }, modifier.height(240.dp).clipToBounds())
 }

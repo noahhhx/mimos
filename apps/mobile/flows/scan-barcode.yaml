@@ -1,0 +1,44 @@
+appId: io.github.noahhhx.mimos.debug
+---
+- runFlow: connect-and-sign-in.yaml
+- tapOn: Log
+- scrollUntilVisible:
+    element: Scan a barcode
+    centerElement: true
+- tapOn: Scan a barcode
+- assertVisible: Barcode number
+- takeScreenshot: scan-camera
+- tapOn: Barcode number
+- inputText: "1234567"
+- assertVisible: A barcode number is 8 to 14 digits\.
+- eraseText
+- inputText: "4006381333931"
+- hideKeyboard
+- tapOn: Look up
+- assertVisible: Open Food Facts doesn't know that barcode\. Log it by hand instead\.
+- takeScreenshot: scan-unknown
+- tapOn: Barcode number
+- eraseText
+- inputText: "3017620422003"
+- hideKeyboard
+- tapOn: Look up
+- assertNotVisible: Barcode number
+- assertVisible: Nutella
+- scrollUntilVisible:
+    element: From Open Food Facts
+    centerElement: true
+- tapOn: Amount
+- eraseText
+- inputText: "30"
+- hideKeyboard
+- assertVisible: Comes to .* kcal.*
+- takeScreenshot: scan-product
+- scrollUntilVisible:
+    element: Log meal
+    centerElement: true
+- tapOn: Log meal
+- scrollUntilVisible:
+    element: Delete Nutella, 30 g
+    direction: UP
+    centerElement: true
+- takeScreenshot: scan-logged
