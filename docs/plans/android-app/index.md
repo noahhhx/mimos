@@ -52,7 +52,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 11 | [Log and barcode scanning](11-log-and-barcodes.md) | 08 | todo |
 | 12 | [Fuel and intervals.icu](12-fuel.md) | 11 | todo |
 | 13 | [Kitchen home](13-kitchen.md) | 08, 09, 10 | todo |
-| 14 | [Household and invites](14-household.md) | 06 | todo |
+| 14 | [Household and invites](14-household.md) | 06 | done (e5731f5, branch `mobile/14-household`, stacked on 08) |
 | 15 | [Account, settings, export and import](15-account.md) | 06 | todo |
 | 16 | [Release: versions, signing, GitHub Releases](16-release.md) | 03, 06 | todo |
 | 17 | [Parity audit and user guide](17-parity-and-docs.md) | 07–16 (07b, 07c, and 08b included) | todo |
@@ -269,3 +269,18 @@ owner can overturn any of it:
   to `propertyEntries` (`MealPlan`), since Kotlin enums reserve the name.
 - A `label` style `Label` in an 84dp column wraps "BREAKFAST"; the plan's
   meal column is 104dp.
+- With the default launch mode, a link opened from another app can start a
+  second `MainActivity`, with an `AppViewModel` and models of its own, beside
+  the running one: two sessions refreshing one stored token. That was
+  reasoned, not reproduced. `MainActivity` is `singleTask` since item 14, and
+  a link opened while the app runs arrives in `onNewIntent` (`am start`
+  reports it delivered to the running instance). Sign-in and
+  sign-out through the browser still return to it (`connect-and-sign-in`,
+  `stay-signed-in`, and `household-invite` sign in and out).
+- Maestro's `openLink` opens a custom-scheme link as `am start` does, so a
+  flow builds the app link in `evalScript` from `maestro.copiedText` and
+  opens it. The system share sheet on the API 36 image is titled "Sharing
+  link".
+- Item 14 was built on `mobile/08-plan` while item 08 waits for review, since
+  both change `AppModel` and the shell. It needs nothing from 08 and can be
+  rebased onto `docs/mobile-app-plan` if 08 changes.
