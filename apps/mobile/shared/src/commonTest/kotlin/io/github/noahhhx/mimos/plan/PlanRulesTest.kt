@@ -1,5 +1,7 @@
 package io.github.noahhhx.mimos.plan
 
+import io.github.noahhhx.mimos.api.models.CatalogIngredient
+import io.github.noahhhx.mimos.api.models.MealLogInput
 import io.github.noahhhx.mimos.api.models.MealType
 import io.github.noahhhx.mimos.api.models.NutritionBasis
 import io.github.noahhhx.mimos.api.models.PlannedFood
@@ -43,6 +45,16 @@ private class NewFoodCase(
 @Serializable private class NoteCase(val mealsWithoutNutrition: Int, val expected: String?)
 
 @Serializable
+private class FoodLogCase(
+    val about: String,
+    val food: PlannedFood,
+    val catalog: List<String>,
+    val amount: Double,
+    val expected: MealLogInput? = null,
+    val logsNothing: Boolean = false,
+)
+
+@Serializable
 private class PlanCases(
     val defaultServingsCases: List<SizedCase>,
     val defaultDinerCountCases: List<SizedCase>,
@@ -52,6 +64,8 @@ private class PlanCases(
     val newFoodEntryCases: List<NewFoodCase>,
     val parseFoodAmountCases: List<ParseCase>,
     val withoutNutritionNoteCases: List<NoteCase>,
+    val foodLogCatalog: List<CatalogIngredient>,
+    val foodLogCases: List<FoodLogCase>,
 )
 
 private val cases = MimosJson.decodeFromString<PlanCases>(TestCases.read("plan.json"))
@@ -115,6 +129,37 @@ class PlanRulesTest {
         for (case in cases.withoutNutritionNoteCases) {
             assertEquals(case.expected, withoutNutritionNote(case.mealsWithoutNutrition))
         }
+    }
+
+    @Test
+    fun `a planned food logs as the web logs it`() {
+        for (case in cases.foodLogCases) {
+            val catalog = cases.foodLogCatalog.filter { it.slug in case.catalog }
+            val body =
+                foodLogBody(
+                    LocalDate(2026, 11, 16),
+                    MealType.SNACK,
+                    case.food,
+                    catalog,
+                    case.amount,
+                )
+            if (case.logsNothing) assertEquals(null, body, case.about)
+            else assertEquals(case.expected, body, case.about)
+        }
+    }
+
+    @Test
+    fun `a share is at least 0 point 1 and at most what the API takes`() {
+        val recipe = PlannedWhat.Recipe("r", "Stew")
+        val food = PlannedWhat.Food(PlannedFood("bagel", "Bagel", "g"))
+        assertEquals(1.5, parseShare("1.5", recipe))
+        assertEquals(0.1, parseShare("0.1", recipe))
+        assertEquals(null, parseShare("0.05", recipe))
+        assertEquals(null, parseShare("100.5", recipe))
+        assertEquals(250.0, parseShare("250", food))
+        assertEquals(null, parseShare("10001", food))
+        assertEquals(null, parseShare("", food))
+        assertEquals(null, parseShare("2f", food))
     }
 
     @Test

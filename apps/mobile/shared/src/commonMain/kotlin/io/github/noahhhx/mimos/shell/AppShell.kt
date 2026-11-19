@@ -28,6 +28,8 @@ import io.github.noahhhx.mimos.household.HouseholdModel
 import io.github.noahhhx.mimos.household.HouseholdScreen
 import io.github.noahhhx.mimos.household.InviteLink
 import io.github.noahhhx.mimos.instance.Version
+import io.github.noahhhx.mimos.log.LogModel
+import io.github.noahhhx.mimos.log.LogScreen
 import io.github.noahhhx.mimos.plan.PlanModel
 import io.github.noahhhx.mimos.plan.PlanScreen
 import io.github.noahhhx.mimos.plugins.PluginsModel
@@ -85,6 +87,7 @@ fun AppShell(
     account: AccountModel,
     plugins: PluginsModel,
     shopping: ShoppingModel,
+    log: LogModel,
     theme: ThemeModel,
     profile: Profile,
     webOrigin: String,
@@ -110,6 +113,7 @@ fun AppShell(
                 Destination.Recipes -> RecipesScreen(recipes, webOrigin)
                 Destination.Plan -> PlanScreen(plan, actions.onOpenRecipe)
                 Destination.Shopping -> ShoppingScreen(shopping)
+                Destination.Log -> LogScreen(log)
                 Destination.Household ->
                     HouseholdScreen(household, actions.onShare, actions.onSwitchInstance)
                 Destination.YourData -> AccountScreen(account)

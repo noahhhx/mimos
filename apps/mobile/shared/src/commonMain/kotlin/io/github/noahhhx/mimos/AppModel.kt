@@ -4,6 +4,7 @@ import io.github.noahhhx.mimos.account.AccountModel
 import io.github.noahhhx.mimos.account.DocumentStore
 import io.github.noahhhx.mimos.api.apis.AccountApi
 import io.github.noahhhx.mimos.api.apis.HouseholdApi
+import io.github.noahhhx.mimos.api.apis.LoggingApi
 import io.github.noahhhx.mimos.api.apis.PlanningApi
 import io.github.noahhhx.mimos.api.apis.PluginSettingsApi
 import io.github.noahhhx.mimos.api.apis.PluginsApi
@@ -19,6 +20,7 @@ import io.github.noahhhx.mimos.household.InviteLink
 import io.github.noahhhx.mimos.household.parseInviteLink
 import io.github.noahhhx.mimos.instance.Instance
 import io.github.noahhhx.mimos.instance.Version
+import io.github.noahhhx.mimos.log.LogModel
 import io.github.noahhhx.mimos.plan.PlanModel
 import io.github.noahhhx.mimos.plan.PlanRoute
 import io.github.noahhhx.mimos.plan.PlanViewStore
@@ -104,11 +106,20 @@ class AppModel(
             household = { connected().api(::HouseholdApi) },
             recipes = { connected().api(::RecipesApi) },
             plugins = { connected().api(::PluginsApi) },
+            logging = { connected().api(::LoggingApi) },
             today = today,
         )
 
     val shopping =
         ShoppingModel(scope, api = { connected().api(::ShoppingListsApi) }, today = today)
+
+    val log =
+        LogModel(
+            scope,
+            logging = { connected().api(::LoggingApi) },
+            recipes = { connected().api(::RecipesApi) },
+            today = today,
+        )
 
     val plugins =
         PluginsModel(
@@ -128,6 +139,7 @@ class AppModel(
                 plan.reset()
                 plugins.reset()
                 shopping.reset()
+                log.reset()
             },
         )
 
@@ -140,6 +152,7 @@ class AppModel(
                 recipes.reset()
                 plan.reset()
                 shopping.reset()
+                log.reset()
             },
         )
 
@@ -261,6 +274,7 @@ class AppModel(
         plan.reset()
         plugins.reset()
         shopping.reset()
+        log.reset()
         household.reset()
         account.reset()
     }

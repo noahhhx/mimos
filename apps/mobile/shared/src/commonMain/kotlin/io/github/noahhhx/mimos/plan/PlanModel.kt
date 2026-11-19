@@ -1,10 +1,12 @@
 package io.github.noahhhx.mimos.plan
 
 import io.github.noahhhx.mimos.api.apis.HouseholdApi
+import io.github.noahhhx.mimos.api.apis.LoggingApi
 import io.github.noahhhx.mimos.api.apis.PlanningApi
 import io.github.noahhhx.mimos.api.apis.PluginsApi
 import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.api.models.CatalogIngredient
+import io.github.noahhhx.mimos.api.models.MealLogInput
 import io.github.noahhhx.mimos.api.models.MealPlanEntry
 import io.github.noahhhx.mimos.api.models.MealPlanEntryInput
 import io.github.noahhhx.mimos.api.models.MealPlanEntryPatch
@@ -20,6 +22,7 @@ import io.github.noahhhx.mimos.ingredients.SavedIngredient
 import io.github.noahhhx.mimos.ingredients.checkInput
 import io.github.noahhhx.mimos.ingredients.saveIngredient
 import io.github.noahhhx.mimos.ingredients.withIngredient
+import io.github.noahhhx.mimos.recipes.form.numberText
 import io.github.noahhhx.mimos.recipes.form.searchCatalog
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
@@ -86,6 +89,12 @@ sealed interface WeekState {
     data class Failed(val message: String) : WeekState
 }
 
+/** A shared meal's Log form, open on [entryId]: the caller's share as typed. */
+data class Sharing(val entryId: String, val text: String)
+
+/** What logging [entryId] did, shown on its inspector until the next screen. */
+data class Logged(val entryId: String, val text: String)
+
 /**
  * The picker's search: recipes (the household's, then the library's) and catalog foods, and the new
  * ingredient being added when the catalog lacks one.
@@ -114,6 +123,7 @@ class PlanModel(
     private val household: () -> HouseholdApi,
     private val recipes: () -> RecipesApi,
     private val plugins: () -> PluginsApi,
+    private val logging: () -> LoggingApi,
     private val today: () -> LocalDate,
     private val searchDelayMillis: Long = SEARCH_DELAY_MILLIS,
 ) {
@@ -149,9 +159,19 @@ class PlanModel(
     private val mutableBusy = MutableStateFlow(false)
     val busy: StateFlow<Boolean> = mutableBusy.asStateFlow()
 
+    private val mutableSharing = MutableStateFlow<Sharing?>(null)
+    val sharing: StateFlow<Sharing?> = mutableSharing.asStateFlow()
+
+    private val mutableLogged = MutableStateFlow<Logged?>(null)
+    val logged: StateFlow<Logged?> = mutableLogged.asStateFlow()
+
+    private val mutableLogging = MutableStateFlow(false)
+    val loggingMeal: StateFlow<Boolean> = mutableLogging.asStateFlow()
+
     private var weekJob: Job? = null
     private var searchJob: Job? = null
     private var ingredientJob: Job? = null
+    private var logJob: Job? = null
     private var catalog: List<CatalogIngredient>? = null
 
     fun ensureLoaded() {
@@ -214,6 +234,8 @@ class PlanModel(
     private fun go(to: PlanRoute) {
         mutableError.value = null
         mutableNotice.value = null
+        mutableSharing.value = null
+        mutableLogged.value = null
         if (to !is PlanRoute.Pick) searchJob?.cancel()
         mutableRoute.value = to
     }
@@ -258,6 +280,70 @@ class PlanModel(
             mutableRoute.value = PlanRoute.Week
         }
     }
+
+    /** A meal eaten alone logs in one tap; a shared one asks for the caller's share first. */
+    fun startLog(entry: MealPlanEntry) {
+        mutableLogged.value = null
+        if (entry.diners.size > 1) {
+            mutableSharing.value = Sharing(entry.id, numberText(entry.yourShare ?: entry.servings))
+        } else logMeal(entry, entry.servings)
+    }
+
+    fun editShare(text: String) = mutableSharing.update { it?.copy(text = text) }
+
+    fun cancelShare() {
+        mutableSharing.value = null
+    }
+
+    /** Logs the share typed in [entry]'s form, once it is one the form takes. */
+    fun logShare(entry: MealPlanEntry) {
+        val typed = sharing.value?.takeIf { it.entryId == entry.id } ?: return
+        logMeal(entry, parseShare(typed.text, entry.what()) ?: return)
+    }
+
+    /**
+     * A recipe logs as servings of it; a food as an ad-hoc meal of its amount, with the nutrition
+     * its ingredient gives it (ADR-0026). The week does not change, so it is not reloaded.
+     */
+    private fun logMeal(entry: MealPlanEntry, amount: Double) {
+        if (loggingMeal.value) return
+        mutableLogging.value = true
+        mutableError.value = null
+        logJob = scope.launch {
+            try {
+                val body =
+                    when (val what = entry.what()) {
+                        is PlannedWhat.Recipe ->
+                            MealLogInput(
+                                entry.date,
+                                entry.mealType,
+                                recipeId = what.recipeId,
+                                servings = amount,
+                            )
+                        is PlannedWhat.Food ->
+                            foodLogBody(
+                                entry.date,
+                                entry.mealType,
+                                what.food,
+                                loadedCatalog(),
+                                amount,
+                            )
+                    } ?: error("${entry.name()} is not in the catalog")
+                logging().createMealLog(body).body()
+                mutableSharing.value = null
+                mutableLogged.value = Logged(entry.id, "${entry.name()} logged.")
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                mutableError.value = "Could not log that meal."
+            } finally {
+                mutableLogging.value = false
+            }
+        }
+    }
+
+    private suspend fun loadedCatalog(): List<CatalogIngredient> =
+        catalog ?: recipes().listIngredients().body().also { catalog = it }
 
     fun search(text: String) {
         if (text == picker.value.query) return
@@ -504,6 +590,7 @@ class PlanModel(
         weekJob = null
         searchJob?.cancel()
         ingredientJob?.cancel()
+        logJob?.cancel()
         panels.reset()
         catalog = null
         mutableMonday.value = mondayOf(today())
@@ -513,6 +600,9 @@ class PlanModel(
         mutableNotice.value = null
         mutableApplying.value = false
         mutableBusy.value = false
+        mutableSharing.value = null
+        mutableLogged.value = null
+        mutableLogging.value = false
         mutablePicker.value = PickerState()
     }
 

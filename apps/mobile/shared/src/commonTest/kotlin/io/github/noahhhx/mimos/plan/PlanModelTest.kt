@@ -1,6 +1,7 @@
 package io.github.noahhhx.mimos.plan
 
 import io.github.noahhhx.mimos.api.apis.HouseholdApi
+import io.github.noahhhx.mimos.api.apis.LoggingApi
 import io.github.noahhhx.mimos.api.apis.PlanningApi
 import io.github.noahhhx.mimos.api.apis.PluginsApi
 import io.github.noahhhx.mimos.api.apis.RecipesApi
@@ -120,6 +121,12 @@ private class Server {
                         headers = json,
                     )
                 }
+            request.method == HttpMethod.Post && path == "/api/v1/logs" ->
+                respond(
+                    """{"id":"log-1","date":"$MONDAY","mealType":"DINNER","description":"Logged",
+                        "servings":1,"nutrition":{}}""",
+                    headers = json,
+                )
             request.method == HttpMethod.Post ->
                 respond(recipeEntry("new", "DINNER", 2.0, ME), headers = json)
             request.method == HttpMethod.Patch ->
@@ -153,6 +160,7 @@ private fun TestScope.model(server: Server, store: PlanViewStore = MemoryViewSto
         household = { MimosHttp(server.engine, API).api(::HouseholdApi) },
         recipes = { MimosHttp(server.engine, API).api(::RecipesApi) },
         plugins = { MimosHttp(server.engine, API).api(::PluginsApi) },
+        logging = { MimosHttp(server.engine, API).api(::LoggingApi) },
         today = { THURSDAY },
         searchDelayMillis = 0,
     )
@@ -373,6 +381,74 @@ class PlanModelTest {
     }
 
     @Test
+    fun `a meal eaten alone logs all its servings in one tap`() = runTest {
+        val server = Server().apply { entries += recipeEntry("e1", "DINNER", 2.0, ME) }
+        val model = model(server)
+        model.ensureLoaded()
+        val entry = model.loaded().entries.single()
+        model.openMeal(entry)
+
+        model.startLog(entry)
+
+        val (call, body) = server.nextWrite()
+        assertEquals("POST /api/v1/logs", call)
+        assertEquals("r-e1", body!!["recipeId"]!!.jsonPrimitive.content)
+        assertEquals(2.0, body["servings"]!!.jsonPrimitive.content.toDouble())
+        assertEquals(Logged("e1", "Stew e1 logged."), model.logged.first { it != null })
+        assertEquals(null, model.sharing.value)
+    }
+
+    @Test
+    fun `a shared meal starts at the caller's share and logs what they type, once it is one`() =
+        runTest {
+            val shared =
+                recipeEntry("e1", "DINNER", 3.0, ME, PARTNER)
+                    .replace("}]}", "}],\"yourShare\":1.5}")
+            val server =
+                Server().apply {
+                    members = listOf(ME, PARTNER)
+                    entries += shared
+                }
+            val model = model(server)
+            model.ensureLoaded()
+            val entry = model.loaded().entries.single()
+            model.openMeal(entry)
+
+            model.startLog(entry)
+            assertEquals(Sharing("e1", "1.5"), model.sharing.value)
+            model.editShare("0.05")
+            model.logShare(entry)
+            model.editShare("1.2")
+            model.logShare(entry)
+
+            val (call, body) = server.nextWrite()
+            assertEquals("POST /api/v1/logs", call)
+            assertEquals(1.2, body!!["servings"]!!.jsonPrimitive.content.toDouble())
+            model.logged.first { it != null }
+            assertEquals(null, model.sharing.value)
+        }
+
+    @Test
+    fun `a planned food logs its amount with the nutrition its ingredient gives it`() = runTest {
+        val banana =
+            """{"id":"f1","date":"$MONDAY","mealType":"SNACK","servings":2,
+                "food":{"catalogSlug":"banana","name":"Banana"},"diners":[$ME],"yourShare":2}"""
+        val server = Server().apply { entries += banana }
+        val model = model(server)
+        model.ensureLoaded()
+        val entry = model.loaded().entries.single()
+
+        model.startLog(entry)
+
+        val (_, body) = server.nextWrite()
+        assertEquals("Banana, 2 pieces", body!!["description"]!!.jsonPrimitive.content)
+        assertEquals(
+            210.0,
+            body["nutrition"]!!.jsonObject["calories"]!!.jsonPrimitive.content.toDouble(),
+        )
+    }
+
+    @Test
     fun `removing a meal closes its inspector and reloads the week`() = runTest {
         val server = Server().apply { entries += recipeEntry("e1", "DINNER", 2.0, ME) }
         val model = model(server)
@@ -444,6 +520,7 @@ class PlanModelTest {
                 household = { MimosHttp(server.engine, API).api(::HouseholdApi) },
                 recipes = { MimosHttp(server.engine, API).api(::RecipesApi) },
                 plugins = { MimosHttp(server.engine, API).api(::PluginsApi) },
+                logging = { MimosHttp(server.engine, API).api(::LoggingApi) },
                 today = { THURSDAY },
             )
 

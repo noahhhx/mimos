@@ -1,12 +1,17 @@
 package io.github.noahhhx.mimos.plan
 
 import io.github.noahhhx.mimos.api.models.CatalogIngredient
+import io.github.noahhhx.mimos.api.models.MealLogInput
 import io.github.noahhhx.mimos.api.models.MealPlanEntry
 import io.github.noahhhx.mimos.api.models.MealType
 import io.github.noahhhx.mimos.api.models.NutritionBasis
 import io.github.noahhhx.mimos.api.models.PlannedDayTotal
 import io.github.noahhhx.mimos.api.models.PlannedFood
 import io.github.noahhhx.mimos.api.models.PlannedFoodInput
+import io.github.noahhhx.mimos.log.AmountFields
+import io.github.noahhhx.mimos.log.Measured
+import io.github.noahhhx.mimos.log.measuredBody
+import io.github.noahhhx.mimos.log.parseServings
 import io.github.noahhhx.mimos.recipes.form.numberText
 import kotlin.math.roundToLong
 import kotlinx.datetime.DatePeriod
@@ -212,3 +217,39 @@ fun withoutNutritionNote(mealsWithoutNutrition: Int): String? =
         1 -> "Unknown nutrition in 1 meal is not counted."
         else -> "Unknown nutrition in $mealsWithoutNutrition meals is not counted."
     }
+
+/**
+ * The ad-hoc log of [amount] of a planned food, with the nutrition its ingredient in [catalog]
+ * gives it; null when the catalog lacks the ingredient or the unit does not fit it.
+ */
+fun foodLogBody(
+    date: LocalDate,
+    mealType: MealType,
+    food: PlannedFood,
+    catalog: List<CatalogIngredient>,
+    amount: Double,
+): MealLogInput? {
+    val entry = catalog.find { it.slug == food.catalogSlug } ?: return null
+    return measuredBody(
+        Measured(entry.name, entry.basis, entry.nutrition),
+        date,
+        mealType,
+        AmountFields(numberText(amount), food.unit ?: ""),
+    )
+}
+
+/** The least share the plan's Log form takes, as the web's field does. */
+const val MIN_SHARE = 0.1
+
+/**
+ * A typed share of a shared meal, if it can be logged: at least 0.1, and at most 100 servings of a
+ * recipe or 10,000 of a food.
+ */
+fun parseShare(text: String, what: PlannedWhat): Double? {
+    val amount =
+        when (what) {
+            is PlannedWhat.Recipe -> parseServings(text)
+            is PlannedWhat.Food -> parseFoodAmount(text)
+        }
+    return amount?.takeIf { it >= MIN_SHARE }
+}

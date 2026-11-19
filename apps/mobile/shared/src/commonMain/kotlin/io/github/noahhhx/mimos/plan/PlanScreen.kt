@@ -47,6 +47,7 @@ import io.github.noahhhx.mimos.ui.Label
 import io.github.noahhhx.mimos.ui.ListRow
 import io.github.noahhhx.mimos.ui.MimosTheme
 import io.github.noahhhx.mimos.ui.Notice
+import io.github.noahhhx.mimos.ui.NoticeKind
 import io.github.noahhhx.mimos.ui.PageHeader
 import io.github.noahhhx.mimos.ui.Rule
 import io.github.noahhhx.mimos.ui.Tabs
@@ -364,6 +365,7 @@ private fun MealInspector(
                 }
             }
         }
+        if (entry.eatenByYou()) LogAction(model, entry, gutter)
         error?.let { Notice(it, gutter) }
         Button(
             "Remove from plan",
@@ -373,6 +375,64 @@ private fun MealInspector(
             enabled = !busy,
             description = "Remove ${entry.name()}",
         )
+    }
+}
+
+/**
+ * The meal's Log button, or for a shared meal the form for the caller's share, which starts at the
+ * share the API worked out; then what logging did.
+ */
+@Composable
+private fun LogAction(model: PlanModel, entry: MealPlanEntry, modifier: Modifier) {
+    val sharing by model.sharing.collectAsState()
+    val logged by model.logged.collectAsState()
+    val logging by model.loggingMeal.collectAsState()
+    val share = sharing?.takeIf { it.entryId == entry.id }
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.s)) {
+        if (share == null) {
+            Button(
+                "Log",
+                { model.startLog(entry) },
+                enabled = !logging,
+                description = "Log ${entry.name()}",
+            )
+        } else {
+            val what = entry.what()
+            val parsed = parseShare(share.text, what)
+            TextField(
+                value = share.text,
+                onValueChange = model::editShare,
+                label = "Your share",
+                description = "Your share of ${entry.name()}",
+                error =
+                    when {
+                        parsed != null -> null
+                        what is PlannedWhat.Recipe -> "From 0.1 to 100 servings."
+                        else -> "From 0.1 to 10,000."
+                    },
+                keyboardOptions =
+                    KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Done,
+                    ),
+                keyboardActions = KeyboardActions(onDone = { model.logShare(entry) }),
+            )
+            Text(
+                "of ${entry.amountText()} for ${entry.diners.size} people",
+                style = MimosTheme.typography.small,
+                color = MimosTheme.colors.muted,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(MimosTheme.spacing.s)) {
+                Button(
+                    "Log share",
+                    { model.logShare(entry) },
+                    small = true,
+                    enabled = parsed != null && !logging,
+                )
+                Button("Cancel", model::cancelShare, kind = ButtonKind.Secondary, small = true)
+            }
+        }
+        logged?.takeIf { it.entryId == entry.id }?.let { Notice(it.text, kind = NoticeKind.Ok) }
     }
 }
 
