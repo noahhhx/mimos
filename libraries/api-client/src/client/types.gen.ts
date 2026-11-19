@@ -678,6 +678,11 @@ export type MealPlanEntry = {
      *
      */
     diners: Array<Person>;
+    /**
+     * The caller's share of `servings`: servings divided by the number of diners, to the nearest 0.1 and never below it (all of `servings` for a meal they eat alone). What logging this meal starts at, and what the caller's planned totals count. Present exactly when the caller is one of `diners`.
+     *
+     */
+    yourShare?: number;
 };
 
 /**

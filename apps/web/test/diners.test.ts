@@ -7,32 +7,12 @@ import {
   defaultServings,
   eatsIt,
   parsePlanView,
-  shareOf,
   toggleDiner,
   visibleEntries,
 } from "../src/lib/diners.ts";
 
 const me = { id: "me", displayName: "Sam", you: true };
 const partner = { id: "partner", displayName: "Alex", you: false };
-
-describe("shareOf", () => {
-  it("splits the servings cooked between the diners", () => {
-    assert.equal(shareOf(4, 2), 2);
-    assert.equal(shareOf(3, 2), 1.5);
-    assert.equal(shareOf(2, 1), 2);
-  });
-
-  it("rounds to the nearest 0.1 serving", () => {
-    assert.equal(shareOf(2, 3), 0.7);
-    assert.equal(shareOf(1.5, 2), 0.8);
-    assert.equal(shareOf(10, 3), 3.3);
-  });
-
-  it("never logs less than 0.1 serving", () => {
-    assert.equal(shareOf(0.5, 6), 0.1);
-    assert.equal(shareOf(0.5, 100), 0.1);
-  });
-});
 
 describe("defaultServings", () => {
   it("keeps 2 for a household of one, whatever the meal", () => {

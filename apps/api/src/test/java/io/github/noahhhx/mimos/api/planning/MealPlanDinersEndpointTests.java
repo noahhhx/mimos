@@ -102,6 +102,39 @@ class MealPlanDinersEndpointTests extends ApiIntegrationTestSupport {
     }
 
     @Test
+    void eachEntryGivesTheCallerTheirShare() {
+        TestUser host = user();
+        TestUser guest = user();
+        TestUser third = user();
+        guest.join(host);
+        third.join(host);
+        UUID stew = host.recipe("Shared Stew");
+        UUID alone = id(plan(host, stew, "LUNCH", List.of(host.profileId)));
+        UUID pair = id(plan(host, stew, "DINNER", List.of(host.profileId, guest.profileId)));
+        UUID trio = id(plan(host, stew, "BREAKFAST", null));
+        host.ok(
+                HttpMethod.PATCH,
+                PLAN + "/entries/" + trio,
+                Map.of("diners", List.of(host.profileId, guest.profileId, third.profileId)));
+
+        Map<UUID, JsonNode> hosts = entriesById(host.ok(HttpMethod.GET, PLAN, null));
+        Map<UUID, JsonNode> thirds = entriesById(third.ok(HttpMethod.GET, PLAN, null));
+
+        assertThat(requireNonNull(hosts.get(alone)).get("yourShare").asDouble())
+                .as("one diner eats all of it")
+                .isEqualTo(2);
+        assertThat(requireNonNull(hosts.get(pair)).get("yourShare").asDouble()).isEqualTo(1);
+        assertThat(requireNonNull(hosts.get(trio)).get("yourShare").asDouble())
+                .as("2 servings for three, to 0.1")
+                .isEqualTo(0.7);
+        assertThat(requireNonNull(thirds.get(trio)).get("yourShare").asDouble()).isEqualTo(0.7);
+        assertThat(requireNonNull(thirds.get(pair)).has("yourShare"))
+                .as("a caller who does not eat a meal has no share of it")
+                .isFalse();
+        assertThat(requireNonNull(thirds.get(alone)).has("yourShare")).isFalse();
+    }
+
+    @Test
     void explicitDinersAreKept() {
         TestUser host = user();
         TestUser guest = user();

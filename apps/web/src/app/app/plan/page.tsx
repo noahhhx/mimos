@@ -44,7 +44,6 @@ import {
   defaultServings,
   eatsIt,
   parsePlanView,
-  shareOf,
   toggleDiner,
   visibleEntries,
   type PlanView,
@@ -438,7 +437,7 @@ export default function PlanPage() {
   const startLog = (entry: Entry) => {
     setLogged(null);
     if (entry.diners.length > 1) {
-      setSharing({ entryId: entry.id, servings: String(shareOf(entry.servings, entry.diners.length)) });
+      setSharing({ entryId: entry.id, servings: String(entry.yourShare ?? entry.servings) });
     } else {
       void logMeal(entry, entry.servings);
     }

@@ -147,6 +147,10 @@ public class MealPlansController implements PlanningApi {
                         org.openapitools.model.MealType.valueOf(entry.mealType().name()))
                 .servings(BigDecimal.valueOf(entry.amount()))
                 .diners(diners);
+        Double share = entry.shareOf(callerId);
+        if (share != null) {
+            api.yourShare(BigDecimal.valueOf(share));
+        }
         switch (entry.item()) {
             case PlannedItem.Recipe recipe -> api.recipeId(recipe.recipeId()).recipeTitle(entry.title());
             case PlannedItem.Food food ->

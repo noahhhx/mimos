@@ -236,7 +236,8 @@ Rules for using this file:
       `PlannedDayTotal.shareOf` in core-planning and `shareOf` in
       `apps/web/src/lib/diners.ts`, pinned to the same cases by tests.
       The API returning each entry's share for the caller would remove
-      the copy.
+      the copy. **Done:** each entry answers `yourShare`, and the web's
+      copy is gone (Android plan item 08).
     - An intervals.icu sync takes "today" as the server's UTC date and
       reads a `Retry-After` given as an HTTP date as the 15-minute
       default (item 16 of `docs/plans/fuel-targets/`).
