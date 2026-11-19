@@ -1,0 +1,58 @@
+appId: io.github.noahhhx.mimos.debug
+---
+- runFlow: connect-and-sign-in.yaml
+- tapOn: Profile
+- tapOn: Fuel
+- assertVisible: Fuel for the day
+- assertVisible: Show fuel targets
+- takeScreenshot: fuel-off
+- tapOn: Show fuel targets
+- tapOn: Weight \(kg\)
+- inputText: "70"
+- hideKeyboard
+- tapOn: Female
+- scrollUntilVisible:
+    element: Save
+    centerElement: true
+- tapOn: Save
+- assertVisible: Saved\.
+- takeScreenshot: fuel-saved
+- tapOn: Plan
+- assertVisible: Week of .*
+- scrollUntilVisible:
+    element:
+      text: "Today · .*Training: Rest.*Planned: nothing yet of \\d+ kcal"
+    centerElement: true
+- takeScreenshot: plan-targets
+- tapOn:
+    text: "Today · .*"
+- assertVisible: No training\.
+- assertVisible: Fuel for the day
+- tapOn: Add training for .*
+- tapOn: Minutes
+- inputText: "60"
+- hideKeyboard
+- tapOn: Add
+- assertVisible: Ride · 60 min · Endurance · Planned · By hand
+- assertVisible: Remove Ride, 60 min
+- takeScreenshot: plan-day-training
+- tapOn: ← Plan
+- scrollUntilVisible:
+    element:
+      text: "Today · .*Training: Ride 60 min.*"
+    centerElement: true
+- tapOn: Log
+- assertVisible: This week, per day
+- scrollUntilVisible:
+    element:
+      text: "Fuel for the day, .*"
+- takeScreenshot: log-targets
+- tapOn: Plan
+- scrollUntilVisible:
+    element:
+      text: "Today · .*"
+    centerElement: true
+- tapOn:
+    text: "Today · .*"
+- tapOn: Remove Ride, 60 min
+- assertVisible: No training\.

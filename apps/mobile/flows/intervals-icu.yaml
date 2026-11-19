@@ -1,0 +1,84 @@
+appId: io.github.noahhhx.mimos.debug
+---
+# The API talks to the fake intervals.icu (tools/harness/fakes/intervals-icu), which knows athlete
+# i1 by one key and has a 90-minute ride planned today.
+- runFlow: connect-and-sign-in.yaml
+- tapOn: Profile
+- tapOn: Fuel
+- tapOn: Show fuel targets
+- tapOn: Weight \(kg\)
+- inputText: "70"
+- hideKeyboard
+- scrollUntilVisible:
+    element: Save
+    centerElement: true
+- tapOn: Save
+- assertVisible: Saved\.
+- scrollUntilVisible:
+    element: Not connected\.
+    centerElement: true
+- tapOn: Athlete ID
+- inputText: i1
+- tapOn: API key
+- inputText: not-the-key
+- hideKeyboard
+- scrollUntilVisible:
+    element: Connect
+    centerElement: true
+- tapOn: Connect
+- assertVisible: .*did not accept this athlete id and API key.*
+- assertVisible: Not connected\.
+- tapOn: API key
+- eraseText
+- inputText: fake-intervals-icu-key
+- hideKeyboard
+- scrollUntilVisible:
+    element: Connect
+    centerElement: true
+- tapOn: Connect
+# The suggestions intervals.icu brings appear above the section and push it down.
+- scrollUntilVisible:
+    element: Connected as i1\. Last synced .*\.
+    centerElement: true
+- assertNotVisible: API key
+- assertVisible: Refresh
+- takeScreenshot: fuel-connected
+- scrollUntilVisible:
+    element: Use 70\.8 kg from intervals\.icu
+    direction: UP
+    centerElement: true
+- assertVisible: intervals\.icu has 70\.8 kg\.
+- tapOn: Use 70\.8 kg from intervals\.icu
+- assertNotVisible: intervals\.icu has 70\.8 kg\.
+- takeScreenshot: fuel-suggestion-used
+- tapOn: Plan
+- assertVisible: Week of .*
+- scrollUntilVisible:
+    element:
+      text: ".*Training: Ride 90 min.*"
+    centerElement: true
+- tapOn:
+    text: ".*Training: Ride 90 min.*"
+- assertVisible: Ride · 90 min · Hard · Planned · intervals\.icu
+- assertNotVisible: Remove Ride, 90 min
+- assertVisible: Fuel for the day
+- takeScreenshot: plan-day-synced
+- tapOn: ← Plan
+- tapOn: Profile
+- tapOn: Fuel
+- scrollUntilVisible:
+    element: Disconnect
+    centerElement: true
+- tapOn: Disconnect
+- scrollUntilVisible:
+    element: Yes, disconnect
+    centerElement: true
+- tapOn: Yes, disconnect
+- assertVisible: Not connected\.
+- tapOn: Plan
+- scrollUntilVisible:
+    element:
+      text: ".*Training: Rest.*"
+    centerElement: true
+- assertNotVisible:
+    text: ".*Training: Ride 90 min.*"
