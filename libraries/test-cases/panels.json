@@ -1,0 +1,80 @@
+{
+  "hasLandingCases": [
+    {
+      "blocks": [
+        { "type": "text", "text": "a" },
+        { "type": "wheel", "segments": [{ "label": "Peru" }, { "label": "Japan" }], "landing": 1 }
+      ],
+      "expected": true
+    },
+    {
+      "blocks": [{ "type": "wheel", "segments": [{ "label": "Peru" }, { "label": "Japan" }], "landing": 0 }],
+      "expected": true
+    },
+    {
+      "blocks": [{ "type": "wheel", "segments": [{ "label": "Peru" }, { "label": "Japan" }] }],
+      "expected": false
+    },
+    {
+      "blocks": [
+        { "type": "highlight", "icon": "🇵🇪", "title": "Peru", "text": "South America" },
+        { "type": "actions", "actions": [{ "id": "choose", "label": "Choose", "primary": true }] }
+      ],
+      "expected": false
+    }
+  ],
+  "shownBlocksCases": [
+    {
+      "name": "every block shows when nothing spins",
+      "blocks": [
+        { "type": "text", "text": "Spin for a country." },
+        { "type": "wheel", "segments": [{ "label": "Peru", "icon": "🇵🇪" }, { "label": "Japan", "icon": "🇯🇵" }], "landing": 0 },
+        { "type": "highlight", "icon": "🇵🇪", "title": "Peru", "text": "South America" },
+        { "type": "actions", "actions": [{ "id": "choose", "label": "Choose", "primary": true }] }
+      ],
+      "spinning": false,
+      "expected": ["text:0", "wheel:0", "highlight:0", "actions:0"]
+    },
+    {
+      "name": "what comes after a spinning wheel is hidden",
+      "blocks": [
+        { "type": "text", "text": "Spin for a country." },
+        { "type": "wheel", "segments": [{ "label": "Peru", "icon": "🇵🇪" }, { "label": "Japan", "icon": "🇯🇵" }], "landing": 0 },
+        { "type": "highlight", "icon": "🇵🇪", "title": "Peru", "text": "South America" },
+        { "type": "actions", "actions": [{ "id": "choose", "label": "Choose", "primary": true }] }
+      ],
+      "spinning": true,
+      "expected": ["text:0", "wheel:0"]
+    },
+    {
+      "name": "a wheel with nowhere to land hides nothing",
+      "blocks": [
+        { "type": "wheel", "segments": [{ "label": "Peru" }, { "label": "Japan" }] },
+        { "type": "actions", "actions": [{ "id": "spin", "label": "Spin", "primary": true }] }
+      ],
+      "spinning": true,
+      "expected": ["wheel:0", "actions:0"]
+    },
+    {
+      "name": "blocks are keyed by type and order, so a wheel keeps its key when blocks move around it",
+      "blocks": [
+        { "type": "wheel", "segments": [{ "label": "Peru" }, { "label": "Japan" }], "landing": 1 },
+        { "type": "highlight", "title": "Japan" },
+        { "type": "text", "text": "b" },
+        { "type": "text", "text": "c" },
+        { "type": "actions", "actions": [{ "id": "choose", "label": "Choose" }] }
+      ],
+      "spinning": false,
+      "expected": ["wheel:0", "highlight:0", "text:0", "text:1", "actions:0"]
+    },
+    {
+      "name": "a block of a type the client does not know keeps its place and its key",
+      "blocks": [
+        { "type": "confetti", "colors": 3 },
+        { "type": "text", "text": "a" }
+      ],
+      "spinning": false,
+      "expected": ["confetti:0", "text:0"]
+    }
+  ]
+}
