@@ -48,7 +48,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 08 | [The week's plan](08-plan.md) **Review** | 07 | review (branch `mobile/08-plan`) |
 | 08b | [A new ingredient from the plan's picker](08b-plan-new-ingredient.md) | 08 | done (93c15ac) |
 | 09 | [Plugins: page, suggestions, week panels](09-plugins.md) | 08 | done (f9e9c8e) |
-| 10 | [Shopping list](10-shopping-list.md) | 08 | todo |
+| 10 | [Shopping list](10-shopping-list.md) | 08 | done (24d83bc) |
 | 11 | [Log and barcode scanning](11-log-and-barcodes.md) | 08 | todo |
 | 12 | [Fuel and intervals.icu](12-fuel.md) | 11 | todo |
 | 13 | [Kitchen home](13-kitchen.md) | 08, 09, 10 | todo |
@@ -344,3 +344,14 @@ owner can overturn any of it:
 - The web reloads panels each time the plan page opens. The app loads them
   once per week, so turning a plugin on or off on the Plugins screen reloads
   the plan's panels and suggestions (`PlanModel.pluginsChanged`).
+- The app puts "Add an item" below the aisles, where the web puts it above
+  them: with the form first, a phone's first screen showed one item of the
+  list (item 10).
+- A ticked shopping item stays ticked on screen when the server refuses it,
+  marked "Not sent" with a Retry; the web refreshes the list instead. Ticks
+  go one at a time, so an item's last tap is the one the server keeps.
+- Kotlin's `toDoubleOrNull` reads "2f", "2d", and hex floats, which
+  JavaScript's `Number` does not, so the add-an-item form checks the typed
+  amount against a plain decimal pattern first; `shopping.json` pins "2f".
+- Olives come out in the "Other" aisle, from the catalog's category, not the
+  app's.
