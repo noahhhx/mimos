@@ -1,6 +1,8 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
+import { load } from "js-yaml";
+
 import { REPO_ROOT } from "./config.ts";
 
 export const FLOWS_DIR = join(REPO_ROOT, "apps/mobile/flows");
@@ -9,6 +11,17 @@ export interface FlowEnv {
   MIMOS_USER: string;
   MIMOS_PASSWORD: string;
   MIMOS_WEB_ADDRESS: string;
+  /** The other member's username, which the app shows as their name, for a flow tagged `household`. */
+  MIMOS_PARTNER?: string;
+}
+
+/** The tag that has a flow sign in as one of two members of a household. */
+export const HOUSEHOLD_TAG = "household";
+
+/** Whether a flow's config (the part before its first `---`) carries the `household` tag. */
+export function wantsHousehold(flowYaml: string): boolean {
+  const config = load(flowYaml.split(/^---\s*$/m)[0] ?? "") as { tags?: unknown } | null;
+  return Array.isArray(config?.tags) && config.tags.includes(HOUSEHOLD_TAG);
 }
 
 export interface AppRequest {

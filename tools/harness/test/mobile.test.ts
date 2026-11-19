@@ -24,7 +24,7 @@ import {
 } from "../src/avd.ts";
 import { parseMobileArgs } from "../src/commands/mobile.ts";
 import { copyRedacted } from "../src/evidence.ts";
-import { flowFailure, flowNames, maestroArgs, maestroFailure, parseAppRequests } from "../src/maestro.ts";
+import { flowFailure, flowNames, maestroArgs, maestroFailure, parseAppRequests, wantsHousehold } from "../src/maestro.ts";
 import { redactLiterals, redactText } from "../src/redact.ts";
 import { renderFlowSection, renderLogcatSection, renderUpSection, summarizeLogcat } from "../src/mobile-report.ts";
 
@@ -224,6 +224,13 @@ test("maestro: the command runs one flow on the emulator, with the flow's values
   assert.ok(args.includes("--flatten-debug-output"));
   const passed = args.flatMap((arg, index) => (args[index - 1] === "-e" ? [arg] : []));
   assert.deepEqual(passed, ["MIMOS_USER=user-1", "MIMOS_PASSWORD=pw", "MIMOS_WEB_ADDRESS=http://localhost:3000"]);
+});
+
+test("maestro: only a flow whose config is tagged household gets a household", () => {
+  assert.equal(wantsHousehold("appId: a\ntags:\n  - household\n---\n- launchApp\n"), true);
+  assert.equal(wantsHousehold("appId: a\ntags: [smoke, household]\n---\n- launchApp\n"), true);
+  assert.equal(wantsHousehold("appId: a\n---\n- tapOn: household\n"), false);
+  assert.equal(wantsHousehold("appId: a\ntags: [smoke]\n---\n- runFlow:\n    tags: [household]\n"), false);
 });
 
 test("maestro: flows are the yaml files of the directory, sorted by name", () => {

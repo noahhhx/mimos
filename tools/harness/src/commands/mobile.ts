@@ -20,13 +20,14 @@ import {
   renderAvdConfig,
   renderAvdIni,
 } from "../avd.ts";
-import { createUser } from "../accounts.ts";
+import { createUser, joinHousehold } from "../accounts.ts";
 import { HarnessError, parseCommandArgs, UsageError } from "../args.ts";
 import { finishRun, RUN_OPTION, RUN_USAGE, startRun, type Command } from "../command.ts";
 import { endpoints, FRESH_PASSWORD, REALM, REPO_ROOT } from "../config.ts";
 import { copyRedacted } from "../evidence.ts";
+import { fetchToken } from "./token.ts";
 import { exec } from "../exec.ts";
-import { flowFailure, flowNames, FLOWS_DIR, maestroArgs, parseAppRequests, REQUEST_TAG, type AppRequest, type FlowEnv, type FlowFailure } from "../maestro.ts";
+import { flowFailure, flowNames, FLOWS_DIR, maestroArgs, wantsHousehold, parseAppRequests, REQUEST_TAG, type AppRequest, type FlowEnv, type FlowFailure } from "../maestro.ts";
 import {
   renderFlowSection,
   renderLogcatSection,
@@ -345,14 +346,28 @@ async function flow(args: MobileArgs, argv: string[]): Promise<number> {
         for (const id of [APP_ID, BROWSER_ID]) await device().ok(["shell", "pm", "clear", id]);
         return `${APP_ID}, ${BROWSER_ID}; ${await ensureBrowser()}`;
       });
+      const flowFile = join(FLOWS_DIR, `${name}.yaml`);
+      const household = wantsHousehold(readFileSync(flowFile, "utf8"));
       await step("Account", async () => {
         account = await createUser();
         return `${account} (fresh)`;
       });
+      let partner: string | undefined;
+      if (household) {
+        await step("Household", async () => {
+          partner = await createUser();
+          await joinHousehold(await fetchToken(partner), await fetchToken(account));
+          return `${account} joined ${partner}'s household`;
+        });
+      }
       await device().ok(["logcat", "-c"]);
 
-      const env: FlowEnv = { MIMOS_USER: account, MIMOS_PASSWORD: FRESH_PASSWORD, MIMOS_WEB_ADDRESS: endpoints().web };
-      const flowFile = join(FLOWS_DIR, `${name}.yaml`);
+      const env: FlowEnv = {
+        MIMOS_USER: account,
+        MIMOS_PASSWORD: FRESH_PASSWORD,
+        MIMOS_WEB_ADDRESS: endpoints().web,
+        ...(partner === undefined ? {} : { MIMOS_PARTNER: partner }),
+      };
       const began = Date.now();
       const result = await exec("maestro", maestroArgs({ serial: AVD_SERIAL, flowFile, env, staging }), { env: toolEnv }).catch((error: unknown) => {
         steps.push({ name: "Maestro", ok: false, detail: "", ms: Date.now() - began });
@@ -465,7 +480,9 @@ export const mobileCommand: Command = {
   flow <name>      run apps/mobile/flows/<name>.yaml with Maestro on the installed app:
                    recheck the reverse rules and what the device reaches, clear the app's and the
                    browser's data, create a fresh account (harness user create), and run the flow
-                   with MIMOS_USER, MIMOS_PASSWORD, and MIMOS_WEB_ADDRESS. Builds and installs
+                   with MIMOS_USER, MIMOS_PASSWORD, and MIMOS_WEB_ADDRESS. A flow whose config has
+                   \`tags: [household]\` signs in as one of two fresh accounts in one household; the
+                   other's name, as the app shows it, is MIMOS_PARTNER. Builds and installs
                    nothing, so run \`up\` first. Maestro's output is captured, not streamed (it
                    echoes typed values); evidence is redacted, the password by value, into
                    mobile/flows/<name>/: report.xml, screenshots, Maestro's logs, and the
