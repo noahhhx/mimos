@@ -366,3 +366,15 @@ owner can overturn any of it:
 - Once, `./gradlew check assembleDebug` failed in `spotlessKotlinGradle`
   reading a `.dex` under `shared/build/.transforms` while another task
   rewrote it. A rerun passed (item 11).
+- Maestro's `launchApp` grants every permission the app declares, so the
+  flows always have the camera, and the refused-camera hint ("The camera
+  isn't allowed. Type the number instead.") is checked only by reading
+  the code. A flow that needs it would launch with `permissions: { camera:
+  deny }` (item 11b).
+- CameraX's default `PreviewView` is a SurfaceView, which drew past its
+  box over the scan sheet's header and field: the sheet is a window of
+  its own (`Overlay`). `COMPATIBLE` mode (a TextureView) clipped to the
+  box composes like any other view (item 11b).
+- The emulator's rear camera shows a virtual scene with no barcode, so the
+  flows type numbers. Camera reading is not yet checked on a device; the
+  emulator can show an image in its virtual scene, which is untried.
