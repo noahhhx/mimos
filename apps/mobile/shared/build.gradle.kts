@@ -1,5 +1,6 @@
 import io.github.noahhhx.mimos.gradle.GENERATE_DESIGN_TOKENS
 import io.github.noahhhx.mimos.gradle.GenerateDesignTokens
+import io.github.noahhhx.mimos.gradle.mimosVersion
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -21,7 +22,7 @@ val generatedApi = layout.buildDirectory.dir("generated/openapi")
 val generatedVersion = layout.buildDirectory.dir("generated/version")
 
 val generateAppVersion by tasks.registering {
-    val version = providers.gradleProperty("mimos.version")
+    val version = mimosVersion()
     val output = generatedVersion
     inputs.property("version", version)
     outputs.dir(output)
@@ -82,6 +83,14 @@ val generateTestCases by tasks.registering {
 tasks
     .matching { it.name.startsWith("lintAnalyze") || it.name.endsWith("LintModel") }
     .configureEach { dependsOn(generateTestCases) }
+
+// Release builds read each source directory's sibling baselineProfiles, a path the generated
+// directories' tasks do not produce, so Gradle cannot see the dependency on its own.
+tasks
+    .matching { it.name.endsWith("ArtProfile") }
+    .configureEach {
+        dependsOn("openApiGenerate", generateAppVersion, GENERATE_DESIGN_TOKENS)
+    }
 
 kotlin {
     android {

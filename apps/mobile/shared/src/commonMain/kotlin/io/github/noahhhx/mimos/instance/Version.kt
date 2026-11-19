@@ -23,7 +23,7 @@ data class Version(val major: Int, val minor: Int, val patch: Int) : Comparable<
     }
 }
 
-/** This app's version, from the build's `mimos.version`. */
+/** This app's version: the release tag's, or else the root `pom.xml`'s (`mimosVersion`). */
 val APP_VERSION: Version = requireNotNull(Version.parse(APP_VERSION_NAME)) { APP_VERSION_NAME }
 
 /** The oldest server the app talks to: the first that answers `getInstance`. */

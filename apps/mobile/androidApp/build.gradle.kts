@@ -1,3 +1,6 @@
+import io.github.noahhhx.mimos.gradle.ReleaseVersion
+import io.github.noahhhx.mimos.gradle.mimosVersion
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -25,8 +28,22 @@ androidComponents {
     }
 }
 
+val appVersion = mimosVersion()
+
 val (compileSdkMajor, compileSdkMinor) =
     libs.versions.compileSdk.get().split(".").map(String::toInt)
+
+/** Signs with the keystore at [path], whose passwords and alias are [prefix]'s other variables. */
+fun com.android.build.api.dsl.ApkSigningConfig.signWith(path: String, prefix: String) {
+    fun required(name: String) =
+        // CI passes a missing secret as an empty string.
+        providers.environmentVariable("${prefix}_$name").orNull?.ifEmpty { null }
+            ?: throw GradleException("${prefix}_KEYSTORE is set, so ${prefix}_$name must be too")
+    storeFile = file(path)
+    storePassword = required("KEYSTORE_PASSWORD")
+    keyAlias = required("KEY_ALIAS")
+    keyPassword = required("KEY_PASSWORD")
+}
 
 android {
     namespace = "io.github.noahhhx.mimos"
@@ -37,14 +54,34 @@ android {
         applicationId = "io.github.noahhhx.mimos"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = providers.gradleProperty("mimos.version").get()
+        versionName = appVersion.get()
+        versionCode = ReleaseVersion.parse(appVersion.get()).versionCode
         // AppAuth claims this whole scheme for the sign-in redirect. App links such as
         // invites use the separate io.github.noahhhx.mimos scheme (ADR-0029).
         manifestPlaceholders["appAuthRedirectScheme"] = "io.github.noahhhx.mimos.oauth"
     }
 
-    buildTypes { debug { applicationIdSuffix = ".debug" } }
+    // Keys come from the environment, never the repository (16-release.md). Without them, debug
+    // builds use the SDK's own key and release builds stay unsigned.
+    fun env(name: String): String? = providers.environmentVariable(name).orNull?.ifEmpty { null }
+
+    signingConfigs {
+        getByName("debug") { env("MIMOS_DEBUG_KEYSTORE")?.let { signWith(it, "MIMOS_DEBUG") } }
+        env("MIMOS_RELEASE_KEYSTORE")?.let { create("release") { signWith(it, "MIMOS_RELEASE") } }
+    }
+
+    buildTypes {
+        debug { applicationIdSuffix = ".debug" }
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+            signingConfig = signingConfigs.findByName("release")
+        }
+    }
 
     lint {
         warningsAsErrors = true
