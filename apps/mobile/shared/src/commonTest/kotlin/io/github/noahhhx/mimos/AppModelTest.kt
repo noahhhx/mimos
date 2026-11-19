@@ -1,5 +1,6 @@
 package io.github.noahhhx.mimos
 
+import io.github.noahhhx.mimos.account.MemoryDocuments
 import io.github.noahhhx.mimos.connect.ConnectModel
 import io.github.noahhhx.mimos.connect.ConnectState
 import io.github.noahhhx.mimos.household.HouseholdRoute
@@ -91,6 +92,7 @@ private fun model(
             object : PictureShrinker {
                 override suspend fun shrink(picked: PickedPicture) = error("nothing is picked")
             },
+        documents = MemoryDocuments(),
         createSession = createSession,
     )
 

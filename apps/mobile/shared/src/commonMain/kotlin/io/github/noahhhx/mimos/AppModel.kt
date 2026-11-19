@@ -1,5 +1,8 @@
 package io.github.noahhhx.mimos
 
+import io.github.noahhhx.mimos.account.AccountModel
+import io.github.noahhhx.mimos.account.DocumentStore
+import io.github.noahhhx.mimos.api.apis.AccountApi
 import io.github.noahhhx.mimos.api.apis.HouseholdApi
 import io.github.noahhhx.mimos.api.apis.PlanningApi
 import io.github.noahhhx.mimos.api.apis.RecipePicturesApi
@@ -56,6 +59,7 @@ class AppModel(
     recipeSortStore: RecipeSortStore,
     planViewStore: PlanViewStore,
     pictureShrinker: PictureShrinker,
+    documents: DocumentStore,
     private val createSession: (Instance) -> SessionModel,
     today: () -> LocalDate = { Clock.System.todayIn(TimeZone.currentSystemDefault()) },
 ) {
@@ -103,6 +107,17 @@ class AppModel(
             connected = { (current ?: error("not connected")).instance.config.webUrl },
             allowLocalhostHttp = debug,
             onChanged = {
+                recipes.reset()
+                plan.reset()
+            },
+        )
+
+    val account =
+        AccountModel(
+            scope,
+            api = { connected().api(::AccountApi) },
+            documents = documents,
+            onImported = {
                 recipes.reset()
                 plan.reset()
             },
@@ -214,6 +229,7 @@ class AppModel(
         recipes.reset()
         plan.reset()
         household.reset()
+        account.reset()
     }
 
     /** Signs out of the connected instance, then forgets it so another can be typed in. */

@@ -10,11 +10,14 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
+import io.github.noahhhx.mimos.api.apis.InstanceApi
 import io.github.noahhhx.mimos.api.apis.MeApi
 import io.github.noahhhx.mimos.connect.ConnectScreen
 import io.github.noahhhx.mimos.connect.ConnectState
 import io.github.noahhhx.mimos.gallery.Gallery
+import io.github.noahhhx.mimos.instance.Version
 import io.github.noahhhx.mimos.session.SessionScreen
+import io.github.noahhhx.mimos.settings.OpenSource
 import io.github.noahhhx.mimos.shell.AppShell
 import io.github.noahhhx.mimos.shell.Profile
 import io.github.noahhhx.mimos.shell.ShellActions
@@ -25,10 +28,16 @@ const val APP_NAME = "Mimos"
 
 /**
  * [brandMark] is the chef duck, the web app's icon, drawn beside the app's name. The platform
- * supplies it from its own resources, and [share] opens its share sheet with a text.
+ * supplies it from its own resources, [share] opens its share sheet with a text, and [licences]
+ * lists what the app is built from.
  */
 @Composable
-fun App(model: AppModel, brandMark: Painter, share: (String) -> Unit) {
+fun App(
+    model: AppModel,
+    brandMark: Painter,
+    share: (String) -> Unit,
+    licences: List<OpenSource>,
+) {
     val theme by model.theme.state.collectAsState()
     val gallery by model.gallery.collectAsState()
     MimosTheme(theme) {
@@ -36,14 +45,19 @@ fun App(model: AppModel, brandMark: Painter, share: (String) -> Unit) {
             if (gallery) {
                 Gallery(model.theme, brandMark, onClose = model::closeGallery)
             } else {
-                Connection(model, brandMark, share)
+                Connection(model, brandMark, share, licences)
             }
         }
     }
 }
 
 @Composable
-private fun Connection(model: AppModel, brandMark: Painter, share: (String) -> Unit) {
+private fun Connection(
+    model: AppModel,
+    brandMark: Painter,
+    share: (String) -> Unit,
+    licences: List<OpenSource>,
+) {
     when (val connected = model.connect.state.collectAsState().value) {
         is ConnectState.Addressing -> ConnectScreen(model.connect, brandMark, model::connect)
         is ConnectState.Connected -> {
@@ -71,14 +85,26 @@ private fun Connection(model: AppModel, brandMark: Painter, share: (String) -> U
                                 Profile.Failed(failure.message ?: "no answer")
                             }
                     }
+                // The version from connecting, until the instance says again: it may have been
+                // upgraded since.
+                val serverVersion by
+                    produceState(instance.serverVersion, instance) {
+                        runCatching { http.api(::InstanceApi).getInstance().body() }
+                            .getOrNull()
+                            ?.let { Version.parse(it.version) }
+                            ?.let { value = it }
+                    }
                 AppShell(
                     shell = model.shell,
                     recipes = model.recipes,
                     plan = model.plan,
                     household = model.household,
+                    account = model.account,
                     theme = model.theme,
                     profile = profile,
                     webOrigin = instance.config.webUrl.origin,
+                    serverVersion = serverVersion,
+                    licences = licences,
                     brandMark = brandMark,
                     actions =
                         ShellActions(

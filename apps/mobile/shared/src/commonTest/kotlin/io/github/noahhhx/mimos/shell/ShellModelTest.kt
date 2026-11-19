@@ -68,13 +68,13 @@ class ShellModelTest {
             Destination.tabs.map { it.label },
         )
         assertEquals(
-            listOf("Household", "Plugins", "Fuel", "Your data"),
+            listOf("Household", "Plugins", "Fuel", "Your data", "Settings"),
             Destination.profileMenu.map { it.label },
         )
     }
 
     @Test
-    fun `each destination opens its page on the instance's web address`() {
+    fun `each destination the web has opens its page on the instance's web address`() {
         val origin = "https://mimos.example.com"
 
         assertEquals(
@@ -88,8 +88,9 @@ class ShellModelTest {
                 "/app/plugins",
                 "/app/fuel",
                 "/app/account",
+                null,
             ),
-            Destination.entries.map { it.webUrl(origin).removePrefix(origin) },
+            Destination.entries.map { it.webUrl(origin)?.removePrefix(origin) },
         )
     }
 

@@ -74,7 +74,12 @@ class MainActivity : ComponentActivity() {
             openLink(intent)
         }
         setContent {
-            App(models.app, brandMark = painterResource(R.drawable.brand_duck), share = ::share)
+            App(
+                models.app,
+                brandMark = painterResource(R.drawable.brand_duck),
+                share = ::share,
+                licences = LICENCES,
+            )
         }
     }
 

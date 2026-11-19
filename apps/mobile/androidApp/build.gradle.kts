@@ -2,6 +2,27 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     id("mimos.no-play-services")
+    id("mimos.licences")
+}
+
+val generateLicences =
+    tasks.named<io.github.noahhhx.mimos.gradle.GenerateLicences>("generateLicences") {
+        packageName = "io.github.noahhhx.mimos"
+        // The fonts come from the web app's files, not Maven (apps/web/src/fonts/README.md).
+        extra.addAll(
+            listOf("Newsreader", "Public Sans").map {
+                io.github.noahhhx.mimos.gradle.Notice("$it (font)", emptyList(), listOf("OFL-1.1"))
+            }
+        )
+    }
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.kotlin?.addGeneratedSourceDirectory(
+            generateLicences,
+            io.github.noahhhx.mimos.gradle.GenerateLicences::outputDir,
+        )
+    }
 }
 
 val (compileSdkMajor, compileSdkMinor) =

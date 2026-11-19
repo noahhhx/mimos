@@ -9,9 +9,10 @@ enum class Placement {
 
 /**
  * Every place the web's signed-in area has, with its label and its page on the web, in the order
- * the web lists them. Screens the app has not built yet send people to [webPath].
+ * the web lists them, then Settings, which only the app has. Screens the app has not built yet send
+ * people to [webPath].
  */
-enum class Destination(val label: String, val webPath: String, val placement: Placement) {
+enum class Destination(val label: String, val webPath: String?, val placement: Placement) {
     Kitchen("Kitchen", "/app", Placement.Tab),
     Recipes("Recipes", "/app/recipes", Placement.Tab),
     Plan("Plan", "/app/plan", Placement.Tab),
@@ -20,10 +21,11 @@ enum class Destination(val label: String, val webPath: String, val placement: Pl
     Household("Household", "/app/household", Placement.Profile),
     Plugins("Plugins", "/app/plugins", Placement.Profile),
     Fuel("Fuel", "/app/fuel", Placement.Profile),
-    YourData("Your data", "/app/account", Placement.Profile);
+    YourData("Your data", "/app/account", Placement.Profile),
+    Settings("Settings", null, Placement.Profile);
 
-    /** This page on the instance whose web address is [origin]. */
-    fun webUrl(origin: String): String = origin.trimEnd('/') + webPath
+    /** This page on the instance whose web address is [origin]; null for one the web lacks. */
+    fun webUrl(origin: String): String? = webPath?.let { origin.trimEnd('/') + it }
 
     companion object {
         val tabs: List<Destination> = entries.filter { it.placement == Placement.Tab }

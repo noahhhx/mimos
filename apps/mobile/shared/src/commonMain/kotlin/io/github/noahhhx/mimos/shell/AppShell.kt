@@ -22,13 +22,18 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.dp
+import io.github.noahhhx.mimos.account.AccountModel
+import io.github.noahhhx.mimos.account.AccountScreen
 import io.github.noahhhx.mimos.household.HouseholdModel
 import io.github.noahhhx.mimos.household.HouseholdScreen
 import io.github.noahhhx.mimos.household.InviteLink
+import io.github.noahhhx.mimos.instance.Version
 import io.github.noahhhx.mimos.plan.PlanModel
 import io.github.noahhhx.mimos.plan.PlanScreen
 import io.github.noahhhx.mimos.recipes.RecipesModel
 import io.github.noahhhx.mimos.recipes.RecipesScreen
+import io.github.noahhhx.mimos.settings.OpenSource
+import io.github.noahhhx.mimos.settings.SettingsScreen
 import io.github.noahhhx.mimos.ui.BottomSheet
 import io.github.noahhhx.mimos.ui.Brand
 import io.github.noahhhx.mimos.ui.Button
@@ -61,7 +66,8 @@ class ShellActions(
 /**
  * The signed-in app: a header with the brand and the two tools, the destination on screen, and the
  * tab bar along the bottom (a phone's thumb reaches it; the web's tabs sit under its header).
- * [webOrigin] is the instance's web address, where screens not yet in the app send people.
+ * [webOrigin] is the instance's web address, where screens not yet in the app send people, and
+ * [serverVersion] the version it runs.
  */
 @Composable
 fun AppShell(
@@ -69,9 +75,12 @@ fun AppShell(
     recipes: RecipesModel,
     plan: PlanModel,
     household: HouseholdModel,
+    account: AccountModel,
     theme: ThemeModel,
     profile: Profile,
     webOrigin: String,
+    serverVersion: Version,
+    licences: List<OpenSource>,
     brandMark: Painter,
     actions: ShellActions,
 ) {
@@ -91,6 +100,15 @@ fun AppShell(
                 Destination.Plan -> PlanScreen(plan, actions.onOpenRecipe)
                 Destination.Household ->
                     HouseholdScreen(household, actions.onShare, actions.onSwitchInstance)
+                Destination.YourData -> AccountScreen(account)
+                Destination.Settings ->
+                    SettingsScreen(
+                        theme,
+                        webOrigin,
+                        serverVersion,
+                        licences,
+                        actions.onChangeInstance,
+                    )
                 else ->
                     Column(
                         Modifier.fillMaxSize()
@@ -107,7 +125,7 @@ fun AppShell(
         TabBar(selected = destination, onSelect = shell::go)
     }
     if (profileOpen) {
-        ProfileSheet(profile, shell, actions, webOrigin)
+        ProfileSheet(profile, shell, actions)
     }
 }
 
@@ -136,7 +154,6 @@ private fun ProfileSheet(
     profile: Profile,
     shell: ShellModel,
     actions: ShellActions,
-    webOrigin: String,
 ) {
     BottomSheet(onDismiss = shell::closeProfile) {
         Column(
@@ -177,14 +194,6 @@ private fun ProfileSheet(
                 actions.onSignOut()
             },
         )
-        ListRow(
-            "Change instance",
-            detail = webOrigin,
-            onClick = {
-                shell.closeProfile()
-                actions.onChangeInstance()
-            },
-        )
     }
 }
 
@@ -193,6 +202,7 @@ private fun ProfileSheet(
 private fun ComingToTheApp(destination: Destination, webOrigin: String) {
     val uriHandler = LocalUriHandler.current
     PageHeader(title = destination.label)
+    val webUrl = destination.webUrl(webOrigin) ?: return
     EmptyState(
         title = "Coming to the app",
         message =
@@ -200,7 +210,7 @@ private fun ComingToTheApp(destination: Destination, webOrigin: String) {
         action = {
             Button(
                 "Open on the web",
-                onClick = { uriHandler.openUri(destination.webUrl(webOrigin)) },
+                onClick = { uriHandler.openUri(webUrl) },
                 kind = ButtonKind.Secondary,
             )
         },

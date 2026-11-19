@@ -3,6 +3,7 @@ package io.github.noahhhx.mimos
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.noahhhx.mimos.account.AndroidDocumentStore
 import io.github.noahhhx.mimos.auth.AppAuthAuthorizer
 import io.github.noahhhx.mimos.auth.BrowserLauncher
 import io.github.noahhhx.mimos.auth.KeystoreTokenStore
@@ -35,6 +36,7 @@ class AppViewModel(application: Application, debuggable: Boolean) : AndroidViewM
             recipeSortStore = SharedPreferencesRecipeSortStore(application),
             planViewStore = SharedPreferencesPlanViewStore(application),
             pictureShrinker = AndroidPictureShrinker(application),
+            documents = AndroidDocumentStore(application),
             createSession = { instance ->
                 SessionModel(
                     authorizer =
