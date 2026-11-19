@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -33,7 +34,8 @@ enum class ButtonKind {
 /**
  * The web's `.button`. Pressing deepens it, as hovering does on the web; nothing animates.
  * [description] names it for a screen reader when [label] alone is ambiguous ("Remove" on every
- * row).
+ * row). A non-null [pressed] makes it a toggle, as the web's `aria-pressed`: its state is announced
+ * and read as checked.
  */
 @Composable
 fun Button(
@@ -44,6 +46,7 @@ fun Button(
     small: Boolean = false,
     enabled: Boolean = true,
     description: String? = null,
+    pressed: Boolean? = null,
 ) {
     val colors = MimosTheme.colors
     val spacing = MimosTheme.spacing
@@ -84,12 +87,24 @@ fun Button(
             )
             .background(look.fill)
             .border(spacing.hairline, look.border)
-            .clickable(
-                interactionSource = source,
-                indication = null,
-                enabled = enabled,
-                role = Role.Button,
-                onClick = onClick,
+            .then(
+                if (pressed == null)
+                    Modifier.clickable(
+                        interactionSource = source,
+                        indication = null,
+                        enabled = enabled,
+                        role = Role.Button,
+                        onClick = onClick,
+                    )
+                else
+                    Modifier.toggleable(
+                        value = pressed,
+                        interactionSource = source,
+                        indication = null,
+                        enabled = enabled,
+                        role = Role.Checkbox,
+                        onValueChange = { onClick() },
+                    )
             )
             .padding(horizontal = if (small) spacing.buttonPaddingSmall else spacing.buttonPadding),
         contentAlignment = Alignment.Center,

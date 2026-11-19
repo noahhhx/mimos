@@ -1,0 +1,67 @@
+appId: io.github.noahhhx.mimos.debug
+---
+- runFlow: connect-and-sign-in.yaml
+- tapOn: Plan
+- assertVisible: Week of .*
+- assertVisible: This week
+- assertNotVisible: Everyone
+- takeScreenshot: plan-week-empty
+- tapOn:
+    text: Add Dinner for .*
+    index: 0
+- assertVisible: Add a meal
+- assertVisible: Dinner · .*
+- tapOn: Search recipes and ingredients
+- inputText: greek
+- tapOn: Greek Salad
+- assertVisible: Week of .*
+- assertVisible: Greek Salad
+- assertVisible: 2 servings
+- tapOn:
+    text: Add Lunch for .*
+    index: 0
+- tapOn: Search recipes and ingredients
+- inputText: bana
+- takeScreenshot: plan-picker
+- tapOn: Banana
+- assertVisible: Banana
+- assertVisible: 1 piece
+- takeScreenshot: plan-week
+- tapOn: Greek Salad
+- assertVisible: Servings
+- assertVisible: Recipe
+- tapOn: More servings
+- assertVisible: 2.5 servings
+- takeScreenshot: plan-meal
+- tapOn: ← Plan
+- assertVisible: 2.5 servings
+- tapOn: Banana
+- assertVisible: Food
+- tapOn: Amount of Banana
+- eraseText
+- inputText: "2"
+- tapOn: Save
+- tapOn: ← Plan
+- assertVisible: 2 pieces
+- tapOn:
+    text: ".*Planned: .*kcal"
+    index: 0
+- assertVisible: Planned
+- assertVisible: Protein
+- takeScreenshot: plan-day
+- tapOn: ← Plan
+- tapOn: Greek Salad
+- tapOn: Remove Greek Salad
+- assertVisible: Week of .*
+- assertNotVisible: Greek Salad
+- assertVisible: Banana
+- tapOn: Next →
+- assertNotVisible: Banana
+- tapOn: This week
+- assertVisible: Banana
+- tapOn: Toggle light and dark mode
+- takeScreenshot: plan-week-dark
+- tapOn: Banana
+- takeScreenshot: plan-meal-dark
+- tapOn: ← Plan
+- tapOn: Toggle light and dark mode

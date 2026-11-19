@@ -29,7 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -206,7 +205,7 @@ private fun MealSlot(
             .padding(start = MimosTheme.spacing.page, end = MimosTheme.spacing.s),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Label(mealLabel(mealType), Modifier.width(84.dp))
+        Label(mealLabel(mealType), Modifier.width(MEAL_LABEL_WIDTH))
         Column(Modifier.weight(1f).padding(vertical = MimosTheme.spacing.xs)) {
             for (entry in entries) {
                 val mine = entry.eatenByYou()
@@ -372,11 +371,11 @@ private fun DinerToggle(model: PlanModel, entry: MealPlanEntry, member: Person, 
     Button(
         member.displayName,
         { model.toggleDiner(entry, member.id) },
-        Modifier.semantics { selected = eats },
         kind = if (eats) ButtonKind.Primary else ButtonKind.Secondary,
         small = true,
         enabled = !busy && !last,
         description = if (member.you) "${member.displayName} (you)" else member.displayName,
+        pressed = eats,
     )
 }
 
@@ -517,3 +516,6 @@ private fun Picker(model: PlanModel, slot: PlanRoute.Pick) {
         }
     }
 }
+
+/** Wide enough for "BREAKFAST" in the label style's letter spacing on one line. */
+private val MEAL_LABEL_WIDTH = 104.dp

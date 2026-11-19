@@ -1,0 +1,38 @@
+appId: io.github.noahhhx.mimos.debug
+tags:
+  - household
+---
+- runFlow: connect-and-sign-in.yaml
+- tapOn: Plan
+- assertVisible: Week of .*
+- assertVisible: Mine
+- assertVisible: Everyone
+- tapOn:
+    text: Add Dinner for .*
+    index: 0
+- tapOn: Search recipes and ingredients
+- inputText: greek
+- tapOn: Greek Salad
+- assertVisible: Greek Salad
+- assertVisible: 2 servings · .* · .*
+- takeScreenshot: shared-week
+- tapOn: Greek Salad
+- assertVisible: Who eats it
+- assertVisible: ${MIMOS_PARTNER}
+- assertVisible: ${MIMOS_USER} \(you\)
+- takeScreenshot: shared-meal
+- tapOn: ${MIMOS_USER} \(you\)
+- assertVisible: Week of .*
+- assertNotVisible: Greek Salad
+- tapOn: Everyone
+- assertVisible: Greek Salad
+- assertVisible: 2 servings · .*
+- assertNotVisible: 2 servings · .* · .*
+- tapOn: Greek Salad
+- tapOn: ${MIMOS_PARTNER}
+- assertVisible: Who eats it
+- tapOn: ${MIMOS_USER} \(you\)
+- tapOn: ← Plan
+- assertVisible: 2 servings · .* · .*
+- tapOn: Mine
+- assertVisible: Greek Salad
