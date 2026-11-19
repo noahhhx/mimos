@@ -51,7 +51,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 10 | [Shopping list](10-shopping-list.md) | 08 | done (24d83bc) |
 | 11 | [Log](11-log.md) | 08 | done (31cfef3) |
 | 11b | [Barcode scanning](11b-barcodes.md) | 11 | done (9cda160) |
-| 12 | [Fuel and intervals.icu](12-fuel.md) | 11 | todo |
+| 12 | [Fuel and intervals.icu](12-fuel.md) | 11 | done (59118e9) |
 | 13 | [Kitchen home](13-kitchen.md) | 08, 09, 10 | todo |
 | 14 | [Household and invites](14-household.md) | 06 | done (e5731f5, branch `mobile/14-household`, stacked on 08) |
 | 15 | [Account, settings, export and import](15-account.md) | 06 | done (965f7de, branch `mobile/15-account`, stacked on 14) |
@@ -378,3 +378,22 @@ owner can overturn any of it:
 - The emulator's rear camera shows a virtual scene with no barcode, so the
   flows type numbers. Camera reading is not yet checked on a device; the
   emulator can show an image in its virtual scene, which is untried.
+- The Plan tab read `my-totals` until item 12. It now reads the week's
+  `GET /api/v1/me/fuel`, as the web's plan page does, which carries the same
+  planned totals beside each day's training and target. The Log tab reads it
+  too, and the log still shows when it fails.
+- The web's day inspector puts Fuel for the day and Planned in one table.
+  On a phone each is a labelled row of four figures, Fuel for the day
+  first, and the training section sits above them. A day's header names its
+  training under the date ("Ride 60 min", or "Rest") and its planned
+  calories against the target ("– of 2363 kcal").
+- Saving the fuel profile, or connecting, refreshing, or disconnecting
+  intervals.icu, reloads an opened plan (`PlanModel.fuelChanged`); the Log
+  tab reads its week each time it opens anyway.
+- Connecting intervals.icu syncs at once, and its suggestions then appear
+  above the intervals.icu section, pushing "Connected as i1" off a phone's
+  screen. The `intervals-icu` flow scrolls to it.
+- The `intervals-icu` flow uses the fake's fixtures as they stand and does
+  not reset it: no flow changes the fake. A web scenario that leaves a fault
+  set (`/_fake/fault`) would break it; reset with
+  `curl -X POST http://127.0.0.1:8090/_fake/reset`.
