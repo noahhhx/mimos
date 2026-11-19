@@ -1,26 +1,36 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
-import { householdName, inviteLink, listNames } from "../src/lib/household.ts";
+import { appJoinLink, householdName, inviteLink, listNames } from "../src/lib/household.ts";
 import { returnPath } from "../src/lib/return-to.ts";
 
-describe("householdName", () => {
-  it("names one, two, and more members the way a sentence would", () => {
-    assert.equal(householdName(["Sam"]), "Sam's household");
-    assert.equal(householdName(["Sam", "Alex"]), "Sam and Alex's household");
-    assert.equal(householdName(["Sam", "Alex", "Jo"]), "Sam, Alex and Jo's household");
+type Named = { names: string[]; expected: string };
+
+// The app's commonTest reads the same file (libraries/test-cases/README.md).
+const cases = JSON.parse(
+  readFileSync(new URL("../../../libraries/test-cases/household.json", import.meta.url), "utf8"),
+) as {
+  householdNameCases: Named[];
+  listNamesCases: Named[];
+  inviteLinkCases: { webAddress: string; token: string; link: string; appLink: string }[];
+};
+
+describe("the shared household cases", () => {
+  it("name a household and its members the way a sentence would", () => {
+    for (const each of cases.householdNameCases) {
+      assert.equal(householdName(each.names), each.expected, JSON.stringify(each));
+    }
+    for (const each of cases.listNamesCases) {
+      assert.equal(listNames(each.names), each.expected, JSON.stringify(each));
+    }
   });
 
-  it("falls back when there is nobody to name", () => {
-    assert.equal(householdName([]), "this household");
-    assert.equal(listNames([]), "");
-  });
-});
-
-describe("inviteLink", () => {
-  it("joins the app's URL and the token without doubling slashes", () => {
-    assert.equal(inviteLink("https://mimos.example/", "abc-_123"), "https://mimos.example/app/join/abc-_123");
-    assert.equal(inviteLink("http://localhost:3000", "t"), "http://localhost:3000/app/join/t");
+  it("make the web's invite link and the app's, without doubling slashes", () => {
+    for (const each of cases.inviteLinkCases) {
+      assert.equal(inviteLink(each.webAddress, each.token), each.link, JSON.stringify(each));
+      assert.equal(appJoinLink(each.webAddress, each.token), each.appLink, JSON.stringify(each));
+    }
   });
 });
 

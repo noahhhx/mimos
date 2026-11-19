@@ -15,3 +15,12 @@ export function householdName(names: readonly string[]): string {
 export function inviteLink(appUrl: string, token: string): string {
   return `${appUrl.replace(/\/+$/, "")}/app/join/${encodeURIComponent(token)}`;
 }
+
+/** The Android app's own scheme for links it opens (ADR-0029), apart from its sign-in redirect. */
+export const APP_LINK_SCHEME = "io.github.noahhhx.mimos";
+
+/** The link that opens an invite in the Android app, naming this Mimos so the app can connect to it. */
+export function appJoinLink(appUrl: string, token: string): string {
+  const instance = encodeURIComponent(appUrl.replace(/\/+$/, ""));
+  return `${APP_LINK_SCHEME}://join?instance=${instance}&token=${encodeURIComponent(token)}`;
+}

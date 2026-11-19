@@ -1,0 +1,34 @@
+{
+  "householdNameCases": [
+    { "names": [], "expected": "this household" },
+    { "names": ["Sam"], "expected": "Sam's household" },
+    { "names": ["Sam", "Alex"], "expected": "Sam and Alex's household" },
+    { "names": ["Sam", "Alex", "Jo"], "expected": "Sam, Alex and Jo's household" }
+  ],
+  "listNamesCases": [
+    { "names": [], "expected": "" },
+    { "names": ["Sam"], "expected": "Sam" },
+    { "names": ["Sam", "Alex"], "expected": "Sam and Alex" },
+    { "names": ["Sam", "Alex", "Jo"], "expected": "Sam, Alex and Jo" }
+  ],
+  "inviteLinkCases": [
+    {
+      "webAddress": "https://mimos.example",
+      "token": "abc-_123",
+      "link": "https://mimos.example/app/join/abc-_123",
+      "appLink": "io.github.noahhhx.mimos://join?instance=https%3A%2F%2Fmimos.example&token=abc-_123"
+    },
+    {
+      "webAddress": "https://mimos.example/",
+      "token": "Zx9_-Q",
+      "link": "https://mimos.example/app/join/Zx9_-Q",
+      "appLink": "io.github.noahhhx.mimos://join?instance=https%3A%2F%2Fmimos.example&token=Zx9_-Q"
+    },
+    {
+      "webAddress": "http://localhost:3000",
+      "token": "t",
+      "link": "http://localhost:3000/app/join/t",
+      "appLink": "io.github.noahhhx.mimos://join?instance=http%3A%2F%2Flocalhost%3A3000&token=t"
+    }
+  ]
+}

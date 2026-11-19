@@ -10,7 +10,8 @@ import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";
 import { SignInPrompt } from "@/components/sign-in-prompt";
 import { apiClient } from "@/lib/api";
-import { householdName, listNames } from "@/lib/household";
+import { appBaseUrl } from "@/lib/config";
+import { appJoinLink, householdName, listNames } from "@/lib/household";
 
 type Preview = { state: "loading" } | { state: "invalid"; message: string } | { state: "ok"; data: HouseholdInvitePreview };
 
@@ -61,6 +62,7 @@ export default function JoinPage() {
         <SignInPrompt returnTo={`/app/join/${encodeURIComponent(token)}`}>
           Someone invited you to share their household on Mimos. Sign in, or create an account, to see it.
         </SignInPrompt>
+        <OpenInApp token={token} />
       </>
     );
   }
@@ -157,6 +159,16 @@ export default function JoinPage() {
           Not now
         </Link>
       </div>
+      <OpenInApp token={token} />
     </>
+  );
+}
+
+/** The same invite in the Android app, which cannot claim this site's links (ADR-0029). */
+function OpenInApp({ token }: { token: string }) {
+  return (
+    <p className="muted">
+      Using the Mimos app on Android? <a href={appJoinLink(appBaseUrl, token)}>Open in the app</a>
+    </p>
   );
 }
