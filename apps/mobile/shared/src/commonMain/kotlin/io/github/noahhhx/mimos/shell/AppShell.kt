@@ -24,6 +24,8 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.dp
 import io.github.noahhhx.mimos.account.AccountModel
 import io.github.noahhhx.mimos.account.AccountScreen
+import io.github.noahhhx.mimos.fuel.FuelModel
+import io.github.noahhhx.mimos.fuel.FuelScreen
 import io.github.noahhhx.mimos.household.HouseholdModel
 import io.github.noahhhx.mimos.household.HouseholdScreen
 import io.github.noahhhx.mimos.household.InviteLink
@@ -88,6 +90,7 @@ fun AppShell(
     plugins: PluginsModel,
     shopping: ShoppingModel,
     log: LogModel,
+    fuel: FuelModel,
     theme: ThemeModel,
     profile: Profile,
     webOrigin: String,
@@ -118,6 +121,7 @@ fun AppShell(
                     HouseholdScreen(household, actions.onShare, actions.onSwitchInstance)
                 Destination.YourData -> AccountScreen(account)
                 Destination.Plugins -> PluginsScreen(plugins)
+                Destination.Fuel -> FuelScreen(fuel)
                 Destination.Settings ->
                     SettingsScreen(
                         theme,

@@ -1,6 +1,7 @@
 package io.github.noahhhx.mimos.plan
 
 import io.github.noahhhx.mimos.api.apis.FoodProductsApi
+import io.github.noahhhx.mimos.api.apis.FuelApi
 import io.github.noahhhx.mimos.api.apis.HouseholdApi
 import io.github.noahhhx.mimos.api.apis.LoggingApi
 import io.github.noahhhx.mimos.api.apis.PlanningApi
@@ -8,6 +9,7 @@ import io.github.noahhhx.mimos.api.apis.PluginsApi
 import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.api.models.CatalogIngredient
 import io.github.noahhhx.mimos.api.models.FoodProduct
+import io.github.noahhhx.mimos.api.models.FuelDay
 import io.github.noahhhx.mimos.api.models.MealLogInput
 import io.github.noahhhx.mimos.api.models.MealPlanEntry
 import io.github.noahhhx.mimos.api.models.MealPlanEntryInput
@@ -18,10 +20,17 @@ import io.github.noahhhx.mimos.api.models.Person
 import io.github.noahhhx.mimos.api.models.PlanSuggestion
 import io.github.noahhhx.mimos.api.models.PlannedDayTotal
 import io.github.noahhhx.mimos.api.models.RecipeSummary
+import io.github.noahhhx.mimos.api.models.TrainingSession
 import io.github.noahhhx.mimos.barcode.ScanModel
 import io.github.noahhhx.mimos.barcode.existingIngredient
 import io.github.noahhhx.mimos.barcode.productDraft
 import io.github.noahhhx.mimos.barcode.productIngredient
+import io.github.noahhhx.mimos.client.ApiProblem
+import io.github.noahhhx.mimos.fuel.DURATION_FIELD
+import io.github.noahhhx.mimos.fuel.TrainingDraft
+import io.github.noahhhx.mimos.fuel.TrainingFailures
+import io.github.noahhhx.mimos.fuel.input
+import io.github.noahhhx.mimos.fuel.namedFields
 import io.github.noahhhx.mimos.ingredients.CheckedIngredient
 import io.github.noahhhx.mimos.ingredients.NewIngredientDraft
 import io.github.noahhhx.mimos.ingredients.SavedIngredient
@@ -66,14 +75,15 @@ sealed interface PlanRoute {
 
 /**
  * A loaded week: its meals, the household's members (none when they failed to load, so the week
- * reads as a household of one's), the caller's planned totals (null when they failed), and the
- * plugins' suggestions for it (none when they failed: they only add to the week, ADR-0006).
+ * reads as a household of one's), the caller's fuel for each day (null when it failed): what they
+ * plan to eat, their training, and their target while targets are on (ADR-0022), and the plugins'
+ * suggestions for it (none when they failed: they only add to the week, ADR-0006).
  */
 data class PlanWeek(
     val monday: LocalDate,
     val entries: List<MealPlanEntry>,
     val members: List<Person>,
-    val totals: List<PlannedDayTotal>?,
+    val fuel: List<FuelDay>?,
     val suggestions: List<PlanSuggestion> = emptyList(),
 ) {
     val shared: Boolean
@@ -82,9 +92,15 @@ data class PlanWeek(
     fun shown(view: PlanView): List<MealPlanEntry> =
         if (shared) visibleEntries(entries, view) else entries
 
-    fun totalsShown(view: PlanView): Boolean = totals != null && showsPlannedTotals(shared, view)
+    fun totalsShown(view: PlanView): Boolean = fuel != null && showsPlannedTotals(shared, view)
 
-    fun total(date: LocalDate): PlannedDayTotal? = totals?.find { it.date == date }
+    fun fuelOf(date: LocalDate): FuelDay? = fuel?.find { it.date == date }
+
+    fun total(date: LocalDate): PlannedDayTotal? = fuelOf(date)?.planned
+
+    /** Whether the caller's targets are on: then each day shows its training and target. */
+    val targetsOn: Boolean
+        get() = fuel?.any { it.target != null } == true
 }
 
 sealed interface WeekState {
@@ -132,6 +148,7 @@ class PlanModel(
     private val plugins: () -> PluginsApi,
     private val logging: () -> LoggingApi,
     foodProducts: () -> FoodProductsApi,
+    private val fuel: () -> FuelApi,
     private val today: () -> LocalDate,
     private val searchDelayMillis: Long = SEARCH_DELAY_MILLIS,
 ) {
@@ -179,6 +196,10 @@ class PlanModel(
     private val mutableLogging = MutableStateFlow(false)
     val loggingMeal: StateFlow<Boolean> = mutableLogging.asStateFlow()
 
+    /** The session being added to the open day, as typed. */
+    private val mutableTraining = MutableStateFlow<TrainingDraft?>(null)
+    val training: StateFlow<TrainingDraft?> = mutableTraining.asStateFlow()
+
     private var weekJob: Job? = null
     private var searchJob: Job? = null
     private var ingredientJob: Job? = null
@@ -196,6 +217,12 @@ class PlanModel(
         if (weekJob == null) return
         panels.load(monday.value)
         refreshSuggestions(monday.value)
+    }
+
+    /** The person's fuel profile or intervals.icu changed: the week's targets and training did. */
+    fun fuelChanged() {
+        if (weekJob == null) return
+        load()
     }
 
     fun retry() = load()
@@ -247,6 +274,7 @@ class PlanModel(
         mutableNotice.value = null
         mutableSharing.value = null
         mutableLogged.value = null
+        mutableTraining.value = null
         if (to !is PlanRoute.Pick) {
             searchJob?.cancel()
             scanner.close()
@@ -293,6 +321,43 @@ class PlanModel(
             planning().deleteMealPlanEntry(monday.value, entry.id)
             mutableRoute.value = PlanRoute.Week
         }
+    }
+
+    fun startTraining() {
+        mutableError.value = null
+        mutableTraining.value = TrainingDraft()
+    }
+
+    fun editTraining(change: (TrainingDraft) -> TrainingDraft) = mutableTraining.update {
+        it?.let(change)?.copy(minutesError = false)
+    }
+
+    fun cancelTraining() {
+        mutableTraining.value = null
+    }
+
+    /** Adds the typed session to [date]; the week reloads, so the day's target follows at once. */
+    fun addTraining(date: LocalDate) {
+        val draft = training.value ?: return
+        val input = draft.input(date)
+        if (input == null) {
+            mutableTraining.value = draft.copy(minutesError = true)
+            return
+        }
+        change(TrainingFailures.ADD) {
+            try {
+                fuel().addMyTraining(input).body()
+                mutableTraining.value = null
+            } catch (problem: ApiProblem) {
+                if (namedFields(problem.detail, listOf(DURATION_FIELD)).isEmpty()) throw problem
+                mutableTraining.update { it?.copy(minutesError = true) }
+            }
+        }
+    }
+
+    /** Only a session added by hand can be removed; a synced one changes when its source syncs. */
+    fun removeTraining(session: TrainingSession) {
+        change(TrainingFailures.REMOVE) { fuel().deleteMyTraining(session.id) }
     }
 
     /** A meal eaten alone logs in one tap; a shared one asks for the caller's share first. */
@@ -594,15 +659,17 @@ class PlanModel(
 
     private suspend fun fetch(wanted: LocalDate): PlanWeek = coroutineScope {
         val plan = async { planning().getMealPlan(wanted).body() }
-        // The household and the totals only add to the week: without them it still plans.
+        // The household and the fuel only add to the week: without them it still plans.
         val members = async { optional { household().getHousehold().body().members } }
-        val totals = async { optional { planning().getMyPlannedTotals(wanted).body().days } }
+        val days = async {
+            optional { fuel().getMyFuel(wanted, wanted.plus(DatePeriod(days = 6))).body().days }
+        }
         val suggestions = async { fetchSuggestions(wanted) }
         PlanWeek(
             wanted,
             plan.await().propertyEntries,
             members.await() ?: emptyList(),
-            totals.await(),
+            days.await(),
             suggestions.await(),
         )
     }
@@ -658,6 +725,7 @@ class PlanModel(
         mutableSharing.value = null
         mutableLogged.value = null
         mutableLogging.value = false
+        mutableTraining.value = null
         mutablePicker.value = PickerState()
     }
 

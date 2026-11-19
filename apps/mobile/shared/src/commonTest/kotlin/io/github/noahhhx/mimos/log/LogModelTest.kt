@@ -1,6 +1,7 @@
 package io.github.noahhhx.mimos.log
 
 import io.github.noahhhx.mimos.api.apis.FoodProductsApi
+import io.github.noahhhx.mimos.api.apis.FuelApi
 import io.github.noahhhx.mimos.api.apis.LoggingApi
 import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.api.models.CatalogIngredient
@@ -13,6 +14,7 @@ import io.github.noahhhx.mimos.api.models.NutritionBasis
 import io.github.noahhhx.mimos.api.models.RecipeSummary
 import io.github.noahhhx.mimos.client.MimosHttp
 import io.github.noahhhx.mimos.client.MimosJson
+import io.github.noahhhx.mimos.fuel.fuelDaysJson
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.respondError
@@ -65,6 +67,9 @@ private class LogServer {
     var failWrites = false
     var failCatalog = false
     var catalogReads = 0
+    /** Each day's target calories while targets are on; [failFuel] makes the read fail. */
+    var targets = mapOf<LocalDate, Int>()
+    var failFuel = false
 
     val engine = MockEngine { request ->
         val json = headersOf(HttpHeaders.ContentType, "application/json")
@@ -139,6 +144,12 @@ private class LogServer {
                         headers = json,
                     )
             }
+            path == "/api/v1/me/fuel" ->
+                if (failFuel) respondError(HttpStatusCode.InternalServerError)
+                else {
+                    val (from, to) = range()
+                    respond(fuelDaysJson(from, to, targets = targets), headers = json)
+                }
             path.startsWith("/api/v1/food-products/") ->
                 respond(
                     """{"barcode":"50184453","name":"Yeast Extract","brand":"Marmite",
@@ -164,6 +175,7 @@ private fun TestScope.model(server: LogServer) =
         logging = { MimosHttp(server.engine, API).api(::LoggingApi) },
         recipes = { MimosHttp(server.engine, API).api(::RecipesApi) },
         foodProducts = { MimosHttp(server.engine, API).api(::FoodProductsApi) },
+        fuel = { MimosHttp(server.engine, API).api(::FuelApi) },
         today = { THURSDAY },
     )
 
@@ -172,6 +184,23 @@ private suspend fun LogModel.loaded(monday: LocalDate = MONDAY): LogWeek =
         .week
 
 class LogModelTest {
+    @Test
+    fun `a day's target shows beside its log while targets are on, and the log shows without it`() =
+        runTest {
+            val server = LogServer().apply { targets = mapOf(THURSDAY to 2650) }
+            val model = model(server)
+
+            model.opened()
+            val week = model.loaded()
+            assertEquals(setOf(THURSDAY), week.targets.keys)
+            assertEquals(2650, week.targets.getValue(THURSDAY).calories)
+
+            server.failFuel = true
+            model.opened()
+            model.week.first { it is LogWeekState.Loaded && it.week.targets.isEmpty() }
+            assertEquals(null, model.error.value, "the log loads without its targets")
+        }
+
     @Test
     fun `the log opens on today in its week, and reads the week again each time it opens`() =
         runTest {

@@ -33,11 +33,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import io.github.noahhhx.mimos.api.models.DailyLogSummary
+import io.github.noahhhx.mimos.api.models.FuelTarget
 import io.github.noahhhx.mimos.api.models.MealLog
 import io.github.noahhhx.mimos.api.models.Nutrition
 import io.github.noahhhx.mimos.barcode.ScanButton
 import io.github.noahhhx.mimos.barcode.ScanSheet
 import io.github.noahhhx.mimos.barcode.openFoodFactsUrl
+import io.github.noahhhx.mimos.fuel.FUEL_LABEL
 import io.github.noahhhx.mimos.plan.MEAL_TYPES
 import io.github.noahhhx.mimos.plan.dayLabel
 import io.github.noahhhx.mimos.plan.formatServings
@@ -146,32 +148,48 @@ private fun WeekTable(week: LogWeek, selected: LocalDate, onSelect: (LocalDate) 
         }
         Rule()
         for (day in weekDays(week.monday)) {
-            val cells = dayCells(week.summaryOf(day))
             val isSelected = day == selected
             val edge = colors.accent
             val edgeWidth = spacing.noticeEdge
-            TableRow(
-                Modifier.then(
-                        if (isSelected) {
-                            Modifier.background(colors.hover).drawBehind {
-                                drawRect(edge, size = Size(edgeWidth.toPx(), size.height))
-                            }
-                        } else Modifier
-                    )
-                    .clickable(role = Role.Button) { onSelect(day) }
-                    .semantics(mergeDescendants = true) {
-                        this.selected = isSelected
-                        contentDescription =
-                            "${dayLabel(day)}: ${cells[0]} kcal, ${cells[1]} protein, " +
-                                "${cells[2]} carbs, ${cells[3]} fat"
+            @Composable
+            fun DayRow(label: String, name: String, cells: List<String>, muted: Boolean) =
+                TableRow(
+                    Modifier.then(
+                            if (isSelected) {
+                                Modifier.background(colors.hover).drawBehind {
+                                    drawRect(edge, size = Size(edgeWidth.toPx(), size.height))
+                                }
+                            } else Modifier
+                        )
+                        .clickable(role = Role.Button) { onSelect(day) }
+                        .semantics(mergeDescendants = true) {
+                            this.selected = isSelected
+                            contentDescription =
+                                "$name: ${cells[0]} kcal, ${cells[1]} protein, " +
+                                    "${cells[2]} carbs, ${cells[3]} fat"
+                        }
+                        .heightIn(min = 44.dp)
+                        .padding(vertical = spacing.s)
+                ) {
+                    val shade = if (muted) colors.muted else colors.fg
+                    Text(label, Modifier.weight(columnWeight(0)), style = cell, color = shade)
+                    for ((index, value) in cells.withIndex()) {
+                        Text(
+                            value,
+                            Modifier.weight(columnWeight(index + 1)),
+                            style = cell,
+                            color = shade,
+                        )
                     }
-                    .heightIn(min = 44.dp)
-                    .padding(vertical = spacing.s)
-            ) {
-                Text(dayLabel(day), Modifier.weight(columnWeight(0)), style = cell)
-                for ((index, value) in cells.withIndex()) {
-                    Text(value, Modifier.weight(columnWeight(index + 1)), style = cell)
                 }
+            DayRow(dayLabel(day), dayLabel(day), dayCells(week.summaryOf(day)), muted = false)
+            week.targets[day]?.let { target ->
+                DayRow(
+                    FUEL_LABEL,
+                    "$FUEL_LABEL, ${dayLabel(day)}",
+                    targetCells(target),
+                    muted = true,
+                )
             }
             Rule()
         }
@@ -189,6 +207,18 @@ private val HEADINGS = listOf("Day", "Kcal", "Protein", "Carbs", "Fat")
 
 private fun dayCells(summary: DailyLogSummary?): List<String> {
     val nutrition = summary?.let { Nutrition(it.calories, it.proteinG, it.carbsG, it.fatG) }
+    val (kcal, protein, carbs, fat) = nutritionCells(nutrition)
+    return listOf(kcal.removeSuffix(" kcal"), protein, carbs, fat)
+}
+
+private fun targetCells(target: FuelTarget): List<String> {
+    val nutrition =
+        Nutrition(
+            target.calories.toDouble(),
+            target.proteinG.toDouble(),
+            target.carbsG.toDouble(),
+            target.fatG.toDouble(),
+        )
     val (kcal, protein, carbs, fat) = nutritionCells(nutrition)
     return listOf(kcal.removeSuffix(" kcal"), protein, carbs, fat)
 }

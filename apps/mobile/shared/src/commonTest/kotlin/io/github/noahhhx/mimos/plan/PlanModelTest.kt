@@ -1,6 +1,7 @@
 package io.github.noahhhx.mimos.plan
 
 import io.github.noahhhx.mimos.api.apis.FoodProductsApi
+import io.github.noahhhx.mimos.api.apis.FuelApi
 import io.github.noahhhx.mimos.api.apis.HouseholdApi
 import io.github.noahhhx.mimos.api.apis.LoggingApi
 import io.github.noahhhx.mimos.api.apis.PlanningApi
@@ -10,6 +11,9 @@ import io.github.noahhhx.mimos.api.models.MealType
 import io.github.noahhhx.mimos.api.models.RecipeSummary
 import io.github.noahhhx.mimos.client.MimosHttp
 import io.github.noahhhx.mimos.client.MimosJson
+import io.github.noahhhx.mimos.fuel.TrainingFailures
+import io.github.noahhhx.mimos.fuel.fuelDaysJson
+import io.github.noahhhx.mimos.fuel.sessionJson
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.respondError
@@ -37,6 +41,9 @@ private const val API = "https://api.mimos.example.com"
 private val THURSDAY = LocalDate(2026, 11, 19)
 private const val MONDAY = "2026-11-16"
 
+private const val PROBLEM_MINUTES =
+    """{"title":"Bad Request","status":400,"detail":"durationMinutes must be between 1 and 1440"}"""
+
 private const val ME = """{"id":"me","displayName":"Sam Lee","you":true}"""
 private const val PARTNER = """{"id":"partner","displayName":"Alex","you":false}"""
 
@@ -50,6 +57,11 @@ private class Server {
     var entries = mutableListOf<String>()
     var failHousehold = false
     var failTotals = false
+    var failMinutes = false
+    /** Each day's target calories while targets are on, and its sessions. */
+    var targets = mapOf<LocalDate, Int>()
+    var sessions = mapOf<LocalDate, List<String>>()
+    val fuelRead = Channel<Pair<LocalDate, LocalDate>>(Channel.UNLIMITED)
     var failWrites = false
     var failIngredient = false
     var suggestions = "[]"
@@ -88,17 +100,25 @@ private class Server {
             path == "/api/v1/household" ->
                 if (failHousehold) respondError(HttpStatusCode.InternalServerError)
                 else respond("""{"members":[${members.joinToString(",")}]}""", headers = json)
-            path.endsWith("/my-totals") ->
+            path == "/api/v1/me/fuel" ->
                 if (failTotals) respondError(HttpStatusCode.InternalServerError)
                 else {
-                    val start = path.removePrefix("/api/v1/plans/").removeSuffix("/my-totals")
-                    val days =
-                        (16..22).joinToString(",") {
-                            """{"date":"2026-11-$it","total":{"calories":500},"meals":1,
-                                "mealsWithoutNutrition":0}"""
-                        }
-                    respond("""{"startDate":"$start","days":[$days]}""", headers = json)
+                    val from = LocalDate.parse(request.url.parameters["from"]!!)
+                    val to = LocalDate.parse(request.url.parameters["to"]!!)
+                    fuelRead.trySend(from to to)
+                    respond(
+                        fuelDaysJson(from, to, planned = 500.0, targets, sessions),
+                        headers = json,
+                    )
                 }
+            request.method == HttpMethod.Post && path == "/api/v1/me/training" ->
+                if (failMinutes) {
+                    respond(
+                        PROBLEM_MINUTES,
+                        HttpStatusCode.BadRequest,
+                        headersOf(HttpHeaders.ContentType, "application/problem+json"),
+                    )
+                } else respond(sessionJson("s-new", THURSDAY, 45), headers = json)
             request.method == HttpMethod.Get && path.startsWith("/api/v1/plans/") -> {
                 val start = path.removePrefix("/api/v1/plans/")
                 plansRead.trySend(start)
@@ -166,6 +186,7 @@ private fun TestScope.model(server: Server, store: PlanViewStore = MemoryViewSto
         plugins = { MimosHttp(server.engine, API).api(::PluginsApi) },
         logging = { MimosHttp(server.engine, API).api(::LoggingApi) },
         foodProducts = { MimosHttp(server.engine, API).api(::FoodProductsApi) },
+        fuel = { MimosHttp(server.engine, API).api(::FuelApi) },
         today = { THURSDAY },
         searchDelayMillis = 0,
     )
@@ -204,7 +225,7 @@ class PlanModelTest {
         val week = model.loaded()
 
         assertEquals(emptyList(), week.members)
-        assertNull(week.totals)
+        assertNull(week.fuel)
         assertEquals(false, week.totalsShown(PlanView.Mine), "no totals to show")
     }
 
@@ -510,6 +531,99 @@ class PlanModelTest {
         }
 
     @Test
+    fun `the week reads the caller's fuel for its seven days, with targets while they are on`() =
+        runTest {
+            val server = Server().apply { targets = mapOf(THURSDAY to 2650) }
+            val model = model(server)
+
+            model.ensureLoaded()
+            val week = model.loaded()
+
+            assertEquals(
+                LocalDate(2026, 11, 16) to LocalDate(2026, 11, 22),
+                server.fuelRead.receive(),
+            )
+            assertTrue(week.targetsOn)
+            assertEquals(2650, week.fuelOf(THURSDAY)?.target?.calories)
+            assertNull(week.fuelOf(LocalDate(2026, 11, 18))?.target)
+            assertEquals(500.0, week.total(THURSDAY)?.total?.calories)
+        }
+
+    @Test
+    fun `training is added to the open day in whole minutes, and the week reloads`() = runTest {
+        val server = Server().apply { targets = mapOf(THURSDAY to 2650) }
+        val model = model(server)
+        model.ensureLoaded()
+        model.loaded()
+        server.fuelRead.receive()
+        model.openDay(THURSDAY)
+
+        model.startTraining()
+        model.editTraining { it.copy(minutes = "4.5") }
+        model.addTraining(THURSDAY)
+        assertEquals(true, model.training.value?.minutesError)
+        assertTrue(server.writes.tryReceive().isFailure, "nothing is sent")
+
+        model.editTraining { it.copy(minutes = "45") }
+        assertEquals(false, model.training.value?.minutesError, "typing clears the error")
+        model.addTraining(THURSDAY)
+
+        val (write, body) = server.nextWrite()
+        assertEquals("POST /api/v1/me/training", write)
+        assertEquals("2026-11-19", body!!["date"]!!.jsonPrimitive.content)
+        assertEquals("RIDE", body["sport"]!!.jsonPrimitive.content)
+        assertEquals("45", body["durationMinutes"]!!.jsonPrimitive.content)
+        assertEquals("ENDURANCE", body["intensity"]!!.jsonPrimitive.content)
+        model.settled()
+        assertNull(model.training.value)
+        assertEquals(LocalDate(2026, 11, 16) to LocalDate(2026, 11, 22), server.fuelRead.receive())
+        assertEquals(PlanRoute.Day(THURSDAY), model.route.value)
+    }
+
+    @Test
+    fun `minutes the API refuses mark the field, and a refused removal says so`() = runTest {
+        val server =
+            Server().apply {
+                targets = mapOf(THURSDAY to 2650)
+                sessions = mapOf(THURSDAY to listOf(sessionJson("s1", THURSDAY, 60)))
+                failMinutes = true
+            }
+        val model = model(server)
+        model.ensureLoaded()
+        val session = model.loaded().fuelOf(THURSDAY)!!.sessions.single()
+        model.openDay(THURSDAY)
+
+        model.startTraining()
+        model.editTraining { it.copy(minutes = "2000") }
+        model.addTraining(THURSDAY)
+        server.nextWrite()
+        model.settled()
+        assertEquals(true, model.training.value?.minutesError)
+        assertNull(model.error.value, "the field says what to fix")
+
+        server.failWrites = true
+        model.removeTraining(session)
+        assertEquals("DELETE /api/v1/me/training/s1", server.nextWrite().first)
+        model.settled()
+        assertEquals(TrainingFailures.REMOVE, model.error.value)
+    }
+
+    @Test
+    fun `a fuel change reloads an opened week, and leaves an unopened one to load when opened`() =
+        runTest {
+            val server = Server()
+            val model = model(server)
+            model.fuelChanged()
+            assertTrue(server.fuelRead.tryReceive().isFailure, "never opened")
+
+            model.ensureLoaded()
+            model.loaded()
+            server.fuelRead.receive()
+            model.fuelChanged()
+            server.fuelRead.receive()
+        }
+
+    @Test
     fun `removing a meal closes its inspector and reloads the week`() = runTest {
         val server = Server().apply { entries += recipeEntry("e1", "DINNER", 2.0, ME) }
         val model = model(server)
@@ -583,6 +697,7 @@ class PlanModelTest {
                 plugins = { MimosHttp(server.engine, API).api(::PluginsApi) },
                 logging = { MimosHttp(server.engine, API).api(::LoggingApi) },
                 foodProducts = { MimosHttp(server.engine, API).api(::FoodProductsApi) },
+                fuel = { MimosHttp(server.engine, API).api(::FuelApi) },
                 today = { THURSDAY },
             )
 

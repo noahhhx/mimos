@@ -1,10 +1,12 @@
 package io.github.noahhhx.mimos.log
 
 import io.github.noahhhx.mimos.api.apis.FoodProductsApi
+import io.github.noahhhx.mimos.api.apis.FuelApi
 import io.github.noahhhx.mimos.api.apis.LoggingApi
 import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.api.models.CatalogIngredient
 import io.github.noahhhx.mimos.api.models.DailyLogSummary
+import io.github.noahhhx.mimos.api.models.FuelTarget
 import io.github.noahhhx.mimos.api.models.MealLog
 import io.github.noahhhx.mimos.api.models.MealType
 import io.github.noahhhx.mimos.api.models.RecipeSummary
@@ -24,11 +26,15 @@ import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
 
-/** A week of the person's log: every entry, and each day's totals. */
+/**
+ * A week of the person's log: every entry, each day's totals, and each day's target while their
+ * targets are on (ADR-0022).
+ */
 data class LogWeek(
     val monday: LocalDate,
     val logs: List<MealLog>,
     val summary: List<DailyLogSummary>,
+    val targets: Map<LocalDate, FuelTarget> = emptyMap(),
 ) {
     fun logsOn(date: LocalDate): List<MealLog> = logs.filter { it.date == date }
 
@@ -73,6 +79,7 @@ class LogModel(
     private val logging: () -> LoggingApi,
     private val recipes: () -> RecipesApi,
     foodProducts: () -> FoodProductsApi,
+    private val fuel: () -> FuelApi,
     private val today: () -> LocalDate,
 ) {
     /** A found product is picked into What, to log by amount. */
@@ -215,7 +222,21 @@ class LogModel(
                         val to = wanted.plus(DatePeriod(days = 6))
                         val logs = async { logging().listMealLogs(wanted, to).body() }
                         val summary = async { logging().summarizeMealLogs(wanted, to).body() }
-                        LogWeekState.Loaded(LogWeek(wanted, logs.await(), summary.await()))
+                        // Targets sit beside the log; when they fail to load, the log still shows.
+                        val targets = async {
+                            try {
+                                fuel().getMyFuel(wanted, to).body().days.mapNotNull { day ->
+                                    day.target?.let { day.date to it }
+                                }
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (_: Exception) {
+                                emptyList()
+                            }
+                        }
+                        LogWeekState.Loaded(
+                            LogWeek(wanted, logs.await(), summary.await(), targets.await().toMap())
+                        )
                     }
                 } catch (cancelled: CancellationException) {
                     throw cancelled

@@ -22,6 +22,9 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 
 /**
@@ -30,7 +33,8 @@ import androidx.compose.ui.unit.dp
  * [label]) as its accessibility name, so a screen reader or a flow finds it by name, which matters
  * when several fields share a visible label ("Amount" on every ingredient). Keep one call site per
  * field so it keeps its focus when [error] comes and goes. [minLines] above 1 makes it multi-line;
- * [maxLength] stops typing at that many characters.
+ * [maxLength] stops typing at that many characters. [password] hides what is typed and keeps the
+ * keyboard from learning it.
  */
 @Composable
 fun TextField(
@@ -46,6 +50,7 @@ fun TextField(
     maxLength: Int? = null,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
+    password: Boolean = false,
 ) {
     val colors = MimosTheme.colors
     val source = remember { MutableInteractionSource() }
@@ -63,7 +68,15 @@ fun TextField(
             textStyle = MimosTheme.typography.input.copy(color = colors.fg),
             cursorBrush = SolidColor(colors.accent),
             interactionSource = source,
-            keyboardOptions = keyboardOptions,
+            visualTransformation =
+                if (password) PasswordVisualTransformation() else VisualTransformation.None,
+            keyboardOptions =
+                if (password) {
+                    keyboardOptions.copy(
+                        keyboardType = KeyboardType.Password,
+                        autoCorrectEnabled = false,
+                    )
+                } else keyboardOptions,
             keyboardActions = keyboardActions,
             modifier =
                 Modifier.fillMaxWidth()

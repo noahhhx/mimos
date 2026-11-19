@@ -4,7 +4,9 @@ import io.github.noahhhx.mimos.account.AccountModel
 import io.github.noahhhx.mimos.account.DocumentStore
 import io.github.noahhhx.mimos.api.apis.AccountApi
 import io.github.noahhhx.mimos.api.apis.FoodProductsApi
+import io.github.noahhhx.mimos.api.apis.FuelApi
 import io.github.noahhhx.mimos.api.apis.HouseholdApi
+import io.github.noahhhx.mimos.api.apis.IntervalsIcuApi
 import io.github.noahhhx.mimos.api.apis.LoggingApi
 import io.github.noahhhx.mimos.api.apis.PlanningApi
 import io.github.noahhhx.mimos.api.apis.PluginSettingsApi
@@ -15,6 +17,7 @@ import io.github.noahhhx.mimos.api.apis.ShoppingListsApi
 import io.github.noahhhx.mimos.client.MimosHttp
 import io.github.noahhhx.mimos.connect.ConnectModel
 import io.github.noahhhx.mimos.connect.ConnectState
+import io.github.noahhhx.mimos.fuel.FuelModel
 import io.github.noahhhx.mimos.household.HouseholdModel
 import io.github.noahhhx.mimos.household.HouseholdRoute
 import io.github.noahhhx.mimos.household.InviteLink
@@ -109,6 +112,7 @@ class AppModel(
             plugins = { connected().api(::PluginsApi) },
             logging = { connected().api(::LoggingApi) },
             foodProducts = { connected().api(::FoodProductsApi) },
+            fuel = { connected().api(::FuelApi) },
             today = today,
         )
 
@@ -121,7 +125,16 @@ class AppModel(
             logging = { connected().api(::LoggingApi) },
             recipes = { connected().api(::RecipesApi) },
             foodProducts = { connected().api(::FoodProductsApi) },
+            fuel = { connected().api(::FuelApi) },
             today = today,
+        )
+
+    val fuel =
+        FuelModel(
+            scope,
+            fuel = { connected().api(::FuelApi) },
+            intervalsIcu = { connected().api(::IntervalsIcuApi) },
+            onChanged = plan::fuelChanged,
         )
 
     val plugins =
@@ -154,6 +167,7 @@ class AppModel(
             onImported = {
                 recipes.reset()
                 plan.reset()
+                fuel.reset()
                 shopping.reset()
                 log.reset()
             },
@@ -278,6 +292,7 @@ class AppModel(
         plugins.reset()
         shopping.reset()
         log.reset()
+        fuel.reset()
         household.reset()
         account.reset()
     }

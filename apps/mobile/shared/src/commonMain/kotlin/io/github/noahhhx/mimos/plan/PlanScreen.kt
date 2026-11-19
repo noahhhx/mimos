@@ -37,8 +37,22 @@ import io.github.noahhhx.mimos.api.models.MealPlanEntry
 import io.github.noahhhx.mimos.api.models.MealType
 import io.github.noahhhx.mimos.api.models.Nutrition
 import io.github.noahhhx.mimos.api.models.Person
+import io.github.noahhhx.mimos.api.models.TrainingSession
+import io.github.noahhhx.mimos.api.models.TrainingSource
 import io.github.noahhhx.mimos.barcode.ScanButton
 import io.github.noahhhx.mimos.barcode.ScanSheet
+import io.github.noahhhx.mimos.fuel.DURATION_ERROR
+import io.github.noahhhx.mimos.fuel.DayFuelLine
+import io.github.noahhhx.mimos.fuel.FUEL_LABEL
+import io.github.noahhhx.mimos.fuel.INTENSITIES
+import io.github.noahhhx.mimos.fuel.SPORTS
+import io.github.noahhhx.mimos.fuel.TRAINING_LABEL
+import io.github.noahhhx.mimos.fuel.dayFuelLine
+import io.github.noahhhx.mimos.fuel.intensityLabel
+import io.github.noahhhx.mimos.fuel.removeSessionLabel
+import io.github.noahhhx.mimos.fuel.sessionParts
+import io.github.noahhhx.mimos.fuel.sessionShort
+import io.github.noahhhx.mimos.fuel.sportLabel
 import io.github.noahhhx.mimos.ingredients.NewIngredientPanel
 import io.github.noahhhx.mimos.recipes.form.describeEntry
 import io.github.noahhhx.mimos.recipes.form.numberText
@@ -52,6 +66,7 @@ import io.github.noahhhx.mimos.ui.Notice
 import io.github.noahhhx.mimos.ui.NoticeKind
 import io.github.noahhhx.mimos.ui.PageHeader
 import io.github.noahhhx.mimos.ui.Rule
+import io.github.noahhhx.mimos.ui.SelectField
 import io.github.noahhhx.mimos.ui.Tabs
 import io.github.noahhhx.mimos.ui.Text
 import io.github.noahhhx.mimos.ui.TextField
@@ -159,28 +174,50 @@ private fun DaySection(
     val name = if (today) "Today · ${dayLabel(date)}" else dayLabel(date)
     val totals = week.totalsShown(view)
     Column(Modifier.fillMaxWidth()) {
-        val planned = if (totals) plannedCalories(week, date) else null
+        val fuel = week.fuelOf(date)
+        val planned = if (totals) plannedLine(week, date) else null
+        val training =
+            if (totals && week.targetsOn) {
+                fuel
+                    ?.sessions
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.joinToString(" · ", transform = ::sessionShort) ?: "Rest"
+            } else null
         Row(
             Modifier.fillMaxWidth()
                 .then(
                     if (totals) {
                         Modifier.clickable(role = Role.Button) { model.openDay(date) }
                             .semantics {
-                                contentDescription = "$name. Planned: ${planned ?: "nothing yet"}"
+                                contentDescription =
+                                    listOfNotNull(
+                                            name,
+                                            training?.let { "$TRAINING_LABEL: $it" },
+                                            "Planned: ${planned?.let { listOfNotNull(it.said, it.detail).joinToString(" ") } ?: "nothing yet"}",
+                                        )
+                                        .joinToString(". ")
                             }
                     } else Modifier
                 )
                 .padding(horizontal = MimosTheme.spacing.page, vertical = MimosTheme.spacing.s),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                name,
-                Modifier.weight(1f),
-                style = MimosTheme.typography.heading,
-                color = if (today) colors.accent else colors.fg,
-            )
+            Column(Modifier.weight(1f)) {
+                Text(
+                    name,
+                    style = MimosTheme.typography.heading,
+                    color = if (today) colors.accent else colors.fg,
+                )
+                if (training != null) {
+                    Text(training, style = MimosTheme.typography.small, color = colors.muted)
+                }
+            }
             if (planned != null) {
-                Text(planned, style = MimosTheme.typography.small, color = colors.muted)
+                Text(
+                    "${planned.value} ${planned.detail ?: "kcal"}",
+                    style = MimosTheme.typography.small,
+                    color = colors.muted,
+                )
             }
         }
         Rule(gutter)
@@ -197,12 +234,14 @@ private fun DaySection(
     }
 }
 
-/** "1840 kcal", a dash when the day's meals' calories are unknown, or nothing for no meals. */
-private fun plannedCalories(week: PlanWeek, date: LocalDate): String? {
-    val day = week.total(date) ?: return null
-    if (day.meals == 0) return null
-    val calories = day.total.calories ?: return "– kcal"
-    return "${calories.roundToLong()} kcal"
+/**
+ * "1840 kcal", or "1840 of 3120 kcal" while targets are on; a dash when the day's meals' calories
+ * are unknown or it has none yet against a target, and nothing for no meals and no target.
+ */
+private fun plannedLine(week: PlanWeek, date: LocalDate): DayFuelLine? {
+    val fuel = week.fuelOf(date) ?: return null
+    if (fuel.planned.meals == 0 && fuel.target == null) return null
+    return dayFuelLine(fuel.target, fuel.planned)
 }
 
 @Composable
@@ -488,13 +527,30 @@ private fun FoodAmount(
 @Composable
 private fun DayInspector(model: PlanModel, week: PlanWeek, date: LocalDate) {
     val gutter = Modifier.padding(horizontal = MimosTheme.spacing.page)
-    val day = week.total(date)
+    val error by model.error.collectAsState()
+    val fuel = week.fuelOf(date)
+    val day = fuel?.planned
+    val target = fuel?.target
     val eyebrow = if (model.isToday(date)) "Today · ${dayLabel(date)}" else dayLabel(date)
     Inspector("← Plan", { model.back() }) {
         PageHeader(title = weekdayName(date), eyebrow = eyebrow, modifier = gutter)
+        error?.let { Notice(it, gutter) }
+        if (target != null) TrainingSection(model, date, fuel.sessions, gutter)
         Column(gutter, verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.s)) {
+            if (target != null) {
+                Label(FUEL_LABEL)
+                Figures(
+                    FUEL_LABEL,
+                    Nutrition(
+                        target.calories.toDouble(),
+                        target.proteinG.toDouble(),
+                        target.carbsG.toDouble(),
+                        target.fatG.toDouble(),
+                    ),
+                )
+            }
             Label("Planned")
-            PlannedFigures(day?.takeIf { it.meals > 0 }?.total)
+            Figures("Planned", day?.takeIf { it.meals > 0 }?.total)
             day?.let { withoutNutritionNote(it) }
                 ?.let {
                     Text(it, style = MimosTheme.typography.small, color = MimosTheme.colors.muted)
@@ -503,9 +559,89 @@ private fun DayInspector(model: PlanModel, week: PlanWeek, date: LocalDate) {
     }
 }
 
-/** The day's four planned values side by side, each a dash when unknown. */
+/**
+ * The day's training while its fuel shows: each session, Remove on one added by hand, and the form
+ * that adds one. Every change reloads the week, so the day's target follows at once.
+ */
 @Composable
-private fun PlannedFigures(total: Nutrition?) {
+private fun TrainingSection(
+    model: PlanModel,
+    date: LocalDate,
+    sessions: List<TrainingSession>,
+    modifier: Modifier,
+) {
+    val draft by model.training.collectAsState()
+    val busy by model.busy.collectAsState()
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.s)) {
+        Label(TRAINING_LABEL)
+        if (sessions.isEmpty() && draft == null) {
+            Text("No training.", color = MimosTheme.colors.muted)
+        }
+        for (session in sessions) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(MimosTheme.spacing.s),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(sessionParts(session).joinToString(" · "), Modifier.weight(1f))
+                if (session.source == TrainingSource.MANUAL) {
+                    Button(
+                        "Remove",
+                        { model.removeTraining(session) },
+                        kind = ButtonKind.Secondary,
+                        small = true,
+                        enabled = !busy,
+                        description = removeSessionLabel(session),
+                    )
+                }
+            }
+        }
+        val typed = draft
+        if (typed == null) {
+            Button(
+                "+ Add training",
+                model::startTraining,
+                kind = ButtonKind.Secondary,
+                small = true,
+                description = "Add training for ${dayLabel(date)}",
+            )
+            return@Column
+        }
+        SelectField(
+            "Sport",
+            typed.sport,
+            SPORTS.map { it.first },
+            ::sportLabel,
+            { sport -> model.editTraining { it.copy(sport = sport) } },
+        )
+        TextField(
+            typed.minutes,
+            { text -> model.editTraining { it.copy(minutes = text) } },
+            "Minutes",
+            error = if (typed.minutesError) DURATION_ERROR else null,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        )
+        SelectField(
+            "Intensity",
+            typed.intensity,
+            INTENSITIES.map { it.first },
+            { intensityLabel(it).orEmpty() },
+            { intensity -> model.editTraining { it.copy(intensity = intensity) } },
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(MimosTheme.spacing.s)) {
+            Button(
+                if (busy) "Adding…" else "Add",
+                { model.addTraining(date) },
+                small = true,
+                enabled = !busy,
+            )
+            Button("Cancel", model::cancelTraining, kind = ButtonKind.Secondary, small = true)
+        }
+    }
+}
+
+/** A day's four values side by side under [name], each a dash when unknown. */
+@Composable
+private fun Figures(name: String, total: Nutrition?) {
     fun round(value: Double?, unit: String = "") = value?.let { "${it.roundToLong()}$unit" } ?: "–"
     val figures =
         listOf(
@@ -517,7 +653,9 @@ private fun PlannedFigures(total: Nutrition?) {
     Row(Modifier.fillMaxWidth()) {
         for ((label, value) in figures) {
             Column(
-                Modifier.weight(1f).semantics(mergeDescendants = true) {},
+                Modifier.weight(1f).semantics(mergeDescendants = true) {
+                    contentDescription = "$name $label $value"
+                },
                 verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.xs),
             ) {
                 Text(label, style = MimosTheme.typography.small, color = MimosTheme.colors.muted)

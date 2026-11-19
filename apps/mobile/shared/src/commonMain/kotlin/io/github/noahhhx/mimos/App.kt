@@ -116,6 +116,7 @@ private fun Connection(
                     plugins = model.plugins,
                     shopping = model.shopping,
                     log = model.log,
+                    fuel = model.fuel,
                     theme = model.theme,
                     profile = profile,
                     webOrigin = instance.config.webUrl.origin,
