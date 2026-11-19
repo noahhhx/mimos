@@ -13,15 +13,20 @@ export interface FlowEnv {
   MIMOS_WEB_ADDRESS: string;
   /** The other member's username, which the app shows as their name, for a flow tagged `household`. */
   MIMOS_PARTNER?: string;
+  /** A second fresh account in a household of its own, with the same password, for a flow tagged `invitee`. */
+  MIMOS_INVITEE?: string;
 }
 
 /** The tag that has a flow sign in as one of two members of a household. */
 export const HOUSEHOLD_TAG = "household";
 
-/** Whether a flow's config (the part before its first `---`) carries the `household` tag. */
-export function wantsHousehold(flowYaml: string): boolean {
+/** The tag that gives a flow a second fresh account, on its own, to invite. */
+export const INVITEE_TAG = "invitee";
+
+/** The tags of a flow's config (the part before its first `---`). */
+export function flowTags(flowYaml: string): Set<string> {
   const config = load(flowYaml.split(/^---\s*$/m)[0] ?? "") as { tags?: unknown } | null;
-  return Array.isArray(config?.tags) && config.tags.includes(HOUSEHOLD_TAG);
+  return new Set(Array.isArray(config?.tags) ? config.tags.filter((tag) => typeof tag === "string") : []);
 }
 
 export interface AppRequest {

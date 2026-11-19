@@ -27,7 +27,7 @@ import { endpoints, FRESH_PASSWORD, REALM, REPO_ROOT } from "../config.ts";
 import { copyRedacted } from "../evidence.ts";
 import { fetchToken } from "./token.ts";
 import { exec } from "../exec.ts";
-import { flowFailure, flowNames, FLOWS_DIR, maestroArgs, wantsHousehold, parseAppRequests, REQUEST_TAG, type AppRequest, type FlowEnv, type FlowFailure } from "../maestro.ts";
+import { flowFailure, flowNames, FLOWS_DIR, maestroArgs, flowTags, HOUSEHOLD_TAG, INVITEE_TAG, parseAppRequests, REQUEST_TAG, type AppRequest, type FlowEnv, type FlowFailure } from "../maestro.ts";
 import {
   renderFlowSection,
   renderLogcatSection,
@@ -347,17 +347,24 @@ async function flow(args: MobileArgs, argv: string[]): Promise<number> {
         return `${APP_ID}, ${BROWSER_ID}; ${await ensureBrowser()}`;
       });
       const flowFile = join(FLOWS_DIR, `${name}.yaml`);
-      const household = wantsHousehold(readFileSync(flowFile, "utf8"));
+      const tags = flowTags(readFileSync(flowFile, "utf8"));
       await step("Account", async () => {
         account = await createUser();
         return `${account} (fresh)`;
       });
       let partner: string | undefined;
-      if (household) {
+      if (tags.has(HOUSEHOLD_TAG)) {
         await step("Household", async () => {
           partner = await createUser();
           await joinHousehold(await fetchToken(partner), await fetchToken(account));
           return `${account} joined ${partner}'s household`;
+        });
+      }
+      let invitee: string | undefined;
+      if (tags.has(INVITEE_TAG)) {
+        await step("Invitee", async () => {
+          invitee = await createUser();
+          return `${invitee} (fresh, on its own)`;
         });
       }
       await device().ok(["logcat", "-c"]);
@@ -367,6 +374,7 @@ async function flow(args: MobileArgs, argv: string[]): Promise<number> {
         MIMOS_PASSWORD: FRESH_PASSWORD,
         MIMOS_WEB_ADDRESS: endpoints().web,
         ...(partner === undefined ? {} : { MIMOS_PARTNER: partner }),
+        ...(invitee === undefined ? {} : { MIMOS_INVITEE: invitee }),
       };
       const began = Date.now();
       const result = await exec("maestro", maestroArgs({ serial: AVD_SERIAL, flowFile, env, staging }), { env: toolEnv }).catch((error: unknown) => {
@@ -482,7 +490,9 @@ export const mobileCommand: Command = {
                    browser's data, create a fresh account (harness user create), and run the flow
                    with MIMOS_USER, MIMOS_PASSWORD, and MIMOS_WEB_ADDRESS. A flow whose config has
                    \`tags: [household]\` signs in as one of two fresh accounts in one household; the
-                   other's name, as the app shows it, is MIMOS_PARTNER. Builds and installs
+                   other's name, as the app shows it, is MIMOS_PARTNER. \`tags: [invitee]\` adds
+                   a second fresh account on its own, MIMOS_INVITEE, with the same password,
+                   for a flow that invites someone. Builds and installs
                    nothing, so run \`up\` first. Maestro's output is captured, not streamed (it
                    echoes typed values); evidence is redacted, the password by value, into
                    mobile/flows/<name>/: report.xml, screenshots, Maestro's logs, and the

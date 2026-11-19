@@ -24,7 +24,7 @@ import {
 } from "../src/avd.ts";
 import { parseMobileArgs } from "../src/commands/mobile.ts";
 import { copyRedacted } from "../src/evidence.ts";
-import { flowFailure, flowNames, maestroArgs, maestroFailure, parseAppRequests, wantsHousehold } from "../src/maestro.ts";
+import { flowFailure, flowNames, maestroArgs, maestroFailure, parseAppRequests, flowTags } from "../src/maestro.ts";
 import { redactLiterals, redactText } from "../src/redact.ts";
 import { renderFlowSection, renderLogcatSection, renderUpSection, summarizeLogcat } from "../src/mobile-report.ts";
 
@@ -226,11 +226,12 @@ test("maestro: the command runs one flow on the emulator, with the flow's values
   assert.deepEqual(passed, ["MIMOS_USER=user-1", "MIMOS_PASSWORD=pw", "MIMOS_WEB_ADDRESS=http://localhost:3000"]);
 });
 
-test("maestro: only a flow whose config is tagged household gets a household", () => {
-  assert.equal(wantsHousehold("appId: a\ntags:\n  - household\n---\n- launchApp\n"), true);
-  assert.equal(wantsHousehold("appId: a\ntags: [smoke, household]\n---\n- launchApp\n"), true);
-  assert.equal(wantsHousehold("appId: a\n---\n- tapOn: household\n"), false);
-  assert.equal(wantsHousehold("appId: a\ntags: [smoke]\n---\n- runFlow:\n    tags: [household]\n"), false);
+test("maestro: a flow's tags are those of its config, not of its steps", () => {
+  assert.deepEqual(flowTags("appId: a\ntags:\n  - household\n---\n- launchApp\n"), new Set(["household"]));
+  assert.deepEqual(flowTags("appId: a\ntags: [smoke, invitee]\n---\n- launchApp\n"), new Set(["smoke", "invitee"]));
+  assert.deepEqual(flowTags("appId: a\n---\n- tapOn: household\n"), new Set());
+  assert.deepEqual(flowTags("appId: a\ntags: [smoke]\n---\n- runFlow:\n    tags: [household]\n"), new Set(["smoke"]));
+  assert.deepEqual(flowTags("appId: a\ntags: [1, household]\n---\n"), new Set(["household"]));
 });
 
 test("maestro: flows are the yaml files of the directory, sorted by name", () => {
