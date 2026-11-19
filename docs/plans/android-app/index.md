@@ -49,7 +49,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 08b | [A new ingredient from the plan's picker](08b-plan-new-ingredient.md) | 08 | done (93c15ac) |
 | 09 | [Plugins: page, suggestions, week panels](09-plugins.md) | 08 | done (f9e9c8e) |
 | 10 | [Shopping list](10-shopping-list.md) | 08 | done (24d83bc) |
-| 11 | [Log](11-log.md) | 08 | todo |
+| 11 | [Log](11-log.md) | 08 | done (TBD) |
 | 11b | [Barcode scanning](11b-barcodes.md) | 11 | todo |
 | 12 | [Fuel and intervals.icu](12-fuel.md) | 11 | todo |
 | 13 | [Kitchen home](13-kitchen.md) | 08, 09, 10 | todo |
@@ -356,3 +356,13 @@ owner can overturn any of it:
   amount against a plain decimal pattern first; `shopping.json` pins "2f".
 - Olives come out in the "Other" aisle, from the catalog's category, not the
   app's.
+- The web's Log page keeps its selected day when the week changes, so
+  another week shows an empty day. The app moves the selection by the
+  same seven days, keeping its weekday (item 11).
+- The Log table's calories column is headed "Kcal" with bare numbers:
+  "1235 kcal" does not fit a phone's column beside the three gram ones.
+- A planned meal logs on the plan's date, not today, so a flow that logs
+  from the plan selects that day on the Log tab before looking for it.
+- Once, `./gradlew check assembleDebug` failed in `spotlessKotlinGradle`
+  reading a `.dex` under `shared/build/.transforms` while another task
+  rewrote it. A rerun passed (item 11).
