@@ -44,7 +44,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 06 | [Maestro flows and CI](06-flows-and-ci.md) | 04, 05 | done (43e67dc) |
 | 07 | [Recipes: browse, read, and cook](07-recipes.md) | 06 | done (dc1354c) |
 | 07b | [The recipe form](07b-recipe-form.md) | 07 | done (fcbdc80) |
-| 07c | [Recipe pictures](07c-recipe-pictures.md) | 07b | todo |
+| 07c | [Recipe pictures](07c-recipe-pictures.md) | 07b | done (bba561e) |
 | 08 | [The week's plan](08-plan.md) **Review** | 07 | todo |
 | 09 | [Plugins: page, suggestions, week panels](09-plugins.md) | 08 | todo |
 | 10 | [Shopping list](10-shopping-list.md) | 08 | todo |
@@ -157,8 +157,9 @@ owner can overturn any of it:
   sign-in in flight survives a rotation. New screen models belong in
   `AppModel`, with their coroutines in its scope, not in `remember`.
 - The Kotlin client cannot read a binary body with `body()`
-  (`getRecipePicture`); `.response.readRawBytes()` works. Multipart upload
-  compiles but has not run against a server. Both are item 07's.
+  (`getRecipePicture`); `.response.readRawBytes()` works. The generated
+  multipart upload works against the server (item 07c), but Spring reads a
+  part as a file only when its `Content-Disposition` names a filename.
 - `/runtime-config.json` names `mimos-web` as its OIDC client. The app takes
   the authority from it and signs in as its own `mimos-mobile`
   (`OIDC_CLIENT_ID`), so `InstanceConfig.oidcClientId` is unused.
@@ -216,7 +217,7 @@ owner can overturn any of it:
 - The recipe list's tag filter is one scrolling line, not the web's wrapped
   row. The seed library has 22 tags, which pushed every recipe off a phone's
   first screen.
-- A recipe's pictures are not shown until 07c. The web shows "0 min cook"
+- The web shows "0 min cook"
   for a recipe with `cookMinutes` 0, and so does the app.
 - The generated client accepted only `application/json`. `deleteRecipe`'s
   only answers with a body are problems, so the API produces
@@ -248,3 +249,11 @@ owner can overturn any of it:
   unchanged.
 - A linked ingredient on a recipe's detail reads "1 serving " with a
   trailing space in its own text node; a flow matches it with `\s*`.
+- `TakePicture` needs no permission only while the manifest declares no
+  `CAMERA` permission. Item 11's barcode camera will declare it, and then
+  "Take a photo" must ask for it first, or the camera app's launch throws.
+- The system photo picker on the API 36 image labels each photo "Photo taken
+  on <date>" and confirms with "Add (1)"; a flow taps those. Its thumbnails
+  are cropped squares, so a flow cannot tell orientation from them.
+- When the Maestro MCP server's device driver has died (after a `harness
+  mobile flow`), `adb shell uiautomator dump` still reads the screen's labels.
