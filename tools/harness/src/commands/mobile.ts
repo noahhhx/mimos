@@ -20,14 +20,14 @@ import {
   renderAvdConfig,
   renderAvdIni,
 } from "../avd.ts";
-import { createUser, joinHousehold } from "../accounts.ts";
+import { chooseCountry, createUser, joinHousehold, nextMonday } from "../accounts.ts";
 import { HarnessError, parseCommandArgs, UsageError } from "../args.ts";
 import { finishRun, RUN_OPTION, RUN_USAGE, startRun, type Command } from "../command.ts";
 import { endpoints, FRESH_PASSWORD, REALM, REPO_ROOT } from "../config.ts";
 import { copyRedacted } from "../evidence.ts";
 import { fetchToken } from "./token.ts";
 import { exec } from "../exec.ts";
-import { flowFailure, flowNames, FLOWS_DIR, maestroArgs, flowTags, HOUSEHOLD_TAG, INVITEE_TAG, parseAppRequests, REQUEST_TAG, type AppRequest, type FlowEnv, type FlowFailure } from "../maestro.ts";
+import { COUNTRY_WEEK_TAG, flowFailure, flowNames, FLOWS_DIR, maestroArgs, flowTags, HOUSEHOLD_TAG, INVITEE_TAG, parseAppRequests, REQUEST_TAG, type AppRequest, type FlowEnv, type FlowFailure } from "../maestro.ts";
 import {
   renderFlowSection,
   renderLogcatSection,
@@ -360,6 +360,13 @@ async function flow(args: MobileArgs, argv: string[]): Promise<number> {
           return `${account} joined ${partner}'s household`;
         });
       }
+      if (tags.has(COUNTRY_WEEK_TAG)) {
+        await step("Country of the Week", async () => {
+          const monday = nextMonday(new Date());
+          await chooseCountry(await fetchToken(account), monday, "IT");
+          return `Italy chosen for the week of ${monday}, plugin left off`;
+        });
+      }
       let invitee: string | undefined;
       if (tags.has(INVITEE_TAG)) {
         await step("Invitee", async () => {
@@ -492,7 +499,9 @@ export const mobileCommand: Command = {
                    \`tags: [household]\` signs in as one of two fresh accounts in one household; the
                    other's name, as the app shows it, is MIMOS_PARTNER. \`tags: [invitee]\` adds
                    a second fresh account on its own, MIMOS_INVITEE, with the same password,
-                   for a flow that invites someone. Builds and installs
+                   for a flow that invites someone. \`tags: [country-week]\` has Country of the
+                   Week choose Italy for the account's next week (the seed library's one
+                   cuisine), then turns the plugin off again. Builds and installs
                    nothing, so run \`up\` first. Maestro's output is captured, not streamed (it
                    echoes typed values); evidence is redacted, the password by value, into
                    mobile/flows/<name>/: report.xml, screenshots, Maestro's logs, and the

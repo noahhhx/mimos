@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { envLines, freshUsername, userRepresentation } from "../src/accounts.ts";
+import { envLines, freshUsername, nextMonday, userRepresentation } from "../src/accounts.ts";
 import { UsageError } from "../src/args.ts";
 import { parseHouseholdArgs, householdEnv } from "../src/commands/household.ts";
 import { parseUserArgs, userEnv } from "../src/commands/user.ts";
@@ -11,6 +11,14 @@ import { passwordFor, parseTokenArgs } from "../src/commands/token.ts";
 test("fresh usernames match what the harness accepts for them", () => {
   assert.match(freshUsername(), FRESH_USER);
   assert.equal(freshUsername(() => "0a1b2c3d"), "user-0a1b2c3d");
+});
+
+test("next week starts on the Monday after today's week, across months and years", () => {
+  assert.equal(nextMonday(new Date(2026, 10, 19)), "2026-11-23"); // a Thursday
+  assert.equal(nextMonday(new Date(2026, 10, 16, 0, 5)), "2026-11-23"); // a Monday, just after midnight
+  assert.equal(nextMonday(new Date(2026, 10, 22, 23, 55)), "2026-11-23"); // a Sunday, just before midnight
+  assert.equal(nextMonday(new Date(2026, 11, 30)), "2027-01-04");
+  assert.equal(nextMonday(new Date(2028, 1, 25)), "2028-02-28");
 });
 
 test("a new account is enabled with a verified email and a permanent password", () => {

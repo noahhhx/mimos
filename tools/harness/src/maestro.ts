@@ -23,6 +23,13 @@ export const HOUSEHOLD_TAG = "household";
 /** The tag that gives a flow a second fresh account, on its own, to invite. */
 export const INVITEE_TAG = "invitee";
 
+/**
+ * The tag that has Country of the Week choose Italy for the flow's account's
+ * next week, the one country whose cuisine the seed library has, so that week
+ * has a suggestion card whatever the wheel lands on. The plugin is left off.
+ */
+export const COUNTRY_WEEK_TAG = "country-week";
+
 /** The tags of a flow's config (the part before its first `---`). */
 export function flowTags(flowYaml: string): Set<string> {
   const config = load(flowYaml.split(/^---\s*$/m)[0] ?? "") as { tags?: unknown } | null;
