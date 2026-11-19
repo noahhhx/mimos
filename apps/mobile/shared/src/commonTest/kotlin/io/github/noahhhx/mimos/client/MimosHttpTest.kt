@@ -3,6 +3,7 @@ package io.github.noahhhx.mimos.client
 import io.github.noahhhx.mimos.api.apis.FuelApi
 import io.github.noahhhx.mimos.api.apis.MeApi
 import io.github.noahhhx.mimos.api.apis.PluginsApi
+import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.api.models.FuelGoal
 import io.github.noahhhx.mimos.api.models.FuelSex
 import io.ktor.client.engine.mock.MockEngine
@@ -142,5 +143,18 @@ class MimosHttpTest {
         assertEquals(1, (blocks[2] as PanelBlock.Wheel).block.landing)
         assertEquals("spin", (blocks[3] as PanelBlock.Actions).block.actions.single().id)
         assertEquals(JsonPrimitive("confetti"), (blocks[4] as PanelBlock.Unknown).json["type"])
+    }
+
+    @Test
+    fun `a call accepts problem JSON, which is all a delete can answer with a body`() = runTest {
+        val requests = mutableListOf<HttpRequestData>()
+        val engine = MockEngine { request ->
+            requests += request
+            respond("", HttpStatusCode.NoContent)
+        }
+        MimosHttp(engine, API).api(::RecipesApi).deleteRecipe("r1")
+        val accept =
+            requests.single().headers.getAll(HttpHeaders.Accept).orEmpty().joinToString(",")
+        assertTrue("application/problem+json" in accept, accept)
     }
 }

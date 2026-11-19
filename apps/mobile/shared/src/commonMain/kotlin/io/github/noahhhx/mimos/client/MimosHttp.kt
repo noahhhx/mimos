@@ -10,6 +10,7 @@ import io.ktor.client.request.bearerAuth
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.request
+import io.ktor.http.ContentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import kotlin.uuid.ExperimentalUuidApi
@@ -29,7 +30,12 @@ class MimosHttp(
 ) : AutoCloseable {
     private val client =
         HttpClient(engine) {
-            install(ContentNegotiation) { json(MimosJson) }
+            install(ContentNegotiation) {
+                json(MimosJson)
+                // Every API error is problem JSON, and an operation whose only answers with a body
+                // are errors (deleteRecipe) produces nothing else: accepting only JSON gets a 406.
+                json(MimosJson, ContentType.Application.ProblemJson)
+            }
             install(
                 createClientPlugin("MimosRequest") {
                     onRequest { request, _ ->
