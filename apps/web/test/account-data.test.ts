@@ -1,58 +1,38 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
+
+import type { ImportReport } from "@mimos/api-client";
 
 import { exportFileName, importSummary, parseExportFile } from "../src/lib/account-data.ts";
 
-describe("exportFileName", () => {
-  it("names the file after the export's date", () => {
-    assert.equal(exportFileName("2026-10-02T09:15:00Z"), "mimos-export-2026-10-02.json");
-  });
-});
+// The app's commonTest reads the same file (libraries/test-cases/README.md).
+const cases = JSON.parse(
+  readFileSync(new URL("../../../libraries/test-cases/account-data.json", import.meta.url), "utf8"),
+) as {
+  exportFileNameCases: { exportedAt: string; expected: string }[];
+  parseExportFileCases: { text: string; document?: Record<string, unknown>; error?: string }[];
+  importSummaryCases: { report: ImportReport; expected: string }[];
+};
 
-describe("parseExportFile", () => {
-  it("accepts a JSON object", () => {
-    assert.deepEqual(parseExportFile('{"format":"mimos.export","version":1}'), {
-      ok: true,
-      document: { format: "mimos.export", version: 1 },
-    });
-  });
-
-  it("rejects text that is not JSON", () => {
-    const result = parseExportFile("recipes, plans");
-    assert.equal(result.ok, false);
-    assert.match(!result.ok ? result.error : "", /not valid JSON/);
-  });
-
-  it("rejects JSON that is not an object", () => {
-    for (const text of ["[]", "null", '"mimos"', "1"]) {
-      assert.equal(parseExportFile(text).ok, false, text);
+describe("the shared account data cases", () => {
+  it("name the download after the export's date", () => {
+    for (const each of cases.exportFileNameCases) {
+      assert.equal(exportFileName(each.exportedAt), each.expected, each.exportedAt);
     }
   });
-});
 
-describe("importSummary", () => {
-  const report = { sourceVersion: 1, recipes: 2, plannedMeals: 1, shoppingLists: 0, mealLogs: 3, warnings: [] };
-
-  it("counts each kind, singular and plural", () => {
-    assert.equal(
-      importSummary({ ...report, fuelProfile: false, trainingSessions: 0 }),
-      "Imported 2 recipes, 1 planned meal, no shopping lists, 3 logged meals, no fuel settings and no training sessions.",
-    );
+  it("accept a JSON object and refuse anything else, saying why", () => {
+    for (const each of cases.parseExportFileCases) {
+      const expected =
+        each.error === undefined ? { ok: true, document: each.document } : { ok: false, error: each.error };
+      assert.deepEqual(parseExportFile(each.text), expected, each.text);
+    }
   });
 
-  it("names fuel settings and training when they came over", () => {
-    assert.equal(
-      importSummary({
-        sourceVersion: 5,
-        recipes: 0,
-        plannedMeals: 0,
-        shoppingLists: 0,
-        mealLogs: 0,
-        fuelProfile: true,
-        trainingSessions: 2,
-        warnings: [],
-      }),
-      "Imported no recipes, no planned meals, no shopping lists, no logged meals, your fuel settings and 2 training sessions.",
-    );
+  it("count each kind imported, singular and plural", () => {
+    for (const each of cases.importSummaryCases) {
+      assert.equal(importSummary(each.report), each.expected, JSON.stringify(each.report));
+    }
   });
 });
