@@ -2,6 +2,7 @@ package io.github.noahhhx.mimos.plan
 
 import io.github.noahhhx.mimos.api.apis.HouseholdApi
 import io.github.noahhhx.mimos.api.apis.PlanningApi
+import io.github.noahhhx.mimos.api.apis.PluginsApi
 import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.api.models.MealType
 import io.github.noahhhx.mimos.api.models.RecipeSummary
@@ -49,6 +50,11 @@ private class Server {
     var failTotals = false
     var failWrites = false
     var failIngredient = false
+    var suggestions = "[]"
+    var failSuggestions = false
+    /** The recipes whose plan entries the server refuses. */
+    var failRecipes = setOf<String>()
+    val suggestionsRead = Channel<String>(Channel.UNLIMITED)
 
     /** Each write as "METHOD path" with its body, as it arrives. */
     val writes = Channel<Pair<String, JsonObject?>>(Channel.UNLIMITED)
@@ -64,8 +70,16 @@ private class Server {
         if (request.method != HttpMethod.Get) {
             writes.trySend("${request.method.value} $path" to body)
             if (failWrites) return@MockEngine respondError(HttpStatusCode.BadRequest)
+            val recipeId = body?.get("recipeId")?.jsonPrimitive?.content
+            if (recipeId in failRecipes) return@MockEngine respondError(HttpStatusCode.BadRequest)
         }
         when {
+            path.endsWith("/suggestions") -> {
+                suggestionsRead.trySend(path.removePrefix("/api/v1/plans/").substringBefore('/'))
+                if (failSuggestions) respondError(HttpStatusCode.InternalServerError)
+                else respond("""{"suggestions":$suggestions}""", headers = json)
+            }
+            path.endsWith("/panels") -> respond("""{"panels":[]}""", headers = json)
             path == "/api/v1/household" ->
                 if (failHousehold) respondError(HttpStatusCode.InternalServerError)
                 else respond("""{"members":[${members.joinToString(",")}]}""", headers = json)
@@ -138,6 +152,7 @@ private fun TestScope.model(server: Server, store: PlanViewStore = MemoryViewSto
         planning = { MimosHttp(server.engine, API).api(::PlanningApi) },
         household = { MimosHttp(server.engine, API).api(::HouseholdApi) },
         recipes = { MimosHttp(server.engine, API).api(::RecipesApi) },
+        plugins = { MimosHttp(server.engine, API).api(::PluginsApi) },
         today = { THURSDAY },
         searchDelayMillis = 0,
     )
@@ -428,6 +443,7 @@ class PlanModelTest {
                 },
                 household = { MimosHttp(server.engine, API).api(::HouseholdApi) },
                 recipes = { MimosHttp(server.engine, API).api(::RecipesApi) },
+                plugins = { MimosHttp(server.engine, API).api(::PluginsApi) },
                 today = { THURSDAY },
             )
 
@@ -435,4 +451,71 @@ class PlanModelTest {
 
         assertIs<WeekState.Failed>(failing.week.first { it is WeekState.Failed })
     }
+
+    @Test
+    fun `the week's suggestions come with it, and their failure only empties them`() = runTest {
+        val server = Server().apply { suggestions = "[${suggestion("a", "b")}]" }
+        val model = model(server)
+        model.ensureLoaded()
+        assertEquals("Italy week", model.loaded().suggestions.single().title)
+
+        server.failSuggestions = true
+        model.nextWeek()
+        val next =
+            (model.week.first { it is WeekState.Loaded && it.week.monday.day == 23 }
+                    as WeekState.Loaded)
+                .week
+        assertEquals(emptyList(), next.suggestions)
+    }
+
+    @Test
+    fun `applying a suggestion adds each meal through the plan, counting those added`() = runTest {
+        val server = Server().apply { suggestions = "[${suggestion("a", "b", "c")}]" }
+        val model = model(server)
+        model.ensureLoaded()
+        val card = model.loaded().suggestions.single()
+        server.failRecipes = setOf("b")
+
+        model.applySuggestion(card)
+
+        for (recipe in listOf("a", "b", "c")) {
+            val (call, body) = server.nextWrite()
+            assertEquals("POST /api/v1/plans/$MONDAY/entries", call)
+            assertEquals(recipe, body!!["recipeId"]!!.jsonPrimitive.content)
+            assertEquals("DINNER", body["mealType"]!!.jsonPrimitive.content)
+            assertEquals(2.0, body["servings"]!!.jsonPrimitive.content.toDouble())
+            assertTrue("diners" !in body, "the API gives dinner every member")
+        }
+        model.settled()
+        assertEquals("Added 2 meals from \"Italy week\".", model.notice.value)
+        assertNull(model.error.value)
+        assertEquals(false, model.applying.value)
+
+        model.openDay(LocalDate(2026, 11, 16))
+        assertNull(model.notice.value, "the notice lasts until the next screen")
+    }
+
+    @Test
+    fun `a suggestion none of whose meals could be added says so`() = runTest {
+        val server = Server().apply { suggestions = "[${suggestion("a")}]" }
+        val model = model(server)
+        model.ensureLoaded()
+        server.failRecipes = setOf("a")
+
+        model.applySuggestion(model.loaded().suggestions.single())
+        server.nextWrite()
+        model.settled()
+
+        assertEquals("Could not add that suggestion.", model.notice.value)
+    }
+}
+
+/** A Country of the Week card of dinners, one a day from Monday, for each recipe id. */
+private fun suggestion(vararg recipeIds: String): String {
+    val entries = recipeIds.mapIndexed { day, id ->
+        """{"date":"2026-11-${16 + day}","mealType":"DINNER","recipeId":"$id",
+                "recipeTitle":"Dish $id","servings":2}"""
+    }
+    return """{"pluginId":"country-week","pluginName":"Country of the Week","title":"Italy week",
+        "icon":"🇮🇹","entries":[${entries.joinToString(",")}]}"""
 }

@@ -85,6 +85,8 @@ private fun WeekScreen(model: PlanModel, week: WeekState) {
     val monday by model.monday.collectAsState()
     val view by model.view.collectAsState()
     val error by model.error.collectAsState()
+    val panels by model.panels.state.collectAsState()
+    val notice by model.notice.collectAsState()
     val loaded = (week as? WeekState.Loaded)?.week?.takeIf { it.monday == monday }
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -112,6 +114,15 @@ private fun WeekScreen(model: PlanModel, week: WeekState) {
             }
         }
         error?.let { message -> item(key = "error") { Notice(message, gutter) } }
+        panels
+            ?.takeIf { it.monday == monday && it.panels.isNotEmpty() }
+            ?.let {
+                item(key = "panels") { WeekPanelsGroup(model.panels, it, gutter) }
+            }
+        // A suggestion applied can take its card away, and what it did still shows.
+        if (loaded != null && (loaded.suggestions.isNotEmpty() || notice != null)) {
+            item(key = "suggestions") { SuggestionsSection(model, loaded, gutter) }
+        }
         when {
             week is WeekState.Failed ->
                 item(key = "failed") { ErrorState(week.message, model::retry, gutter) }

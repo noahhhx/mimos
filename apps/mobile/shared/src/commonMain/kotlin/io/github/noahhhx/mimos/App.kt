@@ -113,6 +113,7 @@ private fun Connection(
                     plan = model.plan,
                     household = model.household,
                     account = model.account,
+                    plugins = model.plugins,
                     theme = model.theme,
                     profile = profile,
                     webOrigin = instance.config.webUrl.origin,

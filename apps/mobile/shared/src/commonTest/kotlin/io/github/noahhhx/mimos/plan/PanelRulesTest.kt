@@ -40,7 +40,8 @@ private class SpinCase(
     val expected: Double,
 )
 
-@Serializable private class PositionCase(val angle: Double, val other: Double, val expected: Boolean)
+@Serializable
+private class PositionCase(val angle: Double, val other: Double, val expected: Boolean)
 
 @Serializable private class ToneCase(val count: Int, val expected: List<Int>)
 

@@ -21,8 +21,9 @@ val PanelBlock.type: String
         }
 
 /** Whether the blocks hold a wheel that has somewhere to land. */
-fun hasLanding(blocks: List<PanelBlock>): Boolean =
-    blocks.any { it is PanelBlock.Wheel && it.block.landing != null }
+fun hasLanding(blocks: List<PanelBlock>): Boolean = blocks.any {
+    it is PanelBlock.Wheel && it.block.landing != null
+}
 
 /** A block to show, with the key that keeps its identity, and a wheel its angle, across answers. */
 data class ShownBlock(val key: String, val block: PanelBlock)

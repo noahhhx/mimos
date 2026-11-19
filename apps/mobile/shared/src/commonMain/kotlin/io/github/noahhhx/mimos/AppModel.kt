@@ -5,6 +5,8 @@ import io.github.noahhhx.mimos.account.DocumentStore
 import io.github.noahhhx.mimos.api.apis.AccountApi
 import io.github.noahhhx.mimos.api.apis.HouseholdApi
 import io.github.noahhhx.mimos.api.apis.PlanningApi
+import io.github.noahhhx.mimos.api.apis.PluginSettingsApi
+import io.github.noahhhx.mimos.api.apis.PluginsApi
 import io.github.noahhhx.mimos.api.apis.RecipePicturesApi
 import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.client.MimosHttp
@@ -19,6 +21,7 @@ import io.github.noahhhx.mimos.instance.Version
 import io.github.noahhhx.mimos.plan.PlanModel
 import io.github.noahhhx.mimos.plan.PlanRoute
 import io.github.noahhhx.mimos.plan.PlanViewStore
+import io.github.noahhhx.mimos.plugins.PluginsModel
 import io.github.noahhhx.mimos.recipes.RecipeId
 import io.github.noahhhx.mimos.recipes.RecipeRoute
 import io.github.noahhhx.mimos.recipes.RecipeSortStore
@@ -98,7 +101,15 @@ class AppModel(
             planning = { connected().api(::PlanningApi) },
             household = { connected().api(::HouseholdApi) },
             recipes = { connected().api(::RecipesApi) },
+            plugins = { connected().api(::PluginsApi) },
             today = today,
+        )
+
+    val plugins =
+        PluginsModel(
+            scope,
+            api = { connected().api(::PluginSettingsApi) },
+            onChanged = plan::pluginsChanged,
         )
 
     val household =
@@ -110,6 +121,7 @@ class AppModel(
             onChanged = {
                 recipes.reset()
                 plan.reset()
+                plugins.reset()
             },
         )
 
@@ -240,6 +252,7 @@ class AppModel(
         shell.reset()
         recipes.reset()
         plan.reset()
+        plugins.reset()
         household.reset()
         account.reset()
     }

@@ -2,6 +2,7 @@ package io.github.noahhhx.mimos.plan
 
 import io.github.noahhhx.mimos.api.apis.HouseholdApi
 import io.github.noahhhx.mimos.api.apis.PlanningApi
+import io.github.noahhhx.mimos.api.apis.PluginsApi
 import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.api.models.CatalogIngredient
 import io.github.noahhhx.mimos.api.models.MealPlanEntry
@@ -10,6 +11,7 @@ import io.github.noahhhx.mimos.api.models.MealPlanEntryPatch
 import io.github.noahhhx.mimos.api.models.MealType
 import io.github.noahhhx.mimos.api.models.NutritionBasis
 import io.github.noahhhx.mimos.api.models.Person
+import io.github.noahhhx.mimos.api.models.PlanSuggestion
 import io.github.noahhhx.mimos.api.models.PlannedDayTotal
 import io.github.noahhhx.mimos.api.models.RecipeSummary
 import io.github.noahhhx.mimos.ingredients.CheckedIngredient
@@ -55,13 +57,15 @@ sealed interface PlanRoute {
 
 /**
  * A loaded week: its meals, the household's members (none when they failed to load, so the week
- * reads as a household of one's), and the caller's planned totals (null when they failed).
+ * reads as a household of one's), the caller's planned totals (null when they failed), and the
+ * plugins' suggestions for it (none when they failed: they only add to the week, ADR-0006).
  */
 data class PlanWeek(
     val monday: LocalDate,
     val entries: List<MealPlanEntry>,
     val members: List<Person>,
     val totals: List<PlannedDayTotal>?,
+    val suggestions: List<PlanSuggestion> = emptyList(),
 ) {
     val shared: Boolean
         get() = members.size > 1
@@ -99,8 +103,9 @@ data class PickerState(
 
 /**
  * The Plan tab, as the web's plan page (ADR-0028, ADR-0019, ADR-0026): a week by its Monday, the
- * caller's meals or everyone's, a meal's or a day's inspector, and the picker that plans a recipe
- * or a food. Every change reloads the week, as the web does. [today] is the phone's date.
+ * caller's meals or everyone's, a meal's or a day's inspector, the picker that plans a recipe or a
+ * food, and the plugins' panels and suggestions (ADR-0006, ADR-0017). Every change reloads the
+ * week, as the web does. [today] is the phone's date.
  */
 class PlanModel(
     private val scope: CoroutineScope,
@@ -108,9 +113,13 @@ class PlanModel(
     private val planning: () -> PlanningApi,
     private val household: () -> HouseholdApi,
     private val recipes: () -> RecipesApi,
+    private val plugins: () -> PluginsApi,
     private val today: () -> LocalDate,
     private val searchDelayMillis: Long = SEARCH_DELAY_MILLIS,
 ) {
+    /** The week's panels, which a button press can change the suggestions of. */
+    val panels = WeekPanelsModel(scope, plugins, onPressed = ::refreshSuggestions)
+
     private val mutableMonday = MutableStateFlow(mondayOf(today()))
     val monday: StateFlow<LocalDate> = mutableMonday.asStateFlow()
 
@@ -127,6 +136,13 @@ class PlanModel(
     private val mutableError = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = mutableError.asStateFlow()
 
+    /** What applying a suggestion did, until the next change or the next screen. */
+    private val mutableNotice = MutableStateFlow<String?>(null)
+    val notice: StateFlow<String?> = mutableNotice.asStateFlow()
+
+    private val mutableApplying = MutableStateFlow(false)
+    val applying: StateFlow<Boolean> = mutableApplying.asStateFlow()
+
     private val mutablePicker = MutableStateFlow(PickerState())
     val picker: StateFlow<PickerState> = mutablePicker.asStateFlow()
 
@@ -140,6 +156,15 @@ class PlanModel(
 
     fun ensureLoaded() {
         if (week.value !is WeekState.Loaded && weekJob?.isActive != true) load()
+        panels.ensureLoaded(monday.value)
+    }
+
+    /** A plugin was turned on or off: the panels and suggestions on screen are out of date. */
+    fun pluginsChanged() {
+        // Not opened since the app started or someone signed in: opening it loads them.
+        if (weekJob == null) return
+        panels.load(monday.value)
+        refreshSuggestions(monday.value)
     }
 
     fun retry() = load()
@@ -155,10 +180,12 @@ class PlanModel(
     private fun goToWeek(next: LocalDate) {
         mutableRoute.value = PlanRoute.Week
         mutableError.value = null
+        mutableNotice.value = null
         if (next == monday.value && week.value is WeekState.Loaded) return
         mutableMonday.value = next
         mutableWeek.value = WeekState.Loading
         load()
+        panels.load(next)
     }
 
     fun chooseView(next: PlanView) {
@@ -186,6 +213,7 @@ class PlanModel(
 
     private fun go(to: PlanRoute) {
         mutableError.value = null
+        mutableNotice.value = null
         if (to !is PlanRoute.Pick) searchJob?.cancel()
         mutableRoute.value = to
     }
@@ -307,6 +335,59 @@ class PlanModel(
         }
     }
 
+    /**
+     * Adds a suggestion's meals through the plan-entry endpoint, the picker's own: plugins have no
+     * write path of their own (ADR-0006). Each meal that fails is left out of the count.
+     */
+    fun applySuggestion(suggestion: PlanSuggestion) {
+        if (busy.value) return
+        mutableApplying.value = true
+        change("Could not add that suggestion.") {
+            try {
+                var added = 0
+                for (entry in suggestion.propertyEntries) {
+                    try {
+                        planning()
+                            .addMealPlanEntry(
+                                monday.value,
+                                MealPlanEntryInput(
+                                    entry.date,
+                                    entry.mealType,
+                                    entry.servings,
+                                    recipeId = entry.recipeId,
+                                ),
+                            )
+                            .body()
+                        added++
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {}
+                }
+                mutableNotice.value =
+                    if (added > 0) {
+                        "Added $added meal${if (added == 1) "" else "s"} from \"${suggestion.title}\"."
+                    } else "Could not add that suggestion."
+            } finally {
+                mutableApplying.value = false
+            }
+        }
+    }
+
+    /** Asks the plugins again for [monday]'s suggestions, keeping the rest of the week. */
+    private fun refreshSuggestions(monday: LocalDate) {
+        scope.launch {
+            val suggestions = fetchSuggestions(monday)
+            mutableWeek.update {
+                if (it is WeekState.Loaded && it.week.monday == monday) {
+                    WeekState.Loaded(it.week.copy(suggestions = suggestions))
+                } else it
+            }
+        }
+    }
+
+    private suspend fun fetchSuggestions(monday: LocalDate): List<PlanSuggestion> =
+        optional { plugins().getPlanSuggestions(monday).body().suggestions } ?: emptyList()
+
     private fun memberCount(): Int = (week.value as? WeekState.Loaded)?.week?.members?.size ?: 0
 
     /**
@@ -316,6 +397,7 @@ class PlanModel(
         if (busy.value) return
         mutableBusy.value = true
         mutableError.value = null
+        mutableNotice.value = null
         scope.launch {
             try {
                 write()
@@ -375,11 +457,13 @@ class PlanModel(
         // The household and the totals only add to the week: without them it still plans.
         val members = async { optional { household().getHousehold().body().members } }
         val totals = async { optional { planning().getMyPlannedTotals(wanted).body().days } }
+        val suggestions = async { fetchSuggestions(wanted) }
         PlanWeek(
             wanted,
             plan.await().propertyEntries,
             members.await() ?: emptyList(),
             totals.await(),
+            suggestions.await(),
         )
     }
 
@@ -417,13 +501,17 @@ class PlanModel(
     /** Back to the start, for when the person signs out and someone else may sign in. */
     fun reset() {
         weekJob?.cancel()
+        weekJob = null
         searchJob?.cancel()
         ingredientJob?.cancel()
+        panels.reset()
         catalog = null
         mutableMonday.value = mondayOf(today())
         mutableRoute.value = PlanRoute.Week
         mutableWeek.value = WeekState.Loading
         mutableError.value = null
+        mutableNotice.value = null
+        mutableApplying.value = false
         mutableBusy.value = false
         mutablePicker.value = PickerState()
     }
