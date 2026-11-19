@@ -45,7 +45,8 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 07 | [Recipes: browse, read, and cook](07-recipes.md) | 06 | done (dc1354c) |
 | 07b | [The recipe form](07b-recipe-form.md) | 07 | done (fcbdc80) |
 | 07c | [Recipe pictures](07c-recipe-pictures.md) | 07b | done (bba561e) |
-| 08 | [The week's plan](08-plan.md) **Review** | 07 | todo |
+| 08 | [The week's plan](08-plan.md) **Review** | 07 | review (branch `mobile/08-plan`) |
+| 08b | [A new ingredient from the plan's picker](08b-plan-new-ingredient.md) | 08 | todo |
 | 09 | [Plugins: page, suggestions, week panels](09-plugins.md) | 08 | todo |
 | 10 | [Shopping list](10-shopping-list.md) | 08 | todo |
 | 11 | [Log and barcode scanning](11-log-and-barcodes.md) | 08 | todo |
@@ -54,7 +55,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 14 | [Household and invites](14-household.md) | 06 | todo |
 | 15 | [Account, settings, export and import](15-account.md) | 06 | todo |
 | 16 | [Release: versions, signing, GitHub Releases](16-release.md) | 03, 06 | todo |
-| 17 | [Parity audit and user guide](17-parity-and-docs.md) | 07–16 (07b and 07c included) | todo |
+| 17 | [Parity audit and user guide](17-parity-and-docs.md) | 07–16 (07b, 07c, and 08b included) | todo |
 | 18 | [Offline shopping list](18-offline-shopping-list.md) **Review** | 10, 17 | todo |
 
 Once their dependencies are done, items 09 to 12 and 14 to 16 are
@@ -257,3 +258,14 @@ owner can overturn any of it:
   are cropped squares, so a flow cannot tell orientation from them.
 - When the Maestro MCP server's device driver has died (after a `harness
   mobile flow`), `adb shell uiautomator dump` still reads the screen's labels.
+- Compose's `selected` semantics on a `Button` never reached the
+  accessibility node, so Maestro's `selected: true` never matched; the
+  recipe list's tag buttons have the same gap. `Button(pressed = ...)` uses
+  `toggleable` instead. Even so, `uiautomator dump` reported the diner
+  chips unchecked while they were on, and plain buttons checkable, so
+  `shared-week` proves the toggle by its effect (the meal leaves Mine)
+  rather than by `checked: true`.
+- The generated Kotlin client renames a schema property called `entries`
+  to `propertyEntries` (`MealPlan`), since Kotlin enums reserve the name.
+- A `label` style `Label` in an 84dp column wraps "BREAKFAST"; the plan's
+  meal column is 104dp.
