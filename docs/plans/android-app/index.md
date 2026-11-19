@@ -53,7 +53,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 12 | [Fuel and intervals.icu](12-fuel.md) | 11 | todo |
 | 13 | [Kitchen home](13-kitchen.md) | 08, 09, 10 | todo |
 | 14 | [Household and invites](14-household.md) | 06 | done (e5731f5, branch `mobile/14-household`, stacked on 08) |
-| 15 | [Account, settings, export and import](15-account.md) | 06 | todo |
+| 15 | [Account, settings, export and import](15-account.md) | 06 | done (965f7de, branch `mobile/15-account`, stacked on 14) |
 | 16 | [Release: versions, signing, GitHub Releases](16-release.md) | 03, 06 | todo |
 | 17 | [Parity audit and user guide](17-parity-and-docs.md) | 07–16 (07b, 07c, and 08b included) | todo |
 | 18 | [Offline shopping list](18-offline-shopping-list.md) **Review** | 10, 17 | todo |
@@ -284,3 +284,26 @@ owner can overturn any of it:
 - Item 14 was built on `mobile/08-plan` while item 08 waits for review, since
   both change `AppModel` and the shell. It needs nothing from 08 and can be
   rebased onto `docs/mobile-app-plan` if 08 changes.
+- Item 15 is stacked on `mobile/14-household` for the same reason: both
+  change the shell and `AppModel`. It needs nothing from 08 or 14.
+- The app has a Settings screen the web lacks (theme, instance and its
+  version, Change instance, app version, licences), so `Destination.webPath`
+  is nullable. Change instance moved from the profile sheet to it.
+- The licences come from the release classpath's POMs at build time
+  (`generateLicences`), one row per Maven group. The Google Play Services
+  ban rules out Google's own licences plugin, and a library such as
+  AboutLibraries would be a new top-level dependency. The plugin fails the
+  build for a dependency whose POM and parents name no licence.
+- The system's file pickers (DocumentsUI on the API 36 image) open in
+  Downloads, list it newest first, and save a repeated name as
+  `name (1).json`. Downloads keeps every export across flow runs, so
+  `export-import` picks the newest by index rather than by name.
+- Maestro's `evalScript` left a variable unset when the script used a
+  regex replacement with `$&`, and reported success. `export-import`
+  avoids scripts.
+- Once, one `scrollUntilVisible` call hung for 40 minutes in Maestro's
+  driver while the screen showed the element. A rerun passed; it did not
+  recur in the two runs after it.
+- `RecipeFormModelTest` took the last request seen as the picture upload,
+  and the form's debounced nutrition estimate sometimes came after it. It
+  now finds the upload by path.
