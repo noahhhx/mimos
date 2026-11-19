@@ -1,0 +1,129 @@
+appId: io.github.noahhhx.mimos.debug
+---
+- runFlow: connect-and-sign-in.yaml
+- evalScript: ${output.stamp = new Date().getTime()}
+- evalScript: ${output.title = 'Harness soup ' + output.stamp}
+- evalScript: ${output.spice = 'Harness spice ' + output.stamp}
+- evalScript: ${output.lunch = 'Harness lunch ' + output.stamp}
+- tapOn: Recipes
+- tapOn: \+ New recipe
+- assertVisible: New recipe
+- tapOn: Title
+- inputText: ${output.title}
+- tapOn: Description
+- inputText: Written by the app's create-recipe flow.
+- tapOn: Servings
+- eraseText
+- inputText: "2"
+- tapOn: Prep minutes
+- inputText: "10"
+- tapOn: Cook minutes
+- inputText: "20"
+- tapOn: Tags \(comma-separated\)
+- inputText: dinner, harness
+- hideKeyboard
+- scrollUntilVisible:
+    element: Ingredient 1 note
+- tapOn: Ingredient 1 amount
+- inputText: "500"
+- hideKeyboard
+- tapOn: Ingredient 1 unit
+- tapOn: g
+- tapOn: Ingredient 1 name
+- inputText: tomatoes
+- tapOn: Canned tomatoes
+- hideKeyboard
+- assertVisible: Matched to Canned tomatoes .*
+- takeScreenshot: ingredient-matched
+- scrollUntilVisible:
+    element: \+ Ingredient
+- tapOn: \+ Ingredient
+- scrollUntilVisible:
+    element: Ingredient 2 note
+- tapOn: Ingredient 2 amount
+- inputText: "1"
+- tapOn: Ingredient 2 name
+- inputText: ${output.spice}
+- tapOn: \+ Add .* as a new ingredient
+- hideKeyboard
+- scrollUntilVisible:
+    element: Save ingredient
+- assertVisible: A new ingredient of your own.*
+- tapOn: New ingredient calories
+- inputText: "5"
+- tapOn: New ingredient protein g
+- inputText: "0"
+- tapOn: New ingredient carbs g
+- inputText: "1"
+- tapOn: New ingredient fat g
+- inputText: "0"
+- hideKeyboard
+- takeScreenshot: new-ingredient
+- tapOn: Save ingredient
+- assertVisible: Matched to ${output.spice} \(5 kcal each\)\.
+- scrollUntilVisible:
+    element: Step 1
+- tapOn: Step 1
+- inputText: Simmer the tomatoes.
+- hideKeyboard
+- scrollUntilVisible:
+    element: Counting 2 of 2 ingredients\.
+- takeScreenshot: form-filled
+- scrollUntilVisible:
+    element: Create recipe
+- tapOn: Create recipe
+- assertVisible: ${output.title}
+- assertVisible: Your recipe
+- takeScreenshot: created
+- tapOn: ← Recipes
+- tapOn: \+ New recipe
+- tapOn: Title
+- inputText: ${output.lunch}
+- tapOn: Description
+- inputText: Uses the soup the flow wrote first.
+- hideKeyboard
+- scrollUntilVisible:
+    element: Ingredient 1 note
+- tapOn: Ingredient 1 amount
+- inputText: "1"
+- tapOn: Ingredient 1 name
+- inputText: Harness soup
+- tapOn: ${output.title}
+- hideKeyboard
+- assertVisible: Uses your recipe ${output.title} \(makes 2 servings\)\.
+- scrollUntilVisible:
+    element: Step 1
+- tapOn: Step 1
+- inputText: Serve the soup.
+- hideKeyboard
+- scrollUntilVisible:
+    element: Create recipe
+- tapOn: Create recipe
+- assertVisible: ${output.lunch}
+- assertVisible: 1 serving\s*
+- tapOn: ${output.title}
+- assertVisible: Written by the app's create-recipe flow\.
+- assertVisible: ${output.lunch}
+- takeScreenshot: followed
+- back
+- assertVisible: Uses the soup the flow wrote first\.
+- tapOn: Edit
+- assertVisible: Edit recipe
+- scrollUntilVisible:
+    element: Uses your recipe ${output.title} \(makes 2 servings\)\.
+- scrollUntilVisible:
+    element: Save changes
+- tapOn: Save changes
+- assertVisible: Uses the soup the flow wrote first\.
+- tapOn: Delete
+- assertVisible: Delete “${output.lunch}”\?
+- tapOn:
+    text: Delete
+    below: This cannot be undone\.
+- tapOn: ${output.title}
+- tapOn: Delete
+- assertVisible: Delete “${output.title}”\?
+- tapOn:
+    text: Delete
+    below: This cannot be undone\.
+- assertVisible: No personal recipes yet.*
