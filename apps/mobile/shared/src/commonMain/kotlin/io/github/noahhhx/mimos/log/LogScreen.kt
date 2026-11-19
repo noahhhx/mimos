@@ -188,13 +188,13 @@ private fun dayCells(summary: DailyLogSummary?): List<String> {
 }
 
 /** The day's column is wider: "Wed 19 Nov" against "1235". */
-private fun columnWeight(index: Int): Float = if (index == 0) 1.4f else 1f
+private fun columnWeight(index: Int): Float = if (index == 0) 1.2f else 1f
 
 @Composable
 private fun TableRow(modifier: Modifier, content: @Composable RowScope.() -> Unit) {
     Row(
         modifier.fillMaxWidth().padding(horizontal = MimosTheme.spacing.page),
-        horizontalArrangement = Arrangement.spacedBy(MimosTheme.spacing.s),
+        horizontalArrangement = Arrangement.spacedBy(MimosTheme.spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
         content = content,
     )

@@ -1,0 +1,59 @@
+appId: io.github.noahhhx.mimos.debug
+tags:
+  - household
+---
+- runFlow: connect-and-sign-in.yaml
+- tapOn: Plan
+- assertVisible: Week of .*
+- tapOn:
+    text: Add Dinner for .*
+    index: 0
+- tapOn: Search recipes and ingredients
+- inputText: greek
+- tapOn: Greek Salad
+- assertVisible: 2 servings · .* · .*
+- tapOn: Greek Salad
+- assertVisible: Who eats it
+- scrollUntilVisible:
+    element: Log Greek Salad
+    centerElement: true
+- tapOn: Log Greek Salad
+- assertVisible: of 2 servings for 2 people
+- assertVisible: "1"
+- tapOn: Your share of Greek Salad
+- eraseText
+- inputText: "1.5"
+- hideKeyboard
+- takeScreenshot: log-share
+- tapOn: Log share
+- assertVisible: Greek Salad logged\.
+- assertNotVisible: Log share
+- takeScreenshot: log-share-logged
+- tapOn: ← Plan
+- tapOn:
+    text: Add Lunch for .*
+    index: 0
+- tapOn: Search recipes and ingredients
+- inputText: bana
+- tapOn: Banana
+- assertVisible: 1 piece · .*
+- tapOn: Banana
+- assertVisible: Food
+- scrollUntilVisible:
+    element: Log Banana
+    centerElement: true
+- tapOn: Log Banana
+- assertVisible: Banana logged\.
+- assertNotVisible: Your share
+- tapOn: ← Plan
+- tapOn: Log
+- assertVisible: This week, per day
+- scrollUntilVisible:
+    element: Mon .*
+- tapOn: Mon .*
+- scrollUntilVisible:
+    element: Delete Greek Salad
+    centerElement: true
+- assertVisible: \(1\.5 servings\) .* kcal
+- assertVisible: Delete Banana, 1 piece
+- takeScreenshot: log-planned
