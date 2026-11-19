@@ -59,6 +59,8 @@ class ShellActions(
     val onShare: (String) -> Unit,
     /** Signs out and connects to the instance an invite is for. */
     val onSwitchInstance: (InviteLink) -> Unit,
+    /** Puts the newer-app notice away until the app starts again. */
+    val onDismissNewerApp: () -> Unit,
     /** Debug builds only: the component gallery. Null hides its entry. */
     val onOpenGallery: (() -> Unit)? = null,
 )
@@ -67,7 +69,8 @@ class ShellActions(
  * The signed-in app: a header with the brand and the two tools, the destination on screen, and the
  * tab bar along the bottom (a phone's thumb reaches it; the web's tabs sit under its header).
  * [webOrigin] is the instance's web address, where screens not yet in the app send people, and
- * [serverVersion] the version it runs.
+ * [serverVersion] the version it runs. [newerApp] is that version while it is newer than the app's
+ * and the person has not put the notice away.
  */
 @Composable
 fun AppShell(
@@ -80,6 +83,7 @@ fun AppShell(
     profile: Profile,
     webOrigin: String,
     serverVersion: Version,
+    newerApp: Version?,
     licences: List<OpenSource>,
     brandMark: Painter,
     actions: ShellActions,
@@ -94,6 +98,7 @@ fun AppShell(
             profileOpen,
         )
         Rule()
+        newerApp?.let { NewerAppNotice(it, actions.onDismissNewerApp) }
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when (destination) {
                 Destination.Recipes -> RecipesScreen(recipes, webOrigin)

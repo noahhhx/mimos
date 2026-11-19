@@ -23,7 +23,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
+import io.github.noahhhx.mimos.instance.Version
 import io.github.noahhhx.mimos.shell.Destination
+import io.github.noahhhx.mimos.shell.NewerAppNotice
 import io.github.noahhhx.mimos.shell.TabBar
 import io.github.noahhhx.mimos.ui.BottomSheet
 import io.github.noahhhx.mimos.ui.Brand
@@ -176,6 +178,7 @@ fun Gallery(theme: ThemeModel, brandMark: Painter, onClose: () -> Unit) {
         Section("Notices")
         Notice("That did not work. Check the address and try again.")
         Notice("Saved.", kind = NoticeKind.Ok)
+        NewerAppNotice(Version(9, 9, 9), onDismiss = {})
 
         Section("Empty and error states")
         EmptyState(

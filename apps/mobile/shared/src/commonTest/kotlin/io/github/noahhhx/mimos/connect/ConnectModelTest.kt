@@ -6,6 +6,7 @@ import io.github.noahhhx.mimos.instance.Instance
 import io.github.noahhhx.mimos.instance.InstanceConfig
 import io.github.noahhhx.mimos.instance.InstanceStore
 import io.github.noahhhx.mimos.instance.InvalidAddress
+import io.github.noahhhx.mimos.instance.RELEASES_URL
 import io.github.noahhhx.mimos.instance.SignupPolicy
 import io.github.noahhhx.mimos.instance.Version
 import io.github.noahhhx.mimos.instance.WebAddress
@@ -117,12 +118,18 @@ class ConnectModelTest {
     }
 
     @Test
-    fun `both insecure failures offer the Why HTTPS link`() {
+    fun `insecure failures explain HTTPS, and a too-old app links to the new one`() {
+        val why = HelpLink("Why Mimos needs HTTPS", WHY_HTTPS_URL)
         assertEquals(
-            listOf(true, true, false),
-            listOf(InsecureAddress, Discovery.InsecureServer, Discovery.NotMimos).map {
-                it.needsHttpsLink()
-            },
+            listOf(why, why, HelpLink("Get the new app", RELEASES_URL), null, null),
+            listOf(
+                    InsecureAddress,
+                    Discovery.InsecureServer,
+                    Discovery.AppTooOld(Version(2, 0, 0)),
+                    Discovery.ServerTooOld(null),
+                    Discovery.NotMimos,
+                )
+                .map { it.helpLink() },
         )
     }
 }

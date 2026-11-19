@@ -56,17 +56,17 @@ fun ConnectScreen(model: ConnectModel, brandMark: Painter, connect: () -> Unit) 
                     enabled = !connecting,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                if (failure?.needsHttpsLink() == true) {
+                failure?.helpLink()?.let { help ->
                     val uriHandler = LocalUriHandler.current
                     Text(
-                        "Why Mimos needs HTTPS",
+                        help.label,
                         style =
                             MimosTheme.typography.body.copy(
                                 textDecoration = TextDecoration.Underline
                             ),
                         modifier =
                             Modifier.clickable(role = Role.Button) {
-                                uriHandler.openUri(WHY_HTTPS_URL)
+                                uriHandler.openUri(help.url)
                             },
                     )
                 }

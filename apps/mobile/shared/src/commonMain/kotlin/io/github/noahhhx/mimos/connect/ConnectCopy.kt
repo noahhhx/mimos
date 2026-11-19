@@ -4,6 +4,7 @@ import io.github.noahhhx.mimos.instance.Discovery
 import io.github.noahhhx.mimos.instance.InsecureAddress
 import io.github.noahhhx.mimos.instance.InvalidAddress
 import io.github.noahhhx.mimos.instance.MIN_SERVER_VERSION
+import io.github.noahhhx.mimos.instance.RELEASES_URL
 import io.github.noahhhx.mimos.instance.Version
 
 /** The self-hosting guide's "Why HTTPS" (ADR-0030). */
@@ -30,5 +31,13 @@ fun Discovery.Failure.message(): String =
             "This server needs version $minAppVersion of the app or later. Update the app, then connect again."
     }
 
-fun Discovery.Failure.needsHttpsLink(): Boolean =
-    this == InsecureAddress || this == Discovery.InsecureServer
+/** A page that explains a failure or the way past it. */
+data class HelpLink(val label: String, val url: String)
+
+fun Discovery.Failure.helpLink(): HelpLink? =
+    when (this) {
+        InsecureAddress,
+        Discovery.InsecureServer -> HelpLink("Why Mimos needs HTTPS", WHY_HTTPS_URL)
+        is Discovery.AppTooOld -> HelpLink("Get the new app", RELEASES_URL)
+        else -> null
+    }

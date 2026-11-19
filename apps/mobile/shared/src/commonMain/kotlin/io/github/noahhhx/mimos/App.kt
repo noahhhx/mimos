@@ -15,12 +15,15 @@ import io.github.noahhhx.mimos.api.apis.MeApi
 import io.github.noahhhx.mimos.connect.ConnectScreen
 import io.github.noahhhx.mimos.connect.ConnectState
 import io.github.noahhhx.mimos.gallery.Gallery
-import io.github.noahhhx.mimos.instance.Version
+import io.github.noahhhx.mimos.instance.AppStanding
+import io.github.noahhhx.mimos.instance.InstanceStatus
+import io.github.noahhhx.mimos.instance.checkInstance
 import io.github.noahhhx.mimos.session.SessionScreen
 import io.github.noahhhx.mimos.settings.OpenSource
 import io.github.noahhhx.mimos.shell.AppShell
 import io.github.noahhhx.mimos.shell.Profile
 import io.github.noahhhx.mimos.shell.ShellActions
+import io.github.noahhhx.mimos.shell.UpdateRequired
 import io.github.noahhhx.mimos.ui.MimosTheme
 import kotlinx.coroutines.CancellationException
 
@@ -64,6 +67,25 @@ private fun Connection(
             val instance = connected.instance
             val session = remember(instance) { model.session(instance) }
             val http = remember(instance) { model.http(instance) }
+            // What the app knew from connecting, until the instance says again: it may have been
+            // upgraded since.
+            val status by
+                produceState(InstanceStatus.remembered(instance), instance) {
+                    checkInstance(http.api(::InstanceApi))?.let { value = it }
+                }
+            val standing = status.standing
+            if (standing is AppStanding.Unsupported) {
+                UpdateRequired(
+                    brandMark,
+                    instance.config.webUrl.origin,
+                    standing.minAppVersion,
+                    onChangeInstance = model::changeInstance,
+                )
+                return
+            }
+            val dismissed by model.dismissedNewerApp.collectAsState()
+            val newerApp =
+                (standing as? AppStanding.NewerAvailable)?.serverVersion?.takeIf { it != dismissed }
             SessionScreen(
                 session,
                 instance,
@@ -85,15 +107,6 @@ private fun Connection(
                                 Profile.Failed(failure.message ?: "no answer")
                             }
                     }
-                // The version from connecting, until the instance says again: it may have been
-                // upgraded since.
-                val serverVersion by
-                    produceState(instance.serverVersion, instance) {
-                        runCatching { http.api(::InstanceApi).getInstance().body() }
-                            .getOrNull()
-                            ?.let { Version.parse(it.version) }
-                            ?.let { value = it }
-                    }
                 AppShell(
                     shell = model.shell,
                     recipes = model.recipes,
@@ -103,7 +116,8 @@ private fun Connection(
                     theme = model.theme,
                     profile = profile,
                     webOrigin = instance.config.webUrl.origin,
-                    serverVersion = serverVersion,
+                    serverVersion = status.serverVersion,
+                    newerApp = newerApp,
                     licences = licences,
                     brandMark = brandMark,
                     actions =
@@ -113,6 +127,7 @@ private fun Connection(
                             onOpenRecipe = model::openRecipe,
                             onShare = share,
                             onSwitchInstance = model::switchInstance,
+                            onDismissNewerApp = { newerApp?.let(model::dismissNewerApp) },
                             onOpenGallery = if (model.debug) model::openGallery else null,
                         ),
                 )

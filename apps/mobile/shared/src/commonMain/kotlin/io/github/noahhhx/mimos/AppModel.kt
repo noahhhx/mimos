@@ -15,6 +15,7 @@ import io.github.noahhhx.mimos.household.HouseholdRoute
 import io.github.noahhhx.mimos.household.InviteLink
 import io.github.noahhhx.mimos.household.parseInviteLink
 import io.github.noahhhx.mimos.instance.Instance
+import io.github.noahhhx.mimos.instance.Version
 import io.github.noahhhx.mimos.plan.PlanModel
 import io.github.noahhhx.mimos.plan.PlanRoute
 import io.github.noahhhx.mimos.plan.PlanViewStore
@@ -183,6 +184,17 @@ class AppModel(
             Destination.Household -> household.back()
             else -> false
         }
+
+    private val dismissedNewer = MutableStateFlow<Version?>(null)
+
+    /**
+     * The server version whose newer-app notice the person put away, until the app starts again.
+     */
+    val dismissedNewerApp: StateFlow<Version?> = dismissedNewer.asStateFlow()
+
+    fun dismissNewerApp(serverVersion: Version) {
+        dismissedNewer.value = serverVersion
+    }
 
     private val galleryOpen = MutableStateFlow(false)
     val gallery: StateFlow<Boolean> = galleryOpen.asStateFlow()
