@@ -43,7 +43,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 05 | [Evening Kitchen in Compose](05-design-system.md) | 01 | done (6577f8b) |
 | 06 | [Maestro flows and CI](06-flows-and-ci.md) | 04, 05 | done (43e67dc) |
 | 07 | [Recipes: browse, read, and cook](07-recipes.md) | 06 | done (dc1354c) |
-| 07b | [The recipe form](07b-recipe-form.md) | 07 | todo |
+| 07b | [The recipe form](07b-recipe-form.md) | 07 | done (fcbdc80) |
 | 07c | [Recipe pictures](07c-recipe-pictures.md) | 07b | todo |
 | 08 | [The week's plan](08-plan.md) **Review** | 07 | todo |
 | 09 | [Plugins: page, suggestions, week panels](09-plugins.md) | 08 | todo |
@@ -216,10 +216,35 @@ owner can overturn any of it:
 - The recipe list's tag filter is one scrolling line, not the web's wrapped
   row. The seed library has 22 tags, which pushed every recipe off a phone's
   first screen.
-- "Edit" and "+ New recipe" open the web's pages until item 07b, and a
-  recipe's pictures are not shown until 07c. The web shows "0 min cook" for
-  a recipe with `cookMinutes` 0, and so does the app.
-- Followed recipe links (the ingredient that is one of your recipes) are
-  tested in `commonTest` (route, trail, cook book) but have no flow: a
-  flow's fresh account has no recipe of its own to link until 07b lets the
-  app write one.
+- A recipe's pictures are not shown until 07c. The web shows "0 min cook"
+  for a recipe with `cookMinutes` 0, and so does the app.
+- The generated client accepted only `application/json`. `deleteRecipe`'s
+  only answers with a body are problems, so the API produces
+  `application/problem+json` for it and answered every app delete with a
+  406; item 07's delete never worked against a server, and no flow deleted
+  anything until `create-recipe` (item 07b). `MimosHttp` now accepts problem
+  JSON too. Another operation whose only bodies are problems would have
+  failed the same way; the web's fetch accepts anything.
+- Running Maestro from the Maestro MCP server while `harness mobile flow`
+  runs kills the device's driver: the flow fails late with "Unknown error"
+  or a `viewHierarchy` "Rst Stream", after minutes. Use one or the other.
+- A `TextField`'s visible label is hidden from accessibility, and the field
+  itself carries the name (`description`, or the label), so a flow's `tapOn:
+  Title` lands in the field rather than on the label above it. Fields that
+  share a visible label ("Amount" on every ingredient) take the web's
+  `aria-label` as their `description` ("Ingredient 1 amount"). Maestro's
+  text match is a full-string regex ignoring case: escape `+`, `(`, `?`.
+- Ktor's `MockEngine` answers off the test scheduler, so `advanceUntilIdle`
+  does not wait for it. Model tests wait on the state (`first { ... }`).
+- Private top-level classes in one package collide across `commonTest` files
+  (`CLASSIFIER_REDECLARATION`); give each file's case classes its own names.
+- No font the app ships has "▾"; the fallback's taller line made a
+  `SelectField` taller than the `TextField` beside it, so the arrow is drawn.
+- The web's form keys its estimate on what it sends, not on which rows sent
+  it, so removing an empty row above a linked one leaves each "Not counted"
+  hint on the wrong row until the next change that alters what is sent. Its
+  new-ingredient panel also stays on the same index when a row above it is
+  removed. The app keys the estimate on both and moves the panel; the web is
+  unchanged.
+- A linked ingredient on a recipe's detail reads "1 serving " with a
+  trailing space in its own text node; a flow matches it with `\s*`.
