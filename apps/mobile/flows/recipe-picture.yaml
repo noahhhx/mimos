@@ -1,0 +1,57 @@
+appId: io.github.noahhhx.mimos.debug
+---
+- addMedia:
+    - assets/recipe-picture.jpg
+- runFlow: connect-and-sign-in.yaml
+- evalScript: ${output.title = 'Harness picture ' + new Date().getTime()}
+- tapOn: Recipes
+- tapOn: \+ New recipe
+- assertVisible: New recipe
+- tapOn: Title
+- inputText: ${output.title}
+- tapOn: Description
+- inputText: Written by the app's recipe-picture flow.
+- hideKeyboard
+- scrollUntilVisible:
+    element: Add pictures
+- tapOn: Add pictures
+- tapOn: Photo taken on.*
+- tapOn: Add \(1\)
+- scrollUntilVisible:
+    element: Not saved yet
+- assertVisible: ${output.title}, picture 1 of 1
+- takeScreenshot: picked
+- scrollUntilVisible:
+    element: Ingredient 1 note
+- tapOn: Ingredient 1 name
+- inputText: salt
+- hideKeyboard
+- scrollUntilVisible:
+    element: Step 1
+- tapOn: Step 1
+- inputText: Look at the picture.
+- hideKeyboard
+- scrollUntilVisible:
+    element: Create recipe
+- tapOn: Create recipe
+- assertVisible: Your recipe
+- scrollUntilVisible:
+    element: ${output.title}, picture 1 of 1
+- takeScreenshot: created
+- tapOn: Edit
+- assertVisible: Edit recipe
+- scrollUntilVisible:
+    element: Remove picture 1
+- assertNotVisible: Not saved yet
+- tapOn: Remove picture 1
+- assertNotVisible: ${output.title}, picture 1 of 1
+- scrollUntilVisible:
+    element: Save changes
+- tapOn: Save changes
+- assertVisible: Your recipe
+- assertNotVisible: ${output.title}, picture 1 of 1
+- tapOn: Delete
+- tapOn:
+    text: Delete
+    below: This cannot be undone\.
+- assertVisible: No personal recipes yet.*
