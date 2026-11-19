@@ -22,6 +22,8 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.dp
+import io.github.noahhhx.mimos.plan.PlanModel
+import io.github.noahhhx.mimos.plan.PlanScreen
 import io.github.noahhhx.mimos.recipes.RecipesModel
 import io.github.noahhhx.mimos.recipes.RecipesScreen
 import io.github.noahhhx.mimos.ui.BottomSheet
@@ -43,6 +45,8 @@ import io.github.noahhhx.mimos.ui.ThemeModel
 class ShellActions(
     val onSignOut: () -> Unit,
     val onChangeInstance: () -> Unit,
+    /** Shows a planned recipe in the Recipes tab. */
+    val onOpenRecipe: (String) -> Unit,
     /** Debug builds only: the component gallery. Null hides its entry. */
     val onOpenGallery: (() -> Unit)? = null,
 )
@@ -56,6 +60,7 @@ class ShellActions(
 fun AppShell(
     shell: ShellModel,
     recipes: RecipesModel,
+    plan: PlanModel,
     theme: ThemeModel,
     profile: Profile,
     webOrigin: String,
@@ -75,6 +80,7 @@ fun AppShell(
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when (destination) {
                 Destination.Recipes -> RecipesScreen(recipes, webOrigin)
+                Destination.Plan -> PlanScreen(plan, actions.onOpenRecipe)
                 else ->
                     Column(
                         Modifier.fillMaxSize()

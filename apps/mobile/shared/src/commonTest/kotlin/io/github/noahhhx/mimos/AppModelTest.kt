@@ -7,6 +7,8 @@ import io.github.noahhhx.mimos.instance.InstanceStore
 import io.github.noahhhx.mimos.instance.SignupPolicy
 import io.github.noahhhx.mimos.instance.Version
 import io.github.noahhhx.mimos.instance.WebAddress
+import io.github.noahhhx.mimos.plan.PlanView
+import io.github.noahhhx.mimos.plan.PlanViewStore
 import io.github.noahhhx.mimos.recipes.RecipeId
 import io.github.noahhhx.mimos.recipes.RecipeRoute
 import io.github.noahhhx.mimos.recipes.RecipeSort
@@ -47,6 +49,12 @@ private class NoInstance : InstanceStore {
     override fun clear() = Unit
 }
 
+private class NoPlanView : PlanViewStore {
+    override fun load(): PlanView? = null
+
+    override fun save(view: PlanView) = Unit
+}
+
 private class NoSort : RecipeSortStore {
     override fun load(): RecipeSort? = null
 
@@ -65,6 +73,7 @@ private fun model(
         debug = debug,
         engine = MockEngine { respondError(HttpStatusCode.ServiceUnavailable) },
         recipeSortStore = NoSort(),
+        planViewStore = NoPlanView(),
         pictureShrinker =
             object : PictureShrinker {
                 override suspend fun shrink(picked: PickedPicture) = error("nothing is picked")

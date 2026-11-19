@@ -74,6 +74,7 @@ private fun Connection(model: AppModel, brandMark: Painter) {
                 AppShell(
                     shell = model.shell,
                     recipes = model.recipes,
+                    plan = model.plan,
                     theme = model.theme,
                     profile = profile,
                     webOrigin = instance.config.webUrl.origin,
@@ -82,6 +83,7 @@ private fun Connection(model: AppModel, brandMark: Painter) {
                         ShellActions(
                             onSignOut = model::signOut,
                             onChangeInstance = model::changeInstance,
+                            onOpenRecipe = model::openRecipe,
                             onOpenGallery = if (model.debug) model::openGallery else null,
                         ),
                 )

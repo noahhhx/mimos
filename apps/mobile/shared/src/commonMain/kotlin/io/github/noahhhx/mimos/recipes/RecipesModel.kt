@@ -142,6 +142,9 @@ class RecipesModel(
     /** Opens a recipe from the list, or follows an ingredient that is one. */
     fun open(id: RecipeId) = go(route.value.follow(id))
 
+    /** Opens a recipe from another tab, starting a new trail. */
+    fun show(id: RecipeId) = go(RecipeRoute.Recipe(emptyList(), id))
+
     /** Opens the form for a new recipe. */
     fun newRecipe() = go(RecipeRoute.New)
 

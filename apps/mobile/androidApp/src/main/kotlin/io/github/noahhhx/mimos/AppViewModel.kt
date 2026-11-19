@@ -33,6 +33,7 @@ class AppViewModel(application: Application, debuggable: Boolean) : AndroidViewM
             debug = debuggable,
             engine = engine,
             recipeSortStore = SharedPreferencesRecipeSortStore(application),
+            planViewStore = SharedPreferencesPlanViewStore(application),
             pictureShrinker = AndroidPictureShrinker(application),
             createSession = { instance ->
                 SessionModel(

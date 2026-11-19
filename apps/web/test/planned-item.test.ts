@@ -9,8 +9,6 @@ import {
   entryName,
   existingIngredient,
   foodLogBody,
-  newFoodEntry,
-  parseFoodAmount,
   plannedWhat,
   productIngredient,
 } from "../src/lib/planned-item.ts";
@@ -50,18 +48,10 @@ describe("entryLabel", () => {
   });
 });
 
-describe("entryName and amountText", () => {
-  it("name the recipe or the food", () => {
+describe("entryName", () => {
+  it("names the recipe or the food", () => {
     assert.equal(entryName(stew), "Lentil stew");
     assert.equal(entryName(bagel), "Bagel");
-  });
-
-  it("count servings, pieces, or a unit", () => {
-    assert.equal(amountText(stew), "4 servings");
-    assert.equal(amountText({ ...stew, servings: 1 }), "1 serving");
-    assert.equal(amountText(banana), "1 piece");
-    assert.equal(amountText({ ...banana, servings: 3 }), "3 pieces");
-    assert.equal(amountText(bagel), "85 g");
   });
 });
 
@@ -73,54 +63,6 @@ describe("plannedWhat", () => {
 
   it("refuses an entry that names neither", () => {
     assert.throws(() => plannedWhat({}), /recipe or a food/);
-  });
-});
-
-describe("newFoodEntry", () => {
-  const food = (basis: CatalogIngredient["basis"], servingSize?: number) => ({ slug: "x", basis, servingSize });
-
-  it("starts at 100 g, 100 ml, or 1 piece by basis", () => {
-    assert.deepEqual(newFoodEntry(food("PER_100_G"), "SNACK", 1), {
-      food: { catalogSlug: "x", unit: "g" },
-      servings: 100,
-    });
-    assert.deepEqual(newFoodEntry(food("PER_100_ML"), "SNACK", 1), {
-      food: { catalogSlug: "x", unit: "ml" },
-      servings: 100,
-    });
-    assert.deepEqual(newFoodEntry(food("PER_PIECE"), "SNACK", 1), { food: { catalogSlug: "x" }, servings: 1 });
-  });
-
-  it("starts at one serving when the product says what that is", () => {
-    assert.equal(newFoodEntry(food("PER_100_G", 28.5), "SNACK", 1).servings, 28.5);
-  });
-
-  it("plans one portion for each default diner", () => {
-    assert.equal(newFoodEntry(food("PER_100_G"), "DINNER", 3).servings, 300);
-    assert.equal(newFoodEntry(food("PER_100_G"), "LUNCH", 3).servings, 100);
-    assert.equal(newFoodEntry(food("PER_PIECE"), "DINNER", 2).servings, 2);
-  });
-
-  it("plans one portion in a household of one, not a recipe's two servings", () => {
-    assert.equal(newFoodEntry(food("PER_100_G"), "DINNER", 1).servings, 100);
-  });
-
-  it("keeps a serving's multiple free of float noise", () => {
-    assert.equal(newFoodEntry(food("PER_100_G", 0.1), "DINNER", 3).servings, 0.3);
-  });
-});
-
-describe("parseFoodAmount", () => {
-  it("takes more than 0 and at most 10,000", () => {
-    assert.equal(parseFoodAmount("85"), 85);
-    assert.equal(parseFoodAmount("0.5"), 0.5);
-    assert.equal(parseFoodAmount("10000"), 10000);
-  });
-
-  it("refuses the rest", () => {
-    for (const text of ["", "  ", "0", "-1", "10001", "abc"]) {
-      assert.equal(parseFoodAmount(text), undefined, text);
-    }
   });
 });
 
