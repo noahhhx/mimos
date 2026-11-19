@@ -10,6 +10,7 @@ here, so the two cannot drift apart. Each file is plain JSON.
 | `recipe-input.json` | The recipe form's values from a recipe, the `RecipeInput` and per-row errors it makes, the nutrition estimate's request and rows, and the unit choices | `apps/web/test/recipe-input.test.ts`; the app's `commonTest` (`RecipeDraftTest`) |
 | `ingredient-links.json` | What an ingredient line links to as it is typed and picked, and how the form describes the link and why it did not count | `apps/web/test/ingredient-links.test.ts`; the app's `commonTest` (`IngredientLinksTest`) |
 | `catalog-match.json` | Searching the ingredient catalog, the entry a line's name suggests, and how an entry reads | `apps/web/test/catalog-match.test.ts`; the app's `commonTest` (`CatalogMatchTest`) |
+| `recipe-pictures.json` | The picture limits, the size a picture is shrunk to, and the JPEG qualities tried | `apps/web/test/recipe-pictures.test.ts`; the app's `commonTest` (`PictureDraftTest`) |
 
 A recipe in a case is a sketch: `id` and `title`, with `tags`, `createdAt`,
 and `updatedAt` defaulting to none and `2025-01-01T00:00:00Z`. Expected

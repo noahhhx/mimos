@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 import {
+  LONG_EDGE,
+  MAX_PICTURE_BYTES,
   MAX_PICTURES,
+  QUALITY_STEPS,
   addPicks,
   draftOf,
   fitWithin,
@@ -14,6 +18,14 @@ import {
   type PictureDraft,
   type PictureResult,
 } from "../src/lib/recipe-pictures.ts";
+
+// The app's commonTest reads the same file (libraries/test-cases/README.md).
+const cases = JSON.parse(
+  readFileSync(new URL("../../../libraries/test-cases/recipe-pictures.json", import.meta.url), "utf8"),
+) as {
+  limits: { maxPictures: number; maxPictureBytes: number; longEdge: number; qualitySteps: number[] };
+  fit: { name: string; width: number; height: number; expected: { width: number; height: number } }[];
+};
 
 const saved = (...ids: string[]) => draftOf({ pictures: ids.map((id) => ({ id })) });
 const pick = (key: string) => ({ key, prepared: { blob: new Blob([key], { type: "image/jpeg" }) } });
@@ -46,18 +58,19 @@ function fakeApi(
 }
 
 describe("fitWithin", () => {
-  it("shrinks the long edge to the limit, keeping the ratio", () => {
-    assert.deepEqual(fitWithin(4000, 3000), { width: 1600, height: 1200 });
-    assert.deepEqual(fitWithin(3000, 4000), { width: 1200, height: 1600 });
-  });
+  for (const { name, width, height, expected } of cases.fit) {
+    it(name, () => {
+      assert.deepEqual(fitWithin(width, height), expected);
+    });
+  }
+});
 
-  it("never enlarges a small picture", () => {
-    assert.deepEqual(fitWithin(800, 600), { width: 800, height: 600 });
-    assert.deepEqual(fitWithin(1600, 900), { width: 1600, height: 900 });
-  });
-
-  it("keeps at least one pixel on a very thin picture", () => {
-    assert.deepEqual(fitWithin(10000, 2), { width: 1600, height: 1 });
+describe("the limits", () => {
+  it("are the ones the app shrinks to", () => {
+    assert.deepEqual(
+      { maxPictures: MAX_PICTURES, maxPictureBytes: MAX_PICTURE_BYTES, longEdge: LONG_EDGE, qualitySteps: QUALITY_STEPS },
+      cases.limits,
+    );
   });
 });
 
