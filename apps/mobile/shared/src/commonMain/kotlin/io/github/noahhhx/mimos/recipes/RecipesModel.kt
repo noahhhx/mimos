@@ -4,6 +4,7 @@ import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.api.models.RecipeDetail
 import io.github.noahhhx.mimos.api.models.RecipeSummary
 import io.github.noahhhx.mimos.client.ApiProblem
+import io.github.noahhhx.mimos.recipes.form.RecipeFormModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -62,9 +63,10 @@ sealed interface DeleteState {
 }
 
 /**
- * The Recipes tab: the library and the household's recipes, and cooking from one. It owns the route
- * (see [RecipeRoute]), the list with its search, tab, sort, and tag filter, the recipe on screen,
- * and the [cookBook]. [api] is asked for on every call, because the instance can change.
+ * The Recipes tab: the library and the household's recipes, cooking from one, and the [form] that
+ * writes them. It owns the route (see [RecipeRoute]), the list with its search, tab, sort, and tag
+ * filter, the recipe on screen, and the [cookBook]. [api] is asked for on every call, because the
+ * instance can change.
  */
 class RecipesModel(
     private val scope: CoroutineScope,
@@ -100,6 +102,8 @@ class RecipesModel(
     private var listJob: Job? = null
     private var detailJob: Job? = null
 
+    val form = RecipeFormModel(scope, api, onSaved = ::saved)
+
     /** Loads the lists the first time the tab is shown. */
     fun ensureLoaded() {
         if (list.value is RecipeListState.Loading && listJob?.isActive != true) refresh()
@@ -133,6 +137,23 @@ class RecipesModel(
 
     /** Opens a recipe from the list, or follows an ingredient that is one. */
     fun open(id: RecipeId) = go(route.value.follow(id))
+
+    /** Opens the form for a new recipe. */
+    fun newRecipe() = go(RecipeRoute.New)
+
+    /** Opens the form for the recipe on screen. */
+    fun edit() {
+        (route.value as? RecipeRoute.Recipe)?.let { go(RecipeRoute.Edit(it)) }
+    }
+
+    /** A new recipe opens on its own; an edited one returns to where it was opened from. */
+    private fun saved(recipe: RecipeDetail) {
+        when (val current = route.value) {
+            RecipeRoute.New -> go(RecipeRoute.Recipe(emptyList(), RecipeId(recipe.id)))
+            is RecipeRoute.Edit -> go(current.from)
+            else -> {}
+        }
+    }
 
     /** Back one step: to the recipe followed from, or the list. False when already on the list. */
     fun back(): Boolean = route.value.back()?.also(::go) != null
@@ -178,6 +199,7 @@ class RecipesModel(
         mutableList.value = RecipeListState.Loading
         mutableDetail.value = RecipeDetailState.Loading
         mutableDeletion.value = DeleteState.Idle
+        form.close()
         cookBook.clear()
     }
 
@@ -189,7 +211,10 @@ class RecipesModel(
         when (to) {
             RecipeRoute.List -> refresh()
             is RecipeRoute.Recipe -> loadDetail(to.id)
+            RecipeRoute.New -> form.open(null)
+            is RecipeRoute.Edit -> form.open(to.from.id.value)
         }
+        if (to !is RecipeRoute.New && to !is RecipeRoute.Edit) form.close()
     }
 
     private fun loadDetail(id: RecipeId) {

@@ -39,4 +39,12 @@ class RecipeRouteTest {
         assertEquals(RecipeRoute.Recipe(listOf(a), b), here.follow(b))
         assertEquals(RecipeRoute.Recipe(emptyList(), a), here.follow(a))
     }
+
+    @Test
+    fun `the form goes back to where it was opened from`() {
+        val here = RecipeRoute.Recipe(listOf(a), b)
+
+        assertEquals(RecipeRoute.List, RecipeRoute.New.back())
+        assertEquals(here, RecipeRoute.Edit(here).back())
+    }
 }

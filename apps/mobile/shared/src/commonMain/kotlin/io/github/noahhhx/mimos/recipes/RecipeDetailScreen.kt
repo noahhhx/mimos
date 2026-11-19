@@ -23,6 +23,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
+import io.github.noahhhx.mimos.api.models.Nutrition
 import io.github.noahhhx.mimos.api.models.NutritionSource
 import io.github.noahhhx.mimos.api.models.RecipeDetail
 import io.github.noahhhx.mimos.ui.Button
@@ -155,11 +156,7 @@ private fun LoadedRecipe(model: RecipesModel, recipe: RecipeDetail, webOrigin: S
                         )
                     }
                 } else {
-                    Button(
-                        "Edit",
-                        onClick = { uriHandler.openUri("$origin/app/recipes/${recipe.id}") },
-                        kind = ButtonKind.Secondary,
-                    )
+                    Button("Edit", onClick = model::edit, kind = ButtonKind.Secondary)
                     Button(
                         "Delete",
                         onClick = { confirmDelete = true },
@@ -238,7 +235,7 @@ private fun LoadedRecipe(model: RecipesModel, recipe: RecipeDetail, webOrigin: S
                     style = type.heading,
                     modifier = Modifier.semantics { heading() },
                 )
-                PerServing(recipe)
+                PerServing(recipe.nutrition)
                 if (recipe.nutritionSource == NutritionSource.INGREDIENTS) {
                     Text("Calculated from the ingredients.", color = colors.muted)
                 }
@@ -269,8 +266,7 @@ private fun LoadedRecipe(model: RecipesModel, recipe: RecipeDetail, webOrigin: S
 
 /** Per-serving calories and macros as large figures; an unknown value shows as a dash. */
 @Composable
-private fun PerServing(recipe: RecipeDetail) {
-    val n = recipe.nutrition
+internal fun PerServing(n: Nutrition) {
     Row(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(MimosTheme.spacing.l),

@@ -2,6 +2,7 @@ package io.github.noahhhx.mimos.recipes
 
 import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.client.MimosHttp
+import io.github.noahhhx.mimos.recipes.form.RecipeFormState
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.respondError
@@ -61,6 +62,11 @@ private class Server {
         when {
             failList && path.endsWith("/recipes") ->
                 respondError(HttpStatusCode.InternalServerError)
+            path == "/api/v1/ingredients" -> respond("[]", headers = json)
+            path == "/api/v1/recipes/nutrition-estimate" ->
+                respond("""{"nutrition":{},"lines":[]}""", headers = json)
+            path == "/api/v1/recipes" && request.method == HttpMethod.Post ->
+                respond(detail("created", "Made"), headers = json)
             path == "/api/v1/recipes" -> respond(mine, headers = json)
             path == "/api/v1/recipes/library" -> respond(library, headers = json)
             request.method == HttpMethod.Delete ->
@@ -283,5 +289,49 @@ class RecipesModelTest {
         assertEquals(RecipeListState.Loading, model.list.value)
         assertEquals(RecipeDetailState.Loading, model.detail.value)
         assertNull(model.cookBook.title(RecipeId("r1")))
+    }
+
+    @Test
+    fun `a new recipe's form opens from the list, and saving it opens the recipe`() = runTest {
+        val server = Server()
+        val model = model(server)
+
+        model.newRecipe()
+        assertEquals(RecipeRoute.New, model.route.value)
+        model.form.state.first { it is RecipeFormState.Editing }
+        model.form.edit { it.copy(title = "Made", description = "d", steps = listOf("Mix.")) }
+        model.form.editRow(0) { it.copy(name = "flour") }
+        model.form.save()
+        server.awaitRequest(HttpMethod.Post, "/api/v1/recipes")
+
+        assertEquals(
+            RecipeRoute.Recipe(emptyList(), RecipeId("created")),
+            model.route.first { it is RecipeRoute.Recipe },
+        )
+        assertEquals(RecipeFormState.Closed, model.form.state.value)
+        assertTrue(model.back())
+        assertEquals(RecipeRoute.List, model.route.value)
+    }
+
+    @Test
+    fun `editing returns to the recipe it was opened from, reloaded, on save or back`() = runTest {
+        val server = Server()
+        val model = model(server)
+        model.open(RecipeId("a"))
+        model.open(RecipeId("m1"))
+        val from = model.route.value as RecipeRoute.Recipe
+
+        model.edit()
+        assertEquals(RecipeRoute.Edit(from), model.route.value)
+        model.form.state.first { it is RecipeFormState.Editing }
+        model.form.save()
+        server.awaitRequest(HttpMethod.Put, "/api/v1/recipes/m1")
+        assertEquals(from, model.route.first { it is RecipeRoute.Recipe })
+        server.awaitRequest(HttpMethod.Get, "/api/v1/recipes/m1")
+
+        model.edit()
+        assertTrue(model.back())
+        assertEquals(from, model.route.value)
+        assertEquals(RecipeFormState.Closed, model.form.state.value)
     }
 }

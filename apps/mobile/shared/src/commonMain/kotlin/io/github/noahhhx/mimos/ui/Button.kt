@@ -17,6 +17,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 
 enum class ButtonKind {
@@ -28,7 +30,11 @@ enum class ButtonKind {
     Danger,
 }
 
-/** The web's `.button`. Pressing deepens it, as hovering does on the web; nothing animates. */
+/**
+ * The web's `.button`. Pressing deepens it, as hovering does on the web; nothing animates.
+ * [description] names it for a screen reader when [label] alone is ambiguous ("Remove" on every
+ * row).
+ */
 @Composable
 fun Button(
     label: String,
@@ -37,6 +43,7 @@ fun Button(
     kind: ButtonKind = ButtonKind.Primary,
     small: Boolean = false,
     enabled: Boolean = true,
+    description: String? = null,
 ) {
     val colors = MimosTheme.colors
     val spacing = MimosTheme.spacing
@@ -66,6 +73,10 @@ fun Button(
         }
     Box(
         modifier
+            .then(
+                if (description == null) Modifier
+                else Modifier.semantics { contentDescription = description }
+            )
             .alpha(if (enabled) 1f else 0.45f)
             .defaultMinSize(
                 minHeight = if (small) spacing.buttonHeightSmall else spacing.buttonHeight,

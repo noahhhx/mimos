@@ -30,13 +30,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import io.github.noahhhx.mimos.api.models.RecipeSummary
+import io.github.noahhhx.mimos.recipes.form.RecipeFormScreen
 import io.github.noahhhx.mimos.ui.BottomSheet
 import io.github.noahhhx.mimos.ui.Button
 import io.github.noahhhx.mimos.ui.ButtonKind
@@ -53,8 +53,8 @@ import io.github.noahhhx.mimos.ui.Text
 import io.github.noahhhx.mimos.ui.TextField
 
 /**
- * The Recipes tab: the list, or the recipe the route names. [webOrigin] is the instance's web
- * address, where the form and the public pages are until the app has its own.
+ * The Recipes tab: the list, the recipe the route names, or the form. [webOrigin] is the instance's
+ * web address, where a library recipe's public page is.
  */
 @Composable
 fun RecipesScreen(model: RecipesModel, webOrigin: String) {
@@ -62,21 +62,16 @@ fun RecipesScreen(model: RecipesModel, webOrigin: String) {
     // Kept above the branch so coming back from a recipe finds the list where it was left.
     val listState = rememberLazyListState()
     when (val current = route) {
-        RecipeRoute.List -> RecipeListScreen(model, listState, webOrigin)
+        RecipeRoute.List -> RecipeListScreen(model, listState)
         is RecipeRoute.Recipe -> RecipeDetailScreen(model, current, webOrigin)
+        RecipeRoute.New -> RecipeFormScreen(model.form, "New recipe", "Recipes", model::back)
+        is RecipeRoute.Edit -> RecipeFormScreen(model.form, "Edit recipe", "Recipe", model::back)
     }
 }
 
-private fun webPage(origin: String, path: String) = origin.trimEnd('/') + path
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun RecipeListScreen(
-    model: RecipesModel,
-    listState: LazyListState,
-    webOrigin: String,
-) {
-    val uriHandler = LocalUriHandler.current
+private fun RecipeListScreen(model: RecipesModel, listState: LazyListState) {
     val list by model.list.collectAsState()
     val tab by model.tab.collectAsState()
     val query by model.query.collectAsState()
@@ -106,10 +101,7 @@ private fun RecipeListScreen(
                 eyebrow = "Your recipe book",
                 modifier = gutter,
                 actions = {
-                    Button(
-                        "+ New recipe",
-                        onClick = { uriHandler.openUri(webPage(webOrigin, "/app/recipes/new")) },
-                    )
+                    Button("+ New recipe", onClick = model::newRecipe)
                 },
             )
         }

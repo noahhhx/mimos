@@ -29,6 +29,7 @@ import io.github.noahhhx.mimos.ui.BottomSheet
 import io.github.noahhhx.mimos.ui.Brand
 import io.github.noahhhx.mimos.ui.Button
 import io.github.noahhhx.mimos.ui.ButtonKind
+import io.github.noahhhx.mimos.ui.Choice
 import io.github.noahhhx.mimos.ui.EmptyState
 import io.github.noahhhx.mimos.ui.ErrorState
 import io.github.noahhhx.mimos.ui.IconToggle
@@ -40,6 +41,7 @@ import io.github.noahhhx.mimos.ui.Notice
 import io.github.noahhhx.mimos.ui.NoticeKind
 import io.github.noahhhx.mimos.ui.PageHeader
 import io.github.noahhhx.mimos.ui.ProfileGlyph
+import io.github.noahhhx.mimos.ui.SelectField
 import io.github.noahhhx.mimos.ui.Tabs
 import io.github.noahhhx.mimos.ui.Tag
 import io.github.noahhhx.mimos.ui.Text
@@ -63,6 +65,9 @@ fun Gallery(theme: ThemeModel, brandMark: Painter, onClose: () -> Unit) {
     var pageTab by remember { mutableStateOf(0) }
     var field by rememberSaveable { mutableStateOf("mimos.example.com") }
     var broken by rememberSaveable { mutableStateOf("mimos") }
+    var note by rememberSaveable { mutableStateOf("") }
+    var unit by rememberSaveable { mutableStateOf("g") }
+    var calculated by rememberSaveable { mutableStateOf(true) }
     Column(
         Modifier.fillMaxSize()
             .safeDrawingPadding()
@@ -135,6 +140,26 @@ fun Gallery(theme: ThemeModel, brandMark: Painter, onClose: () -> Unit) {
             error = "That is not a web address.",
         )
         TextField("Not editable", {}, label = "Disabled", enabled = false)
+        TextField(
+            note,
+            { note = it },
+            label = "Step 1",
+            placeholder = "Several lines, for a step or a description",
+            minLines = 2,
+        )
+
+        Section("Select and choices")
+        SelectField(
+            "Unit",
+            selected = unit,
+            options = listOf("", "g", "kg", "ml"),
+            optionLabel = { if (it == "") "pieces" else it },
+            onSelect = { unit = it },
+        )
+        Column {
+            Choice("Calculate from ingredients", calculated, { calculated = true })
+            Choice("Enter it myself", !calculated, { calculated = false })
+        }
 
         Section("List rows")
         Column(Modifier.fillMaxWidth().border(MimosTheme.spacing.hairline, colors.line)) {
