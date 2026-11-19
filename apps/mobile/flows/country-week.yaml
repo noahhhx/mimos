@@ -1,0 +1,52 @@
+appId: io.github.noahhhx.mimos.debug
+tags:
+  - country-week
+---
+- runFlow: connect-and-sign-in.yaml
+- tapOn: Profile
+- tapOn: Plugins
+- assertVisible: What plugins are
+- assertVisible: On this Mimos
+- assertVisible: "Off"
+- tapOn: Country of the Week
+- assertVisible:
+    checked: true
+    containsChild: Country of the Week
+- assertVisible: "On"
+- takeScreenshot: plugins
+- tapOn: Plan
+- assertVisible: Week of .*
+- assertVisible: Plugins for this week
+- assertNotVisible: Spin
+- tapOn: Country of the Week
+- assertVisible: \d+ countries left\..*
+- assertVisible: A wheel of \d+
+- tapOn: Spin
+- extendedWaitUntil:
+    visible: Choose .*
+    timeout: 20000
+- assertVisible: "A wheel of \\d+\\. The wheel stopped on .*\\."
+- copyTextFrom: Choose .*
+- evalScript: ${output.country = maestro.copiedText.substring(7)}
+- takeScreenshot: wheel-landed
+- tapOn: Toggle light and dark mode
+- takeScreenshot: wheel-landed-dark
+- tapOn: Toggle light and dark mode
+- tapOn: Choose .*
+- assertVisible: Change country
+- assertVisible: Country of the Week ${output.country}
+- tapOn: Next →
+- assertVisible: Country of the Week Italy
+- assertVisible: Suggestions
+- assertVisible: Italy week
+- assertVisible: via Country of the Week
+- takeScreenshot: suggestion
+- tapOn: Add to plan
+- assertVisible: Added \d+ meals? from "Italy week"\.
+- scrollUntilVisible:
+    element: Spaghetti Aglio e Olio
+- takeScreenshot: suggestion-added
+- tapOn: Spaghetti Aglio e Olio
+- assertVisible: .* · Dinner
+- assertVisible: Recipe
+- assertVisible: 2 servings
