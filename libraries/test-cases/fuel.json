@@ -1,0 +1,216 @@
+{
+  "goals": [
+    { "value": "FUEL", "label": "Fuel my training", "proteinGPerKg": 1.6 },
+    { "value": "GRADUAL_LOSS", "label": "Lose weight gradually", "proteinGPerKg": 2.0 },
+    { "value": "FASTER_LOSS", "label": "Lose weight faster", "proteinGPerKg": 2.2 },
+    { "value": "GAIN", "label": "Gain weight", "proteinGPerKg": 1.8 }
+  ],
+  "sexes": [
+    { "value": "FEMALE", "label": "Female" },
+    { "value": "MALE", "label": "Male" },
+    { "value": "UNSPECIFIED", "label": "Prefer not to say" }
+  ],
+  "fieldErrors": {
+    "weightKg": "Enter a weight from 30 to 250 kg.",
+    "bodyFatPercent": "Enter body fat from 3 to 60%, or leave it empty.",
+    "ftpWatts": "Enter a whole number of watts from 50 to 600, or leave it empty.",
+    "proteinGPerKg": "Enter protein from 1.2 to 3.0 g per kg."
+  },
+  "trainingFieldErrors": {
+    "durationMinutes": "Enter a whole number of minutes from 1 to 1440."
+  },
+  "trainingFailures": {
+    "add": "Could not add that training.",
+    "remove": "Could not remove that training."
+  },
+  "intervalsIcuFailures": {
+    "load": "Could not load your intervals.icu connection.",
+    "connect": "Could not connect intervals.icu. Try again.",
+    "sync": "Could not sync from intervals.icu. Try again.",
+    "disconnect": "Could not disconnect intervals.icu. Try again."
+  },
+  "sports": { "RIDE": "Ride", "RUN": "Run", "SWIM": "Swim", "STRENGTH": "Strength", "OTHER": "Other" },
+  "intensities": { "EASY": "Easy", "ENDURANCE": "Endurance", "HARD": "Hard" },
+  "namedFieldsCases": [
+    {
+      "about": "reads every field the API names in a 400 detail",
+      "detail": "weightKg must be between 30 and 250; bodyFatPercent must be between 3 and 60; ftpWatts must be between 50 and 600; proteinGPerKg must be between 1.2 and 3.0",
+      "profile": ["weightKg", "bodyFatPercent", "ftpWatts", "proteinGPerKg"],
+      "training": []
+    },
+    { "about": "reads a field with no range", "detail": "weightKg is required", "profile": ["weightKg"], "training": [] },
+    {
+      "about": "names nothing for a detail about something else",
+      "detail": "constructor must be between 1 and 2; toString is odd",
+      "profile": [],
+      "training": []
+    },
+    { "about": "names nothing without a detail", "profile": [], "training": [] },
+    {
+      "about": "reads only the fields of the form it is given",
+      "detail": "durationMinutes must be between 1 and 1440",
+      "profile": [],
+      "training": ["durationMinutes"]
+    }
+  ],
+  "sessionCases": [
+    {
+      "about": "names the sport, minutes, intensity, kind, and source",
+      "session": { "source": "MANUAL", "kind": "PLANNED", "sport": "RIDE", "durationMinutes": 90, "intensity": "ENDURANCE" },
+      "parts": ["Ride", "90 min", "Endurance", "Planned", "By hand"],
+      "short": "Ride 90 min",
+      "remove": "Remove Ride, 90 min"
+    },
+    {
+      "about": "names a completed session",
+      "session": { "source": "MANUAL", "kind": "COMPLETED", "sport": "STRENGTH", "durationMinutes": 45, "intensity": "HARD" },
+      "parts": ["Strength", "45 min", "Hard", "Completed", "By hand"],
+      "short": "Strength 45 min",
+      "remove": "Remove Strength, 45 min"
+    },
+    {
+      "about": "leaves out an intensity the session does not have, and names intervals.icu",
+      "session": { "source": "INTERVALS_ICU", "kind": "PLANNED", "sport": "RIDE", "durationMinutes": 90, "workKj": 900 },
+      "parts": ["Ride", "90 min", "Planned", "intervals.icu"],
+      "short": "Ride 90 min",
+      "remove": "Remove Ride, 90 min"
+    }
+  ],
+  "connectionCases": [
+    {
+      "about": "names the athlete and the last sync",
+      "connection": { "status": "CONNECTED", "athleteId": "i1", "lastSyncAt": "2026-10-12T21:14:00Z", "hints": {} },
+      "summary": "Connected as i1. Last synced <2026-10-12T21:14:00Z>.",
+      "note": null
+    },
+    {
+      "about": "says a connection has not synced yet",
+      "connection": { "status": "CONNECTED", "athleteId": "i1", "hints": {} },
+      "summary": "Connected as i1. Not synced yet.",
+      "note": null
+    },
+    {
+      "about": "says when intervals.icu lets Mimos sync again, ahead of the last error",
+      "connection": {
+        "status": "CONNECTED",
+        "athleteId": "i1",
+        "lastSyncAt": "2026-10-12T21:14:00Z",
+        "lastError": "wait",
+        "retryAt": "2026-10-12T21:30:00Z"
+      },
+      "summary": "Connected as i1. Last synced <2026-10-12T21:14:00Z>.",
+      "note": "intervals.icu asked Mimos to wait. Training syncs again after <2026-10-12T21:30:00Z>."
+    },
+    {
+      "about": "passes on the last error of a connection that still works",
+      "connection": { "status": "CONNECTED", "athleteId": "i1", "lastSyncAt": "2026-10-12T21:14:00Z", "lastError": "could not be reached" },
+      "summary": "Connected as i1. Last synced <2026-10-12T21:14:00Z>.",
+      "note": "could not be reached"
+    },
+    {
+      "about": "says why a connection broke, with no note",
+      "connection": { "status": "BROKEN", "athleteId": "i1", "lastError": "Enter it again." },
+      "summary": "Enter it again.",
+      "note": null
+    },
+    {
+      "about": "asks for the key again when a broken connection says nothing",
+      "connection": { "status": "BROKEN", "athleteId": "i1" },
+      "summary": "intervals.icu no longer accepts the saved API key. Enter it again.",
+      "note": null
+    },
+    {
+      "about": "says nothing is connected",
+      "connection": { "status": "DISCONNECTED" },
+      "summary": "Not connected.",
+      "note": null
+    }
+  ],
+  "hintCases": [
+    {
+      "about": "suggests each value that differs from the form",
+      "form": { "weightKg": "72", "sex": "UNSPECIFIED", "ftpWatts": "" },
+      "hints": { "weightKg": 70.8, "bodyFatPercent": 12, "sex": "MALE", "ftpWatts": 282 },
+      "suggestions": [
+        { "field": "weightKg", "value": "70.8", "text": "intervals.icu has 70.8 kg.", "action": "Use 70.8 kg from intervals.icu" },
+        { "field": "sex", "value": "MALE", "text": "intervals.icu has male.", "action": "Use male from intervals.icu" },
+        { "field": "ftpWatts", "value": "282", "text": "intervals.icu has 282 W.", "action": "Use 282 W from intervals.icu" }
+      ]
+    },
+    {
+      "about": "suggests a whole weight without a decimal point",
+      "form": { "weightKg": "", "sex": "FEMALE", "ftpWatts": "250" },
+      "hints": { "weightKg": 64, "sex": "FEMALE", "ftpWatts": 250 },
+      "suggestions": [
+        { "field": "weightKg", "value": "64", "text": "intervals.icu has 64 kg.", "action": "Use 64 kg from intervals.icu" }
+      ]
+    },
+    {
+      "about": "suggests nothing the form already holds",
+      "form": { "weightKg": "70.8", "sex": "MALE", "ftpWatts": "282" },
+      "hints": { "weightKg": 70.8, "bodyFatPercent": 12, "sex": "MALE", "ftpWatts": 282 },
+      "suggestions": []
+    },
+    {
+      "about": "suggests nothing without hints",
+      "form": { "weightKg": "72", "sex": "MALE", "ftpWatts": "" },
+      "suggestions": []
+    },
+    {
+      "about": "suggests nothing from empty hints",
+      "form": { "weightKg": "72", "sex": "MALE", "ftpWatts": "" },
+      "hints": {},
+      "suggestions": []
+    }
+  ],
+  "bodyFatCases": [
+    {
+      "about": "says synced body fat counts while the field is empty",
+      "field": " ",
+      "hints": { "bodyFatPercent": 12 },
+      "note": "Optional. While this is empty, your targets use 12% from intervals.icu."
+    },
+    { "about": "says nothing once the field is filled", "field": "15", "hints": { "bodyFatPercent": 12 }, "note": null },
+    { "about": "says nothing without synced body fat", "field": "", "hints": {}, "note": null },
+    { "about": "says nothing without hints", "field": "", "note": null }
+  ],
+  "ledgerFuelCases": [
+    {
+      "about": "puts planned calories against the target while targets are on",
+      "target": { "calories": 3120.4 },
+      "planned": { "meals": 2, "total": { "calories": 1696.6 } },
+      "expected": { "value": "1697", "detail": "of 3120 kcal", "said": "1697" }
+    },
+    {
+      "about": "shows a dash for a day with nothing planned, still against its target",
+      "target": { "calories": 2650 },
+      "expected": { "value": "–", "detail": "of 2650 kcal", "said": "nothing yet" }
+    },
+    {
+      "about": "shows a dash for a day of no meals, still against its target",
+      "target": { "calories": 2650 },
+      "planned": { "meals": 0, "total": { "calories": 0 } },
+      "expected": { "value": "–", "detail": "of 2650 kcal", "said": "nothing yet" }
+    },
+    {
+      "about": "shows calories alone while targets are off",
+      "planned": { "meals": 2, "total": { "calories": 800 } },
+      "expected": { "value": "800", "detail": "kcal", "said": "800" }
+    },
+    {
+      "about": "shows a dash with no detail for nothing planned while targets are off",
+      "expected": { "value": "–", "detail": null, "said": "nothing yet" }
+    },
+    {
+      "about": "shows unknown calories of planned meals as a dash, not zero, and says they are unknown",
+      "planned": { "meals": 2, "total": {} },
+      "expected": { "value": "–", "detail": null, "said": "calories unknown" }
+    },
+    {
+      "about": "shows unknown calories against the target",
+      "target": { "calories": 2650 },
+      "planned": { "meals": 2, "total": {} },
+      "expected": { "value": "–", "detail": "of 2650 kcal", "said": "calories unknown" }
+    }
+  ]
+}

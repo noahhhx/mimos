@@ -1,3 +1,19 @@
+import type { FuelGoal, FuelSex } from "@mimos/api-client";
+
+/** The Fuel page's goals, each with the protein it starts the profile at. */
+export const GOALS: { value: FuelGoal; label: string; proteinGPerKg: number }[] = [
+  { value: "FUEL", label: "Fuel my training", proteinGPerKg: 1.6 },
+  { value: "GRADUAL_LOSS", label: "Lose weight gradually", proteinGPerKg: 2.0 },
+  { value: "FASTER_LOSS", label: "Lose weight faster", proteinGPerKg: 2.2 },
+  { value: "GAIN", label: "Gain weight", proteinGPerKg: 1.8 },
+];
+
+export const SEXES: { value: FuelSex; label: string }[] = [
+  { value: "FEMALE", label: "Female" },
+  { value: "MALE", label: "Male" },
+  { value: "UNSPECIFIED", label: "Prefer not to say" },
+];
+
 export type FuelField = "weightKg" | "bodyFatPercent" | "ftpWatts" | "proteinGPerKg";
 
 export const FIELD_ERRORS: Record<FuelField, string> = {

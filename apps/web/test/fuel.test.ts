@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 import type { TrainingSession } from "@mimos/api-client";
@@ -16,42 +17,27 @@ import {
   trainingLabelFor,
 } from "../src/lib/fuel.ts";
 
-const ride: TrainingSession = {
-  id: "7f1c2d9e-5b3a-4c8e-9d21-6a0b4e3f8c17",
-  date: "2026-10-13",
-  source: "MANUAL",
-  kind: "PLANNED",
-  sport: "RIDE",
-  durationMinutes: 90,
-  intensity: "ENDURANCE",
+// The app's commonTest reads the same file (libraries/test-cases/README.md).
+const cases = JSON.parse(readFileSync(new URL("../../../libraries/test-cases/fuel.json", import.meta.url), "utf8")) as {
+  sports: typeof SPORTS;
+  intensities: typeof INTENSITIES;
+  trainingFailures: typeof TRAINING_FAILURES;
+  sessionCases: { about: string; session: Omit<TrainingSession, "id" | "date">; parts: string[]; remove: string }[];
 };
 
-describe("sessionParts", () => {
-  it("names the sport, minutes, intensity, kind, and source", () => {
-    assert.deepEqual(sessionParts(ride), ["Ride", "90 min", "Endurance", "Planned", "By hand"]);
-    assert.deepEqual(sessionParts({ ...ride, sport: "STRENGTH", durationMinutes: 45, intensity: "HARD", kind: "COMPLETED" }), [
-      "Strength",
-      "45 min",
-      "Hard",
-      "Completed",
-      "By hand",
-    ]);
-  });
-
-  it("leaves out an intensity the session does not have, and names intervals.icu", () => {
-    assert.deepEqual(sessionParts({ ...ride, source: "INTERVALS_ICU", intensity: undefined, workKj: 900 }), [
-      "Ride",
-      "90 min",
-      "Planned",
-      "intervals.icu",
-    ]);
-  });
+const session = (sketch: Omit<TrainingSession, "id" | "date">): TrainingSession => ({
+  id: "7f1c2d9e-5b3a-4c8e-9d21-6a0b4e3f8c17",
+  date: "2026-10-13",
+  ...sketch,
 });
 
-describe("removeSessionLabel", () => {
-  it("names the session it removes", () => {
-    assert.equal(removeSessionLabel(ride), "Remove Ride, 90 min");
-  });
+describe("sessionParts and removeSessionLabel", () => {
+  for (const each of cases.sessionCases) {
+    it(each.about, () => {
+      assert.deepEqual(sessionParts(session(each.session)), each.parts);
+      assert.equal(removeSessionLabel(session(each.session)), each.remove);
+    });
+  }
 });
 
 describe("fuel copy", () => {
@@ -64,10 +50,14 @@ describe("fuel copy", () => {
     ...Object.values(TRAINING_FAILURES),
     ...Object.values(SPORTS),
     ...Object.values(INTENSITIES),
-    ...sessionParts(ride),
-    ...sessionParts({ ...ride, kind: "COMPLETED" }),
-    removeSessionLabel(ride),
+    ...cases.sessionCases.flatMap((each) => [...each.parts, each.remove]),
   ];
+
+  it("names sports, intensities, and failures as the app does", () => {
+    assert.deepEqual(SPORTS, cases.sports);
+    assert.deepEqual(INTENSITIES, cases.intensities);
+    assert.deepEqual(TRAINING_FAILURES, cases.trainingFailures);
+  });
 
   it("calls the target Fuel for the day", () => {
     assert.equal(FUEL_LABEL, "Fuel for the day");

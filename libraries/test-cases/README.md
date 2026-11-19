@@ -19,6 +19,7 @@ here, so the two cannot drift apart. Each file is plain JSON.
 | `shopping.json` | The shopping list's aisles and their order, the add-an-item form's units, and the item it makes or what to fix | `apps/web/test/shopping.test.ts`; the app's `commonTest` (`ShoppingRulesTest`) |
 | `log-entry.json` | What the Log page's form logs (a recipe in servings, an ingredient or a product by amount, anything else by hand), the totals it previews, a food's units and starting amount, the What search, and the week table's cells | `apps/web/test/log-entry.test.ts`; the app's `commonTest` (`LogRulesTest`) |
 | `barcode.json` | What a typed barcode is, the lookup's messages and the product's page, and the ingredient a scanned product becomes and when one already exists | `apps/web/test/barcode.test.ts` and `planned-item.test.ts`; the app's `commonTest` (`BarcodeTest`) |
+| `fuel.json` | The fuel profile's goals, sexes, and field errors, which fields a 400 names, how a training session reads, the intervals.icu connection's summary, note, and suggestions, and a day's planned calories against its target | `apps/web/test/fuel.test.ts`, `fuel-fields.test.ts`, `intervals-icu.test.ts`, and `plan-ledger.test.ts`; the app's `commonTest` (`FuelRulesTest`) |
 
 A recipe in a case is a sketch: `id` and `title`, with `tags`, `createdAt`,
 and `updatedAt` defaulting to none and `2025-01-01T00:00:00Z`. Expected

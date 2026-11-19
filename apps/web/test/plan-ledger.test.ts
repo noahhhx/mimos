@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
+
+import type { FuelTarget, PlannedDayTotal, TrainingSession } from "@mimos/api-client";
 
 import {
   dayHead,
@@ -9,6 +12,19 @@ import {
   standingSelection,
   toggleSelection,
 } from "../src/lib/plan-ledger.ts";
+
+// The app's commonTest reads the same file (libraries/test-cases/README.md).
+const fuelCases = JSON.parse(
+  readFileSync(new URL("../../../libraries/test-cases/fuel.json", import.meta.url), "utf8"),
+) as {
+  sessionCases: { about: string; session: Pick<TrainingSession, "sport" | "durationMinutes">; short: string }[];
+  ledgerFuelCases: {
+    about: string;
+    target?: Pick<FuelTarget, "calories">;
+    planned?: Pick<PlannedDayTotal, "meals" | "total">;
+    expected: ReturnType<typeof ledgerFuel>;
+  }[];
+};
 
 describe("toggleSelection", () => {
   it("selects a meal or a day", () => {
@@ -53,41 +69,19 @@ describe("dayHead", () => {
 });
 
 describe("sessionShort", () => {
-  it("names the sport and its minutes", () => {
-    assert.equal(sessionShort({ sport: "RIDE", durationMinutes: 90 }), "Ride 90 min");
-  });
+  for (const each of fuelCases.sessionCases) {
+    it(each.about, () => {
+      assert.equal(sessionShort(each.session), each.short);
+    });
+  }
 });
 
 describe("ledgerFuel", () => {
-  const planned = (calories: number | undefined, meals = 2) => ({ meals, total: calories == null ? {} : { calories } });
-
-  it("puts planned calories against the target while targets are on", () => {
-    assert.deepEqual(ledgerFuel({ calories: 3120.4 }, planned(1696.6)), {
-      value: "1697",
-      detail: "of 3120 kcal",
-      said: "1697",
+  for (const each of fuelCases.ledgerFuelCases) {
+    it(each.about, () => {
+      assert.deepEqual(ledgerFuel(each.target, each.planned), each.expected);
     });
-  });
-
-  it("shows a dash for a day with nothing planned, still against its target", () => {
-    const nothing = { value: "–", detail: "of 2650 kcal", said: "nothing yet" };
-    assert.deepEqual(ledgerFuel({ calories: 2650 }, undefined), nothing);
-    assert.deepEqual(ledgerFuel({ calories: 2650 }, planned(0, 0)), nothing);
-  });
-
-  it("shows calories alone while targets are off", () => {
-    assert.deepEqual(ledgerFuel(undefined, planned(800)), { value: "800", detail: "kcal", said: "800" });
-    assert.deepEqual(ledgerFuel(undefined, undefined), { value: "–", detail: null, said: "nothing yet" });
-  });
-
-  it("shows unknown calories of planned meals as a dash, not zero, and says they are unknown", () => {
-    assert.deepEqual(ledgerFuel(undefined, planned(undefined)), { value: "–", detail: null, said: "calories unknown" });
-    assert.deepEqual(ledgerFuel({ calories: 2650 }, planned(undefined)), {
-      value: "–",
-      detail: "of 2650 kcal",
-      said: "calories unknown",
-    });
-  });
+  }
 });
 
 describe("ledgerFuelLabel", () => {
