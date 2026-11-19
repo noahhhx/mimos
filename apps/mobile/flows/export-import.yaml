@@ -1,0 +1,84 @@
+appId: io.github.noahhhx.mimos.debug
+tags:
+  - invitee
+---
+- runFlow: connect-and-sign-in.yaml
+- evalScript: ${output.title = 'Exported soup ' + new Date().getTime()}
+- tapOn: Recipes
+- tapOn: \+ New recipe
+- tapOn: Title
+- inputText: ${output.title}
+- tapOn: Description
+- inputText: Written by the app's export-import flow.
+- hideKeyboard
+- scrollUntilVisible:
+    element: Ingredient 1 name
+- tapOn: Ingredient 1 name
+- inputText: water
+- hideKeyboard
+- scrollUntilVisible:
+    element: Step 1
+- tapOn: Step 1
+- inputText: Boil the water.
+- hideKeyboard
+- scrollUntilVisible:
+    element: Create recipe
+- tapOn: Create recipe
+- assertVisible: Your recipe
+- tapOn: Profile
+- tapOn: Your data
+- assertVisible: Download export
+- tapOn: Download export
+- assertVisible: mimos-export-\d{4}-\d{2}-\d{2}\.json
+- tapOn: SAVE
+- assertVisible: Saved mimos-export-\d{4}-\d{2}-\d{2}.*\.json\.
+- takeScreenshot: saved
+- tapOn: Profile
+- tapOn: Sign out
+- tapOn:
+    text: Sign in
+    index: 1
+- assertVisible: Username or email
+- tapOn: Username or email
+- inputText: ${MIMOS_INVITEE}
+- tapOn: Password
+- inputText: ${MIMOS_PASSWORD}
+- tapOn: Sign In
+- assertVisible: Coming to the app
+- tapOn: Profile
+- tapOn: Your data
+- scrollUntilVisible:
+    element: No file chosen
+- tapOn: Choose file
+- tapOn:
+    text: mimos-export-\d{4}-\d{2}-\d{2}.*\.json
+    index: 0
+- assertVisible: mimos-export-\d{4}-\d{2}-\d{2}.*\.json
+- scrollUntilVisible:
+    element:
+      text: Import
+      below: Export file
+- tapOn:
+    text: Import
+    below: Export file
+- assertVisible: Imported 1 recipe, no planned meals, no shopping lists, no logged meals, no fuel settings and no training sessions\.
+- takeScreenshot: imported
+- tapOn: Recipes
+- assertVisible: ${output.title}
+- tapOn: Profile
+- tapOn: Your data
+- scrollUntilVisible:
+    element: Choose another file
+- tapOn: Choose another file
+- tapOn:
+    text: mimos-export-\d{4}-\d{2}-\d{2}.*\.json
+    index: 0
+- scrollUntilVisible:
+    element:
+      text: Import
+      below: Export file
+- tapOn:
+    text: Import
+    below: Export file
+- assertVisible: Import needs an empty account, and this one already has recipes.*
+- takeScreenshot: not-empty
