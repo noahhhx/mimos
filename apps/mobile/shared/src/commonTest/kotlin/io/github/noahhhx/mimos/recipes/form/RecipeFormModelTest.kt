@@ -334,7 +334,7 @@ class RecipeFormModelTest {
             listOf("POST /api/v1/recipes", "POST /api/v1/recipes/new-id/pictures"),
             h.server.writes(),
         )
-        val upload = h.server.seen.last()
+        val upload = h.server.seen.single { it.path == "/api/v1/recipes/new-id/pictures" }
         assertTrue(upload.contentType!!.startsWith("multipart/form-data"), upload.contentType)
         assertTrue("name=\"file\"" in upload.raw!! && "filename=" in upload.raw, upload.raw)
         assertTrue("content://one" in upload.raw)
