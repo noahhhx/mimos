@@ -24,6 +24,7 @@ import io.github.noahhhx.mimos.shell.AppShell
 import io.github.noahhhx.mimos.shell.Profile
 import io.github.noahhhx.mimos.shell.ShellActions
 import io.github.noahhhx.mimos.shell.UpdateRequired
+import io.github.noahhhx.mimos.shopping.ShoppingWithoutSession
 import io.github.noahhhx.mimos.ui.MimosTheme
 import kotlinx.coroutines.CancellationException
 
@@ -92,6 +93,9 @@ private fun Connection(
                 brandMark,
                 onSignOut = model::signOut,
                 onChangeInstance = model::changeInstance,
+                storedShopping = { onBack ->
+                    ShoppingWithoutSession(model.shopping, onBack, onRenew = session::retry)
+                },
             ) {
                 // Loaded here, not in a model: a rotation asks again, which costs one small call
                 // and can never show the last person's name to the next.
