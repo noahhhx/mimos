@@ -117,11 +117,20 @@ export interface FlowFailure {
 }
 
 /**
- * Maestro's driver on the device died, which says nothing about the app: the flow did not finish, so it
- * is worth one more attempt.
+ * Maestro's driver on the device died, or adb lost the device under it, which says nothing about the app:
+ * the flow did not finish, so it is worth one more attempt.
  */
 export const driverDied = (failure: FlowFailure | undefined): boolean =>
-  failure !== undefined && /DeviceServerDiedException/.test(`${failure.at}\n${failure.message}`);
+  failure !== undefined &&
+  /DeviceServerDiedException|^Command failed \(host:transport:[^)]*\): device offline$/m.test(`${failure.at}\n${failure.message}`);
+
+const UNKNOWN_ERROR = "Unknown error";
+
+/** The report says only "Unknown error" when a command threw rather than failed an assertion; Maestro's log names it. */
+function unknownError(log: string): FlowFailure | undefined {
+  const failed = /\[Command execution\] CommandFailed: (.+)/.exec(log)?.[1]?.trim();
+  return failed === undefined ? undefined : { at: failed, message: failed };
+}
 
 export const lastLines = (text: string, count: number): string => text.trimEnd().split("\n").slice(-count).join("\n");
 
@@ -132,8 +141,10 @@ export function flowFailure(input: {
   requests: readonly AppRequest[];
   unreadable: readonly string[];
   requestLog: string;
+  log: string;
 }): FlowFailure | undefined {
   const assertion = input.junit === undefined ? undefined : maestroFailure(input.junit);
+  if (assertion === UNKNOWN_ERROR) return unknownError(input.log) ?? { at: assertion, message: assertion };
   if (assertion !== undefined) return { at: assertion.split("\n")[0] ?? assertion, message: assertion };
   if (input.code !== 0) return { at: "Maestro", message: lastLines(input.output, 30) || `maestro exited ${input.code} with no output` };
   if (input.requests.length > 0) return undefined;

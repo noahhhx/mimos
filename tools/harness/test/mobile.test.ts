@@ -319,7 +319,7 @@ test("flow summary: a prerequisite failure names it with its message, and a pass
 
 const SENT = [{ requestId: "8c0ba77d-1d05-4184-a608-c0b95df648ae", method: "GET", path: "/api/v1/public/instance" }];
 const outcome = (input: Partial<Parameters<typeof flowFailure>[0]>) =>
-  flowFailure({ junit: JUNIT_PASS, code: 0, output: "", requests: SENT, unreadable: [], requestLog: "mobile/flows/x/app-requests.log", ...input });
+  flowFailure({ junit: JUNIT_PASS, code: 0, output: "", requests: SENT, unreadable: [], requestLog: "mobile/flows/x/app-requests.log", log: "", ...input });
 
 test("flow outcome: a passing report with the app's requests passes", () => {
   assert.equal(outcome({}), undefined);
@@ -356,6 +356,36 @@ test("flow outcome: only a dead Maestro driver earns a second attempt", () => {
   assert.equal(driverDied(outcome({ junit: died, code: 1 })), true);
   assert.equal(driverDied(outcome({ junit: JUNIT_FAIL, code: 1 })), false);
   assert.equal(driverDied(outcome({})), false);
+});
+
+const JUNIT_UNKNOWN = JUNIT_FAIL.replace(/<failure>.*<\/failure>/, "<failure>Unknown error</failure>");
+
+const DEVICE_OFFLINE_LOG = [
+  "15:26:54.939 [ INFO] maestro.Maestro.launchApp$lambda$5: Stopping io.github.noahhhx.mimos.debug app during launch",
+  "15:26:54.943 [ERROR] maestro.orchestra.Orchestra.executeCommands: [Command execution] CommandFailed: Command failed (host:transport:emulator-5554): device offline",
+  "15:26:54.971 [ WARN] maestro.orchestra.debug.ArtifactsGenerator.captureStepHierarchy: Failed to capture step hierarchy",
+  "maestro.android.DeviceServerDiedException: Device server died during 'deviceInfo' on emulator-5554 (128ms since last byte, connection age 56774ms): StatusRuntimeException: UNAVAILABLE",
+  "\tat maestro.android.AndroidDeviceConnection.onGrpcDeath(AndroidDeviceConnection.kt:309)",
+].join("\n");
+
+test("flow outcome: an unknown error names the command that failed, from Maestro's log, and adb losing the device is a dead driver", () => {
+  const failure = outcome({ junit: JUNIT_UNKNOWN, code: 1, log: DEVICE_OFFLINE_LOG });
+  assert.equal(failure?.at, "Command failed (host:transport:emulator-5554): device offline");
+  assert.equal(driverDied(failure), true);
+  assert.deepEqual(outcome({ junit: JUNIT_UNKNOWN, code: 1, log: "" }), { at: "Unknown error", message: "Unknown error" });
+});
+
+test("flow outcome: an unknown error that is not the driver dying runs once", () => {
+  const thrown = [
+    "15:26:54.943 [ERROR] maestro.orchestra.Orchestra.executeCommands: [Command execution] CommandFailed: Assertion is false: \"Not sent\" is visible",
+    "maestro.MaestroException$AssertionFailure: Assertion is false: \"Not sent\" is visible",
+    "15:26:55.000 [ WARN] maestro.orchestra.debug.ArtifactsGenerator.captureStepHierarchy: Failed to capture step hierarchy",
+    "maestro.android.DeviceServerDiedException: Device server died during 'viewHierarchy' on emulator-5554",
+  ].join("\n");
+  const failure = outcome({ junit: JUNIT_UNKNOWN, code: 1, log: thrown });
+  assert.equal(failure?.at, 'Assertion is false: "Not sent" is visible');
+  assert.equal(driverDied(failure), false);
+  assert.equal(driverDied(outcome({ junit: JUNIT_FAIL, code: 1, log: DEVICE_OFFLINE_LOG })), false);
 });
 
 test("flow evidence: the account's password is gone from every copied Maestro file", () => {
