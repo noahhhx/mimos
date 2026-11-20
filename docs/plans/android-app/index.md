@@ -59,6 +59,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 16b | [Flows against the last release](16b-release-skew.md) | 16, a release with `mimos-mobile` | done (4c1ed84): skips until the first release with `mimos-mobile`, whose run is the check |
 | 17 | [Parity audit and user guide](17-parity-and-docs.md) | 07–16 (07b, 07c, and 08b included) | done (d571177) |
 | 18 | [Offline shopping list](18-offline-shopping-list.md) **Review** | 10, 17 | built, waiting for review (branch `mobile/18-offline-shopping-list`) |
+| 19 | [Flows on a minified build](19-minified-flows.md) | 06, 16 | todo |
 
 Once their dependencies are done, items 09 to 12 (11b included) and 14 to 16 are
 independent and can run in parallel in separate worktrees. Item 16 can
@@ -312,8 +313,9 @@ owner can overturn any of it:
   now finds the upload by path.
 - No CI job runs a minified build. Item 16 ran every flow once on a debug
   build minified with the release rules, and all passed, but a dependency
-  update could break the release APK while every job stays green. A flow
-  against a minified build in `android-flows` would catch it.
+  update could break the release APK while every job stays green. Item 19
+  runs `android-flows` on a minified build, and found that item 16's check
+  was weaker than it read: R8 barely shrinks a debuggable build.
 - The picker's new ingredient starts at 100 g, where the recipe form's takes
   its basis from the line's unit: a picker search has no unit to go by
   (item 08b).

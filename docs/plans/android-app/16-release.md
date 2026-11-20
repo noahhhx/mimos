@@ -59,7 +59,9 @@ its dependencies have, so testers get builds while features arrive.
   rather than `commonTest`, because the build computes the code.
 - Release builds are minified and resource-shrunk by R8 with no keep rules
   of the project's own (`androidApp/proguard-rules.pro` is empty): every
-  flow passed on a debug build minified with the same rules.
+  flow passed on a debug build minified with the same rules. That proved
+  little: R8 barely shrinks a debuggable build. Item 19 runs CI's flows on
+  a non-debuggable minified build instead.
 - Keys come from the environment, never the repository:
   `MIMOS_RELEASE_KEYSTORE` (a path) with `MIMOS_RELEASE_KEYSTORE_PASSWORD`,
   `MIMOS_RELEASE_KEY_ALIAS`, and `MIMOS_RELEASE_KEY_PASSWORD`, and the same

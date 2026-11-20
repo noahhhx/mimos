@@ -107,7 +107,7 @@ browsers.
 | `harness loglevel <logger> [<level>]` / `--reset` | Show or change a log level live via actuator; restore the changed ones | 4 |
 | `harness psql` / `harness sql "<query>" [--write] [--csv]` | Interactive / recorded (read-only by default) database access | 4 |
 | `harness debug break <Class:line\|Class.method> [--then "<harness cmd>"] [--print <expr>]... [--hits <n>] [--timeout <s>]` | Scripted `jdb` breakpoint capture: stack, locals, `this`, expressions — or an explicit "not hit" | 5 |
-| `harness mobile up [--no-build]` / `shot [name]` / `logs` / `down` | Headless Android emulator: boot, pinned browser, `adb reverse` to the stack, build and install the debug APK, screenshots, logcat | 8 |
+| `harness mobile up [--minified] [--no-build]` / `shot [name]` / `logs` / `down` | Headless Android emulator: boot, pinned browser, `adb reverse` to the stack, build and install the debug (or minified) APK, screenshots, logcat | 8 |
 | `harness user create` / `harness household join <owner> <member>` | Accounts for flows that cannot make their own, printed as env values | 8 |
 
 ## Run folder
