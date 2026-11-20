@@ -44,7 +44,7 @@ tags:
 - tapOn: Password
 - inputText: ${MIMOS_PASSWORD}
 - tapOn: Sign In
-- assertVisible: Coming to the app
+- assertVisible: Good (morning|afternoon|evening)\.
 - tapOn: Profile
 - tapOn: Your data
 - scrollUntilVisible:

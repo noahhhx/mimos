@@ -11,25 +11,26 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.dp
 import io.github.noahhhx.mimos.account.AccountModel
 import io.github.noahhhx.mimos.account.AccountScreen
+import io.github.noahhhx.mimos.api.models.MealPlanEntry
 import io.github.noahhhx.mimos.fuel.FuelModel
 import io.github.noahhhx.mimos.fuel.FuelScreen
 import io.github.noahhhx.mimos.household.HouseholdModel
 import io.github.noahhhx.mimos.household.HouseholdScreen
 import io.github.noahhhx.mimos.household.InviteLink
 import io.github.noahhhx.mimos.instance.Version
+import io.github.noahhhx.mimos.kitchen.KitchenActions
+import io.github.noahhhx.mimos.kitchen.KitchenModel
+import io.github.noahhhx.mimos.kitchen.KitchenScreen
 import io.github.noahhhx.mimos.log.LogModel
 import io.github.noahhhx.mimos.log.LogScreen
 import io.github.noahhhx.mimos.plan.PlanModel
@@ -44,13 +45,9 @@ import io.github.noahhhx.mimos.shopping.ShoppingModel
 import io.github.noahhhx.mimos.shopping.ShoppingScreen
 import io.github.noahhhx.mimos.ui.BottomSheet
 import io.github.noahhhx.mimos.ui.Brand
-import io.github.noahhhx.mimos.ui.Button
-import io.github.noahhhx.mimos.ui.ButtonKind
-import io.github.noahhhx.mimos.ui.EmptyState
 import io.github.noahhhx.mimos.ui.IconToggle
 import io.github.noahhhx.mimos.ui.ListRow
 import io.github.noahhhx.mimos.ui.MimosTheme
-import io.github.noahhhx.mimos.ui.PageHeader
 import io.github.noahhhx.mimos.ui.ProfileGlyph
 import io.github.noahhhx.mimos.ui.Rule
 import io.github.noahhhx.mimos.ui.Text
@@ -63,6 +60,12 @@ class ShellActions(
     val onChangeInstance: () -> Unit,
     /** Shows a planned recipe in the Recipes tab. */
     val onOpenRecipe: (String) -> Unit,
+    /** The Plan tab's picker for tonight's dinner. */
+    val onPlanTonight: () -> Unit,
+    /** The Plan tab at a planned meal. */
+    val onSwapMeal: (MealPlanEntry) -> Unit,
+    /** This week's shopping list. */
+    val onOpenShopping: () -> Unit,
     /** Hands a link to the phone's share sheet. */
     val onShare: (String) -> Unit,
     /** Signs out and connects to the instance an invite is for. */
@@ -76,9 +79,9 @@ class ShellActions(
 /**
  * The signed-in app: a header with the brand and the two tools, the destination on screen, and the
  * tab bar along the bottom (a phone's thumb reaches it; the web's tabs sit under its header).
- * [webOrigin] is the instance's web address, where screens not yet in the app send people, and
- * [serverVersion] the version it runs. [newerApp] is that version while it is newer than the app's
- * and the person has not put the notice away.
+ * [webOrigin] is the instance's web address, which recipes and Settings name, and [serverVersion]
+ * the version it runs. [newerApp] is that version while it is newer than the app's and the person
+ * has not put the notice away.
  */
 @Composable
 fun AppShell(
@@ -91,6 +94,7 @@ fun AppShell(
     shopping: ShoppingModel,
     log: LogModel,
     fuel: FuelModel,
+    kitchen: KitchenModel,
     theme: ThemeModel,
     profile: Profile,
     webOrigin: String,
@@ -113,6 +117,16 @@ fun AppShell(
         newerApp?.let { NewerAppNotice(it, actions.onDismissNewerApp) }
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when (destination) {
+                Destination.Kitchen ->
+                    KitchenScreen(
+                        kitchen,
+                        KitchenActions(
+                            actions.onOpenRecipe,
+                            actions.onPlanTonight,
+                            actions.onSwapMeal,
+                            actions.onOpenShopping,
+                        ),
+                    )
                 Destination.Recipes -> RecipesScreen(recipes, webOrigin)
                 Destination.Plan -> PlanScreen(plan, actions.onOpenRecipe)
                 Destination.Shopping -> ShoppingScreen(shopping)
@@ -130,17 +144,6 @@ fun AppShell(
                         licences,
                         actions.onChangeInstance,
                     )
-                else ->
-                    Column(
-                        Modifier.fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(
-                                horizontal = MimosTheme.spacing.page,
-                                vertical = MimosTheme.spacing.xxl,
-                            )
-                    ) {
-                        ComingToTheApp(destination, webOrigin)
-                    }
             }
         }
         TabBar(selected = destination, onSelect = shell::go)
@@ -216,24 +219,4 @@ private fun ProfileSheet(
             },
         )
     }
-}
-
-/** The stand-in for a screen the app has not built yet: its header, and the way to the web's. */
-@Composable
-private fun ComingToTheApp(destination: Destination, webOrigin: String) {
-    val uriHandler = LocalUriHandler.current
-    PageHeader(title = destination.label)
-    val webUrl = destination.webUrl(webOrigin) ?: return
-    EmptyState(
-        title = "Coming to the app",
-        message =
-            "${destination.label} is not in the app yet. You can use it on the web meanwhile.",
-        action = {
-            Button(
-                "Open on the web",
-                onClick = { uriHandler.openUri(webUrl) },
-                kind = ButtonKind.Secondary,
-            )
-        },
-    )
 }

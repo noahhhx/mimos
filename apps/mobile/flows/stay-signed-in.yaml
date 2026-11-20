@@ -3,7 +3,7 @@ appId: io.github.noahhhx.mimos.debug
 - runFlow: connect-and-sign-in.yaml
 - stopApp
 - launchApp
-- assertVisible: Coming to the app
+- assertVisible: Good (morning|afternoon|evening)\.
 - assertNotVisible: Sign in to ${MIMOS_WEB_ADDRESS}
 - tapOn: Profile
 - assertVisible: ${MIMOS_USER}

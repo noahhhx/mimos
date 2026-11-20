@@ -613,14 +613,29 @@ class PlanModelTest {
         runTest {
             val server = Server()
             val model = model(server)
-            model.fuelChanged()
+            model.changedElsewhere()
             assertTrue(server.fuelRead.tryReceive().isFailure, "never opened")
 
             model.ensureLoaded()
             model.loaded()
             server.fuelRead.receive()
-            model.fuelChanged()
+            model.changedElsewhere()
             server.fuelRead.receive()
+        }
+
+    @Test
+    fun `the Kitchen home opens tonight's picker, and a meal that closes once it is gone`() =
+        runTest {
+            val server = Server().apply { entries += recipeEntry("e1", "DINNER", 2.0, ME) }
+            val model = model(server)
+            model.planTonight()
+            assertEquals(PlanRoute.Pick(THURSDAY, MealType.DINNER), model.route.value)
+
+            val entry = model.loaded().entries.single()
+            server.entries.clear()
+            model.showMeal(entry)
+            assertEquals(PlanRoute.Meal("e1"), model.route.value)
+            model.route.first { it == PlanRoute.Week }
         }
 
     @Test

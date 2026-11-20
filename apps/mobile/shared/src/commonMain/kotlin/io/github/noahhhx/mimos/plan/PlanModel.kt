@@ -219,9 +219,25 @@ class PlanModel(
         refreshSuggestions(monday.value)
     }
 
-    /** The person's fuel profile or intervals.icu changed: the week's targets and training did. */
-    fun fuelChanged() {
+    /**
+     * The week changed outside the Plan tab: the person's fuel profile or intervals.icu (its
+     * targets and training), or a meal planned from the Kitchen home.
+     */
+    fun changedElsewhere() {
         if (weekJob == null) return
+        load()
+    }
+
+    /** The picker for today's dinner, from the Kitchen home's "Plan tonight". */
+    fun planTonight() {
+        thisWeek()
+        openPicker(today(), MealType.DINNER)
+    }
+
+    /** [entry]'s inspector in its week, read again, from the Kitchen home's "Swap meal". */
+    fun showMeal(entry: MealPlanEntry) {
+        goToWeek(mondayOf(entry.date))
+        go(PlanRoute.Meal(entry.id))
         load()
     }
 
@@ -654,6 +670,7 @@ class PlanModel(
                 } catch (_: Exception) {
                     WeekState.Failed("Could not load the plan.")
                 }
+            dropGoneRoute()
         }
     }
 

@@ -14,7 +14,7 @@ appId: io.github.noahhhx.mimos.debug
 - takeScreenshot: dark-chosen
 - stopApp
 - launchApp
-- assertVisible: Coming to the app
+- assertVisible: Good (morning|afternoon|evening)\.
 - tapOn: Profile
 - tapOn: Settings
 - assertVisible:

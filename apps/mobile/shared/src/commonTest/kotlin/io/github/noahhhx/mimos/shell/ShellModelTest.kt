@@ -74,32 +74,6 @@ class ShellModelTest {
     }
 
     @Test
-    fun `each destination the web has opens its page on the instance's web address`() {
-        val origin = "https://mimos.example.com"
-
-        assertEquals(
-            listOf(
-                "/app",
-                "/app/recipes",
-                "/app/plan",
-                "/app/shopping-list",
-                "/app/log",
-                "/app/household",
-                "/app/plugins",
-                "/app/fuel",
-                "/app/account",
-                null,
-            ),
-            Destination.entries.map { it.webUrl(origin)?.removePrefix(origin) },
-        )
-    }
-
-    @Test
-    fun `a web address with a trailing slash does not double it`() {
-        assertEquals("https://x.example/app/plan", Destination.Plan.webUrl("https://x.example/"))
-    }
-
-    @Test
     fun `member since reads as a date in the given time zone`() {
         val since = Instant.parse("2026-11-18T23:30:00Z")
 

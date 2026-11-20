@@ -14,6 +14,7 @@ import io.github.noahhhx.mimos.api.apis.PluginsApi
 import io.github.noahhhx.mimos.api.apis.RecipePicturesApi
 import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.api.apis.ShoppingListsApi
+import io.github.noahhhx.mimos.api.models.MealPlanEntry
 import io.github.noahhhx.mimos.client.MimosHttp
 import io.github.noahhhx.mimos.connect.ConnectModel
 import io.github.noahhhx.mimos.connect.ConnectState
@@ -24,6 +25,7 @@ import io.github.noahhhx.mimos.household.InviteLink
 import io.github.noahhhx.mimos.household.parseInviteLink
 import io.github.noahhhx.mimos.instance.Instance
 import io.github.noahhhx.mimos.instance.Version
+import io.github.noahhhx.mimos.kitchen.KitchenModel
 import io.github.noahhhx.mimos.log.LogModel
 import io.github.noahhhx.mimos.plan.PlanModel
 import io.github.noahhhx.mimos.plan.PlanRoute
@@ -53,7 +55,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
 
 /**
@@ -74,6 +78,9 @@ class AppModel(
     documents: DocumentStore,
     private val createSession: (Instance) -> SessionModel,
     today: () -> LocalDate = { Clock.System.todayIn(TimeZone.currentSystemDefault()) },
+    now: () -> LocalDateTime = {
+        Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+    },
 ) {
     val shell = ShellModel()
 
@@ -134,7 +141,18 @@ class AppModel(
             scope,
             fuel = { connected().api(::FuelApi) },
             intervalsIcu = { connected().api(::IntervalsIcuApi) },
-            onChanged = plan::fuelChanged,
+            onChanged = plan::changedElsewhere,
+        )
+
+    val kitchen =
+        KitchenModel(
+            scope,
+            planning = { connected().api(::PlanningApi) },
+            plugins = { connected().api(::PluginsApi) },
+            recipes = { connected().api(::RecipesApi) },
+            shopping = { connected().api(::ShoppingListsApi) },
+            now = now,
+            onPlanned = plan::changedElsewhere,
         )
 
     val plugins =
@@ -153,6 +171,7 @@ class AppModel(
             onChanged = {
                 recipes.reset()
                 plan.reset()
+                kitchen.reset()
                 plugins.reset()
                 shopping.reset()
                 log.reset()
@@ -167,6 +186,7 @@ class AppModel(
             onImported = {
                 recipes.reset()
                 plan.reset()
+                kitchen.reset()
                 fuel.reset()
                 shopping.reset()
                 log.reset()
@@ -207,6 +227,24 @@ class AppModel(
     fun openRecipe(recipeId: String) {
         shell.go(Destination.Recipes)
         recipes.show(RecipeId(recipeId))
+    }
+
+    /** The Plan tab's picker for tonight's dinner. */
+    fun planTonight() {
+        shell.go(Destination.Plan)
+        plan.planTonight()
+    }
+
+    /** The Plan tab at [entry], to change or remove it. */
+    fun swapMeal(entry: MealPlanEntry) {
+        shell.go(Destination.Plan)
+        plan.showMeal(entry)
+    }
+
+    /** This week's shopping list. */
+    fun openShopping() {
+        shell.go(Destination.Shopping)
+        shopping.thisWeek()
     }
 
     /** Whether the system's back button has a step to take inside the app. */
@@ -289,6 +327,7 @@ class AppModel(
         shell.reset()
         recipes.reset()
         plan.reset()
+        kitchen.reset()
         plugins.reset()
         shopping.reset()
         log.reset()

@@ -15,10 +15,10 @@ appId: io.github.noahhhx.mimos.debug
 - tapOn: Password
 - inputText: ${MIMOS_PASSWORD}
 - tapOn: Sign In
-- assertVisible: Coming to the app
+- assertVisible: Good (morning|afternoon|evening)\.
 - tapOn: Profile
 - assertVisible: ${MIMOS_USER}
 - takeScreenshot: signed-in
 - back
-- assertVisible: Coming to the app
+- assertVisible: Good (morning|afternoon|evening)\.
 - assertNotVisible: Member since.*
