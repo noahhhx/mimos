@@ -98,7 +98,9 @@ owner can overturn any of it:
   ADR-0034).
 - Flows run on every PR in CI. If the emulator job costs too much (item 06
   measures it), they move to main and tags only. Item 06 measured about 4 minutes added
-  per PR, so they stay on every PR.
+  per PR, so they stay on every PR. With 20 flows they took 43 minutes in one
+  job, so they now run in four parallel shards, and a PR that touches nothing
+  they run skips them.
 
 ## Settled by the owner's grant
 
