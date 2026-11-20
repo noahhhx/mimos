@@ -143,7 +143,17 @@ repository.
 Tag the commit on main and push the tag: `git tag v0.1.0 && git push
 origin v0.1.0` (or `v0.1.0-rc.1` for a candidate). CI builds and
 publishes the images and the APK only once every job passes. The tagged
-commit's `pom.xml` may still say `0.1.0-SNAPSHOT`; the tag decides. Raise
+commit's `pom.xml` may still say `0.1.0-SNAPSHOT`; the tag decides.
+
+To release without the Android flows, set the repository variable first:
+`gh variable set RELEASE_WITHOUT_ANDROID_FLOWS --body true`. A `v*` tag then
+skips `android-flows`, and `release-apk` and `publish` run once the other
+jobs pass. Main and the pull requests that touch what the flows run still run them. Use it only when the
+app's code has passed them already (a green run on the same tree), and
+delete the variable afterwards: `gh variable delete
+RELEASE_WITHOUT_ANDROID_FLOWS`.
+
+Raise
 `MIN_APP_VERSION` in `PublicInstanceController` only for a change an older
 app cannot survive.
 
