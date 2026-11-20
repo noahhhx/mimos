@@ -88,8 +88,8 @@ its dependencies have, so testers get builds while features arrive.
   out: the server reports `1.2.3` for `1.2.3-rc.N`, which equals the app's
   version. `releases/latest` also skips prereleases, so before the first
   final release it has nothing to show.
-- Version skew in CI is item [16b](16b-release-skew.md): no release
-  includes `mimos-mobile` yet, so there is nothing to run against.
+- Version skew in CI is item [16b](16b-release-skew.md), split out
+  because no release included `mimos-mobile` when 16 was built.
 
 ## Keys: setting up once
 

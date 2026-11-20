@@ -56,7 +56,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 14 | [Household and invites](14-household.md) | 06 | done (e5731f5, branch `mobile/14-household`, stacked on 08) |
 | 15 | [Account, settings, export and import](15-account.md) | 06 | done (965f7de, branch `mobile/15-account`, stacked on 14) |
 | 16 | [Release: versions, signing, GitHub Releases](16-release.md) | 03, 06 | review (fe5ab25, branch `mobile/16-release`, stacked on 15): the owner's keys and the CI dry run |
-| 16b | [Flows against the last release](16b-release-skew.md) | 16, a release with `mimos-mobile` | todo |
+| 16b | [Flows against the last release](16b-release-skew.md) | 16, a release with `mimos-mobile` | done (4c1ed84): skips until the first release with `mimos-mobile`, whose run is the check |
 | 17 | [Parity audit and user guide](17-parity-and-docs.md) | 07–16 (07b, 07c, and 08b included) | todo |
 | 18 | [Offline shopping list](18-offline-shopping-list.md) **Review** | 10, 17 | todo |
 
