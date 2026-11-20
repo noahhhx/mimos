@@ -45,7 +45,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 07 | [Recipes: browse, read, and cook](07-recipes.md) | 06 | done (dc1354c) |
 | 07b | [The recipe form](07b-recipe-form.md) | 07 | done (fcbdc80) |
 | 07c | [Recipe pictures](07c-recipe-pictures.md) | 07b | done (bba561e) |
-| 08 | [The week's plan](08-plan.md) **Review** | 07 | review (branch `mobile/08-plan`) |
+| 08 | [The week's plan](08-plan.md) **Review** | 07 | done (0b8831a) |
 | 08b | [A new ingredient from the plan's picker](08b-plan-new-ingredient.md) | 08 | done (93c15ac) |
 | 09 | [Plugins: page, suggestions, week panels](09-plugins.md) | 08 | done (f9e9c8e) |
 | 10 | [Shopping list](10-shopping-list.md) | 08 | done (24d83bc) |
@@ -55,7 +55,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 13 | [Kitchen home](13-kitchen.md) | 08, 09, 10 | done (d180404) |
 | 14 | [Household and invites](14-household.md) | 06 | done (e5731f5, branch `mobile/14-household`, stacked on 08) |
 | 15 | [Account, settings, export and import](15-account.md) | 06 | done (965f7de, branch `mobile/15-account`, stacked on 14) |
-| 16 | [Release: versions, signing, GitHub Releases](16-release.md) | 03, 06 | review (fe5ab25, branch `mobile/16-release`, stacked on 15): the owner's keys and the CI dry run |
+| 16 | [Release: versions, signing, GitHub Releases](16-release.md) | 03, 06 | done (fe5ab25) |
 | 16b | [Flows against the last release](16b-release-skew.md) | 16, a release with `mimos-mobile` | done (4c1ed84): skips until the first release with `mimos-mobile`, whose run is the check |
 | 17 | [Parity audit and user guide](17-parity-and-docs.md) | 07–16 (07b, 07c, and 08b included) | todo |
 | 18 | [Offline shopping list](18-offline-shopping-list.md) **Review** | 10, 17 | todo |
