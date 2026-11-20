@@ -117,6 +117,8 @@ Playwright MCP browser ([step 2](step-2-browser.md#exploring-with-the-mcp-browse
 | `harness mobile logs` | Writes logcat for the app's process to `mobile/logcat.txt` (redacted); `summary.md` counts the lines and shows the last errors. With the app not running, the lines that name it. |
 | `harness mobile down` | `adb emu kill`. Fine when nothing is running. |
 | `harness user create` | A fresh Keycloak user through the admin API. Prints `MIMOS_USER=user-…` and `MIMOS_PASSWORD=mimos-test`. |
+| `harness release up [<tag>] [--run <run>]` | Boots a release's published images (`ghcr.io/noahhhx/mimos-*:<version>`; default the last `v*` tag reachable from HEAD) from that tag's `deploy/selfhost/compose.yml`, with this checkout's `compose.fakes.yml` over it, as compose project `mimos-release`: production-mode Keycloak with no users, on the dev stack's ports, so stop that first (`harness down`). The tag's compose file and a generated `.env` (localhost URLs, the admin login `harness user create` uses, a fresh `MIMOS_SECRET_KEY`) go in `.harness/release/`; the run gets `release/compose.yml`, `release/up.log`, and, when it is not healthy, `release/logs.txt`. Refuses a tag whose realm has no `mimos-mobile` client. `harness mobile up` and `harness mobile flow` then run against it unchanged. |
+| `harness release down` | Removes that stack and its volumes. |
 | `harness household join <owner> <member>` | The owner invites and the member joins, through the API. Prints `MIMOS_OWNER`, `MIMOS_OWNER_PASSWORD`, `MIMOS_MEMBER`, and `MIMOS_MEMBER_PASSWORD`. |
 
 The device's `localhost:8080`, `:8081`, and `:3000` are the host's, so
@@ -242,6 +244,19 @@ list. It still runs, and it must still fail. When it passes, the job fails
 until the scenario is removed from the list, so a fix also turns its
 reproduction into a regression test. The list is empty: `create-recipe`
 left it when step 7 fixed the recipe 415.
+
+The `android-flows` job runs every Android flow the same way against the
+dev stack, built from source. On a push to main, `android-skew` runs main's
+app against the last release instead: `node tools/harness/src/release.ts
+pick` (Node alone, before devenv) finds the last `v*` tag reachable from
+HEAD and skips the job with a notice while there is none, its realm has no
+`mimos-mobile` client, or its four images are not in the registry. Otherwise
+it runs `harness release up <tag>`, `harness mobile up`, and each flow the
+tag already had: a flow added since may test what the release lacks, and
+gets its first run against the next release. Its evidence is the
+`harness-runs-android-skew` artifact. To reproduce it locally: `harness
+down`, `harness release up <tag>`, `harness mobile up --run latest`, then
+`harness mobile flow <name> --run latest`.
 
 To reproduce a CI failure locally: `harness up` (CI's stack runs the
 fakes but not the debug overlay), then `harness ui <name>`. Or download the artifact

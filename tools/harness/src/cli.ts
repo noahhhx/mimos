@@ -12,6 +12,7 @@ import { loglevelCommand } from "./commands/loglevel.ts";
 import { logsCommand } from "./commands/logs.ts";
 import { mobileCommand } from "./commands/mobile.ts";
 import { psqlCommand, sqlCommand } from "./commands/sql.ts";
+import { releaseCommand } from "./commands/release.ts";
 import { downCommand, resetCommand, upCommand } from "./commands/stack.ts";
 import { statusCommand } from "./commands/status.ts";
 import { tokenCommand } from "./commands/token.ts";
@@ -33,6 +34,7 @@ export const COMMANDS: readonly Command[] = [
   apiCommand,
   uiCommand,
   mobileCommand,
+  releaseCommand,
   userCommand,
   householdCommand,
   logsCommand,
