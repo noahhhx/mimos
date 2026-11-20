@@ -35,10 +35,12 @@ tags:
 - takeScreenshot: wheel-landed-dark
 - tapOn: Toggle light and dark mode
 - tapOn: Choose .*
+# Up to the panel's own row, which names the country: "Change country" can come into view while
+# that row is still under the header, as it did for Saint Vincent and the Grenadines.
 - scrollUntilVisible:
-    element: Change country
+    element: Country of the Week ${output.country}
     direction: UP
-- assertVisible: Country of the Week ${output.country}
+- assertVisible: Change country
 - scrollUntilVisible:
     element: Next →
     direction: UP
