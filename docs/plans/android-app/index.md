@@ -52,7 +52,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 11 | [Log](11-log.md) | 08 | done (31cfef3) |
 | 11b | [Barcode scanning](11b-barcodes.md) | 11 | done (9cda160) |
 | 12 | [Fuel and intervals.icu](12-fuel.md) | 11 | done (59118e9) |
-| 13 | [Kitchen home](13-kitchen.md) | 08, 09, 10 | todo |
+| 13 | [Kitchen home](13-kitchen.md) | 08, 09, 10 | done (d180404) |
 | 14 | [Household and invites](14-household.md) | 06 | done (e5731f5, branch `mobile/14-household`, stacked on 08) |
 | 15 | [Account, settings, export and import](15-account.md) | 06 | done (965f7de, branch `mobile/15-account`, stacked on 14) |
 | 16 | [Release: versions, signing, GitHub Releases](16-release.md) | 03, 06 | review (fe5ab25, branch `mobile/16-release`, stacked on 15): the owner's keys and the CI dry run |
@@ -388,7 +388,7 @@ owner can overturn any of it:
   training under the date ("Ride 60 min", or "Rest") and its planned
   calories against the target ("– of 2363 kcal").
 - Saving the fuel profile, or connecting, refreshing, or disconnecting
-  intervals.icu, reloads an opened plan (`PlanModel.fuelChanged`); the Log
+  intervals.icu, reloads an opened plan (`PlanModel.changedElsewhere`); the Log
   tab reads its week each time it opens anyway.
 - Connecting intervals.icu syncs at once, and its suggestions then appear
   above the intervals.icu section, pushing "Connected as i1" off a phone's
@@ -397,3 +397,19 @@ owner can overturn any of it:
   not reset it: no flow changes the fake. A web scenario that leaves a fault
   set (`/_fake/fault`) would break it; reset with
   `curl -X POST http://127.0.0.1:8090/_fake/reset`.
+- The Kitchen tab puts Tonight straight after the greeting, then Still to
+  buy, the plugin's thought, and This week. The web's narrow layout stacks
+  its rail (the greeting and This week) first, which on a phone pushed
+  tonight's meal off the first screen (item 13).
+- On the Kitchen tab, "Plan tonight" opens the plan's picker for today's
+  dinner and "Swap meal" opens that meal's inspector, where the web links to
+  the plan page. A loaded week now closes a meal inspector whose meal is
+  gone, as a change already did.
+- With the Kitchen tab built, every destination is in the app, so the
+  "Coming to the app" placeholder and `Destination.webPath` are gone. Flows
+  that waited for the placeholder after sign-in wait for the greeting.
+- No flow shows the Kitchen tab's thought: a fresh account has no
+  suggestions for this week, and a `country-week` flow chooses next week.
+  `KitchenModelTest` covers it.
+- The Kitchen tab reads a planned food as "Bread, 2 pieces" where the web's
+  rail reads "Bread, 2".
