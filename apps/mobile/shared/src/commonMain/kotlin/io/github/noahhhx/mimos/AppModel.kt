@@ -16,6 +16,7 @@ import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.api.apis.ShoppingListsApi
 import io.github.noahhhx.mimos.api.models.MealPlanEntry
 import io.github.noahhhx.mimos.client.MimosHttp
+import io.github.noahhhx.mimos.client.NetworkWatcher
 import io.github.noahhhx.mimos.connect.ConnectModel
 import io.github.noahhhx.mimos.connect.ConnectState
 import io.github.noahhhx.mimos.fuel.FuelModel
@@ -42,6 +43,7 @@ import io.github.noahhhx.mimos.session.SessionState
 import io.github.noahhhx.mimos.shell.Destination
 import io.github.noahhhx.mimos.shell.ShellModel
 import io.github.noahhhx.mimos.shopping.ShoppingModel
+import io.github.noahhhx.mimos.shopping.ShoppingStore
 import io.github.noahhhx.mimos.ui.ThemeModel
 import io.ktor.client.engine.HttpClientEngine
 import kotlin.time.Clock
@@ -76,6 +78,8 @@ class AppModel(
     planViewStore: PlanViewStore,
     pictureShrinker: PictureShrinker,
     documents: DocumentStore,
+    shoppingStore: ShoppingStore,
+    private val network: NetworkWatcher,
     private val createSession: (Instance) -> SessionModel,
     today: () -> LocalDate = { Clock.System.todayIn(TimeZone.currentSystemDefault()) },
     now: () -> LocalDateTime = {
@@ -124,7 +128,13 @@ class AppModel(
         )
 
     val shopping =
-        ShoppingModel(scope, api = { connected().api(::ShoppingListsApi) }, today = today)
+        ShoppingModel(
+            scope,
+            api = { connected().api(::ShoppingListsApi) },
+            today = today,
+            store = shoppingStore,
+            network = network,
+        )
 
     val log =
         LogModel(
@@ -192,6 +202,22 @@ class AppModel(
                 log.reset()
             },
         )
+
+    init {
+        // A session that could not be renewed tries again once the phone has a network, and
+        // ticks made offline go as soon as someone is signed in.
+        scope.launch {
+            network.online.collect { online ->
+                val session = current?.session ?: return@collect
+                if (!online) return@collect
+                when (session.state.value) {
+                    SessionState.Unreachable -> session.retry()
+                    is SessionState.SignedIn -> shopping.sendNow()
+                    else -> {}
+                }
+            }
+        }
+    }
 
     /** An invite opened from a link, held until someone is signed in to see it. */
     private var pendingInvite: InviteLink? = null
@@ -310,7 +336,10 @@ class AppModel(
             session.state.collect {
                 when (it) {
                     is SessionState.SignedOut -> forgetPerson()
-                    is SessionState.SignedIn -> showPendingInvite()
+                    is SessionState.SignedIn -> {
+                        showPendingInvite()
+                        shopping.sendNow()
+                    }
                     else -> {}
                 }
             }

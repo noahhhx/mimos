@@ -5,6 +5,7 @@ import io.github.noahhhx.mimos.api.models.ShoppingList
 import io.github.noahhhx.mimos.api.models.ShoppingListItem
 import io.github.noahhhx.mimos.api.models.ShoppingListItemPatch
 import io.github.noahhhx.mimos.client.ApiProblem
+import io.github.noahhhx.mimos.client.NetworkWatcher
 import io.github.noahhhx.mimos.plan.mondayOf
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -13,9 +14,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
@@ -26,35 +26,68 @@ sealed interface ListState {
     /** The week has no list yet: one is generated from its plan. */
     data object NotGenerated : ListState
 
-    data class Loaded(val list: ShoppingList) : ListState
+    data class Loaded(val list: ShoppingList, val copy: ListCopy = ListCopy.Server) : ListState
 
     data object Failed : ListState
 }
 
+/** Where a shown list came from (ADR-0034). */
+enum class ListCopy {
+    Server,
+    /** Kept on the phone when it last loaded, because the server could not be reached now. */
+    Stored,
+}
+
+enum class TickStatus {
+    /** The sending loop takes it next. */
+    Queued,
+    Sending,
+    /** Waits for a network, a session, or "Send now". */
+    Unsent,
+}
+
 /**
- * A tick the server has not confirmed: on its way, or [unsent] after it failed, until the person
- * retries it. It shows on the list meanwhile, so a shop with no signal does not undo a tap.
+ * A tick the server has not confirmed. It shows on the list meanwhile, and is kept on the phone, so
+ * a shop with no signal, or the app being killed there, does not undo a tap (ADR-0034).
  */
-data class Tick(val monday: LocalDate, val checked: Boolean, val unsent: Boolean)
+data class Tick(val monday: LocalDate, val checked: Boolean, val status: TickStatus)
+
+private sealed interface Delivery {
+    data class Sent(val item: ShoppingListItem) : Delivery
+
+    /** The server has no such item: the list was regenerated, or the item removed. */
+    data object Gone : Delivery
+
+    data object Failed : Delivery
+}
 
 /**
  * The Shopping tab, as the web's Shopping list page (ADR-0027): a week's list by its Monday,
  * generated from the plan, ticked off in the shop, with items added by hand. [today] is the phone's
- * date.
+ * date. Lists and unconfirmed ticks are kept in [store], so ticking works offline (ADR-0034).
  */
 class ShoppingModel(
     private val scope: CoroutineScope,
     private val api: () -> ShoppingListsApi,
     private val today: () -> LocalDate,
+    private val store: ShoppingStore,
+    network: NetworkWatcher,
 ) {
+    val online: StateFlow<Boolean> = network.online
+
     private val mutableMonday = MutableStateFlow(mondayOf(today()))
     val monday: StateFlow<LocalDate> = mutableMonday.asStateFlow()
 
     private val mutableState = MutableStateFlow<ListState>(ListState.Loading)
     val state: StateFlow<ListState> = mutableState.asStateFlow()
 
-    private val mutableTicks = MutableStateFlow<Map<String, Tick>>(emptyMap())
+    /** Insertion-ordered, one per item: an item's last tap is the one that waits. */
+    private val mutableTicks = MutableStateFlow(decodeTicks(store.load(ShoppingStore.Entry.Ticks)))
     val ticks: StateFlow<Map<String, Tick>> = mutableTicks.asStateFlow()
+
+    /** The weeks last loaded, oldest first, at most [STORED_WEEKS]. */
+    private var stored: Map<LocalDate, ShoppingList> =
+        decodeLists(store.load(ShoppingStore.Entry.Lists))
 
     private val mutableFields = MutableStateFlow(AddItemFields())
     val fields: StateFlow<AddItemFields> = mutableFields.asStateFlow()
@@ -69,13 +102,12 @@ class ShoppingModel(
     val error: StateFlow<String?> = mutableError.asStateFlow()
 
     private var loadJob: Job? = null
+    private var sendJob: Job? = null
     private val jobs = mutableListOf<Job>()
 
-    /** One tick on the wire at a time, so an item's last tap is the one the server keeps. */
-    private val sending = Mutex()
-
     fun ensureLoaded() {
-        if (state.value !is ListState.Loaded && loadJob?.isActive != true) load()
+        val shown = state.value as? ListState.Loaded
+        if (shown?.copy != ListCopy.Server && loadJob?.isActive != true) load()
     }
 
     fun retry() = load()
@@ -93,26 +125,38 @@ class ShoppingModel(
         load()
     }
 
-    /** A newer load replaces the one before it, so a slow answer never lands over a newer week. */
+    /**
+     * A newer load replaces the one before it, so a slow answer never lands over a newer week. The
+     * week's list stays on screen while it loads again, so a network coming back in the aisle does
+     * not blank it.
+     */
     private fun load() {
         val week = monday.value
         loadJob?.cancel()
-        mutableState.value = ListState.Loading
+        if ((state.value as? ListState.Loaded)?.list?.startDate != week) {
+            mutableState.value = ListState.Loading
+        }
         loadJob = scope.launch {
             val next =
                 try {
-                    ListState.Loaded(api().getShoppingList(week).body())
+                    ListState.Loaded(api().getShoppingList(week).body().also(::loadedFromServer))
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (problem: ApiProblem) {
-                    if (problem.status == 404) ListState.NotGenerated else ListState.Failed
+                    if (problem.status == 404) {
+                        forgetStored(week)
+                        ListState.NotGenerated
+                    } else storedOrFailed(week)
                 } catch (_: Exception) {
-                    ListState.Failed
+                    storedOrFailed(week)
                 }
-            if (next is ListState.Loaded) forgetGone(next.list)
             mutableState.value = next
+            if (next is ListState.Loaded && next.copy == ListCopy.Server) queueAndSend()
         }
     }
+
+    private fun storedOrFailed(week: LocalDate): ListState =
+        stored[week]?.let { ListState.Loaded(it, ListCopy.Stored) } ?: ListState.Failed
 
     /** Builds the week's list from its plan again, keeping ticks and added items (ADR-0027). */
     fun generate() {
@@ -122,8 +166,8 @@ class ShoppingModel(
         launch {
             try {
                 val list = api().generateShoppingList(week).body()
+                loadedFromServer(list)
                 if (monday.value == week) {
-                    forgetGone(list)
                     mutableState.value = ListState.Loaded(list)
                     mutableError.value = null
                 }
@@ -141,39 +185,110 @@ class ShoppingModel(
     private fun checked(item: ShoppingListItem): Boolean =
         ticks.value[item.id]?.checked ?: item.checked
 
-    /** Ticks [item] or unticks it on screen at once, then sends it. */
-    fun toggle(item: ShoppingListItem) = send(item.id, monday.value, !checked(item))
-
-    /** Sends an unsent tick again. */
-    fun retryTick(itemId: String) {
-        val tick = ticks.value[itemId]?.takeIf { it.unsent } ?: return
-        send(itemId, tick.monday, tick.checked)
+    /**
+     * Ticks [item] or unticks it on screen at once, and sends it unless the phone has no network.
+     */
+    fun toggle(item: ShoppingListItem) {
+        val status = if (online.value) TickStatus.Queued else TickStatus.Unsent
+        updateTicks { it + (item.id to Tick(monday.value, !checked(item), status)) }
+        if (status == TickStatus.Queued) send()
     }
 
-    private fun send(itemId: String, week: LocalDate, checked: Boolean) {
-        val tick = Tick(week, checked, unsent = false)
-        mutableTicks.update { it + (itemId to tick) }
-        launch {
-            val sent = sending.withLock {
-                try {
-                    api()
-                        .updateShoppingListItem(week, itemId, ShoppingListItemPatch(checked))
-                        .body()
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (_: Exception) {
-                    null
-                }
-            }
-            // A later tap of the same item owns what the list shows now.
-            if (ticks.value[itemId] != tick) return@launch
-            if (sent == null) {
-                mutableTicks.update { it + (itemId to tick.copy(unsent = true)) }
-            } else {
-                mutableState.update { state -> state.withItem(week, sent) }
-                mutableTicks.update { it - itemId }
+    /**
+     * Tries every tick that waits, whatever the phone says of its network, and loads the week again
+     * when it shows a stored copy or nothing. Also for when the session is renewed or the network
+     * returns.
+     */
+    fun sendNow() {
+        queueAndSend()
+        val shown = state.value
+        if (shown == ListState.Failed || (shown as? ListState.Loaded)?.copy == ListCopy.Stored) {
+            load()
+        }
+    }
+
+    private fun queueAndSend() {
+        updateTicks { ticks ->
+            ticks.mapValues { (_, tick) ->
+                if (tick.status == TickStatus.Unsent) tick.copy(status = TickStatus.Queued)
+                else tick
             }
         }
+        send()
+    }
+
+    /**
+     * Sends queued ticks one at a time, in the order they were first tapped, so an item's last tap
+     * is the one the server keeps. The first failure ends the round, and what is left waits for the
+     * next. The loop runs on one thread and takes every queued tick before it ends, so a tick
+     * queued while it runs is never left behind.
+     */
+    private fun send() {
+        if (sendJob?.isActive == true) return
+        sendJob = scope.launch {
+            while (true) {
+                val (itemId, queued) =
+                    ticks.value.entries.firstOrNull { it.value.status == TickStatus.Queued }
+                        ?: break
+                val tick = queued.copy(status = TickStatus.Sending)
+                updateTicks { it + (itemId to tick) }
+                when (val delivery = deliver(itemId, tick)) {
+                    is Delivery.Sent -> {
+                        change(tick.monday) { list ->
+                            list.copy(
+                                items =
+                                    list.items.map { if (it.id == itemId) delivery.item else it }
+                            )
+                        }
+                        dropTick(itemId, tick)
+                    }
+                    Delivery.Gone -> {
+                        dropTick(itemId, tick)
+                        if (monday.value == tick.monday && online.value) load()
+                    }
+                    Delivery.Failed -> {
+                        updateTicks { ticks ->
+                            ticks.mapValues { (id, waiting) ->
+                                val failed = id == itemId && waiting == tick
+                                if (failed || waiting.status == TickStatus.Queued)
+                                    waiting.copy(status = TickStatus.Unsent)
+                                else waiting
+                            }
+                        }
+                        break
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun deliver(itemId: String, tick: Tick): Delivery =
+        try {
+            Delivery.Sent(
+                api()
+                    .updateShoppingListItem(
+                        tick.monday,
+                        itemId,
+                        ShoppingListItemPatch(tick.checked),
+                    )
+                    .body()
+            )
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (problem: ApiProblem) {
+            if (problem.status == 404) Delivery.Gone else Delivery.Failed
+        } catch (_: Exception) {
+            Delivery.Failed
+        }
+
+    /** A later tap of the same item owns what the list shows now, so only this tick goes. */
+    private fun dropTick(itemId: String, tick: Tick) = updateTicks {
+        if (it[itemId] == tick) it - itemId else it
+    }
+
+    private fun updateTicks(change: (Map<String, Tick>) -> Map<String, Tick>) {
+        val next = mutableTicks.updateAndGet(change)
+        store.save(ShoppingStore.Entry.Ticks, if (next.isEmpty()) null else encodeTicks(next))
     }
 
     fun edit(change: (AddItemFields) -> AddItemFields) = mutableFields.update(change)
@@ -211,12 +326,8 @@ class ShoppingModel(
     fun remove(item: ShoppingListItem) {
         if (!item.added) return
         val week = monday.value
-        mutableState.update { state ->
-            if (state is ListState.Loaded && state.list.startDate == week)
-                ListState.Loaded(state.list.copy(items = state.list.items - item))
-            else state
-        }
-        mutableTicks.update { it - item.id }
+        change(week) { list -> list.copy(items = list.items - item) }
+        updateTicks { it - item.id }
         launch {
             try {
                 api().removeShoppingListItem(week, item.id)
@@ -229,12 +340,35 @@ class ShoppingModel(
         }
     }
 
-    /** Drops ticks for items a week's list no longer has, such as one removed elsewhere. */
-    private fun forgetGone(list: ShoppingList) {
-        val ids = list.items.mapTo(HashSet()) { it.id }
-        mutableTicks.update { ticks ->
-            ticks.filter { (id, tick) -> tick.monday != list.startDate || id in ids }
+    /** Changes [week]'s list where it shows and where it is kept. */
+    private fun change(week: LocalDate, edit: (ShoppingList) -> ShoppingList) {
+        stored[week]?.let { keepStored(stored + (week to edit(it))) }
+        mutableState.update { state ->
+            if (state is ListState.Loaded && state.list.startDate == week)
+                state.copy(list = edit(state.list))
+            else state
         }
+    }
+
+    /**
+     * Keeps [list] as its week's latest, and drops ticks for items it no longer has, such as one
+     * removed elsewhere.
+     */
+    private fun loadedFromServer(list: ShoppingList) {
+        val week = list.startDate
+        val latest = (stored - week + (week to list)).entries.toList().takeLast(STORED_WEEKS)
+        keepStored(latest.associate { it.key to it.value })
+        val ids = list.items.mapTo(HashSet()) { it.id }
+        updateTicks { ticks -> ticks.filter { (id, tick) -> tick.monday != week || id in ids } }
+    }
+
+    private fun forgetStored(week: LocalDate) {
+        if (week in stored) keepStored(stored - week)
+    }
+
+    private fun keepStored(lists: Map<LocalDate, ShoppingList>) {
+        stored = lists
+        store.save(ShoppingStore.Entry.Lists, if (lists.isEmpty()) null else encodeLists(lists))
     }
 
     private fun launch(block: suspend CoroutineScope.() -> Unit) {
@@ -242,23 +376,24 @@ class ShoppingModel(
         jobs += scope.launch(block = block)
     }
 
-    /** Forgets everything, for when the person signs out or the household changes. */
+    /**
+     * Forgets everything, the lists and ticks kept on the phone included, for when the person signs
+     * out or the household changes.
+     */
     fun reset() {
         loadJob?.cancel()
         loadJob = null
+        sendJob?.cancel()
+        sendJob = null
         jobs.forEach { it.cancel() }
         jobs.clear()
         mutableMonday.value = mondayOf(today())
         mutableState.value = ListState.Loading
-        mutableTicks.value = emptyMap()
+        updateTicks { emptyMap() }
+        keepStored(emptyMap())
         mutableFields.value = AddItemFields()
         mutableGenerating.value = false
         mutableAdding.value = false
         mutableError.value = null
     }
 }
-
-private fun ListState.withItem(week: LocalDate, item: ShoppingListItem): ListState =
-    if (this is ListState.Loaded && list.startDate == week)
-        ListState.Loaded(list.copy(items = list.items.map { if (it.id == item.id) item else it }))
-    else this

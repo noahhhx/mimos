@@ -22,6 +22,7 @@ class AppViewModel(application: Application, debuggable: Boolean) : AndroidViewM
     val browser = BrowserLauncher()
     val engine = OkHttp.create { if (debuggable) addInterceptor(RequestLog()) }
     private val theme = ThemeModel(SharedPreferencesThemeStore(application))
+    private val network = AndroidNetworkWatcher(application)
 
     val app =
         AppModel(
@@ -37,6 +38,8 @@ class AppViewModel(application: Application, debuggable: Boolean) : AndroidViewM
             planViewStore = SharedPreferencesPlanViewStore(application),
             pictureShrinker = AndroidPictureShrinker(application),
             documents = AndroidDocumentStore(application),
+            shoppingStore = SharedPreferencesShoppingStore(application),
+            network = network,
             createSession = { instance ->
                 SessionModel(
                     authorizer =
@@ -54,6 +57,7 @@ class AppViewModel(application: Application, debuggable: Boolean) : AndroidViewM
         )
 
     override fun onCleared() {
+        network.close()
         engine.close()
     }
 }

@@ -1,5 +1,7 @@
 package io.github.noahhhx.mimos.shopping
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -8,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
@@ -19,7 +22,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
@@ -48,7 +54,7 @@ import io.github.noahhhx.mimos.ui.TickBox
  * buy on top, and below it a form for anything else. The screen stays awake while it is open.
  */
 @Composable
-fun ShoppingScreen(model: ShoppingModel) {
+fun ShoppingScreen(model: ShoppingModel, onSendNow: () -> Unit = model::sendNow) {
     KeepScreenOn()
     LaunchedEffect(Unit) { model.ensureLoaded() }
     val gutter = Modifier.padding(horizontal = MimosTheme.spacing.page)
@@ -57,6 +63,7 @@ fun ShoppingScreen(model: ShoppingModel) {
     val ticks by model.ticks.collectAsState()
     val generating by model.generating.collectAsState()
     val error by model.error.collectAsState()
+    val online by model.online.collectAsState()
     val list = (state as? ListState.Loaded)?.list?.takeIf { it.startDate == monday }
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -76,6 +83,9 @@ fun ShoppingScreen(model: ShoppingModel) {
                 Button("This week", model::thisWeek, kind = ButtonKind.Secondary, small = true)
                 Button("Next →", model::nextWeek, kind = ButtonKind.Secondary, small = true)
             }
+        }
+        sendingNotice(online, ticks.values, (state as? ListState.Loaded)?.copy)?.let { notice ->
+            item(key = "sending") { SendingBanner(notice, onSendNow, gutter) }
         }
         when (val current = state) {
             ListState.Failed ->
@@ -142,9 +152,8 @@ fun ShoppingScreen(model: ShoppingModel) {
                 items(aisle.items, key = { it.id }) { item ->
                     ItemRow(
                         item,
-                        unsent = ticks[item.id]?.unsent == true,
+                        unsent = ticks[item.id]?.status == TickStatus.Unsent,
                         onToggle = { model.toggle(item) },
-                        onRetry = { model.retryTick(item.id) },
                         onRemove = { model.remove(item) },
                     )
                 }
@@ -155,6 +164,23 @@ fun ShoppingScreen(model: ShoppingModel) {
         if (state != ListState.Loading && state != ListState.Failed) {
             item(key = "add") { AddItemForm(model, gutter.padding(top = MimosTheme.spacing.l)) }
         }
+    }
+}
+
+/**
+ * The shopping list from the No answer page, before the session is renewed: the stored list to
+ * tick, whose ticks wait for the session (ADR-0034). Its banner's action is [onRenew], since
+ * nothing can be sent before the session is renewed, which then sends them.
+ */
+@Composable
+fun ShoppingWithoutSession(model: ShoppingModel, onBack: () -> Unit, onRenew: () -> Unit) {
+    Column(Modifier.fillMaxSize().safeDrawingPadding()) {
+        Row(
+            Modifier.padding(horizontal = MimosTheme.spacing.page, vertical = MimosTheme.spacing.s)
+        ) {
+            Button("← Back", onBack, kind = ButtonKind.Secondary, small = true)
+        }
+        Column(Modifier.weight(1f)) { ShoppingScreen(model, onSendNow = onRenew) }
     }
 }
 
@@ -202,14 +228,13 @@ private fun AddItemForm(model: ShoppingModel, modifier: Modifier) {
 
 /**
  * One item, ticked by tapping anywhere on its row: a big target for a thumb. An added item has its
- * Remove; a tick the server did not get says so, with its retry.
+ * Remove; a tick the server did not get says so, and the banner above the list sends it.
  */
 @Composable
 private fun ItemRow(
     item: ShoppingListItem,
     unsent: Boolean,
     onToggle: () -> Unit,
-    onRetry: () -> Unit,
     onRemove: () -> Unit,
 ) {
     val colors = MimosTheme.colors
@@ -251,13 +276,6 @@ private fun ItemRow(
             }
             if (unsent) {
                 Text("Not sent", style = MimosTheme.typography.small, color = colors.danger)
-                Button(
-                    "Retry",
-                    onRetry,
-                    kind = ButtonKind.Secondary,
-                    small = true,
-                    description = "Send ${item.name} again",
-                )
             } else if (item.added) {
                 Text("Added", style = MimosTheme.typography.small, color = colors.muted)
                 Button(
@@ -270,5 +288,25 @@ private fun ItemRow(
             }
         }
         Rule()
+    }
+}
+
+/** What waits to be sent, or that the list is a stored copy, in plain text with its one action. */
+@Composable
+private fun SendingBanner(notice: SendingNotice, onAction: () -> Unit, modifier: Modifier) {
+    val colors = MimosTheme.colors
+    Column(
+        modifier
+            .fillMaxWidth()
+            .semantics { liveRegion = LiveRegionMode.Polite }
+            .background(colors.surface)
+            .border(MimosTheme.spacing.hairline, colors.line)
+            .padding(MimosTheme.spacing.l),
+        verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.m),
+    ) {
+        Text(notice.text)
+        notice.action?.let { label ->
+            Button(label, onAction, kind = ButtonKind.Secondary, small = true)
+        }
     }
 }

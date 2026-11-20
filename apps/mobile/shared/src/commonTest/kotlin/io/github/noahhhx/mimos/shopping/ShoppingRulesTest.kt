@@ -87,4 +87,46 @@ class ShoppingRulesTest {
             generatedText(Instant.parse("2026-11-19T08:05:00Z"), TimeZone.of("Europe/Paris")),
         )
     }
+
+    private fun ticks(vararg statuses: TickStatus) = statuses.map {
+        Tick(kotlinx.datetime.LocalDate(2026, 11, 16), true, it)
+    }
+
+    @Test
+    fun `offline, the banner counts every tick that waits, one tick in the singular`() {
+        assertEquals(
+            SendingNotice("Offline. 1 tick waiting to send."),
+            sendingNotice(false, ticks(TickStatus.Unsent), ListCopy.Server),
+        )
+        assertEquals(
+            SendingNotice(
+                "Offline. 2 ticks waiting to send. This is the list as it was last loaded."
+            ),
+            sendingNotice(false, ticks(TickStatus.Unsent, TickStatus.Unsent), ListCopy.Stored),
+        )
+        assertEquals(
+            SendingNotice("Offline. Ticks wait on this phone until they can be sent."),
+            sendingNotice(false, emptyList(), null),
+        )
+    }
+
+    @Test
+    fun `online, the banner offers to send what did not go, and says nothing while all goes`() {
+        assertEquals(
+            SendingNotice("2 ticks not sent yet.", action = "Send now"),
+            sendingNotice(
+                true,
+                ticks(TickStatus.Unsent, TickStatus.Sending, TickStatus.Unsent),
+                ListCopy.Server,
+            ),
+        )
+        assertEquals(null, sendingNotice(true, ticks(TickStatus.Sending), ListCopy.Server))
+        assertEquals(
+            SendingNotice(
+                "Mimos could not be reached. This is the list as it was last loaded.",
+                action = "Try again",
+            ),
+            sendingNotice(true, emptyList(), ListCopy.Stored),
+        )
+    }
 }

@@ -74,6 +74,39 @@ fun addedItem(fields: AddItemFields): AddedItem {
     return AddedItem.Valid(ShoppingListItemInput(name, quantity, unit.ifEmpty { null }))
 }
 
+/** The banner above the list while something waits or the list is a stored copy (ADR-0034). */
+data class SendingNotice(val text: String, val action: String? = null)
+
+/**
+ * What the banner says. With no network the phone does not try, so it counts every tick that waits;
+ * with one, only the ticks a try did not get through. [copy] is the shown list's, if any.
+ */
+fun sendingNotice(online: Boolean, ticks: Collection<Tick>, copy: ListCopy?): SendingNotice? {
+    val stored = copy == ListCopy.Stored
+    val asLastLoaded = "This is the list as it was last loaded."
+    if (!online) {
+        val waiting =
+            if (ticks.isEmpty()) "Ticks wait on this phone until they can be sent."
+            else "${tickCount(ticks.size)} waiting to send."
+        return SendingNotice(
+            listOfNotNull("Offline.", waiting, asLastLoaded.takeIf { stored }).joinToString(" ")
+        )
+    }
+    val unsent = ticks.count { it.status == TickStatus.Unsent }
+    return when {
+        unsent > 0 ->
+            SendingNotice(
+                listOfNotNull("${tickCount(unsent)} not sent yet.", asLastLoaded.takeIf { stored })
+                    .joinToString(" "),
+                action = "Send now",
+            )
+        stored -> SendingNotice("Mimos could not be reached. $asLastLoaded", action = "Try again")
+        else -> null
+    }
+}
+
+private fun tickCount(count: Int) = if (count == 1) "1 tick" else "$count ticks"
+
 /** "Generated Thu 19 Nov at 09:05 · regenerating keeps checked-off and added items." */
 fun generatedText(at: Instant, zone: TimeZone = TimeZone.currentSystemDefault()): String {
     val time = at.toLocalDateTime(zone)

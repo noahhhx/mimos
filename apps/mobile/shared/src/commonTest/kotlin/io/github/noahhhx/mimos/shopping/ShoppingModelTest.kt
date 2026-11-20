@@ -15,13 +15,19 @@ import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.plus
+import kotlinx.io.IOException
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -31,7 +37,10 @@ private val MONDAY = LocalDate(2026, 11, 16)
 /** One week's shopping list, kept as the API would, with every write it is sent. */
 private class ListServer {
     var list: ShoppingList? = null
-    var failTicks = false
+    /** What every tick is answered with, instead of the item, while set. */
+    var tickFailure: HttpStatusCode? = null
+    /** No answer at all, as with no route to the server. */
+    var unreachable = false
     val ticks = mutableListOf<Pair<String, Boolean>>()
     val added = mutableListOf<String>()
     val removed = mutableListOf<String>()
@@ -65,6 +74,7 @@ private class ListServer {
     }
 
     val engine = MockEngine { request ->
+        if (unreachable) throw IOException("Connection refused")
         fun json(value: Any) =
             respond(encode(value), headers = headersOf(HttpHeaders.ContentType, "application/json"))
 
@@ -74,8 +84,12 @@ private class ListServer {
                 MimosJson.parseToJsonElement(it).jsonObject
             }
         when {
-            request.method == HttpMethod.Get ->
-                list?.let { json(it) } ?: respondError(HttpStatusCode.NotFound)
+            request.method == HttpMethod.Get -> {
+                val segments = request.url.segments
+                val week = LocalDate.parse(segments[segments.indexOf("plans") + 1])
+                list?.let { json(it.copy(startDate = week)) }
+                    ?: respondError(HttpStatusCode.NotFound)
+            }
             request.method == HttpMethod.Post && path.endsWith("/items") -> {
                 val name = body!!["name"]!!.jsonPrimitive.content
                 added += name
@@ -89,8 +103,12 @@ private class ListServer {
                 val id = path.substringAfterLast('/')
                 val checked = body!!["checked"]!!.jsonPrimitive.content.toBoolean()
                 ticks += id to checked
-                if (failTicks) return@MockEngine respondError(HttpStatusCode.BadGateway)
-                val item = list!!.items.first { it.id == id }.copy(checked = checked)
+                tickFailure?.let {
+                    return@MockEngine respondError(it)
+                }
+                val item =
+                    list!!.items.firstOrNull { it.id == id }?.copy(checked = checked)
+                        ?: return@MockEngine respondError(HttpStatusCode.NotFound)
                 list = list!!.copy(items = list!!.items.map { if (it.id == id) item else it })
                 json(item)
             }
@@ -106,12 +124,24 @@ private class ListServer {
     }
 }
 
-private fun TestScope.model(server: ListServer) =
+private fun TestScope.model(
+    server: ListServer,
+    store: ShoppingStore = MemoryShoppingStore(),
+    network: FakeNetwork = FakeNetwork(),
+) =
     ShoppingModel(
         this,
         api = { MimosHttp(server.engine, API).api(::ShoppingListsApi) },
         today = { LocalDate(2026, 11, 19) },
+        store = store,
+        network = network,
     )
+
+private fun MemoryShoppingStore.storedLists() = decodeLists(load(ShoppingStore.Entry.Lists))
+
+private fun MemoryShoppingStore.storedTicks() = decodeTicks(load(ShoppingStore.Entry.Ticks))
+
+private fun ShoppingList.checked(id: String) = items.first { it.id == id }.checked
 
 private suspend fun ShoppingModel.loaded(where: (ShoppingList) -> Boolean = { true }) =
     (state.first { it is ListState.Loaded && where(it.list) } as ListState.Loaded).list
@@ -144,22 +174,159 @@ class ShoppingModelTest {
     }
 
     @Test
-    fun `a tick that fails stays ticked as unsent until a retry gets it through`() = runTest {
-        val server = ListServer().apply { failTicks = true }
-        val model = model(server)
+    fun `ticks made offline wait on the phone, then go once each, in order, when the network returns`() =
+        runTest {
+            val server = ListServer()
+            val store = MemoryShoppingStore()
+            val network = FakeNetwork()
+            val model = model(server, store, network)
+            model.generate()
+            val list = model.loaded()
+            network.online.value = false
+
+            model.toggle(list.items.first { it.id == "onion" })
+            model.toggle(list.items.first { it.id == "milk" })
+            model.toggle(list.items.first { it.id == "onion" })
+            advanceUntilIdle()
+            assertEquals(
+                listOf(TickStatus.Unsent, TickStatus.Unsent),
+                model.ticks.value.values.map { it.status },
+            )
+            assertEquals(emptyList(), server.ticks)
+            assertEquals(
+                mapOf(
+                    "onion" to Tick(MONDAY, false, TickStatus.Unsent),
+                    "milk" to Tick(MONDAY, true, TickStatus.Unsent),
+                ),
+                store.storedTicks(),
+            )
+
+            network.online.value = true
+            model.sendNow()
+            model.ticks.first { it.isEmpty() }
+            assertEquals(listOf("onion" to false, "milk" to true), server.ticks)
+            assertNull(store.load(ShoppingStore.Entry.Ticks))
+            assertTrue(store.storedLists().getValue(MONDAY).checked("milk"))
+        }
+
+    @Test
+    fun `a tick for an item the server no longer has is dropped, and the list loads again`() =
+        runTest {
+            val server = ListServer()
+            val model = model(server)
+            model.generate()
+            val onion = model.loaded().items.first { it.id == "onion" }
+            server.list =
+                server.list!!.let {
+                    it.copy(items = it.items.map { i -> i.copy(id = i.id + "-2") })
+                }
+
+            model.toggle(onion)
+            model.loaded { list -> list.items.any { it.id == "onion-2" } }
+            assertEquals(emptyMap(), model.ticks.value)
+            assertEquals(listOf("onion" to true), server.ticks)
+        }
+
+    @Test
+    fun `a tick the server refuses, or that gets no answer, keeps waiting until it goes through`() =
+        runTest {
+            val server = ListServer()
+            val model = model(server)
+            model.generate()
+            val milk = model.loaded().items.first { it.id == "milk" }
+
+            server.tickFailure = HttpStatusCode.Unauthorized
+            model.toggle(milk)
+            model.ticks.first { it["milk"]?.status == TickStatus.Unsent }
+            server.tickFailure = null
+            server.unreachable = true
+            model.sendNow()
+            model.ticks.first { it["milk"]?.status == TickStatus.Unsent }
+            assertEquals(true, model.ticks.value.getValue("milk").checked)
+            assertFalse(model.loaded().checked("milk"))
+
+            server.unreachable = false
+            model.sendNow()
+            model.ticks.first { it.isEmpty() }
+            assertEquals(listOf("milk" to true, "milk" to true), server.ticks)
+            assertTrue(model.loaded().checked("milk"))
+        }
+
+    @Test
+    fun `an app started again with no answer shows the stored list and the ticks it kept`() =
+        runTest {
+            val server = ListServer()
+            val store = MemoryShoppingStore()
+            val network = FakeNetwork()
+            val first = model(server, store, network)
+            first.generate()
+            first.loaded()
+            network.online.value = false
+            first.toggle(first.loaded().items.first { it.id == "onion" })
+
+            server.unreachable = true
+            val again = model(server, store, network)
+            again.ensureLoaded()
+            val shown = again.state.first { it is ListState.Loaded } as ListState.Loaded
+            assertEquals(ListCopy.Stored, shown.copy)
+            assertEquals(listOf("onion", "milk"), shown.list.items.map { it.id })
+            assertEquals(Tick(MONDAY, true, TickStatus.Unsent), again.ticks.value["onion"])
+
+            server.unreachable = false
+            network.online.value = true
+            again.sendNow()
+            again.ticks.first { it.isEmpty() }
+            assertEquals(ListCopy.Server, (again.state.value as ListState.Loaded).copy)
+            assertEquals(listOf("onion" to true), server.ticks)
+            assertTrue(again.loaded().checked("onion"))
+        }
+
+    @Test
+    fun `a week never loaded still fails when the server cannot be reached`() = runTest {
+        val server = ListServer()
+        val store = MemoryShoppingStore()
+        model(server, store).apply {
+            generate()
+            loaded()
+        }
+        server.unreachable = true
+        val model = model(server, store)
+        model.nextWeek()
+        model.state.first { it == ListState.Failed }
+    }
+
+    @Test
+    fun `only the four weeks loaded last are kept on the phone`() = runTest {
+        val server = ListServer()
+        val store = MemoryShoppingStore()
+        val model = model(server, store)
         model.generate()
-        val milk = model.loaded().items.first { it.id == "milk" }
+        model.loaded()
+        repeat(4) {
+            model.nextWeek()
+            model.loaded { it.startDate == model.monday.value }
+        }
+        val weeks = (1..4).map { LocalDate(2026, 11, 16).plus(DatePeriod(days = 7 * it)) }
+        assertEquals(weeks, store.storedLists().keys.toList())
+    }
 
-        model.toggle(milk)
-        val unsent = model.ticks.first { it["milk"]?.unsent == true }.getValue("milk")
-        assertEquals(true, unsent.checked)
-        assertEquals(false, model.loaded().items.first { it.id == "milk" }.checked)
+    @Test
+    fun `signing out forgets the lists and ticks kept on the phone`() = runTest {
+        val server = ListServer()
+        val store = MemoryShoppingStore()
+        val network = FakeNetwork()
+        val model = model(server, store, network)
+        model.generate()
+        network.online.value = false
+        model.toggle(model.loaded().items.first())
 
-        server.failTicks = false
-        model.retryTick("milk")
-        model.ticks.first { it.isEmpty() }
-        assertEquals(listOf("milk" to true, "milk" to true), server.ticks)
-        assertTrue(model.loaded().items.first { it.id == "milk" }.checked)
+        model.reset()
+        assertEquals(emptyMap(), store.entries)
+        server.unreachable = true
+        val again = model(server, store, network)
+        again.ensureLoaded()
+        again.state.first { it == ListState.Failed }
+        assertEquals(emptyMap(), again.ticks.value)
     }
 
     @Test

@@ -30,6 +30,8 @@ import io.github.noahhhx.mimos.session.StoredSession
 import io.github.noahhhx.mimos.session.TokenStore
 import io.github.noahhhx.mimos.session.Tokens
 import io.github.noahhhx.mimos.shell.Destination
+import io.github.noahhhx.mimos.shopping.FakeNetwork
+import io.github.noahhhx.mimos.shopping.MemoryShoppingStore
 import io.github.noahhhx.mimos.ui.MemoryThemeStore
 import io.github.noahhhx.mimos.ui.ThemeModel
 import io.ktor.client.engine.mock.MockEngine
@@ -78,6 +80,7 @@ private fun model(
     debug: Boolean,
     scope: CoroutineScope,
     store: InstanceStore = NoInstance(),
+    network: FakeNetwork = FakeNetwork(),
     createSession: (Instance) -> SessionModel = { error("no session") },
 ) =
     AppModel(
@@ -93,6 +96,8 @@ private fun model(
                 override suspend fun shrink(picked: PickedPicture) = error("nothing is picked")
             },
         documents = MemoryDocuments(),
+        shoppingStore = MemoryShoppingStore(),
+        network = network,
         createSession = createSession,
     )
 
@@ -120,6 +125,22 @@ private class ExpiringAuthorizer : Authorizer {
         } else {
             RefreshResult.InvalidGrant
         }
+
+    override suspend fun endSession(idToken: String?) = Unit
+}
+
+/** Cannot reach the server until [reachable], then renews the session. */
+private class OfflineAuthorizer : Authorizer {
+    var reachable = false
+
+    override suspend fun authorize(kind: AuthorizeKind, theme: String) = AuthorizeResult.Cancelled
+
+    override suspend fun refresh(refreshToken: String): RefreshResult =
+        if (reachable)
+            RefreshResult.Granted(
+                Tokens("access", Instant.fromEpochSeconds(4_000_000_000), "refresh", "id")
+            )
+        else RefreshResult.Unavailable
 
     override suspend fun endSession(idToken: String?) = Unit
 }
@@ -219,6 +240,26 @@ class AppModelTest {
         assertEquals(RecipeRoute.List, app.recipes.route.value)
         assertEquals(null, app.recipes.cookBook.title(RecipeId("r1")))
     }
+
+    @Test
+    fun `a session the server did not renew tries again when the phone has a network again`() =
+        runTest {
+            val network = FakeNetwork(online = false)
+            val authorizer = OfflineAuthorizer()
+            val app =
+                model(debug = false, backgroundScope, network = network) { _ ->
+                    SessionModel(authorizer, OneStoredSession(), { "light" }, backgroundScope)
+                }
+            val session = app.session(instance)
+            runCurrent()
+            assertEquals(SessionState.Unreachable, session.state.value)
+
+            authorizer.reachable = true
+            network.online.value = true
+            runCurrent()
+
+            assertTrue(session.state.value is SessionState.SignedIn)
+        }
 
     @Test
     fun `the system back button steps through a recipe trail only on the recipes tab`() = runTest {
