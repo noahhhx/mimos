@@ -144,7 +144,8 @@ themes and at phone width.
 
 The signed-in home (`app/app/page.tsx`) answers "what am I cooking
 tonight?". Its choices are pure functions in `src/lib/kitchen.ts`, unit
-tested in `test/kitchen.test.ts`; the `kitchen-home` harness scenario
+tested in `test/kitchen.test.ts` from `libraries/test-cases/kitchen.json`,
+which the Android app's Kitchen tab runs too; the `kitchen-home` harness scenario
 covers the page end to end.
 
 - **Rail:** the date in the user's locale, a greeting by local hour

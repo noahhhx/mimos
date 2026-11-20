@@ -1,0 +1,204 @@
+{
+  "greetingCases": [
+    { "hour": 4, "minute": 59, "greeting": "Good evening." },
+    { "hour": 5, "minute": 0, "greeting": "Good morning." },
+    { "hour": 11, "minute": 59, "greeting": "Good morning." },
+    { "hour": 12, "minute": 0, "greeting": "Good afternoon." },
+    { "hour": 17, "minute": 59, "greeting": "Good afternoon." },
+    { "hour": 18, "minute": 0, "greeting": "Good evening." },
+    { "hour": 0, "minute": 0, "greeting": "Good evening." }
+  ],
+  "tonightCases": [
+    {
+      "about": "takes today's first dinner",
+      "today": "2026-10-02",
+      "entries": [
+        { "date": "2026-10-01", "mealType": "DINNER", "title": "Yesterday" },
+        { "date": "2026-10-02", "mealType": "LUNCH", "title": "Soup" },
+        { "date": "2026-10-02", "mealType": "DINNER", "title": "Dahl" },
+        { "date": "2026-10-02", "mealType": "DINNER", "title": "Curry" }
+      ],
+      "expected": { "title": "Dahl", "label": "Tonight" }
+    },
+    {
+      "about": "falls back to today's lunch under Today",
+      "today": "2026-10-02",
+      "entries": [
+        { "date": "2026-10-02", "mealType": "BREAKFAST", "title": "Oats" },
+        { "date": "2026-10-02", "mealType": "SNACK", "title": "Apple" },
+        { "date": "2026-10-02", "mealType": "LUNCH", "title": "Soup" }
+      ],
+      "expected": { "title": "Soup", "label": "Today" }
+    },
+    {
+      "about": "falls back to breakfast before a snack",
+      "today": "2026-10-02",
+      "entries": [
+        { "date": "2026-10-02", "mealType": "SNACK", "title": "Apple" },
+        { "date": "2026-10-02", "mealType": "BREAKFAST", "title": "Oats" }
+      ],
+      "expected": { "title": "Oats", "label": "Today" }
+    },
+    {
+      "about": "falls back to a snack last",
+      "today": "2026-10-02",
+      "entries": [{ "date": "2026-10-02", "mealType": "SNACK", "title": "Apple" }],
+      "expected": { "title": "Apple", "label": "Today" }
+    },
+    {
+      "about": "is nothing when nothing is planned today",
+      "today": "2026-10-02",
+      "entries": [{ "date": "2026-10-03", "mealType": "DINNER", "title": "Chili" }],
+      "expected": null
+    },
+    {
+      "about": "skips meals only someone else eats",
+      "today": "2026-10-02",
+      "entries": [
+        { "date": "2026-10-02", "mealType": "DINNER", "title": "Their Curry", "diners": "theirs" },
+        { "date": "2026-10-02", "mealType": "LUNCH", "title": "Their Soup", "diners": "theirs" },
+        { "date": "2026-10-02", "mealType": "BREAKFAST", "title": "Oats" }
+      ],
+      "expected": { "title": "Oats", "label": "Today" }
+    },
+    {
+      "about": "takes a dinner the caller shares",
+      "today": "2026-10-02",
+      "entries": [
+        { "date": "2026-10-02", "mealType": "DINNER", "title": "Their Curry", "diners": "theirs" },
+        { "date": "2026-10-02", "mealType": "DINNER", "title": "Our Dahl", "diners": "shared" }
+      ],
+      "expected": { "title": "Our Dahl", "label": "Tonight" }
+    },
+    {
+      "about": "is nothing when only someone else eats today",
+      "today": "2026-10-02",
+      "entries": [
+        { "date": "2026-10-02", "mealType": "DINNER", "title": "Their Curry", "diners": "theirs" },
+        { "date": "2026-10-02", "mealType": "LUNCH", "title": "Their Soup", "diners": "theirs" }
+      ],
+      "expected": null
+    }
+  ],
+  "weekCases": [
+    {
+      "about": "lists Monday to Sunday with each day's first dinner",
+      "monday": "2026-09-28",
+      "entries": [
+        { "date": "2026-10-04", "mealType": "DINNER", "title": "Chili" },
+        { "date": "2026-09-28", "mealType": "LUNCH", "title": "Soup" },
+        { "date": "2026-09-28", "mealType": "DINNER", "title": "Minestrone" }
+      ],
+      "expected": [
+        { "date": "2026-09-28", "title": "Minestrone" },
+        { "date": "2026-09-29", "title": null },
+        { "date": "2026-09-30", "title": null },
+        { "date": "2026-10-01", "title": null },
+        { "date": "2026-10-02", "title": null },
+        { "date": "2026-10-03", "title": null },
+        { "date": "2026-10-04", "title": "Chili" }
+      ]
+    },
+    {
+      "about": "shows only dinners the caller eats",
+      "monday": "2026-09-28",
+      "entries": [
+        { "date": "2026-09-28", "mealType": "DINNER", "title": "Their Curry", "diners": "theirs" },
+        { "date": "2026-09-28", "mealType": "DINNER", "title": "Minestrone" },
+        { "date": "2026-09-29", "mealType": "DINNER", "title": "Their Chili", "diners": "theirs" },
+        { "date": "2026-09-30", "mealType": "DINNER", "title": "Our Dahl", "diners": "shared" }
+      ],
+      "expected": [
+        { "date": "2026-09-28", "title": "Minestrone" },
+        { "date": "2026-09-29", "title": null },
+        { "date": "2026-09-30", "title": "Our Dahl" },
+        { "date": "2026-10-01", "title": null },
+        { "date": "2026-10-02", "title": null },
+        { "date": "2026-10-03", "title": null },
+        { "date": "2026-10-04", "title": null }
+      ]
+    }
+  ],
+  "thoughtCases": [
+    {
+      "about": "offers the first open dinner from today on",
+      "today": "2026-10-02",
+      "suggestions": [{ "title": "Lebanon week", "dates": ["2026-09-30", "2026-10-02", "2026-10-04"] }],
+      "entries": [{ "date": "2026-10-02", "mealType": "DINNER", "title": "Dahl" }],
+      "expected": { "title": "Lebanon week", "date": "2026-10-04" }
+    },
+    {
+      "about": "skips cards with nothing open, and past days",
+      "today": "2026-10-02",
+      "suggestions": [
+        { "title": "Past", "dates": ["2026-09-29"] },
+        { "title": "Taken", "dates": ["2026-10-03"] },
+        { "title": "Open", "dates": ["2026-10-02"] }
+      ],
+      "entries": [{ "date": "2026-10-03", "mealType": "DINNER", "title": "Chili" }],
+      "expected": { "title": "Open", "date": "2026-10-02" }
+    },
+    {
+      "about": "is nothing when no card has an open evening",
+      "today": "2026-10-02",
+      "suggestions": [
+        { "title": "Past", "dates": ["2026-09-29"] },
+        { "title": "Taken", "dates": ["2026-10-03"] }
+      ],
+      "entries": [{ "date": "2026-10-03", "mealType": "DINNER", "title": "Chili" }],
+      "expected": null
+    },
+    {
+      "about": "is nothing without cards",
+      "today": "2026-10-02",
+      "suggestions": [],
+      "entries": [],
+      "expected": null
+    },
+    {
+      "about": "counts anyone's dinner as planned, since a suggested dinner is for the whole household",
+      "today": "2026-10-02",
+      "suggestions": [{ "title": "Lebanon week", "dates": ["2026-10-03"] }],
+      "entries": [{ "date": "2026-10-03", "mealType": "DINNER", "title": "Chili", "diners": "theirs" }],
+      "expected": null
+    }
+  ],
+  "stillToBuyCases": [
+    {
+      "about": "shows unchecked items first, fills up with checked ones, and counts what's left",
+      "limit": 3,
+      "items": [
+        { "name": "a", "checked": true },
+        { "name": "b" },
+        { "name": "c" },
+        { "name": "d", "checked": true }
+      ],
+      "expected": { "shown": ["b", "c", "a"], "remaining": 2, "total": 4 }
+    },
+    {
+      "about": "caps the rows at five by default",
+      "items": [
+        { "name": "i0" },
+        { "name": "i1" },
+        { "name": "i2" },
+        { "name": "i3" },
+        { "name": "i4" },
+        { "name": "i5" },
+        { "name": "i6" },
+        { "name": "i7" }
+      ],
+      "expected": { "shown": ["i0", "i1", "i2", "i3", "i4"], "remaining": 8, "total": 8 }
+    },
+    {
+      "about": "counts nothing for an empty list",
+      "items": [],
+      "expected": { "shown": [], "remaining": 0, "total": 0 }
+    }
+  ],
+  "totalMinutesCases": [
+    { "prepMinutes": 10, "cookMinutes": 30, "expected": 40 },
+    { "cookMinutes": 30, "expected": 30 },
+    { "prepMinutes": 5, "expected": 5 },
+    { "expected": null }
+  ]
+}
