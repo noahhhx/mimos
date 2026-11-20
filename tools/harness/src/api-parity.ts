@@ -4,6 +4,11 @@ import { pathToFileURL } from "node:url";
 
 import { load } from "js-yaml";
 
+export const WEB_ONLY_BY_DESIGN: Readonly<Record<string, string>> = {
+  getPublicRecipe: "the signed-out library pages, which serve search engines",
+  listPublicRecipes: "the signed-out library pages, which serve search engines",
+};
+
 const HTTP_METHODS = ["get", "put", "post", "delete", "options", "head", "patch", "trace"];
 const WEB_CLIENT = "@mimos/api-client";
 const APP_CLIENT = "io.github.noahhhx.mimos.api.apis";
@@ -142,6 +147,17 @@ export function scan(root: string): Parity {
   return classify(operations, web, app);
 }
 
+export function parityProblems(parity: Parity, webOnlyByDesign: Readonly<Record<string, string>>): string[] {
+  const unexplained = parity.webOnly.filter((operation) => !(operation in webOnlyByDesign));
+  const stale = Object.keys(webOnlyByDesign)
+    .filter((operation) => !parity.webOnly.includes(operation))
+    .sort();
+  return [
+    ...unexplained.map((operation) => `${operation}: the web calls it and the app does not`),
+    ...stale.map((operation) => `${operation}: listed as web only by design, but it is not web only`),
+  ];
+}
+
 export function renderParity(parity: Parity): string {
   const group = (title: string, operations: readonly string[]): string[] => [
     "",
@@ -150,7 +166,11 @@ export function renderParity(parity: Parity): string {
   ];
   return [
     `API operations: ${parity.operations.length}. Web calls ${parity.web.length}, the app calls ${parity.app.length}.`,
-    ...group("Web only", parity.webOnly),
+    "",
+    `Web only (${parity.webOnly.length})`,
+    ...parity.webOnly.map((operation) =>
+      operation in WEB_ONLY_BY_DESIGN ? `  ${operation}: ${WEB_ONLY_BY_DESIGN[operation]}` : `  ${operation}`,
+    ),
     ...group("App only", parity.appOnly),
     ...group("Both", parity.both),
     ...group("Neither", parity.neither),
@@ -160,5 +180,14 @@ export function renderParity(parity: Parity): string {
 
 if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const root = join(import.meta.dirname, "../../..");
-  process.stdout.write(renderParity(scan(root)));
+  const parity = scan(root);
+  process.stdout.write(renderParity(parity));
+  if (process.argv.includes("--check")) {
+    const problems = parityProblems(parity, WEB_ONLY_BY_DESIGN);
+    for (const problem of problems) process.stderr.write(`${problem}\n`);
+    if (problems.length > 0) {
+      process.stderr.write("Build it in the app, or add it to WEB_ONLY_BY_DESIGN with the reason.\n");
+      process.exit(1);
+    }
+  }
 }

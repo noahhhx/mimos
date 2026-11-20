@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 
-import { appCalls, classify, operationIds, renderParity, scan, webCalls } from "../src/api-parity.ts";
+import { appCalls, classify, operationIds, parityProblems, renderParity, scan, WEB_ONLY_BY_DESIGN, webCalls } from "../src/api-parity.ts";
 
 const SPEC = `
 paths:
@@ -116,4 +116,17 @@ test("a scan reads production sources only", () => {
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test("the check names a web-only call nobody explained, and an explanation that no longer applies", () => {
+  const parity = classify(OPERATIONS, ["getMe", "createRecipe"], ["getMe"]);
+  assert.deepEqual(parityProblems(parity, { createRecipe: "a reason" }), []);
+  assert.deepEqual(parityProblems(parity, {}), ["createRecipe: the web calls it and the app does not"]);
+  assert.deepEqual(parityProblems(parity, { createRecipe: "a reason", getMe: "a reason" }), [
+    "getMe: listed as web only by design, but it is not web only",
+  ]);
+});
+
+test("the repo's own web-only calls are all explained", () => {
+  assert.deepEqual(parityProblems(scan(join(import.meta.dirname, "../../..")), WEB_ONLY_BY_DESIGN), []);
 });

@@ -142,6 +142,9 @@ lines into the summary. Release builds do not log them.
 calls and the ones the app's code calls (a call to the generated client, not an
 import), as web only, app only, both, and neither. Run it before and after a
 feature lands on either side ([plan item 17](../plans/android-app/17-parity-and-docs.md)).
+An operation the web calls and the app does not is either built in the app or
+listed in the script's `WEB_ONLY_BY_DESIGN` with the reason; `--check` exits 1
+otherwise, and so does the harness's own test of the repo, which CI runs.
 
 ### Observing — steps [3](step-3-logs.md) and [4](step-4-diagnostics.md)
 
