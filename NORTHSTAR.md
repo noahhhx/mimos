@@ -75,8 +75,9 @@ Both are first-class. Mimos is never "the cloud version, plus a charity mode."
 
 ## Non-goals (for now)
 
-- An iOS app. The web product has proven its shape and an Android app is
-  planned (ADR-0029), built so iOS stays possible later.
+- An iOS app. The web product has proven its shape and the Android app
+  (ADR-0029) does everything the web does, built so iOS stays possible
+  later.
 - Social features (feeds, follows, comments). Mimos is personal; sharing a
    recipe is as social as it needs to get.
 - Being a recipe publisher. We curate a starting library; the community's

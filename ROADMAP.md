@@ -249,3 +249,9 @@ Rules for using this file:
     connected to any instance, verified with Maestro flows on an emulator
     in CI, and released as a signed APK on GitHub Releases. Work items in
     `docs/plans/android-app/`.
+    *Done when: every page of the web has its screen in the app, and the
+    user guide tells people how to install it.* **Done** (items 01 to 17):
+    the parity script finds no operation the web calls that the app does
+    not, apart from the signed-out library pages, and `docs/guide/android-app.md`
+    covers installing, connecting, and updating. The first APK is attached
+    to the first `v*` release. The offline shopping list (item 18) follows.
