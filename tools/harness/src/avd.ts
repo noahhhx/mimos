@@ -17,10 +17,18 @@ export const SYSTEM_IMAGE = { api: 36, tag: "default", abi: "x86_64" } as const;
 /** A Pixel 6: 1080x2400 at 420 dpi. */
 export const HARDWARE = { width: 1080, height: 2400, density: 420, ramMb: 2048, cores: 4, heapMb: 228 } as const;
 
-/** The release's debug build (`applicationIdSuffix = ".debug"` in androidApp/build.gradle.kts). */
+/** Both builds the harness installs share the debug build's id (`applicationIdSuffix` in androidApp/build.gradle.kts). */
 export const APP_ID = "io.github.noahhhx.mimos.debug";
-export const APP_APK = "apps/mobile/androidApp/build/outputs/apk/debug/androidApp-debug.apk";
-export const GRADLE_TASK = ":androidApp:assembleDebug";
+
+/**
+ * `debug`, or `minified`: the release as R8 shrinks it, signed with the debug key and allowed the
+ * local stack (docs/plans/android-app/19-minified-flows.md).
+ */
+export const APP_BUILDS = {
+  debug: { task: ":androidApp:assembleDebug", apk: "apps/mobile/androidApp/build/outputs/apk/debug/androidApp-debug.apk" },
+  minified: { task: ":androidApp:assembleMinified", apk: "apps/mobile/androidApp/build/outputs/apk/minified/androidApp-minified.apk" },
+} as const;
+export type AppBuild = keyof typeof APP_BUILDS;
 
 /** The browser sign-in runs in (Cromite, fixed by hash in devenv.nix). */
 export const BROWSER_ID = "org.cromite.cromite";

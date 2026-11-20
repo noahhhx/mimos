@@ -18,9 +18,9 @@ import io.ktor.client.engine.okhttp.OkHttp
  * Holds the app's models for as long as the app is open, so a connect or a sign-in in flight
  * survives the activity being recreated when the phone rotates.
  */
-class AppViewModel(application: Application, debuggable: Boolean) : AndroidViewModel(application) {
+class AppViewModel(application: Application, devBuild: Boolean) : AndroidViewModel(application) {
     val browser = BrowserLauncher()
-    val engine = OkHttp.create { if (debuggable) addInterceptor(RequestLog()) }
+    val engine = OkHttp.create { if (devBuild) addInterceptor(RequestLog()) }
     private val theme = ThemeModel(SharedPreferencesThemeStore(application))
     private val network = AndroidNetworkWatcher(application)
 
@@ -29,10 +29,10 @@ class AppViewModel(application: Application, debuggable: Boolean) : AndroidViewM
             scope = viewModelScope,
             connect =
                 ConnectModel(SharedPreferencesInstanceStore(application)) {
-                    discover(it, engine, allowLocalhostHttp = debuggable)
+                    discover(it, engine, allowLocalhostHttp = devBuild)
                 },
             theme = theme,
-            debug = debuggable,
+            debug = devBuild,
             engine = engine,
             recipeSortStore = SharedPreferencesRecipeSortStore(application),
             planViewStore = SharedPreferencesPlanViewStore(application),
@@ -47,7 +47,7 @@ class AppViewModel(application: Application, debuggable: Boolean) : AndroidViewM
                             application,
                             instance.config.oidcAuthority,
                             browser,
-                            allowLocalhostHttp = debuggable,
+                            allowLocalhostHttp = devBuild,
                         ),
                     store = KeystoreTokenStore(application),
                     authTheme = { theme.authTheme },

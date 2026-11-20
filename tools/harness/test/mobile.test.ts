@@ -33,19 +33,22 @@ function ini(text: string): Map<string, string> {
 }
 
 test("mobile: an action, with an optional screenshot name only for shot", () => {
-  assert.deepEqual(parseMobileArgs(["up"]), { action: "up", noBuild: false, name: undefined, run: undefined });
+  assert.deepEqual(parseMobileArgs(["up"]), { action: "up", noBuild: false, build: "debug", name: undefined, run: undefined });
   assert.deepEqual(parseMobileArgs(["up", "--no-build", "--run", "latest"]), {
     action: "up",
     noBuild: true,
+    build: "debug",
     name: undefined,
     run: "latest",
   });
+  assert.equal(parseMobileArgs(["up", "--minified"]).build, "minified");
+  assert.equal(parseMobileArgs(["up", "--minified", "--no-build"]).noBuild, true);
   assert.equal(parseMobileArgs(["shot", "after-sign-in"]).name, "after-sign-in");
   assert.equal(parseMobileArgs(["down"]).action, "down");
 });
 
 test("mobile: bad invocations are usage errors", () => {
-  for (const argv of [[], ["reboot"], ["logs", "x"], ["shot", "a", "b"], ["shot", "../x"], ["logs", "--no-build"], ["down", "--run", "latest"]]) {
+  for (const argv of [[], ["reboot"], ["logs", "x"], ["shot", "a", "b"], ["shot", "../x"], ["logs", "--no-build"], ["flow", "a", "--minified"], ["down", "--run", "latest"]]) {
     assert.throws(() => parseMobileArgs(argv), UsageError, argv.join(" "));
   }
 });
@@ -182,6 +185,7 @@ test("flow: a name is required, and only shot and flow take one", () => {
   assert.deepEqual(parseMobileArgs(["flow", "stay-signed-in", "--run", "latest"]), {
     action: "flow",
     noBuild: false,
+    build: "debug",
     name: "stay-signed-in",
     run: "latest",
   });

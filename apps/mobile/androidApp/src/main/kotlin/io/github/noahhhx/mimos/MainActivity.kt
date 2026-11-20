@@ -2,7 +2,6 @@ package io.github.noahhhx.mimos
 
 import android.app.Application
 import android.content.Intent
-import android.content.pm.ApplicationInfo
 import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -29,8 +28,8 @@ class MainActivity : ComponentActivity() {
         object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
-                val debuggable = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
-                return AppViewModel(application as Application, debuggable) as T
+                val devBuild = resources.getBoolean(R.bool.dev_build)
+                return AppViewModel(application as Application, devBuild) as T
             }
         }
     }
@@ -103,7 +102,8 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         /**
-         * `adb shell am start ... --ez gallery true` opens the component gallery in a debug build.
+         * `adb shell am start ... --ez gallery true` opens the component gallery in a debug or
+         * minified build.
          */
         const val EXTRA_GALLERY = "gallery"
     }

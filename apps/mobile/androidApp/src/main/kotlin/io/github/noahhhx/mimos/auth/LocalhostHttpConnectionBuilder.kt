@@ -8,8 +8,9 @@ import net.openid.appauth.connectivity.ConnectionBuilder
 import net.openid.appauth.connectivity.DefaultConnectionBuilder
 
 /**
- * AppAuth's default builder refuses `http://`. A debuggable build also reaches the compose stack's
- * Keycloak through `adb reverse`, where the device's `localhost` is the host's, and nothing else.
+ * AppAuth's default builder refuses `http://`. A debug or minified build also reaches the compose
+ * stack's Keycloak through `adb reverse`, where the device's `localhost` is the host's, and nothing
+ * else.
  */
 internal object LocalhostHttpConnectionBuilder : ConnectionBuilder {
     private val timeoutMillis = TimeUnit.SECONDS.toMillis(15).toInt()

@@ -377,11 +377,14 @@ jobs:
       - name: Install the npm workspace in the devenv shell
         run: devenv shell -- npm ci
 
+      # The minified build: the release as R8 shrinks it, so a dependency that
+      # needs keep rules fails a flow here rather than the published APK
+      # (docs/plans/android-app/19-minified-flows.md).
       - name: Boot the stack and the emulator
         timeout-minutes: 25
         run: |
           devenv shell -- harness up
-          devenv shell -- harness mobile up --run latest
+          devenv shell -- harness mobile up --minified --run latest
 
       - name: Android flows
         timeout-minutes: 20
@@ -416,9 +419,11 @@ jobs:
         with:
           name: harness-runs-android
           # `latest` is a symlink to the run; leave it out so the run is not uploaded twice.
+          # The R8 mapping turns the minified build's stack traces back into names.
           path: |
             .harness/runs/
             !.harness/runs/latest
+            apps/mobile/androidApp/build/outputs/mapping/minified/mapping.txt
           include-hidden-files: true
           if-no-files-found: ignore
 

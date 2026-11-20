@@ -81,7 +81,17 @@ android {
             )
             signingConfig = signingConfigs.findByName("release")
         }
+        // The release, minified the same way and not debuggable (R8 barely shrinks a debuggable
+        // build), but with the debug build's id, key, and local-stack allowances, so CI's flows
+        // run on what ships (19-minified-flows.md).
+        create("minified") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".debug"
+            signingConfig = signingConfigs.getByName("debug")
+        }
     }
+
+    sourceSets { getByName("minified") { res.directories.add("src/debug/res") } }
 
     lint {
         warningsAsErrors = true

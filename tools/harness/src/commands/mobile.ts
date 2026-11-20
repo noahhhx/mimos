@@ -6,8 +6,9 @@ import { stripVTControlCharacters } from "node:util";
 
 import { adb, parseDevices, parseReverseList, probe, probeOk, probeTargets, type Adb, type ProbeResult } from "../adb.ts";
 import {
-  APP_APK,
+  APP_BUILDS,
   APP_ID,
+  type AppBuild,
   AVD_NAME,
   AVD_SERIAL,
   avdEnv,
@@ -16,7 +17,6 @@ import {
   BROWSER_COMMAND_LINE_FILE,
   BROWSER_ID,
   emulatorArgs,
-  GRADLE_TASK,
   renderAvdConfig,
   renderAvdIni,
 } from "../avd.ts";
@@ -52,6 +52,7 @@ type Action = (typeof ACTIONS)[number];
 export interface MobileArgs {
   action: Action;
   noBuild: boolean;
+  build: AppBuild;
   name: string | undefined;
   run: string | undefined;
 }
@@ -60,7 +61,7 @@ export function parseMobileArgs(argv: string[]): MobileArgs {
   const { values, positionals } = parseCommandArgs({
     args: argv,
     allowPositionals: true,
-    options: { "no-build": { type: "boolean" }, ...RUN_OPTION },
+    options: { "no-build": { type: "boolean" }, minified: { type: "boolean" }, ...RUN_OPTION },
   });
   const [action, name, ...extra] = positionals;
   if (action === undefined || !ACTIONS.includes(action as Action)) {
@@ -74,8 +75,15 @@ export function parseMobileArgs(argv: string[]): MobileArgs {
     throw new UsageError(`${action === "flow" ? "flow" : "screenshot"} name ${name} must be letters, digits, dots, dashes, and underscores`);
   }
   if (values["no-build"] && action !== "up") throw new UsageError("--no-build only applies to up");
+  if (values.minified && action !== "up") throw new UsageError("--minified only applies to up");
   if (values.run !== undefined && action === "down") throw new UsageError("down records no run, so it takes no --run");
-  return { action: action as Action, noBuild: values["no-build"] ?? false, name, run: values.run };
+  return {
+    action: action as Action,
+    noBuild: values["no-build"] ?? false,
+    build: values.minified ? "minified" : "debug",
+    name,
+    run: values.run,
+  };
 }
 
 const BOOT_TIMEOUT_MS = 240_000;
@@ -193,20 +201,22 @@ async function unreachable(run: Run, failed: readonly ProbeResult[], adbFile: st
   );
 }
 
-async function buildApk(run: Run): Promise<string> {
-  const apk = join(REPO_ROOT, APP_APK);
-  const result = await exec("./gradlew", [GRADLE_TASK, "--console=plain"], { cwd: join(REPO_ROOT, "apps/mobile"), stream: true });
+async function buildApk(run: Run, build: AppBuild): Promise<string> {
+  const { task, apk: path } = APP_BUILDS[build];
+  const apk = join(REPO_ROOT, path);
+  const result = await exec("./gradlew", [task, "--console=plain"], { cwd: join(REPO_ROOT, "apps/mobile"), stream: true });
   writeRunFile(run, "mobile/build.log", redactText(result.stdout + result.stderr));
   if (result.code !== 0) {
-    throw new HarnessError(`./gradlew ${GRADLE_TASK} failed (exit ${result.code}); see mobile/build.log\n${(result.stdout + result.stderr).trimEnd().split("\n").slice(-20).join("\n")}`);
+    throw new HarnessError(`./gradlew ${task} failed (exit ${result.code}); see mobile/build.log\n${(result.stdout + result.stderr).trimEnd().split("\n").slice(-20).join("\n")}`);
   }
-  if (!existsSync(apk)) throw new HarnessError(`the build left no APK at ${APP_APK}`);
-  return `${APP_APK} (${(statSync(apk).size / 1024 / 1024).toFixed(1)} MB)`;
+  if (!existsSync(apk)) throw new HarnessError(`the build left no APK at ${path}`);
+  return `${path} (${(statSync(apk).size / 1024 / 1024).toFixed(1)} MB)`;
 }
 
-async function installAndLaunch(): Promise<string> {
-  const apk = join(REPO_ROOT, APP_APK);
-  if (!existsSync(apk)) throw new HarnessError(`no APK at ${APP_APK}; run without --no-build`);
+async function installAndLaunch(build: AppBuild): Promise<string> {
+  const { apk: path } = APP_BUILDS[build];
+  const apk = join(REPO_ROOT, path);
+  if (!existsSync(apk)) throw new HarnessError(`no APK at ${path}; run without --no-build`);
   await device().ok(["install", "-r", "-t", apk]);
   await device().run(["shell", "am", "force-stop", APP_ID]);
   await device().ok(["shell", "monkey", "-p", APP_ID, "-c", "android.intent.category.LAUNCHER", "1"]);
@@ -275,10 +285,10 @@ async function up(args: MobileArgs, argv: string[]): Promise<number> {
     if (args.noBuild) {
       steps.push({ name: "Build", ok: true, detail: "skipped (--no-build)", ms: 0 });
     } else {
-      await step("Build", () => buildApk(run));
+      await step("Build", () => buildApk(run, args.build));
       files.push("mobile/build.log");
     }
-    await step("Install and launch", installAndLaunch);
+    await step("Install and launch", () => installAndLaunch(args.build));
     await sleep(2000);
     await step("Screenshot", async () => {
       const file = await screenshot(run, "up");
@@ -482,13 +492,16 @@ async function down(): Promise<number> {
 export const mobileCommand: Command = {
   name: "mobile",
   summary: "Boot an Android emulator, install the app, and read its evidence",
-  usage: `harness mobile up [--no-build] | shot [name] | flow <name> | logs | down
+  usage: `harness mobile up [--minified] [--no-build] | shot [name] | flow <name> | logs | down
 
-  up [--no-build]  create the AVD ${AVD_NAME} under .harness/android/ if missing, boot it headless (KVM,
+  up [--minified] [--no-build]
+                   create the AVD ${AVD_NAME} under .harness/android/ if missing, boot it headless (KVM,
                    software GPU), install the pinned browser (Cromite) once, forward 8080, 8081, and
                    3000 with \`adb reverse\`, prove from the device that each answers an HTTP request,
-                   build the debug APK (./gradlew ${GRADLE_TASK} in apps/mobile; --no-build reuses
-                   the last one), install it, launch ${APP_ID}, and take a screenshot.
+                   build the debug APK (./gradlew ${APP_BUILDS.debug.task} in apps/mobile; --no-build
+                   reuses the last one), install it, launch ${APP_ID}, and take a screenshot.
+                   --minified builds and installs the minified one instead
+                   (${APP_BUILDS.minified.task}): the release as R8 shrinks it, under the same id.
                    Running it again converges: a booted device is kept, the reverse rules are
                    re-made, the app is reinstalled and relaunched.
   shot [name]      save a screenshot to mobile/<name>.png (default shot.png, then shot-2.png, …)

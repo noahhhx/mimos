@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug and minified builds reach the local compose stack, log request IDs, and open the
+     component gallery. -->
+<resources>
+    <bool name="dev_build">true</bool>
+</resources>
