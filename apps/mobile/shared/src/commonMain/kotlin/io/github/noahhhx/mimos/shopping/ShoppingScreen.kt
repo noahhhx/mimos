@@ -54,7 +54,12 @@ import io.github.noahhhx.mimos.ui.TickBox
  * buy on top, and below it a form for anything else. The screen stays awake while it is open.
  */
 @Composable
-fun ShoppingScreen(model: ShoppingModel, onSendNow: () -> Unit = model::sendNow) {
+fun ShoppingScreen(
+    model: ShoppingModel,
+    onSendNow: () -> Unit = model::sendNow,
+    /** False before the session is renewed: only ticking works then, so nothing else is offered. */
+    signedIn: Boolean = true,
+) {
     KeepScreenOn()
     LaunchedEffect(Unit) { model.ensureLoaded() }
     val gutter = Modifier.padding(horizontal = MimosTheme.spacing.page)
@@ -98,30 +103,31 @@ fun ShoppingScreen(model: ShoppingModel, onSendNow: () -> Unit = model::sendNow)
                 }
             ListState.NotGenerated,
             is ListState.Loaded ->
-                item(key = "generate") {
-                    Column(
-                        gutter,
-                        verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.s),
-                    ) {
-                        val fresh = current == ListState.NotGenerated
-                        Button(
-                            when {
-                                generating -> "Generating…"
-                                fresh -> "Generate from this week's plan"
-                                else -> "Regenerate"
-                            },
-                            model::generate,
-                            enabled = !generating,
-                        )
-                        Text(
-                            if (list == null)
-                                "No list for this week yet. Generate one from the plan."
-                            else generatedText(list.generatedAt),
-                            style = MimosTheme.typography.small,
-                            color = MimosTheme.colors.muted,
-                        )
+                if (signedIn)
+                    item(key = "generate") {
+                        Column(
+                            gutter,
+                            verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.s),
+                        ) {
+                            val fresh = current == ListState.NotGenerated
+                            Button(
+                                when {
+                                    generating -> "Generating…"
+                                    fresh -> "Generate from this week's plan"
+                                    else -> "Regenerate"
+                                },
+                                model::generate,
+                                enabled = !generating,
+                            )
+                            Text(
+                                if (list == null)
+                                    "No list for this week yet. Generate one from the plan."
+                                else generatedText(list.generatedAt),
+                                style = MimosTheme.typography.small,
+                                color = MimosTheme.colors.muted,
+                            )
+                        }
                     }
-                }
         }
         error?.let { message -> item(key = "error") { Notice(message, gutter) } }
         if (list != null) {
@@ -161,7 +167,7 @@ fun ShoppingScreen(model: ShoppingModel, onSendNow: () -> Unit = model::sendNow)
         }
         // Below the list, unlike the web's page: in the shop the list is what the first screen
         // is for.
-        if (state != ListState.Loading && state != ListState.Failed) {
+        if (signedIn && state != ListState.Loading && state != ListState.Failed) {
             item(key = "add") { AddItemForm(model, gutter.padding(top = MimosTheme.spacing.l)) }
         }
     }
@@ -180,7 +186,9 @@ fun ShoppingWithoutSession(model: ShoppingModel, onBack: () -> Unit, onRenew: ()
         ) {
             Button("← Back", onBack, kind = ButtonKind.Secondary, small = true)
         }
-        Column(Modifier.weight(1f)) { ShoppingScreen(model, onSendNow = onRenew) }
+        Column(Modifier.weight(1f)) {
+            ShoppingScreen(model, onSendNow = onRenew, signedIn = false)
+        }
     }
 }
 

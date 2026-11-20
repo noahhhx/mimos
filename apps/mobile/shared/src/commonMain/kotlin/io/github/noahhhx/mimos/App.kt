@@ -93,8 +93,14 @@ private fun Connection(
                 brandMark,
                 onSignOut = model::signOut,
                 onChangeInstance = model::changeInstance,
-                storedShopping = { onBack ->
-                    ShoppingWithoutSession(model.shopping, onBack, onRenew = session::retry)
+                showStoredShopping = model.storedShopping.collectAsState().value,
+                onOpenStoredShopping = model::openStoredShopping,
+                storedShopping = {
+                    ShoppingWithoutSession(
+                        model.shopping,
+                        onBack = model::closeStoredShopping,
+                        onRenew = session::retry,
+                    )
                 },
             ) {
                 // Loaded here, not in a model: a rotation asks again, which costs one small call

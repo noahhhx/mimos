@@ -271,13 +271,28 @@ class AppModel(
         shopping.thisWeek()
     }
 
+    private val storedShoppingOpen = MutableStateFlow(false)
+
+    /** Whether the No answer page shows the shopping list kept on the phone (ADR-0034). */
+    val storedShopping: StateFlow<Boolean> = storedShoppingOpen.asStateFlow()
+
+    fun openStoredShopping() {
+        storedShoppingOpen.value = true
+    }
+
+    fun closeStoredShopping() {
+        storedShoppingOpen.value = false
+    }
+
     /** Whether the system's back button has a step to take inside the app. */
     val canGoBack: Flow<Boolean> =
-        combine(shell.destination, recipes.route, plan.route, household.route) {
+        combine(shell.destination, recipes.route, plan.route, household.route, storedShopping) {
                 destination,
                 recipe,
                 planned,
-                invite ->
+                invite,
+                stored ->
+                if (stored) return@combine true
                 when (destination) {
                     Destination.Recipes -> recipe != RecipeRoute.List
                     Destination.Plan -> planned != PlanRoute.Week
@@ -288,13 +303,18 @@ class AppModel(
             .distinctUntilChanged()
 
     /** Takes that step. False when there is none, and the system should leave the app. */
-    fun goBack(): Boolean =
-        when (shell.destination.value) {
+    fun goBack(): Boolean {
+        if (storedShoppingOpen.value) {
+            closeStoredShopping()
+            return true
+        }
+        return when (shell.destination.value) {
             Destination.Recipes -> recipes.back()
             Destination.Plan -> plan.back()
             Destination.Household -> household.back()
             else -> false
         }
+    }
 
     private val dismissedNewer = MutableStateFlow<Version?>(null)
 
@@ -335,6 +355,7 @@ class AppModel(
                 when (it) {
                     is SessionState.SignedOut -> forgetPerson()
                     is SessionState.SignedIn -> {
+                        closeStoredShopping()
                         showPendingInvite()
                         shopping.reconnected()
                     }
@@ -351,6 +372,7 @@ class AppModel(
     }
 
     private fun forgetPerson() {
+        closeStoredShopping()
         shell.reset()
         recipes.reset()
         plan.reset()

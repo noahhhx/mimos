@@ -4,9 +4,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
 import io.github.noahhhx.mimos.instance.Instance
@@ -30,8 +27,11 @@ fun SessionScreen(
     brandMark: Painter,
     onSignOut: () -> Unit,
     onChangeInstance: () -> Unit,
+    /** Whether the No answer page shows the shopping list kept on the phone instead. */
+    showStoredShopping: Boolean,
+    onOpenStoredShopping: () -> Unit,
     /** The shopping list kept on the phone, to tick while the server does not answer. */
-    storedShopping: @Composable (onBack: () -> Unit) -> Unit,
+    storedShopping: @Composable () -> Unit,
     signedIn: @Composable () -> Unit,
 ) {
     val state by model.state.collectAsState()
@@ -48,8 +48,7 @@ fun SessionScreen(
                 Text("Signing in to $origin…", color = MimosTheme.colors.muted)
             }
         SessionState.Unreachable -> {
-            var shopping by rememberSaveable { mutableStateOf(false) }
-            if (shopping) storedShopping { shopping = false }
+            if (showStoredShopping) storedShopping()
             else
                 EntryPage(brandMark, "No answer") {
                     Text(
@@ -59,7 +58,7 @@ fun SessionScreen(
                     Button("Try again", onClick = model::retry, modifier = fill)
                     Button(
                         "Shopping list",
-                        onClick = { shopping = true },
+                        onClick = onOpenStoredShopping,
                         kind = ButtonKind.Secondary,
                         modifier = fill,
                     )

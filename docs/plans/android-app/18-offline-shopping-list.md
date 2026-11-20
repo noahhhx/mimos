@@ -52,8 +52,11 @@ waiting for the owner's review:
   when nothing waits. Each waiting item keeps its "Not sent"; item 10's
   per-item Retry is gone in favour of **Send now**.
 - The No answer page offers **Shopping list**: the stored list to tick,
-  with **← Back** (`ShoppingWithoutSession`). Its banner action renews the
-  session, which then sends the ticks.
+  with **← Back** (`ShoppingWithoutSession`); the system back button returns
+  too (`AppModel.storedShopping`, part of `canGoBack`). It offers ticking
+  only: no Regenerate and no "Add an item", which need a session. Its
+  banner action renews the session, which then sends the ticks and shows
+  the app.
 - `ShoppingModel.reset()` also clears the store, so sign-out (a refused
   session included), a household change, an import, and changing instance
   forget the stored lists and ticks.

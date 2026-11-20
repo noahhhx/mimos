@@ -262,6 +262,31 @@ class AppModelTest {
         }
 
     @Test
+    fun `the system back button leaves the stored shopping list for the No answer page`() =
+        runTest {
+            val authorizer = OfflineAuthorizer()
+            val app =
+                model(debug = false, backgroundScope, network = FakeNetwork(online = false)) { _ ->
+                    SessionModel(authorizer, OneStoredSession(), { "light" }, backgroundScope)
+                }
+            val session = app.session(instance)
+            runCurrent()
+            assertFalse(app.canGoBack.first())
+
+            app.openStoredShopping()
+            assertTrue(app.canGoBack.first())
+            assertTrue(app.goBack())
+            assertFalse(app.storedShopping.value)
+            assertFalse(app.canGoBack.first())
+
+            app.openStoredShopping()
+            authorizer.reachable = true
+            session.retry()
+            runCurrent()
+            assertFalse(app.storedShopping.value, "a renewed session shows the app, not the copy")
+        }
+
+    @Test
     fun `the system back button steps through a recipe trail only on the recipes tab`() = runTest {
         val app = model(debug = false, TestScope())
         assertFalse(app.goBack())
