@@ -1,0 +1,44 @@
+appId: io.github.noahhhx.mimos.debug
+---
+- runFlow: connect-and-sign-in.yaml
+- assertVisible: Tonight
+- assertVisible: Nothing planned for tonight
+- assertVisible: No list yet\.
+- takeScreenshot: kitchen-empty
+- tapOn: Plan tonight
+- assertVisible: Add a meal
+- assertVisible: Dinner · .*
+- tapOn: Search recipes and ingredients
+- inputText: greek
+- tapOn: Greek Salad
+- assertVisible: Week of .*
+- tapOn: Kitchen
+- assertVisible: Tonight
+- assertVisible: Greek Salad
+- assertVisible: \d+ servings
+- tapOn: Make this week's list
+- assertVisible: Shopping list
+- tapOn: Generate from this week's plan
+- assertVisible: Regenerate
+- tapOn: Kitchen
+- assertVisible: Still to buy · (\d+) of \1
+- takeScreenshot: kitchen-home
+- scrollUntilVisible:
+    element: Full list
+    centerElement: true
+- scrollUntilVisible:
+    element: .* \(today\). Greek Salad
+    centerElement: true
+- takeScreenshot: kitchen-week
+- scrollUntilVisible:
+    element: Start cooking
+    direction: UP
+- tapOn: Start cooking
+- assertVisible: Ingredients
+- tapOn: Kitchen
+- tapOn: Swap meal
+- assertVisible: Remove from plan
+- tapOn: Kitchen
+- tapOn: Toggle light and dark mode
+- takeScreenshot: kitchen-home-dark
+- tapOn: Toggle light and dark mode
