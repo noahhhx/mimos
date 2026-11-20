@@ -276,7 +276,7 @@ class ShoppingModelTest {
             network.online.value = true
             again.sendNow()
             again.ticks.first { it.isEmpty() }
-            assertEquals(ListCopy.Server, (again.state.value as ListState.Loaded).copy)
+            again.state.first { (it as? ListState.Loaded)?.copy == ListCopy.Server }
             assertEquals(listOf("onion" to true), server.ticks)
             assertTrue(again.loaded().checked("onion"))
         }
