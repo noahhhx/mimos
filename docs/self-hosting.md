@@ -264,6 +264,13 @@ browser as the `mimos-mobile` client, which the realm includes. The app
 needs your web, API, and Keycloak on HTTPS URLs, as the web app does (see
 [Why HTTPS](#why-https)).
 
+The app learns the rest from your web address: it reads
+`/runtime-config.json` there, which names `MIMOS_API_URL` and
+`MIMOS_OIDC_AUTHORITY`. Both must be addresses the phone can reach, the
+same ones a browser uses, never an internal host name such as `api`. A
+phone on mobile data reaches only what is public; a phone on your home
+network also reaches addresses only that network answers.
+
 ### Add the Android app client to an existing instance
 
 Keycloak imports the realm only on the first start, so an instance set up

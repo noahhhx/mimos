@@ -15,8 +15,29 @@ Google services.
 3. Open Mimos, type the address you open Mimos at in a browser, and choose
    **Connect**. Then sign in.
 
+![The app's Connect to Mimos screen, with mimos.example.com typed as the web address](../assets/screenshots/android-connect.png){ width="300" }
+
 To check the download, compare it with the `.sha256` file beside it in the
 release: `sha256sum -c mimos-<version>.apk.sha256` on a computer.
+
+## Find your way around
+
+The app does what the web does. It opens on your Kitchen: tonight's
+dinner, what is still to buy, and the week ahead. The tabs at the bottom
+are **Kitchen**, **Recipes**, **Plan**, **Shopping**, and **Log**. The
+person button at the top opens **Household**, **Plugins**, **Fuel**,
+**Your data**, **Settings**, and **Sign out**. The rest of this guide
+describes each of them as the web shows it.
+
+![The app's Kitchen tab, with Greek Salad tonight and the week's shopping still to buy](../assets/screenshots/android-kitchen.png){ width="300" }
+
+**Settings** is the one place the web has no match for. It holds the
+light and dark choice, the server you are connected to and the version
+it runs, **Change instance** to connect somewhere else, and the app's
+version and licences.
+
+The app needs a connection to your server. It does not keep a copy of
+your data for when you are offline.
 
 ## Keep it up to date
 
