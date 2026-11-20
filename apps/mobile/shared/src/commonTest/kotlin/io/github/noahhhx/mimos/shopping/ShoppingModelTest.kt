@@ -282,6 +282,29 @@ class ShoppingModelTest {
         }
 
     @Test
+    fun `with no network, nothing tries to send on its own, even when the list loads`() = runTest {
+        val server = ListServer()
+        val store = MemoryShoppingStore()
+        val network = FakeNetwork()
+        model(server, store, network).apply {
+            generate()
+            network.online.value = false
+            toggle(loaded().items.first { it.id == "onion" })
+        }
+
+        val again = model(server, store, network)
+        again.ensureLoaded()
+        assertEquals(
+            ListCopy.Server,
+            (again.state.first { it is ListState.Loaded } as ListState.Loaded).copy,
+        )
+        again.reconnected()
+        advanceUntilIdle()
+        assertEquals(TickStatus.Unsent, again.ticks.value.getValue("onion").status)
+        assertEquals(emptyList(), server.ticks)
+    }
+
+    @Test
     fun `a week never loaded still fails when the server cannot be reached`() = runTest {
         val server = ListServer()
         val store = MemoryShoppingStore()

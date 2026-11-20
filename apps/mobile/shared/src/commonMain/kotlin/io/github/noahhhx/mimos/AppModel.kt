@@ -212,7 +212,7 @@ class AppModel(
                 if (!online) return@collect
                 when (session.state.value) {
                     SessionState.Unreachable -> session.retry()
-                    is SessionState.SignedIn -> shopping.sendNow()
+                    is SessionState.SignedIn -> shopping.reconnected()
                     else -> {}
                 }
             }
@@ -338,7 +338,7 @@ class AppModel(
                     is SessionState.SignedOut -> forgetPerson()
                     is SessionState.SignedIn -> {
                         showPendingInvite()
-                        shopping.sendNow()
+                        shopping.reconnected()
                     }
                     else -> {}
                 }

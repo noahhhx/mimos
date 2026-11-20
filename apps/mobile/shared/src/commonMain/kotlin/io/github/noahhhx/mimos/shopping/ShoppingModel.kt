@@ -151,7 +151,9 @@ class ShoppingModel(
                     storedOrFailed(week)
                 }
             mutableState.value = next
-            if (next is ListState.Loaded && next.copy == ListCopy.Server) queueAndSend()
+            if (next is ListState.Loaded && next.copy == ListCopy.Server && online.value) {
+                queueAndSend()
+            }
         }
     }
 
@@ -194,10 +196,14 @@ class ShoppingModel(
         if (status == TickStatus.Queued) send()
     }
 
+    /** For when the session is renewed or the network returns: [sendNow], unless still offline. */
+    fun reconnected() {
+        if (online.value) sendNow()
+    }
+
     /**
      * Tries every tick that waits, whatever the phone says of its network, and loads the week again
-     * when it shows a stored copy or nothing. Also for when the session is renewed or the network
-     * returns.
+     * when it shows a stored copy or nothing.
      */
     fun sendNow() {
         queueAndSend()
