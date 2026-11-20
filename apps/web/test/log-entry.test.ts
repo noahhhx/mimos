@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
-import type { CatalogIngredient, FoodProduct, RecipeSummary } from "@mimos/api-client";
+import type {
+  CatalogIngredient,
+  FoodProduct,
+  MealLogInput,
+  MealType,
+  Nutrition,
+  NutritionBasis,
+  RecipeSummary,
+} from "@mimos/api-client";
 
 import {
   EMPTY_NUTRITION,
@@ -20,325 +29,184 @@ import {
   whatText,
   type AmountFields,
   type LogWhat,
+  type NutritionFields,
+  type UnitSymbol,
 } from "../src/lib/log-entry.ts";
+import { nutritionCells } from "../src/lib/format.ts";
 
-const recipe = (patch: Partial<RecipeSummary> = {}): RecipeSummary => ({
-  id: "r-dahl",
-  title: "Red Lentil Dahl",
+type WhatSketch = { custom?: string; recipe?: string; ingredient?: string; product?: string };
+
+// The app's commonTest reads the same file (libraries/test-cases/README.md).
+const cases = JSON.parse(
+  readFileSync(new URL("../../../libraries/test-cases/log-entry.json", import.meta.url), "utf8"),
+) as {
+  date: string;
+  recipes: Record<string, { id: string; title: string; nutrition: Nutrition }>;
+  ingredients: Record<string, CatalogIngredient>;
+  products: Record<string, FoodProduct>;
+  logBodyCases: {
+    about: string;
+    what: WhatSketch;
+    mealType?: MealType;
+    servings?: string;
+    nutrition?: NutritionFields;
+    amount?: AmountFields;
+    expected?: MealLogInput;
+    logsNothing?: boolean;
+    description?: string;
+  }[];
+  servingsCases: { text: string; expected: number | null }[];
+  recipeTotalCases: { about: string; recipe: string; servings: number; total: Nutrition | null; text: string }[];
+  measuredTotalCases: { ingredient: string; quantity: number; unit: UnitSymbol; total: Nutrition | null; text?: string }[];
+  unitsFor: Record<NutritionBasis, UnitSymbol[]>;
+  measuredCases: { about: string; what: WhatSketch; name: string; basis: NutritionBasis; amount: AmountFields; hint?: string }[];
+  whatTextCases: { about: string; what: WhatSketch; text: string }[];
+  searchCases: { about: string; query: string; recipes: string[]; ingredients: string[]; expected: string[] }[];
+  searchLimit: { query: string; count: number; limit: number };
+  describeIngredientCases: { ingredient: string; text: string }[];
+  nutritionCellsCases: { nutrition: Nutrition | null; cells: string[] }[];
+};
+
+const recipe = (key: string): RecipeSummary => ({
   description: "",
   servings: 4,
   isLibrary: true,
   createdAt: "2025-01-01T00:00:00Z",
   updatedAt: "2025-01-01T00:00:00Z",
   tags: [],
-  nutrition: { calories: 450, proteinG: 20, carbsG: 61, fatG: 12 },
-  ...patch,
+  ...cases.recipes[key],
 });
 
-const DAHL: LogWhat = { kind: "recipe", recipe: recipe() };
+const what = (sketch: WhatSketch): LogWhat => {
+  if (sketch.recipe !== undefined) return { kind: "recipe", recipe: recipe(sketch.recipe) };
+  if (sketch.ingredient !== undefined) return { kind: "ingredient", entry: cases.ingredients[sketch.ingredient] };
+  if (sketch.product !== undefined) return { kind: "product", product: cases.products[sketch.product] };
+  return typeWhat(sketch.custom ?? "");
+};
 
-const ingredient = (patch: Partial<CatalogIngredient> = {}): CatalogIngredient => ({
-  slug: "sugar",
-  name: "Sugar",
-  isShared: true,
-  basis: "PER_100_G",
-  nutrition: { calories: 400, proteinG: 0, carbsG: 100, fatG: 0 },
-  ...patch,
-});
+/** As the API is sent it: absent values left out. */
+const wire = (body: MealLogInput | undefined) => (body === undefined ? null : JSON.parse(JSON.stringify(body)));
 
-const SUGAR = ingredient();
-const OLIVE_OIL = ingredient({
-  slug: "olive-oil",
-  name: "Olive oil",
-  basis: "PER_100_ML",
-  nutrition: { calories: 900, proteinG: 0, carbsG: 0, fatG: 100 },
-});
-const BANANA = ingredient({
-  slug: "banana",
-  name: "Banana",
-  basis: "PER_PIECE",
-  nutrition: { calories: 105, proteinG: 1.3, carbsG: 27, fatG: 0.4 },
-});
-
-const ANY_AMOUNT: AmountFields = { quantity: "1", unit: "g" };
-
-const ingredientBody = (entry: CatalogIngredient, quantity: string, unit: AmountFields["unit"]) =>
-  logBody({ kind: "ingredient", entry }, "2026-10-07", "SNACK", "1", EMPTY_NUTRITION, { quantity, unit });
+const optionKey = (option: LogWhat) =>
+  option.kind === "recipe" ? `recipe:${option.recipe.id}` : option.kind === "ingredient" ? `ingredient:${option.entry.slug}` : "";
 
 describe("logBody", () => {
-  it("logs a recipe by its id and servings, leaving nutrition to the API", () => {
-    assert.deepEqual(
-      logBody(DAHL, "2026-10-07", "LUNCH", "1.5", { calories: "999", proteinG: "1", carbsG: "", fatG: "" }, ANY_AMOUNT),
-      { date: "2026-10-07", mealType: "LUNCH", recipeId: "r-dahl", servings: 1.5 },
-    );
-  });
-
-  it("logs anything else as one serving of what was typed, with the nutrition given", () => {
-    assert.deepEqual(
-      logBody(
-        typeWhat("  Toast with peanut butter "),
-        "2026-10-07",
-        "SNACK",
-        "3",
-        { calories: "310", proteinG: "11.5", carbsG: "", fatG: " " },
-        ANY_AMOUNT,
-      ),
-      {
-        date: "2026-10-07",
-        mealType: "SNACK",
-        description: "Toast with peanut butter",
-        servings: 1,
-        nutrition: { calories: 310, proteinG: 11.5, carbsG: undefined, fatG: undefined },
-      },
-    );
-  });
-
-  it("logs nothing without a description", () => {
-    assert.equal(logBody(typeWhat(""), "2026-10-07", "SNACK", "1", EMPTY_NUTRITION, ANY_AMOUNT), undefined);
-    assert.equal(
-      logBody(typeWhat("   "), "2026-10-07", "SNACK", "1", { ...EMPTY_NUTRITION, calories: "100" }, ANY_AMOUNT),
-      undefined,
-    );
-  });
-
-  it("logs no recipe without servings the API accepts", () => {
-    for (const servings of ["0", "-1", "100.1", "abc", "", " ", "Infinity", "NaN"]) {
-      assert.equal(logBody(DAHL, "2026-10-07", "DINNER", servings, EMPTY_NUTRITION, ANY_AMOUNT), undefined, servings);
-    }
-    assert.equal(logBody(DAHL, "2026-10-07", "DINNER", "100", EMPTY_NUTRITION, ANY_AMOUNT)?.servings, 100);
-    assert.equal(logBody(DAHL, "2026-10-07", "DINNER", "0.1", EMPTY_NUTRITION, ANY_AMOUNT)?.servings, 0.1);
-  });
+  for (const each of cases.logBodyCases) {
+    it(each.about, () => {
+      const body = logBody(
+        what(each.what),
+        cases.date,
+        each.mealType ?? "SNACK",
+        each.servings ?? "1",
+        each.nutrition ?? EMPTY_NUTRITION,
+        each.amount ?? { quantity: "1", unit: "g" },
+      );
+      if (each.logsNothing) {
+        assert.equal(body, undefined);
+      }
+      if (each.expected !== undefined) {
+        assert.deepEqual(wire(body), each.expected);
+      }
+      if (each.description !== undefined) {
+        assert.equal(body?.description, each.description);
+      }
+    });
+  }
 });
 
 describe("parseServings", () => {
   it("reads more than 0, up to 100", () => {
-    assert.equal(parseServings("2"), 2);
-    assert.equal(parseServings("0.5"), 0.5);
-    assert.equal(parseServings("0"), undefined);
-    assert.equal(parseServings("101"), undefined);
+    for (const each of cases.servingsCases) {
+      assert.equal(parseServings(each.text), each.expected ?? undefined, each.text);
+    }
   });
 });
 
 describe("typing and picking", () => {
-  it("shows a picked recipe's title", () => {
-    assert.equal(whatText(DAHL), "Red Lentil Dahl");
-  });
+  for (const each of cases.whatTextCases) {
+    it(each.about, () => assert.equal(whatText(what(each.what)), each.text));
+  }
 
-  it("unpicks the recipe when its title is typed over, keeping the text as typed", () => {
+  it("unpicks a recipe or a product when its name is typed over", () => {
     assert.deepEqual(typeWhat("Red Lentil Dah"), { kind: "custom", description: "Red Lentil Dah" });
-    // A trailing space must survive, or no second word can be typed.
-    assert.equal(whatText(typeWhat("Red Lentil ")), "Red Lentil ");
   });
 });
 
 describe("recipeTotal and describeTotal", () => {
-  it("scales a serving by the servings logged, to 0.1 as the API stores it", () => {
-    assert.deepEqual(recipeTotal(recipe(), 1.5), { calories: 675, proteinG: 30, carbsG: 91.5, fatG: 18 });
-    assert.deepEqual(recipeTotal(recipe(), 0.3), { calories: 135, proteinG: 6, carbsG: 18.3, fatG: 3.6 });
-  });
-
-  it("says what the servings come to, in whole numbers", () => {
-    assert.equal(describeTotal(recipeTotal(recipe(), 1.5)), "Comes to 675 kcal, 30 g protein, 92 g carbs, 18 g fat.");
-    assert.equal(
-      describeTotal(recipeTotal(recipe({ nutrition: { calories: 333.33 } }), 1)),
-      "Comes to 333 kcal.",
-    );
-  });
-
-  it("knows nothing about a recipe whose nutrition is unknown", () => {
-    assert.equal(recipeTotal(recipe({ nutrition: {} }), 2), undefined);
-    assert.equal(describeTotal(undefined), "Nutrition unknown, so it adds nothing.");
-  });
-});
-
-describe("logging an ingredient", () => {
-  it("logs one serving named with its amount, carrying the nutrition the form previewed", () => {
-    assert.deepEqual(ingredientBody(SUGAR, "15", "g"), {
-      date: "2026-10-07",
-      mealType: "SNACK",
-      description: "Sugar, 15 g",
-      servings: 1,
-      nutrition: { calories: 60, proteinG: 0, carbsG: 15, fatG: 0 },
+  for (const each of cases.recipeTotalCases) {
+    it(each.about, () => {
+      const total = recipeTotal(recipe(each.recipe), each.servings);
+      assert.deepEqual(wire(total as MealLogInput | undefined), each.total);
+      assert.equal(describeTotal(total), each.text);
     });
-    assert.equal(ingredientBody(OLIVE_OIL, "1", "tbsp")?.description, "Olive oil, 1 tbsp");
-    assert.equal(ingredientBody(BANANA, "2", "")?.description, "Banana, 2 pieces");
-    assert.equal(ingredientBody(BANANA, "1", "")?.description, "Banana, 1 piece");
-    assert.equal(ingredientBody(BANANA, "0.5", "")?.description, "Banana, 0.5 pieces");
-  });
-
-  it("logs nothing until the amount is more than 0", () => {
-    for (const quantity of ["", " ", "0", "-5", "abc", "Infinity", "NaN"]) {
-      assert.equal(ingredientBody(SUGAR, quantity, "g"), undefined, quantity);
-    }
-  });
-
-  it("logs nothing in a unit the ingredient is not counted in", () => {
-    assert.equal(ingredientBody(SUGAR, "1", "tbsp"), undefined);
-    assert.equal(ingredientBody(BANANA, "100", "g"), undefined);
-  });
-
-  it("keeps a long name's description within the 200 characters the API takes, amount included", () => {
-    const description = ingredientBody(ingredient({ name: "x".repeat(200) }), "250", "g")?.description ?? "";
-    assert.equal(description.length, 200);
-    assert.ok(description.endsWith("x, 250 g"), description);
-  });
+  }
 });
 
 describe("measuredTotal", () => {
-  it("counts each unit by its size against the basis", () => {
-    assert.deepEqual(measuredTotal(SUGAR, 15, "g"), { calories: 60, proteinG: 0, carbsG: 15, fatG: 0 });
-    assert.deepEqual(measuredTotal(SUGAR, 0.5, "kg"), { calories: 2000, proteinG: 0, carbsG: 500, fatG: 0 });
-    assert.deepEqual(measuredTotal(OLIVE_OIL, 1, "tbsp"), { calories: 135, proteinG: 0, carbsG: 0, fatG: 15 });
-    assert.deepEqual(measuredTotal(OLIVE_OIL, 2, "tsp"), { calories: 90, proteinG: 0, carbsG: 0, fatG: 10 });
-    assert.deepEqual(measuredTotal(OLIVE_OIL, 250, "ml"), { calories: 2250, proteinG: 0, carbsG: 0, fatG: 250 });
-    assert.deepEqual(measuredTotal(OLIVE_OIL, 0.1, "l"), { calories: 900, proteinG: 0, carbsG: 0, fatG: 100 });
-    assert.deepEqual(measuredTotal(BANANA, 2, ""), { calories: 210, proteinG: 2.6, carbsG: 54, fatG: 0.8 });
-  });
-
-  it("rounds to 0.1", () => {
-    assert.equal(measuredTotal(ingredient({ nutrition: { calories: 333 } }), 1, "g")?.calories, 3.3);
-    assert.equal(measuredTotal(BANANA, 1.5, "")?.proteinG, 2);
-  });
-
-  it("leaves a value the ingredient lacks absent, not zero", () => {
-    assert.deepEqual(measuredTotal(ingredient({ nutrition: { calories: 400, carbsG: 100 } }), 15, "g"), {
-      calories: 60,
-      proteinG: undefined,
-      carbsG: 15,
-      fatG: undefined,
-    });
-    assert.equal(measuredTotal(ingredient({ nutrition: {} }), 15, "g"), undefined);
-    assert.deepEqual(ingredientBody(ingredient({ nutrition: {} }), "15", "g")?.nutrition, {});
-  });
-
-  it("counts nothing in a unit of another basis", () => {
-    assert.equal(measuredTotal(SUGAR, 1, "ml"), undefined);
-    assert.equal(measuredTotal(OLIVE_OIL, 1, "g"), undefined);
-    assert.equal(measuredTotal(BANANA, 1, "kg"), undefined);
-  });
-
-  it("previews as a recipe's total does", () => {
-    assert.equal(
-      describeTotal(measuredTotal(OLIVE_OIL, 1, "tbsp")),
-      "Comes to 135 kcal, 0 g protein, 0 g carbs, 15 g fat.",
-    );
+  it("counts each unit by its size against the basis, to 0.1, leaving unknown values absent", () => {
+    for (const each of cases.measuredTotalCases) {
+      const total = measuredTotal(cases.ingredients[each.ingredient], each.quantity, each.unit);
+      const label = `${each.quantity} ${each.unit} of ${each.ingredient}`;
+      assert.deepEqual(wire(total as MealLogInput | undefined), each.total, label);
+      if (each.text !== undefined) {
+        assert.equal(describeTotal(total), each.text, label);
+      }
+    }
   });
 });
 
 describe("units and amounts", () => {
-  it("offers only the units of the ingredient's basis", () => {
-    assert.deepEqual(unitsFor("PER_100_G"), ["g", "kg"]);
-    assert.deepEqual(unitsFor("PER_100_ML"), ["ml", "l", "tsp", "tbsp"]);
-    assert.deepEqual(unitsFor("PER_PIECE"), [""]);
+  it("offers only the units of the food's basis", () => {
+    for (const [basis, units] of Object.entries(cases.unitsFor)) {
+      assert.deepEqual(unitsFor(basis as NutritionBasis), units, basis);
+    }
   });
 
-  it("starts at 100 g, 100 ml, or 1 piece", () => {
-    assert.deepEqual(defaultAmount({ basis: "PER_100_G" }), { quantity: "100", unit: "g" });
-    assert.deepEqual(defaultAmount({ basis: "PER_100_ML" }), { quantity: "100", unit: "ml" });
-    assert.deepEqual(defaultAmount({ basis: "PER_PIECE" }), { quantity: "1", unit: "" });
-  });
+  for (const each of cases.measuredCases) {
+    it(each.about, () => {
+      const food = measuredOf(what(each.what))!;
+      assert.equal(food.name, each.name);
+      assert.equal(whatText(what(each.what)), each.name);
+      assert.equal(food.basis, each.basis);
+      assert.deepEqual(defaultAmount(food), each.amount);
+      assert.equal(servingHint(food), each.hint);
+    });
+  }
 });
 
 describe("searchWhat", () => {
-  const BREAD = recipe({ id: "r-bread", title: "Banana bread" });
+  for (const each of cases.searchCases) {
+    it(each.about, () => {
+      const options = searchWhat(
+        each.query,
+        each.recipes.map(recipe),
+        each.ingredients.map((key) => cases.ingredients[key]),
+      );
+      assert.deepEqual(options.map(optionKey), each.expected);
+    });
+  }
 
-  it("ranks recipes and ingredients together, names that start with the text first", () => {
-    const options = searchWhat("banana", [BREAD, recipe()], [SUGAR, BANANA]);
-    assert.deepEqual(options.map(whatText), ["Banana", "Banana bread"]);
-    assert.deepEqual(options.map((option) => option.kind), ["ingredient", "recipe"]);
-  });
-
-  it("offers at most the limit, and nothing before anything is typed", () => {
-    const many = Array.from({ length: 10 }, (_, index) => ingredient({ slug: `s${index}`, name: `Sugar ${index}` }));
-    assert.equal(searchWhat("sugar", [], many).length, 8);
-    assert.deepEqual(searchWhat("", [recipe()], [SUGAR]), []);
-  });
-
-  it("shows a picked ingredient's name", () => {
-    assert.equal(whatText({ kind: "ingredient", entry: SUGAR }), "Sugar");
+  it("offers at most the limit", () => {
+    const { query, count, limit } = cases.searchLimit;
+    const many = Array.from({ length: count }, (_, index) => ({
+      ...cases.ingredients.sugar,
+      slug: `s${index}`,
+      name: `${query} ${index}`,
+    }));
+    assert.equal(searchWhat(query, [], many).length, limit);
   });
 
   it("says what an ingredient option is, and whose", () => {
-    assert.equal(describeIngredient(SUGAR), "Ingredient · 400 kcal per 100 g");
-    assert.equal(describeIngredient(ingredient({ isShared: false })), "Your ingredient · 400 kcal per 100 g");
-    assert.equal(describeIngredient(BANANA), "Ingredient · 105 kcal each");
+    for (const each of cases.describeIngredientCases) {
+      assert.equal(describeIngredient(cases.ingredients[each.ingredient]), each.text);
+    }
   });
 });
 
-const product = (patch: Partial<FoodProduct> = {}): FoodProduct => ({
-  barcode: "50184453",
-  name: "Yeast Extract",
-  brand: "Marmite",
-  basis: "PER_100_G",
-  nutrition: { calories: 260, proteinG: 34, carbsG: 30 },
-  servingSize: 8,
-  ...patch,
-});
-
-const MARMITE: LogWhat = { kind: "product", product: product() };
-const COLA: LogWhat = {
-  kind: "product",
-  product: product({
-    barcode: "5449000000996",
-    name: "Coca-Cola Original",
-    brand: "Coca-Cola",
-    basis: "PER_100_ML",
-    nutrition: { calories: 42.4, proteinG: 0, carbsG: 10.6, fatG: 0 },
-    servingSize: 330,
-  }),
-};
-
-describe("a scanned product", () => {
-  it("is measured food named with its brand, on its own basis, keeping the values Open Food Facts lacks absent", () => {
-    assert.deepEqual(measuredOf(MARMITE), {
-      name: "Yeast Extract (Marmite)",
-      basis: "PER_100_G",
-      nutrition: { calories: 260, proteinG: 34, carbsG: 30 },
-      servingSize: 8,
-    });
-    assert.equal(measuredOf(COLA)?.basis, "PER_100_ML");
-    assert.equal(whatText(MARMITE), "Yeast Extract (Marmite)");
-  });
-
-  it("is named without a brand when it has none, or when the brand is its name", () => {
-    assert.equal(whatText({ kind: "product", product: product({ brand: undefined }) }), "Yeast Extract");
-    assert.equal(whatText({ kind: "product", product: product({ name: "Nutella", brand: "Nutella" }) }), "Nutella");
-  });
-
-  it("is unpicked by typing over its name, like a recipe", () => {
-    assert.deepEqual(typeWhat("Yeast Extract (Marm"), { kind: "custom", description: "Yeast Extract (Marm" });
-  });
-
-  it("starts at one serving in the basis's unit, with a hint saying so", () => {
-    const marmite = measuredOf(MARMITE)!;
-    assert.deepEqual(defaultAmount(marmite), { quantity: "8", unit: "g" });
-    assert.equal(servingHint(marmite), "One serving is 8 g.");
-    assert.deepEqual(defaultAmount(measuredOf(COLA)!), { quantity: "330", unit: "ml" });
-  });
-
-  it("starts at 100 g or 100 ml, with no hint, when it has no serving size", () => {
-    const unserved = measuredOf({ kind: "product", product: product({ servingSize: undefined }) })!;
-    assert.deepEqual(defaultAmount(unserved), { quantity: "100", unit: "g" });
-    assert.equal(servingHint(unserved), undefined);
-    const drink = measuredOf({ kind: "product", product: product({ basis: "PER_100_ML", servingSize: undefined }) })!;
-    assert.deepEqual(defaultAmount(drink), { quantity: "100", unit: "ml" });
-  });
-
-  it("logs as one serving named with its amount, carrying the previewed nutrition and nothing it lacks", () => {
-    assert.deepEqual(logBody(MARMITE, "2026-10-07", "BREAKFAST", "1", EMPTY_NUTRITION, { quantity: "8", unit: "g" }), {
-      date: "2026-10-07",
-      mealType: "BREAKFAST",
-      description: "Yeast Extract (Marmite), 8 g",
-      servings: 1,
-      nutrition: { calories: 20.8, proteinG: 2.7, carbsG: 2.4, fatG: undefined },
-    });
-  });
-
-  it("logs a drink by volume, and not by weight", () => {
-    assert.equal(
-      logBody(COLA, "2026-10-07", "SNACK", "1", EMPTY_NUTRITION, { quantity: "1", unit: "tbsp" })?.description,
-      "Coca-Cola Original (Coca-Cola), 1 tbsp",
-    );
-    assert.equal(logBody(COLA, "2026-10-07", "SNACK", "1", EMPTY_NUTRITION, { quantity: "100", unit: "g" }), undefined);
+describe("nutritionCells", () => {
+  it("rounds the week table's values, a dash for each unknown", () => {
+    for (const each of cases.nutritionCellsCases) {
+      assert.deepEqual(nutritionCells(each.nutrition ?? undefined), each.cells);
+    }
   });
 });

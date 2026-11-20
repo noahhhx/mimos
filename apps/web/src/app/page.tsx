@@ -42,6 +42,14 @@ export default function HomePage() {
       </p>
 
       <div className="card">
+        <h2>On Android</h2>
+        <p>
+          Mimos has an app for Android phones, with no app store and no Google services. Connect it to
+          this address and sign in with the same account. <a href={`${DOCS_URL}guide/android-app/`}>Get the app</a>.
+        </p>
+      </div>
+
+      <div className="card">
         <h2>Self-hosting</h2>
         <p>
           Mimos runs the same everywhere: our cloud or your own hardware. Bring the whole stack up

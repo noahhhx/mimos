@@ -3,6 +3,10 @@
     "playwright": {
       "command": "devenv",
       "args": ["shell", "--", "playwright-mcp", "--headless", "--isolated", "--output-dir", ".harness/mcp"]
+    },
+    "maestro": {
+      "command": "devenv",
+      "args": ["shell", "--", "maestro", "mcp"]
     }
   }
 }

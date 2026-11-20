@@ -1,8 +1,9 @@
 # Getting started
 
-Mimos runs in your web browser, on a computer or a phone. There is nothing
-to install. You need the address of a Mimos server: one someone runs for
-you, or [your own](../self-hosting.md).
+Mimos runs in your web browser, on a computer or a phone, with nothing to
+install. Android phones can also use [the app](android-app.md). You need
+the address of a Mimos server: one someone runs for you, or
+[your own](../self-hosting.md).
 
 ## Browse without an account
 

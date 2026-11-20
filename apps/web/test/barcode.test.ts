@@ -1,28 +1,23 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { describe, it } from "node:test";
 
 import { chooseDetector, foodFormatsAmong, lookupFailure, openFoodFactsUrl, parseBarcode } from "../src/lib/barcode.ts";
 
+// The app's commonTest reads the same file (libraries/test-cases/README.md).
+const cases = JSON.parse(
+  readFileSync(new URL("../../../libraries/test-cases/barcode.json", import.meta.url), "utf8"),
+) as {
+  parseCases: { about: string; text: string; expected: string | null }[];
+  lookupFailureCases: { status: number | null; message: string }[];
+  productPage: { barcode: string; url: string };
+};
+
 describe("parseBarcode", () => {
-  it("keeps 8 to 14 digits as typed", () => {
-    assert.equal(parseBarcode("50184453"), "50184453");
-    assert.equal(parseBarcode("3017620422003"), "3017620422003");
-    assert.equal(parseBarcode("10012345678902"), "10012345678902");
-  });
-
-  it("drops spaces and dashes, as barcodes are printed and read aloud", () => {
-    assert.equal(parseBarcode(" 3 017620 422003 "), "3017620422003");
-    assert.equal(parseBarcode("3017-6204-22003"), "3017620422003");
-  });
-
-  it("refuses too few or too many digits, and anything that is not a digit", () => {
-    assert.equal(parseBarcode(""), undefined);
-    assert.equal(parseBarcode("1234567"), undefined);
-    assert.equal(parseBarcode("123456789012345"), undefined);
-    assert.equal(parseBarcode("30176204220O3"), undefined);
-    assert.equal(parseBarcode("3017620.422003"), undefined);
-  });
+  for (const each of cases.parseCases) {
+    it(each.about, () => assert.equal(parseBarcode(each.text), each.expected ?? undefined));
+  }
 });
 
 describe("foodFormatsAmong", () => {
@@ -55,12 +50,12 @@ describe("the zxing reader the web serves", () => {
 
 describe("lookup results", () => {
   it("links the product's page on Open Food Facts", () => {
-    assert.equal(openFoodFactsUrl("3017620422003"), "https://world.openfoodfacts.org/product/3017620422003");
+    assert.equal(openFoodFactsUrl(cases.productPage.barcode), cases.productPage.url);
   });
 
   it("tells an unknown barcode from Open Food Facts not answering", () => {
-    assert.equal(lookupFailure(404), "Open Food Facts doesn't know that barcode. Log it by hand instead.");
-    assert.equal(lookupFailure(502), "Open Food Facts didn't answer. Try again, or log it by hand.");
-    assert.equal(lookupFailure(undefined), "Open Food Facts didn't answer. Try again, or log it by hand.");
+    for (const each of cases.lookupFailureCases) {
+      assert.equal(lookupFailure(each.status ?? undefined), each.message, String(each.status));
+    }
   });
 });

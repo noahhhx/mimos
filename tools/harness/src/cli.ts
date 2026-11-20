@@ -7,13 +7,17 @@ import type { Command } from "./command.ts";
 import { apiCommand } from "./commands/api.ts";
 import { debugCommand } from "./commands/debug.ts";
 import { diagCommand } from "./commands/diag.ts";
+import { householdCommand } from "./commands/household.ts";
 import { loglevelCommand } from "./commands/loglevel.ts";
 import { logsCommand } from "./commands/logs.ts";
+import { mobileCommand } from "./commands/mobile.ts";
 import { psqlCommand, sqlCommand } from "./commands/sql.ts";
+import { releaseCommand } from "./commands/release.ts";
 import { downCommand, resetCommand, upCommand } from "./commands/stack.ts";
 import { statusCommand } from "./commands/status.ts";
 import { tokenCommand } from "./commands/token.ts";
 import { uiCommand } from "./commands/ui.ts";
+import { userCommand } from "./commands/user.ts";
 
 /**
  * `harness <command>` — deploy, drive, observe, and debug the local stack.
@@ -29,6 +33,10 @@ export const COMMANDS: readonly Command[] = [
   tokenCommand,
   apiCommand,
   uiCommand,
+  mobileCommand,
+  releaseCommand,
+  userCommand,
+  householdCommand,
   logsCommand,
   diagCommand,
   loglevelCommand,

@@ -1,0 +1,74 @@
+{
+  "aisleCases": [
+    {
+      "about": "groups by aisle in store order, unknown categories last",
+      "items": [
+        { "name": "salt", "category": "Pantry" },
+        { "name": "mystery", "category": "Garden" },
+        { "name": "onion", "category": "Produce" },
+        { "name": "milk", "category": "Dairy & Eggs" }
+      ],
+      "expected": [
+        { "category": "Produce", "names": ["onion"] },
+        { "category": "Dairy & Eggs", "names": ["milk"] },
+        { "category": "Pantry", "names": ["salt"] },
+        { "category": "Garden", "names": ["mystery"] }
+      ]
+    },
+    {
+      "about": "puts what is still to buy above what is checked off, keeping the list's order within each",
+      "items": [
+        { "name": "carrots", "category": "Produce", "checked": true },
+        { "name": "garlic", "category": "Produce" },
+        { "name": "leeks", "category": "Produce", "checked": true },
+        { "name": "onion", "category": "Produce" }
+      ],
+      "expected": [{ "category": "Produce", "names": ["garlic", "onion", "carrots", "leeks"] }]
+    },
+    {
+      "about": "moves aisles with nothing left to buy below the rest, still in store order",
+      "items": [
+        { "name": "onion", "category": "Produce", "checked": true },
+        { "name": "milk", "category": "Dairy & Eggs", "checked": true },
+        { "name": "salt", "category": "Pantry" },
+        { "name": "buns", "category": "Bakery" }
+      ],
+      "expected": [
+        { "category": "Bakery", "names": ["buns"] },
+        { "category": "Pantry", "names": ["salt"] },
+        { "category": "Produce", "names": ["onion"] },
+        { "category": "Dairy & Eggs", "names": ["milk"] }
+      ]
+    },
+    {
+      "about": "keeps unknown categories in the order the list first names them",
+      "items": [
+        { "name": "seeds", "category": "Garden" },
+        { "name": "nails", "category": "Hardware" },
+        { "name": "bulbs", "category": "Garden" }
+      ],
+      "expected": [
+        { "category": "Garden", "names": ["seeds", "bulbs"] },
+        { "category": "Hardware", "names": ["nails"] }
+      ]
+    },
+    { "about": "returns nothing for an empty list", "items": [], "expected": [] }
+  ],
+  "units": ["", "g", "kg", "ml", "l", "tsp", "tbsp"],
+  "addedItemCases": [
+    { "fields": { "name": "  bin bags ", "quantity": "", "unit": "" }, "input": { "name": "bin bags" } },
+    { "fields": { "name": "milk", "quantity": "2", "unit": " l " }, "input": { "name": "milk", "quantity": 2, "unit": "l" } },
+    { "fields": { "name": "lemons", "quantity": "3", "unit": "" }, "input": { "name": "lemons", "quantity": 3 } },
+    { "fields": { "name": "flour", "quantity": " 1.5 ", "unit": "kg" }, "input": { "name": "flour", "quantity": 1.5, "unit": "kg" } },
+    { "fields": { "name": "milk", "quantity": "10000", "unit": "ml" }, "input": { "name": "milk", "quantity": 10000, "unit": "ml" } },
+    { "fields": { "name": " ", "quantity": "", "unit": "" }, "error": "Say what to buy." },
+    { "fields": { "name": "milk", "quantity": "", "unit": "l" }, "error": "Give an amount for the unit, or choose pieces." },
+    { "fields": { "name": "milk", "quantity": "0", "unit": "" }, "error": "The amount must be more than 0 and at most 10000." },
+    { "fields": { "name": "milk", "quantity": "-1", "unit": "" }, "error": "The amount must be more than 0 and at most 10000." },
+    { "fields": { "name": "milk", "quantity": "10001", "unit": "" }, "error": "The amount must be more than 0 and at most 10000." },
+    { "fields": { "name": "milk", "quantity": "lots", "unit": "" }, "error": "The amount must be more than 0 and at most 10000." },
+    { "fields": { "name": "milk", "quantity": "2f", "unit": "" }, "error": "The amount must be more than 0 and at most 10000." },
+    { "fields": { "name": "bin bags", "quantity": "1", "unit": "pack" }, "error": "Choose a unit from the list." }
+  ],
+  "longName": { "length": 201, "error": "Keep the name to 200 characters." }
+}

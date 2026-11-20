@@ -1,0 +1,396 @@
+{
+  "base": {
+    "title": "Soup",
+    "description": "Warm.",
+    "servings": "2",
+    "prepMinutes": "",
+    "cookMinutes": "",
+    "tags": "",
+    "nutritionSource": "INGREDIENTS",
+    "calories": "",
+    "proteinG": "",
+    "carbsG": "",
+    "fatG": "",
+    "ingredients": [{ "quantity": "1", "unit": "l", "name": "stock" }],
+    "steps": ["Simmer."]
+  },
+  "inputCases": [
+    {
+      "name": "leaves a blank amount out: an unmeasured ingredient",
+      "patch": {
+        "ingredients": [
+          { "quantity": "", "unit": "", "name": " salt, to taste " },
+          { "quantity": "1", "unit": "l", "name": "stock" }
+        ]
+      },
+      "expected": {
+        "input": {
+          "ingredients": [{ "name": "salt, to taste" }, { "quantity": 1, "unit": "l", "name": "stock" }]
+        }
+      }
+    },
+    {
+      "name": "skips untouched rows and blank steps",
+      "patch": {
+        "ingredients": [
+          { "quantity": "1", "unit": "l", "name": "stock" },
+          { "quantity": "", "unit": "", "name": "" }
+        ],
+        "steps": ["Simmer.", "  "]
+      },
+      "expected": {
+        "input": {
+          "ingredients": [{ "quantity": 1, "unit": "l", "name": "stock" }],
+          "steps": [{ "instruction": "Simmer." }]
+        }
+      }
+    },
+    {
+      "name": "names a row with no name",
+      "patch": { "ingredients": [{ "quantity": "2", "unit": "cups", "name": "" }] },
+      "expected": { "errors": ["Ingredient 1 needs a name."] }
+    },
+    {
+      "name": "rejects a zero amount, naming the row",
+      "patch": {
+        "ingredients": [
+          { "quantity": "1", "unit": "l", "name": "stock" },
+          { "quantity": "0", "unit": "", "name": "salt" }
+        ]
+      },
+      "expected": { "errors": ["Ingredient 2's amount must be more than 0, or leave it blank for \"to taste\"."] }
+    },
+    {
+      "name": "rejects a negative amount and one that is not a number",
+      "patch": {
+        "ingredients": [
+          { "quantity": "-1", "unit": "", "name": "salt" },
+          { "quantity": "1,5", "unit": "l", "name": "stock" }
+        ]
+      },
+      "expected": {
+        "errors": [
+          "Ingredient 1's amount must be more than 0, or leave it blank for \"to taste\".",
+          "Ingredient 2's amount must be more than 0, or leave it blank for \"to taste\"."
+        ]
+      }
+    },
+    {
+      "name": "asks for a title, a description, an ingredient, and a step",
+      "patch": {
+        "title": "  ",
+        "description": "",
+        "ingredients": [{ "quantity": "", "unit": "", "name": "" }],
+        "steps": [""]
+      },
+      "expected": {
+        "errors": [
+          "Give the recipe a title.",
+          "Give the recipe a description.",
+          "Add at least one ingredient.",
+          "Add at least one step."
+        ]
+      }
+    },
+    {
+      "name": "lowercases tags and keeps each once",
+      "patch": { "tags": "Dinner, dinner , soup,," },
+      "expected": { "input": { "tags": ["dinner", "soup"] } }
+    },
+    {
+      "name": "trims the title, and sends the times, a zero among them, and the typed nutrition",
+      "patch": {
+        "title": " Soup ",
+        "prepMinutes": "10",
+        "cookMinutes": "0",
+        "nutritionSource": "MANUAL",
+        "calories": "240",
+        "proteinG": " "
+      },
+      "expected": {
+        "input": {
+          "title": "Soup",
+          "description": "Warm.",
+          "servings": 2,
+          "prepMinutes": 10,
+          "cookMinutes": 0,
+          "nutritionSource": "MANUAL",
+          "nutrition": { "calories": 240 }
+        }
+      }
+    },
+    {
+      "name": "sends a note and a link, and leaves out a blank note and a line not to count",
+      "patch": {
+        "ingredients": [
+          { "quantity": "250", "unit": "g", "name": "red lentils", "note": " rinsed ", "catalogSlug": "red-lentils" },
+          { "quantity": "", "unit": "", "name": "salt", "note": "  ", "catalogSlug": "" }
+        ]
+      },
+      "expected": {
+        "input": {
+          "ingredients": [
+            { "quantity": 250, "unit": "g", "name": "red lentils", "note": "rinsed", "catalogSlug": "red-lentils" },
+            { "name": "salt" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "never sends both links for a line",
+      "patch": {
+        "ingredients": [
+          { "quantity": "1", "unit": "servings", "name": "focaccia", "catalogSlug": "bread", "recipeId": "r-1" }
+        ]
+      },
+      "expected": {
+        "input": { "ingredients": [{ "quantity": 1, "unit": "servings", "name": "focaccia", "recipeId": "r-1" }] }
+      }
+    }
+  ],
+  "draftCases": [
+    {
+      "name": "a new recipe starts at 4 servings, calculated, with one empty row and one empty step",
+      "recipe": null,
+      "expected": {
+        "title": "",
+        "description": "",
+        "servings": "4",
+        "prepMinutes": "",
+        "cookMinutes": "",
+        "tags": "",
+        "nutritionSource": "INGREDIENTS",
+        "calories": "",
+        "proteinG": "",
+        "carbsG": "",
+        "fatG": "",
+        "ingredients": [{ "quantity": "", "unit": "", "name": "" }],
+        "steps": [""]
+      }
+    },
+    {
+      "name": "reads a saved recipe's unmeasured ingredient as a blank amount",
+      "recipe": {
+        "id": "00000000-0000-0000-0000-000000000000",
+        "title": "Soup",
+        "description": "Warm.",
+        "servings": 2,
+        "isLibrary": false,
+        "pictures": [],
+        "tags": [],
+        "nutrition": {},
+        "nutritionSource": "MANUAL",
+        "ingredients": [{ "name": "salt" }],
+        "steps": [{ "instruction": "Simmer." }]
+      },
+      "expected": {
+        "title": "Soup",
+        "description": "Warm.",
+        "servings": "2",
+        "prepMinutes": "",
+        "cookMinutes": "",
+        "tags": "",
+        "nutritionSource": "MANUAL",
+        "calories": "",
+        "proteinG": "",
+        "carbsG": "",
+        "fatG": "",
+        "ingredients": [{ "quantity": "", "unit": "", "name": "salt" }],
+        "steps": ["Simmer."]
+      },
+      "input": { "nutritionSource": "MANUAL", "nutrition": {}, "ingredients": [{ "name": "salt" }] }
+    },
+    {
+      "name": "round-trips the times, tags, calculated nutrition, and each line's note and catalog link",
+      "recipe": {
+        "id": "00000000-0000-0000-0000-000000000000",
+        "title": "Soup",
+        "description": "Warm.",
+        "servings": 2,
+        "prepMinutes": 10,
+        "cookMinutes": 0,
+        "isLibrary": false,
+        "pictures": [],
+        "tags": ["soup", "quick"],
+        "nutrition": { "calories": 240, "proteinG": 12.5 },
+        "nutritionSource": "INGREDIENTS",
+        "ingredients": [
+          { "quantity": 250, "unit": "g", "name": "red lentils", "note": "rinsed", "catalogSlug": "red-lentils" },
+          { "quantity": 0.5, "unit": "tsp", "name": "salt" }
+        ],
+        "steps": [{ "instruction": "Rinse." }, { "instruction": "Simmer." }]
+      },
+      "expected": {
+        "title": "Soup",
+        "description": "Warm.",
+        "servings": "2",
+        "prepMinutes": "10",
+        "cookMinutes": "0",
+        "tags": "soup, quick",
+        "nutritionSource": "INGREDIENTS",
+        "calories": "240",
+        "proteinG": "12.5",
+        "carbsG": "",
+        "fatG": "",
+        "ingredients": [
+          { "quantity": "250", "unit": "g", "name": "red lentils", "note": "rinsed", "catalogSlug": "red-lentils" },
+          { "quantity": "0.5", "unit": "tsp", "name": "salt" }
+        ],
+        "steps": ["Rinse.", "Simmer."]
+      },
+      "input": {
+        "prepMinutes": 10,
+        "cookMinutes": 0,
+        "tags": ["soup", "quick"],
+        "nutritionSource": "INGREDIENTS",
+        "ingredients": [
+          { "quantity": 250, "unit": "g", "name": "red lentils", "note": "rinsed", "catalogSlug": "red-lentils" },
+          { "quantity": 0.5, "unit": "tsp", "name": "salt" }
+        ],
+        "steps": [{ "instruction": "Rinse." }, { "instruction": "Simmer." }]
+      }
+    },
+    {
+      "name": "round-trips a line that is one of the user's recipes, in servings",
+      "recipe": {
+        "id": "00000000-0000-0000-0000-000000000000",
+        "title": "Focaccia sandwich",
+        "description": "Lunch.",
+        "servings": 2,
+        "isLibrary": false,
+        "pictures": [],
+        "tags": [],
+        "nutrition": { "calories": 300 },
+        "nutritionSource": "INGREDIENTS",
+        "ingredients": [
+          { "quantity": 2, "unit": "Servings", "name": "focaccia", "recipeId": "11111111-1111-1111-1111-111111111111" }
+        ],
+        "steps": [{ "instruction": "Fill it." }]
+      },
+      "expected": {
+        "title": "Focaccia sandwich",
+        "description": "Lunch.",
+        "servings": "2",
+        "prepMinutes": "",
+        "cookMinutes": "",
+        "tags": "",
+        "nutritionSource": "INGREDIENTS",
+        "calories": "300",
+        "proteinG": "",
+        "carbsG": "",
+        "fatG": "",
+        "ingredients": [
+          { "quantity": "2", "unit": "servings", "name": "focaccia", "recipeId": "11111111-1111-1111-1111-111111111111" }
+        ],
+        "steps": ["Fill it."]
+      },
+      "input": {
+        "ingredients": [
+          { "quantity": 2, "unit": "servings", "name": "focaccia", "recipeId": "11111111-1111-1111-1111-111111111111" }
+        ]
+      }
+    },
+    {
+      "name": "reads a loosely written metric unit as that unit, and keeps any other as written",
+      "recipe": {
+        "id": "00000000-0000-0000-0000-000000000000",
+        "title": "Soup",
+        "description": "Warm.",
+        "servings": 2,
+        "isLibrary": false,
+        "pictures": [],
+        "tags": [],
+        "nutrition": {},
+        "nutritionSource": "MANUAL",
+        "ingredients": [
+          { "quantity": 2, "unit": " TBSP", "name": "oil" },
+          { "quantity": 2, "unit": "cups", "name": "stock" },
+          { "quantity": 1, "unit": "Recipe", "name": "pesto", "recipeId": "r-pesto" }
+        ],
+        "steps": [{ "instruction": "Simmer." }]
+      },
+      "expected": {
+        "title": "Soup",
+        "description": "Warm.",
+        "servings": "2",
+        "prepMinutes": "",
+        "cookMinutes": "",
+        "tags": "",
+        "nutritionSource": "MANUAL",
+        "calories": "",
+        "proteinG": "",
+        "carbsG": "",
+        "fatG": "",
+        "ingredients": [
+          { "quantity": "2", "unit": "tbsp", "name": "oil" },
+          { "quantity": "2", "unit": "cups", "name": "stock" },
+          { "quantity": "1", "unit": "recipe", "name": "pesto", "recipeId": "r-pesto" }
+        ],
+        "steps": ["Simmer."]
+      }
+    }
+  ],
+  "estimateCases": [
+    {
+      "name": "sends the named, validly measured rows, without notes, and remembers where each came from",
+      "patch": {
+        "servings": "4",
+        "ingredients": [
+          { "quantity": "", "unit": "", "name": "" },
+          { "quantity": "250", "unit": " g ", "name": "red lentils", "note": "rinsed", "catalogSlug": "red-lentils" },
+          { "quantity": "-1", "unit": "", "name": "carrots" },
+          { "quantity": "", "unit": "", "name": "salt", "catalogSlug": "" },
+          { "quantity": "2", "unit": "servings", "name": "focaccia", "recipeId": "r-1" }
+        ]
+      },
+      "expected": {
+        "input": {
+          "servings": 4,
+          "ingredients": [
+            { "quantity": 250, "unit": "g", "name": "red lentils", "catalogSlug": "red-lentils" },
+            { "name": "salt" },
+            { "quantity": 2, "unit": "servings", "name": "focaccia", "recipeId": "r-1" }
+          ]
+        },
+        "rows": [1, 3, 4]
+      }
+    },
+    {
+      "name": "estimates up to 50 servings",
+      "patch": { "servings": "50" },
+      "expected": {
+        "input": { "servings": 50, "ingredients": [{ "quantity": 1, "unit": "l", "name": "stock" }] },
+        "rows": [0]
+      }
+    },
+    { "name": "waits for servings to be typed", "patch": { "servings": "" }, "expected": null },
+    { "name": "waits for a whole number of servings", "patch": { "servings": "2.5" }, "expected": null },
+    { "name": "waits for at least one serving", "patch": { "servings": "0" }, "expected": null },
+    { "name": "waits for at most 50 servings", "patch": { "servings": "51" }, "expected": null }
+  ],
+  "unitChoiceCases": [
+    { "current": "g", "isRecipe": false, "expected": ["", "g", "kg", "ml", "l", "tsp", "tbsp"] },
+    { "current": "", "isRecipe": false, "expected": ["", "g", "kg", "ml", "l", "tsp", "tbsp"] },
+    { "current": "cups", "isRecipe": false, "expected": ["", "g", "kg", "ml", "l", "tsp", "tbsp", "cups"] },
+    {
+      "current": "",
+      "isRecipe": true,
+      "expected": ["", "g", "kg", "ml", "l", "tsp", "tbsp", "servings", "recipe"]
+    },
+    {
+      "current": "servings",
+      "isRecipe": false,
+      "expected": ["", "g", "kg", "ml", "l", "tsp", "tbsp", "servings", "recipe"]
+    },
+    {
+      "current": "recipe",
+      "isRecipe": false,
+      "expected": ["", "g", "kg", "ml", "l", "tsp", "tbsp", "servings", "recipe"]
+    },
+    {
+      "current": "cups",
+      "isRecipe": true,
+      "expected": ["", "g", "kg", "ml", "l", "tsp", "tbsp", "servings", "recipe", "cups"]
+    }
+  ]
+}

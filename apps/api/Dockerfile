@@ -12,8 +12,16 @@ COPY integrations/ integrations/
 COPY apps/ apps/
 COPY deploy/keycloak/mimos-realm.json deploy/keycloak/
 
+# A release tag's version (CI's publish job), so the API reports it (ADR-0029).
+# Empty builds the version in pom.xml, a snapshot.
+ARG MIMOS_VERSION=
+
 RUN --mount=type=cache,target=/root/.m2 \
-    mvn -B -DskipTests package
+    if [ -n "$MIMOS_VERSION" ]; then \
+      mvn -B -q org.codehaus.mojo:versions-maven-plugin:2.18.0:set \
+        -DnewVersion="$MIMOS_VERSION" -DgenerateBackupPoms=false; \
+    fi \
+ && mvn -B -DskipTests package
 
 # ---- runtime stage ----
 FROM eclipse-temurin:21-jre-jammy

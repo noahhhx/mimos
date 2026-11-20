@@ -1,0 +1,75 @@
+appId: io.github.noahhhx.mimos.debug
+tags:
+  - invitee
+---
+- runFlow: connect-and-sign-in.yaml
+- tapOn: Profile
+- tapOn: Household
+- assertVisible: Who is in it
+- assertVisible: It is just you for now.
+- tapOn: Create invite link
+- scrollUntilVisible:
+    element: Works once, until .*
+- copyTextFrom: http.*/app/join/.*
+- takeScreenshot: invite-created
+- tapOn: Share link
+- assertVisible: Sharing link
+- back
+- tapOn: Profile
+- tapOn: Sign out
+- tapOn:
+    text: Sign in
+    index: 1
+- assertVisible: Username or email
+- tapOn: Username or email
+- inputText: ${MIMOS_INVITEE}
+- tapOn: Password
+- inputText: ${MIMOS_PASSWORD}
+- tapOn: Sign In
+- assertVisible: Good (morning|afternoon|evening)\.
+- tapOn: Profile
+- tapOn: Household
+- assertVisible: It is just you for now.
+- scrollUntilVisible:
+    element: Open invite
+- tapOn: Invite link
+- pasteText
+- tapOn: Open invite
+- assertVisible: Join ${MIMOS_USER}'s household\?
+- assertVisible: Your recipes and your own ingredients come with you.*
+- takeScreenshot: join-by-pasted-link
+- scrollUntilVisible:
+    element: Join household
+- tapOn: Join household
+- assertVisible: Who is in it
+- assertVisible: ${MIMOS_INVITEE}
+- assertVisible: ${MIMOS_USER}
+- assertNotVisible: It is just you for now.
+- takeScreenshot: joined
+- tapOn: Create invite link
+- scrollUntilVisible:
+    element: Works once, until .*
+- copyTextFrom: http.*/app/join/.*
+- evalScript: >-
+    ${output.appLink = 'io.github.noahhhx.mimos://join?instance=' +
+    encodeURIComponent(MIMOS_WEB_ADDRESS) + '&token=' + maestro.copiedText.split('/').pop()}
+- scrollUntilVisible:
+    element: Leave household
+- tapOn: Leave household
+- assertVisible: Leave this household\?
+- scrollUntilVisible:
+    element: You start again in a household of your own.
+- takeScreenshot: leave-warnings
+- scrollUntilVisible:
+    element: Stay
+- tapOn: Leave household
+- assertVisible: It is just you for now.
+- openLink: ${output.appLink}
+- assertVisible: Join ${MIMOS_USER}'s household\?
+- takeScreenshot: join-by-app-link
+- scrollUntilVisible:
+    element: Join household
+- tapOn: Join household
+- assertVisible: Who is in it
+- assertVisible: ${MIMOS_USER}
+- assertNotVisible: It is just you for now.

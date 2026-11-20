@@ -1,0 +1,161 @@
+{
+  "date": "2026-10-07",
+  "recipes": {
+    "dahl": { "id": "r-dahl", "title": "Red Lentil Dahl", "nutrition": { "calories": 450, "proteinG": 20, "carbsG": 61, "fatG": 12 } },
+    "bread": { "id": "r-bread", "title": "Banana bread", "nutrition": { "calories": 450, "proteinG": 20, "carbsG": 61, "fatG": 12 } },
+    "unknown": { "id": "r-unknown", "title": "Mystery stew", "nutrition": {} },
+    "calories-only": { "id": "r-calories", "title": "Soup", "nutrition": { "calories": 333.33 } }
+  },
+  "ingredients": {
+    "sugar": { "slug": "sugar", "name": "Sugar", "isShared": true, "basis": "PER_100_G", "nutrition": { "calories": 400, "proteinG": 0, "carbsG": 100, "fatG": 0 } },
+    "own-sugar": { "slug": "own-sugar", "name": "Sugar", "isShared": false, "basis": "PER_100_G", "nutrition": { "calories": 400, "proteinG": 0, "carbsG": 100, "fatG": 0 } },
+    "olive-oil": { "slug": "olive-oil", "name": "Olive oil", "isShared": true, "basis": "PER_100_ML", "nutrition": { "calories": 900, "proteinG": 0, "carbsG": 0, "fatG": 100 } },
+    "banana": { "slug": "banana", "name": "Banana", "isShared": true, "basis": "PER_PIECE", "nutrition": { "calories": 105, "proteinG": 1.3, "carbsG": 27, "fatG": 0.4 } },
+    "partial": { "slug": "partial", "name": "Sugar", "isShared": true, "basis": "PER_100_G", "nutrition": { "calories": 400, "carbsG": 100 } },
+    "none": { "slug": "none", "name": "Sugar", "isShared": true, "basis": "PER_100_G", "nutrition": {} },
+    "odd": { "slug": "odd", "name": "Sugar", "isShared": true, "basis": "PER_100_G", "nutrition": { "calories": 333 } },
+    "long": { "slug": "long", "name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "isShared": true, "basis": "PER_100_G", "nutrition": { "calories": 400 } }
+  },
+  "products": {
+    "marmite": { "barcode": "50184453", "name": "Yeast Extract", "brand": "Marmite", "basis": "PER_100_G", "nutrition": { "calories": 260, "proteinG": 34, "carbsG": 30 }, "servingSize": 8 },
+    "cola": { "barcode": "5449000000996", "name": "Coca-Cola Original", "brand": "Coca-Cola", "basis": "PER_100_ML", "nutrition": { "calories": 42.4, "proteinG": 0, "carbsG": 10.6, "fatG": 0 }, "servingSize": 330 },
+    "unbranded": { "barcode": "50184453", "name": "Yeast Extract", "basis": "PER_100_G", "nutrition": { "calories": 260 }, "servingSize": 8 },
+    "nutella": { "barcode": "3017620422003", "name": "Nutella", "brand": "Nutella", "basis": "PER_100_G", "nutrition": { "calories": 539 } },
+    "unserved-drink": { "barcode": "5449000000996", "name": "Juice", "basis": "PER_100_ML", "nutrition": { "calories": 40 } }
+  },
+  "logBodyCases": [
+    {
+      "about": "logs a recipe by its id and servings, leaving nutrition to the API",
+      "what": { "recipe": "dahl" },
+      "mealType": "LUNCH",
+      "servings": "1.5",
+      "nutrition": { "calories": "999", "proteinG": "1", "carbsG": "", "fatG": "" },
+      "expected": { "date": "2026-10-07", "mealType": "LUNCH", "recipeId": "r-dahl", "servings": 1.5 }
+    },
+    { "about": "logs a recipe at most 100 servings", "what": { "recipe": "dahl" }, "servings": "100", "expected": { "date": "2026-10-07", "mealType": "SNACK", "recipeId": "r-dahl", "servings": 100 } },
+    { "about": "logs a recipe at 0.1 servings", "what": { "recipe": "dahl" }, "servings": "0.1", "expected": { "date": "2026-10-07", "mealType": "SNACK", "recipeId": "r-dahl", "servings": 0.1 } },
+    { "about": "logs no recipe at 0 servings", "what": { "recipe": "dahl" }, "servings": "0", "logsNothing": true },
+    { "about": "logs no recipe at negative servings", "what": { "recipe": "dahl" }, "servings": "-1", "logsNothing": true },
+    { "about": "logs no recipe over 100 servings", "what": { "recipe": "dahl" }, "servings": "100.1", "logsNothing": true },
+    { "about": "logs no recipe at servings that are not a number", "what": { "recipe": "dahl" }, "servings": "abc", "logsNothing": true },
+    { "about": "logs no recipe without servings", "what": { "recipe": "dahl" }, "servings": " ", "logsNothing": true },
+    { "about": "logs no recipe at Infinity servings", "what": { "recipe": "dahl" }, "servings": "Infinity", "logsNothing": true },
+    {
+      "about": "logs anything else as one serving of what was typed, with the nutrition given",
+      "what": { "custom": "  Toast with peanut butter " },
+      "servings": "3",
+      "nutrition": { "calories": "310", "proteinG": "11.5", "carbsG": "", "fatG": " " },
+      "expected": { "date": "2026-10-07", "mealType": "SNACK", "description": "Toast with peanut butter", "servings": 1, "nutrition": { "calories": 310, "proteinG": 11.5 } }
+    },
+    { "about": "logs nothing without a description", "what": { "custom": "" }, "logsNothing": true },
+    { "about": "logs nothing with a blank description", "what": { "custom": "   " }, "nutrition": { "calories": "100", "proteinG": "", "carbsG": "", "fatG": "" }, "logsNothing": true },
+    {
+      "about": "logs an ingredient as one serving named with its amount, carrying the nutrition the form previewed",
+      "what": { "ingredient": "sugar" },
+      "amount": { "quantity": "15", "unit": "g" },
+      "expected": { "date": "2026-10-07", "mealType": "SNACK", "description": "Sugar, 15 g", "servings": 1, "nutrition": { "calories": 60, "proteinG": 0, "carbsG": 15, "fatG": 0 } }
+    },
+    { "about": "names a spoonful", "what": { "ingredient": "olive-oil" }, "amount": { "quantity": "1", "unit": "tbsp" }, "description": "Olive oil, 1 tbsp" },
+    { "about": "names pieces", "what": { "ingredient": "banana" }, "amount": { "quantity": "2", "unit": "" }, "description": "Banana, 2 pieces" },
+    { "about": "names one piece", "what": { "ingredient": "banana" }, "amount": { "quantity": "1", "unit": "" }, "description": "Banana, 1 piece" },
+    { "about": "names half a piece as pieces", "what": { "ingredient": "banana" }, "amount": { "quantity": "0.5", "unit": "" }, "description": "Banana, 0.5 pieces" },
+    { "about": "logs no ingredient without an amount", "what": { "ingredient": "sugar" }, "amount": { "quantity": " ", "unit": "g" }, "logsNothing": true },
+    { "about": "logs no ingredient at 0", "what": { "ingredient": "sugar" }, "amount": { "quantity": "0", "unit": "g" }, "logsNothing": true },
+    { "about": "logs no ingredient at a negative amount", "what": { "ingredient": "sugar" }, "amount": { "quantity": "-5", "unit": "g" }, "logsNothing": true },
+    { "about": "logs no ingredient at an amount that is not a number", "what": { "ingredient": "sugar" }, "amount": { "quantity": "abc", "unit": "g" }, "logsNothing": true },
+    { "about": "logs no ingredient at Infinity", "what": { "ingredient": "sugar" }, "amount": { "quantity": "Infinity", "unit": "g" }, "logsNothing": true },
+    { "about": "logs no ingredient in a unit of another basis", "what": { "ingredient": "sugar" }, "amount": { "quantity": "1", "unit": "tbsp" }, "logsNothing": true },
+    { "about": "logs no piece by weight", "what": { "ingredient": "banana" }, "amount": { "quantity": "100", "unit": "g" }, "logsNothing": true },
+    {
+      "about": "logs an ingredient whose nutrition is unknown with none",
+      "what": { "ingredient": "none" },
+      "amount": { "quantity": "15", "unit": "g" },
+      "expected": { "date": "2026-10-07", "mealType": "SNACK", "description": "Sugar, 15 g", "servings": 1, "nutrition": {} }
+    },
+    {
+      "about": "keeps a long name's description within the 200 characters the API takes, amount included",
+      "what": { "ingredient": "long" },
+      "amount": { "quantity": "250", "unit": "g" },
+      "description": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx, 250 g"
+    },
+    {
+      "about": "logs a product as one serving named with its amount, carrying the previewed nutrition and nothing it lacks",
+      "what": { "product": "marmite" },
+      "mealType": "BREAKFAST",
+      "amount": { "quantity": "8", "unit": "g" },
+      "expected": { "date": "2026-10-07", "mealType": "BREAKFAST", "description": "Yeast Extract (Marmite), 8 g", "servings": 1, "nutrition": { "calories": 20.8, "proteinG": 2.7, "carbsG": 2.4 } }
+    },
+    { "about": "logs a drink by volume", "what": { "product": "cola" }, "amount": { "quantity": "1", "unit": "tbsp" }, "description": "Coca-Cola Original (Coca-Cola), 1 tbsp" },
+    { "about": "logs no drink by weight", "what": { "product": "cola" }, "amount": { "quantity": "100", "unit": "g" }, "logsNothing": true }
+  ],
+  "servingsCases": [
+    { "text": "2", "expected": 2 },
+    { "text": "0.5", "expected": 0.5 },
+    { "text": "0", "expected": null },
+    { "text": "101", "expected": null }
+  ],
+  "recipeTotalCases": [
+    { "about": "scales a serving by the servings logged", "recipe": "dahl", "servings": 1.5, "total": { "calories": 675, "proteinG": 30, "carbsG": 91.5, "fatG": 18 }, "text": "Comes to 675 kcal, 30 g protein, 92 g carbs, 18 g fat." },
+    { "about": "rounds to 0.1, as the API stores a logged recipe", "recipe": "dahl", "servings": 0.3, "total": { "calories": 135, "proteinG": 6, "carbsG": 18.3, "fatG": 3.6 }, "text": "Comes to 135 kcal, 6 g protein, 18 g carbs, 4 g fat." },
+    { "about": "says only the values it knows, in whole numbers", "recipe": "calories-only", "servings": 1, "total": { "calories": 333.3 }, "text": "Comes to 333 kcal." },
+    { "about": "knows nothing about a recipe whose nutrition is unknown", "recipe": "unknown", "servings": 2, "total": null, "text": "Nutrition unknown, so it adds nothing." }
+  ],
+  "measuredTotalCases": [
+    { "ingredient": "sugar", "quantity": 15, "unit": "g", "total": { "calories": 60, "proteinG": 0, "carbsG": 15, "fatG": 0 } },
+    { "ingredient": "sugar", "quantity": 0.5, "unit": "kg", "total": { "calories": 2000, "proteinG": 0, "carbsG": 500, "fatG": 0 } },
+    { "ingredient": "olive-oil", "quantity": 1, "unit": "tbsp", "total": { "calories": 135, "proteinG": 0, "carbsG": 0, "fatG": 15 }, "text": "Comes to 135 kcal, 0 g protein, 0 g carbs, 15 g fat." },
+    { "ingredient": "olive-oil", "quantity": 2, "unit": "tsp", "total": { "calories": 90, "proteinG": 0, "carbsG": 0, "fatG": 10 } },
+    { "ingredient": "olive-oil", "quantity": 250, "unit": "ml", "total": { "calories": 2250, "proteinG": 0, "carbsG": 0, "fatG": 250 } },
+    { "ingredient": "olive-oil", "quantity": 0.1, "unit": "l", "total": { "calories": 900, "proteinG": 0, "carbsG": 0, "fatG": 100 } },
+    { "ingredient": "banana", "quantity": 2, "unit": "", "total": { "calories": 210, "proteinG": 2.6, "carbsG": 54, "fatG": 0.8 } },
+    { "ingredient": "banana", "quantity": 1.5, "unit": "", "total": { "calories": 157.5, "proteinG": 2, "carbsG": 40.5, "fatG": 0.6 } },
+    { "ingredient": "odd", "quantity": 1, "unit": "g", "total": { "calories": 3.3 } },
+    { "ingredient": "partial", "quantity": 15, "unit": "g", "total": { "calories": 60, "carbsG": 15 } },
+    { "ingredient": "none", "quantity": 15, "unit": "g", "total": null },
+    { "ingredient": "sugar", "quantity": 1, "unit": "ml", "total": null },
+    { "ingredient": "olive-oil", "quantity": 1, "unit": "g", "total": null },
+    { "ingredient": "banana", "quantity": 1, "unit": "kg", "total": null }
+  ],
+  "unitsFor": {
+    "PER_100_G": ["g", "kg"],
+    "PER_100_ML": ["ml", "l", "tsp", "tbsp"],
+    "PER_PIECE": [""]
+  },
+  "measuredCases": [
+    { "about": "an ingredient starts at 100 g", "what": { "ingredient": "sugar" }, "name": "Sugar", "basis": "PER_100_G", "amount": { "quantity": "100", "unit": "g" } },
+    { "about": "an ingredient starts at 100 ml", "what": { "ingredient": "olive-oil" }, "name": "Olive oil", "basis": "PER_100_ML", "amount": { "quantity": "100", "unit": "ml" } },
+    { "about": "a piece starts at 1", "what": { "ingredient": "banana" }, "name": "Banana", "basis": "PER_PIECE", "amount": { "quantity": "1", "unit": "" } },
+    { "about": "a product is named with its brand and starts at one serving, with a hint saying so", "what": { "product": "marmite" }, "name": "Yeast Extract (Marmite)", "basis": "PER_100_G", "amount": { "quantity": "8", "unit": "g" }, "hint": "One serving is 8 g." },
+    { "about": "a drink starts at one serving in ml", "what": { "product": "cola" }, "name": "Coca-Cola Original (Coca-Cola)", "basis": "PER_100_ML", "amount": { "quantity": "330", "unit": "ml" }, "hint": "One serving is 330 ml." },
+    { "about": "a product with no brand is named without one", "what": { "product": "unbranded" }, "name": "Yeast Extract", "basis": "PER_100_G", "amount": { "quantity": "8", "unit": "g" }, "hint": "One serving is 8 g." },
+    { "about": "a product whose brand is its name says it once, and with no serving starts at 100 g with no hint", "what": { "product": "nutella" }, "name": "Nutella", "basis": "PER_100_G", "amount": { "quantity": "100", "unit": "g" } },
+    { "about": "a drink with no serving starts at 100 ml", "what": { "product": "unserved-drink" }, "name": "Juice", "basis": "PER_100_ML", "amount": { "quantity": "100", "unit": "ml" } }
+  ],
+  "whatTextCases": [
+    { "about": "a picked recipe shows its title", "what": { "recipe": "dahl" }, "text": "Red Lentil Dahl" },
+    { "about": "a picked ingredient shows its name", "what": { "ingredient": "sugar" }, "text": "Sugar" },
+    { "about": "typing keeps the text as typed, a trailing space included, or no second word can be typed", "what": { "custom": "Red Lentil " }, "text": "Red Lentil " }
+  ],
+  "searchCases": [
+    {
+      "about": "ranks recipes and ingredients together, names that start with the text first",
+      "query": "banana",
+      "recipes": ["bread", "dahl"],
+      "ingredients": ["sugar", "banana"],
+      "expected": ["ingredient:banana", "recipe:r-bread"]
+    },
+    { "about": "offers nothing before anything is typed", "query": "", "recipes": ["dahl"], "ingredients": ["sugar"], "expected": [] },
+    { "about": "offers nothing for blank text", "query": "  ", "recipes": ["dahl"], "ingredients": ["sugar"], "expected": [] }
+  ],
+  "searchLimit": { "query": "sugar", "count": 10, "limit": 8 },
+  "describeIngredientCases": [
+    { "ingredient": "sugar", "text": "Ingredient · 400 kcal per 100 g" },
+    { "ingredient": "own-sugar", "text": "Your ingredient · 400 kcal per 100 g" },
+    { "ingredient": "banana", "text": "Ingredient · 105 kcal each" }
+  ],
+  "nutritionCellsCases": [
+    { "nutrition": { "calories": 1234.5, "proteinG": 60.4, "carbsG": 150, "fatG": 0 }, "cells": ["1235 kcal", "60 g", "150 g", "0 g"] },
+    { "nutrition": { "calories": 120 }, "cells": ["120 kcal", "–", "–", "–"] },
+    { "nutrition": null, "cells": ["–", "–", "–", "–"] }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "limits": {
+    "maxPictures": 8,
+    "maxPictureBytes": 2097152,
+    "longEdge": 1600,
+    "qualitySteps": [0.85, 0.75, 0.6, 0.45]
+  },
+  "fit": [
+    { "name": "shrinks a landscape long edge to the limit, keeping the ratio", "width": 4000, "height": 3000, "expected": { "width": 1600, "height": 1200 } },
+    { "name": "shrinks a portrait long edge to the limit, keeping the ratio", "width": 3000, "height": 4000, "expected": { "width": 1200, "height": 1600 } },
+    { "name": "never enlarges a small picture", "width": 800, "height": 600, "expected": { "width": 800, "height": 600 } },
+    { "name": "leaves a picture already at the limit alone", "width": 1600, "height": 900, "expected": { "width": 1600, "height": 900 } },
+    { "name": "keeps at least one pixel on a very thin picture", "width": 10000, "height": 2, "expected": { "width": 1600, "height": 1 } },
+    { "name": "rounds half a pixel up", "width": 3200, "height": 1001, "expected": { "width": 1600, "height": 501 } },
+    { "name": "shrinks a phone photo's odd size", "width": 4032, "height": 3024, "expected": { "width": 1600, "height": 1200 } }
+  ]
+}

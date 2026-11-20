@@ -1,27 +1,24 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 import { countedName, formatQuantity, formatServings, hasNutrition, nutritionCells, todayIso } from "../src/lib/format.ts";
 
+// The app's commonTest reads the same file (libraries/test-cases/README.md).
+const text = JSON.parse(
+  readFileSync(new URL("../../../libraries/test-cases/recipe-text.json", import.meta.url), "utf8"),
+) as {
+  quantityCases: { quantity: number | null; unit: string | null; expected: string }[];
+  nameCases: { name: string; quantity: number | null; unit: string | null; expected: string }[];
+  servingsCases: { servings: number; expected: string }[];
+};
+
 describe("formatQuantity", () => {
-  it("formats an amount with its unit", () => {
-    assert.equal(formatQuantity(2, "cups"), "2 cups");
-    assert.equal(formatQuantity(1.333, "tbsp"), "1.33 tbsp");
-    assert.equal(formatQuantity(3, undefined), "3");
-  });
-
-  it("shows a whole recipe as a multiple with no unit", () => {
-    assert.equal(formatQuantity(1, "recipe"), "1x");
-    assert.equal(formatQuantity(2, " Recipes "), "2x");
-    assert.equal(formatQuantity(0.5, "recipe"), "0.5x");
-    assert.equal(formatQuantity(null, "recipe"), "");
-  });
-
-  it("counts servings of a recipe in words that agree with the amount", () => {
-    assert.equal(formatQuantity(2, "servings"), "2 servings");
-    assert.equal(formatQuantity(1, "servings"), "1 serving");
-    assert.equal(formatQuantity(0.5, "servings"), "0.5 servings");
-  });
+  for (const { quantity, unit, expected } of text.quantityCases) {
+    it(`formats ${quantity} ${JSON.stringify(unit)} as ${JSON.stringify(expected)}`, () => {
+      assert.equal(formatQuantity(quantity, unit), expected);
+    });
+  }
 
   it("formats an unmeasured ingredient as its unit or nothing", () => {
     assert.equal(formatQuantity(undefined, "pinch"), "pinch");
@@ -30,40 +27,11 @@ describe("formatQuantity", () => {
 });
 
 describe("countedName", () => {
-  it("takes the plural for a count of pieces other than one", () => {
-    assert.equal(countedName("Egg", 2, undefined), "Eggs");
-    assert.equal(countedName("Egg", 1, undefined), "Egg");
-    assert.equal(countedName("Egg", 1.001, null), "Egg");
-    assert.equal(countedName("Onion", 0.5, ""), "Onions");
-  });
-
-  it("leaves a measured, unmeasured, or already plural name alone", () => {
-    assert.equal(countedName("Flour", 200, "g"), "Flour");
-    assert.equal(countedName("Pancakes", 2, "servings"), "Pancakes");
-    assert.equal(countedName("Salt", undefined, undefined), "Salt");
-    assert.equal(countedName("garlic cloves", 3, undefined), "garlic cloves");
-  });
-
-  it("puts the plural on the head noun of every per-piece catalog name", () => {
-    const cases: [string, string][] = [
-      ["Anchovy fillet, in oil (drained)", "Anchovy fillets, in oil (drained)"],
-      ["Bacon, streaky (rasher)", "Bacon, streaky (rashers)"],
-      ["Baking potato (large)", "Baking potatoes (large)"],
-      ["Bay leaf", "Bay leaves"],
-      ["Beef stock cube (10 g)", "Beef stock cubes (10 g)"],
-      ["Chicken thigh, bone-in, skin-on", "Chicken thighs, bone-in, skin-on"],
-      ["Corn on the cob", "Corns on the cob"],
-      ["Garlic bulb (whole head)", "Garlic bulbs (whole head)"],
-      ["Peach", "Peaches"],
-      ["Rye bread (slice)", "Rye bread (slices)"],
-      ["Tomato", "Tomatoes"],
-      ["Jalape\u00f1o", "Jalape\u00f1os"],
-      ["Courgette (zucchini)", "Courgettes (zucchini)"],
-    ];
-    for (const [name, plural] of cases) {
-      assert.equal(countedName(name, 2, undefined), plural);
-    }
-  });
+  for (const { name, quantity, unit, expected } of text.nameCases) {
+    it(`reads ${JSON.stringify(name)}, ${quantity} ${JSON.stringify(unit)}, as ${JSON.stringify(expected)}`, () => {
+      assert.equal(countedName(name, quantity, unit), expected);
+    });
+  }
 });
 
 describe("hasNutrition", () => {
@@ -104,12 +72,13 @@ describe("todayIso", () => {
 });
 
 describe("formatServings", () => {
-  it("is singular for exactly one serving", () => {
-    assert.equal(formatServings(1), "1 serving");
-  });
+  for (const { servings, expected } of text.servingsCases) {
+    it(`reads ${servings} as ${JSON.stringify(expected)}`, () => {
+      assert.equal(formatServings(servings), expected);
+    });
+  }
 
-  it("is plural otherwise", () => {
-    assert.equal(formatServings(2), "2 servings");
+  it("is plural for a fraction of a serving", () => {
     assert.equal(formatServings(0.5), "0.5 servings");
     assert.equal(formatServings(1.5), "1.5 servings");
   });

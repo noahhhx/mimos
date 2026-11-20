@@ -1,0 +1,42 @@
+appId: io.github.noahhhx.mimos.debug
+---
+- runFlow: connect-and-sign-in.yaml
+- tapOn: Recipes
+- assertVisible: My recipes.*
+- assertVisible: No personal recipes yet.*
+- takeScreenshot: recipes-mine-empty
+- tapOn: Library.*
+- scrollUntilVisible:
+    element: Greek Salad
+- takeScreenshot: recipes-library
+- tapOn: Greek Salad
+- assertVisible: Library recipe
+- assertVisible: Public page
+- scrollUntilVisible:
+    element: 100 g feta
+- tapOn: 100 g feta
+- assertVisible:
+    checked: true
+    containsChild: 100 g feta
+- scrollUntilVisible:
+    element: .*Lay the feta on top.*
+- tapOn: .*Lay the feta on top.*
+- assertVisible:
+    checked: true
+    containsChild: .*Lay the feta on top.*
+- takeScreenshot: cooking-greek-salad
+- back
+- scrollUntilVisible:
+    element: Greek Salad
+- tapOn: Greek Salad
+- scrollUntilVisible:
+    element: 100 g feta
+- assertVisible:
+    checked: true
+    containsChild: 100 g feta
+- scrollUntilVisible:
+    element: .*Lay the feta on top.*
+- assertVisible:
+    checked: true
+    containsChild: .*Lay the feta on top.*
+- takeScreenshot: cooking-greek-salad-again

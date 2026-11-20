@@ -142,3 +142,10 @@ export function redactBody(body: string, contentType = ""): string {
   }
   return redactText(body);
 }
+
+export function redactLiterals(text: string, secrets: readonly string[]): string {
+  return [...secrets]
+    .filter((secret) => secret !== "")
+    .sort((a, b) => b.length - a.length)
+    .reduce((result, secret) => result.replaceAll(secret, REDACTED), text);
+}

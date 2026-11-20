@@ -184,7 +184,7 @@ export const uiCommand: Command = {
 
   <scenario>    ${scenarioNames().join(" | ")} (tools/harness/scenarios/<scenario>.spec.ts)
   --headed      show the browser window
-  --as <user>   sign in as ${Object.keys(USERS).join(" | ")} (default ${DEFAULT_USER})
+  --as <user>   sign in as ${Object.keys(USERS).join(" | ")}, or a \`harness user create\` account (default ${DEFAULT_USER})
 ${RUN_USAGE}
 
 Runs the scenario in Chromium (from devenv) against ${endpoints().web}. Writes

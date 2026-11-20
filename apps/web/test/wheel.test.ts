@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 import {
@@ -8,10 +9,68 @@ import {
   samePosition,
   segmentCenter,
   segmentPath,
+  segmentSweep,
   segmentTone,
   spinTarget,
   SPIN_TURNS,
 } from "../src/lib/wheel.ts";
+
+// The app's commonTest reads the same file (libraries/test-cases/README.md).
+const cases = JSON.parse(
+  readFileSync(new URL("../../../libraries/test-cases/wheel.json", import.meta.url), "utf8"),
+) as {
+  spinTurns: number;
+  segmentSweepCases: { count: number; expected: number }[];
+  segmentCenterCases: { index: number; count: number; expected: number }[];
+  restingAngleCases: { landing: number; count: number; expected: number }[];
+  spinTargetCases: { current: number; landing: number; count: number; turns?: number; expected: number }[];
+  samePositionCases: { angle: number; other: number; expected: boolean }[];
+  segmentToneCases: { count: number; expected: number[] }[];
+  iconSizeCases: { count: number; rimRadius: number; max: number; expected: number }[];
+};
+
+const near = (actual: number, expected: number, what: string) =>
+  assert.ok(Math.abs(actual - expected) < 1e-9, `${what}: ${actual}, expected ${expected}`);
+
+describe("the shared wheel cases", () => {
+  it("spin the same number of turns", () => {
+    assert.equal(SPIN_TURNS, cases.spinTurns);
+  });
+
+  it("measure segments", () => {
+    for (const each of cases.segmentSweepCases) near(segmentSweep(each.count), each.expected, JSON.stringify(each));
+    for (const each of cases.segmentCenterCases) {
+      near(segmentCenter(each.index, each.count), each.expected, JSON.stringify(each));
+    }
+  });
+
+  it("rest and spin to the same angles", () => {
+    for (const each of cases.restingAngleCases) {
+      near(restingAngle(each.landing, each.count), each.expected, JSON.stringify(each));
+    }
+    for (const each of cases.spinTargetCases) {
+      near(spinTarget(each.current, each.landing, each.count, each.turns), each.expected, JSON.stringify(each));
+    }
+  });
+
+  it("compare positions", () => {
+    for (const each of cases.samePositionCases) {
+      assert.equal(samePosition(each.angle, each.other), each.expected, JSON.stringify(each));
+    }
+  });
+
+  it("fill and size segments", () => {
+    for (const each of cases.segmentToneCases) {
+      assert.deepEqual(
+        each.expected.map((_, index) => segmentTone(index, each.count)),
+        each.expected,
+      );
+    }
+    for (const each of cases.iconSizeCases) {
+      assert.equal(iconSize(each.count, each.rimRadius, each.max), each.expected, JSON.stringify(each));
+    }
+  });
+});
 
 /** Which segment sits under the pointer when the wheel is rotated by `angle`. */
 function underPointer(angle: number, count: number): number {

@@ -1,0 +1,33 @@
+appId: io.github.noahhhx.mimos.debug
+---
+- runFlow: connect-and-sign-in.yaml
+- tapOn: Profile
+- tapOn: Settings
+- assertVisible: Theme
+- assertVisible:
+    checked: true
+    containsChild: Light
+- tapOn: Dark
+- assertVisible:
+    checked: true
+    containsChild: Dark
+- takeScreenshot: dark-chosen
+- stopApp
+- launchApp
+- assertVisible: Good (morning|afternoon|evening)\.
+- tapOn: Profile
+- tapOn: Settings
+- assertVisible:
+    checked: true
+    containsChild: Dark
+- assertNotVisible:
+    checked: true
+    containsChild: Light
+- takeScreenshot: dark-after-restart
+- tapOn: Profile
+- tapOn: Sign out
+- tapOn:
+    text: Sign in
+    index: 1
+- assertVisible: Username or email
+- takeScreenshot: keycloak-dark

@@ -178,11 +178,11 @@ Rules for using this file:
     one. The `fuel-profile`, `fuel-targets`, and `intervals-icu`
     scenarios keep it so.
 
-15. **AWS deployment.** Resolve the deferred decisions (compute, IaC tool),
-    stand up `deploy/aws`, with the self-hosted path still the CI-checked
-    default.
-    *Done when: the stack runs on AWS from IaC alone, no click-ops, and the
-    compose path is untouched.*
+15. **Hosted instance.** Run a public instance from `deploy/selfhost`
+    itself, on any provider, with nothing provider-specific in the repo
+    (ADR-0031).
+    *Done when: the public instance runs the published images through
+    `deploy/selfhost` unchanged, so hosting and self-hosting are one path.*
 
 16. **Self-host release readiness.** Versioned images, documented upgrade
     path (pull and restart), backups story, and the plugin authoring docs.
@@ -236,7 +236,22 @@ Rules for using this file:
       `PlannedDayTotal.shareOf` in core-planning and `shareOf` in
       `apps/web/src/lib/diners.ts`, pinned to the same cases by tests.
       The API returning each entry's share for the caller would remove
-      the copy.
+      the copy. **Done:** each entry answers `yourShare`, and the web's
+      copy is gone (Android plan item 08).
     - An intervals.icu sync takes "today" as the server's UTC date and
       reads a `Retry-After` given as an HTTP date as the 15-minute
       default (item 16 of `docs/plans/fuel-targets/`).
+
+## Phase 7 — Android app
+
+20. **A native Android app with parity.** Designed in ADR-0029: Kotlin
+    Multiplatform with only the Android target, no Google Play Services,
+    connected to any instance, verified with Maestro flows on an emulator
+    in CI, and released as a signed APK on GitHub Releases. Work items in
+    `docs/plans/android-app/`.
+    *Done when: every page of the web has its screen in the app, and the
+    user guide tells people how to install it.* **Done** (items 01 to 17):
+    the parity script finds no operation the web calls that the app does
+    not, apart from the signed-out library pages, and `docs/guide/android-app.md`
+    covers installing, connecting, and updating. The first APK is attached
+    to the first `v*` release. The offline shopping list (item 18) follows.

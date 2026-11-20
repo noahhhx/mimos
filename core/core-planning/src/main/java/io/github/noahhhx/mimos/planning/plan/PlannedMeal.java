@@ -3,6 +3,7 @@ package io.github.noahhhx.mimos.planning.plan;
 import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 /**
  * One planned meal, with its title resolved for display (the recipe's
@@ -18,4 +19,10 @@ public record PlannedMeal(
         PlannedItem item,
         String title,
         double amount,
-        Set<UUID> dinerProfileIds) {}
+        Set<UUID> dinerProfileIds) {
+
+    /** How much of the meal is {@code profileId}'s to eat, or {@code null} when they are not one of its diners. */
+    public @Nullable Double shareOf(UUID profileId) {
+        return dinerProfileIds.contains(profileId) ? PlannedDayTotal.shareOf(amount, dinerProfileIds.size()) : null;
+    }
+}

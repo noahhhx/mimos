@@ -1,0 +1,38 @@
+{
+  "parseCases": [
+    { "about": "keeps EAN-8 as typed", "text": "50184453", "expected": "50184453" },
+    { "about": "keeps EAN-13 as typed", "text": "3017620422003", "expected": "3017620422003" },
+    { "about": "keeps GTIN-14 as typed", "text": "10012345678902", "expected": "10012345678902" },
+    { "about": "drops spaces, as barcodes are printed", "text": " 3 017620 422003 ", "expected": "3017620422003" },
+    { "about": "drops dashes, as barcodes are read aloud", "text": "3017-6204-22003", "expected": "3017620422003" },
+    { "about": "refuses nothing at all", "text": "", "expected": null },
+    { "about": "refuses too few digits", "text": "1234567", "expected": null },
+    { "about": "refuses too many digits", "text": "123456789012345", "expected": null },
+    { "about": "refuses a letter", "text": "30176204220O3", "expected": null },
+    { "about": "refuses a decimal point", "text": "3017620.422003", "expected": null }
+  ],
+  "lookupFailureCases": [
+    { "status": 404, "message": "Open Food Facts doesn't know that barcode. Log it by hand instead." },
+    { "status": 502, "message": "Open Food Facts didn't answer. Try again, or log it by hand." },
+    { "status": null, "message": "Open Food Facts didn't answer. Try again, or log it by hand." }
+  ],
+  "productPage": { "barcode": "3017620422003", "url": "https://world.openfoodfacts.org/product/3017620422003" },
+  "product": {
+    "barcode": "3017620422003",
+    "name": "Nutella",
+    "brand": "Ferrero",
+    "basis": "PER_100_G",
+    "nutrition": { "calories": 539, "proteinG": 6.3, "carbsG": 57.5, "fatG": 30.9 }
+  },
+  "productIngredient": {
+    "name": "Nutella (Ferrero)",
+    "basis": "PER_100_G",
+    "nutrition": { "calories": 539, "proteinG": 6.3, "carbsG": 57.5, "fatG": 30.9 }
+  },
+  "nameLimit": { "length": 150, "limit": 100 },
+  "existingIngredientCases": [
+    { "about": "finds the household's own ingredient the product already made", "isShared": false, "calories": 539, "found": true },
+    { "about": "never takes a shared ingredient of that name", "isShared": true, "calories": 539, "found": false },
+    { "about": "never takes one whose nutrition differs", "isShared": false, "calories": 540, "found": false }
+  ]
+}

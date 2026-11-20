@@ -1,0 +1,58 @@
+{
+  "exportFileNameCases": [
+    { "exportedAt": "2026-10-02T09:15:00Z", "expected": "mimos-export-2026-10-02.json" },
+    { "exportedAt": "2026-12-31T23:59:59.123456Z", "expected": "mimos-export-2026-12-31.json" }
+  ],
+  "parseExportFileCases": [
+    { "text": "{\"format\":\"mimos.export\",\"version\":1}", "document": { "format": "mimos.export", "version": 1 } },
+    { "text": "  {}\n", "document": {} },
+    { "text": "recipes, plans", "error": "That file is not a Mimos export: it is not valid JSON." },
+    { "text": "", "error": "That file is not a Mimos export: it is not valid JSON." },
+    { "text": "{\"format\":", "error": "That file is not a Mimos export: it is not valid JSON." },
+    { "text": "[]", "error": "That file is not a Mimos export." },
+    { "text": "null", "error": "That file is not a Mimos export." },
+    { "text": "\"mimos\"", "error": "That file is not a Mimos export." },
+    { "text": "1", "error": "That file is not a Mimos export." }
+  ],
+  "importSummaryCases": [
+    {
+      "report": {
+        "sourceVersion": 1,
+        "recipes": 2,
+        "plannedMeals": 1,
+        "shoppingLists": 0,
+        "mealLogs": 3,
+        "fuelProfile": false,
+        "trainingSessions": 0,
+        "warnings": []
+      },
+      "expected": "Imported 2 recipes, 1 planned meal, no shopping lists, 3 logged meals, no fuel settings and no training sessions."
+    },
+    {
+      "report": {
+        "sourceVersion": 5,
+        "recipes": 0,
+        "plannedMeals": 0,
+        "shoppingLists": 1,
+        "mealLogs": 0,
+        "fuelProfile": true,
+        "trainingSessions": 2,
+        "warnings": ["A recipe's picture could not be read."]
+      },
+      "expected": "Imported no recipes, no planned meals, 1 shopping list, no logged meals, your fuel settings and 2 training sessions."
+    },
+    {
+      "report": {
+        "sourceVersion": 8,
+        "recipes": 1,
+        "plannedMeals": 12,
+        "shoppingLists": 2,
+        "mealLogs": 1,
+        "fuelProfile": false,
+        "trainingSessions": 1,
+        "warnings": []
+      },
+      "expected": "Imported 1 recipe, 12 planned meals, 2 shopping lists, 1 logged meal, no fuel settings and 1 training session."
+    }
+  ]
+}

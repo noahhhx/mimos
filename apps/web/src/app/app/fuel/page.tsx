@@ -17,7 +17,7 @@ import { IntervalsIcuSection } from "@/components/intervals-icu-section";
 import { PageHeader } from "@/components/page-header";
 import { SignInPrompt } from "@/components/sign-in-prompt";
 import { apiClient } from "@/lib/api";
-import { FIELD_ERRORS, namedFields, type FuelField } from "@/lib/fuel-fields";
+import { FIELD_ERRORS, GOALS, SEXES, namedFields, type FuelField } from "@/lib/fuel-fields";
 import {
   INTERVALS_ICU_FAILURES,
   bodyFatNote,
@@ -27,19 +27,6 @@ import {
 } from "@/lib/intervals-icu";
 
 type Load<T> = { state: "loading" } | { state: "error" } | { state: "ok"; data: T };
-
-const GOALS: { value: FuelGoal; label: string; proteinGPerKg: number }[] = [
-  { value: "FUEL", label: "Fuel my training", proteinGPerKg: 1.6 },
-  { value: "GRADUAL_LOSS", label: "Lose weight gradually", proteinGPerKg: 2.0 },
-  { value: "FASTER_LOSS", label: "Lose weight faster", proteinGPerKg: 2.2 },
-  { value: "GAIN", label: "Gain weight", proteinGPerKg: 1.8 },
-];
-
-const SEXES: { value: FuelSex; label: string }[] = [
-  { value: "FEMALE", label: "Female" },
-  { value: "MALE", label: "Male" },
-  { value: "UNSPECIFIED", label: "Prefer not to say" },
-];
 
 type Values = {
   enabled: boolean;

@@ -1,0 +1,51 @@
+{
+  "spinTurns": 5,
+  "segmentSweepCases": [
+    { "count": 4, "expected": 90 },
+    { "count": 24, "expected": 15 },
+    { "count": 2, "expected": 180 }
+  ],
+  "segmentCenterCases": [
+    { "index": 0, "count": 4, "expected": 45 },
+    { "index": 3, "count": 4, "expected": 315 },
+    { "index": 0, "count": 24, "expected": 7.5 }
+  ],
+  "restingAngleCases": [
+    { "landing": 0, "count": 4, "expected": 315 },
+    { "landing": 1, "count": 4, "expected": 225 },
+    { "landing": 3, "count": 4, "expected": 45 },
+    { "landing": 0, "count": 2, "expected": 270 },
+    { "landing": 1, "count": 2, "expected": 90 },
+    { "landing": 4, "count": 7, "expected": 128.57142857142856 },
+    { "landing": 23, "count": 24, "expected": 7.5 }
+  ],
+  "spinTargetCases": [
+    { "current": 0, "landing": 0, "count": 4, "expected": 2115 },
+    { "current": 0, "landing": 1, "count": 4, "expected": 2025 },
+    { "current": 17.5, "landing": 4, "count": 7, "expected": 1928.5714285714284 },
+    { "current": 1800, "landing": 59, "count": 60, "expected": 3603 },
+    { "current": 2245.3, "landing": 33, "count": 60, "expected": 4119 },
+    { "current": 180, "landing": 2, "count": 5, "expected": 1980 },
+    { "current": 315, "landing": 0, "count": 4, "expected": 2115 },
+    { "current": 0, "landing": 0, "count": 4, "turns": 2, "expected": 1035 }
+  ],
+  "samePositionCases": [
+    { "angle": 2025, "other": 225, "expected": true },
+    { "angle": 0, "other": 720, "expected": true },
+    { "angle": 359.9999999999, "other": 0, "expected": true },
+    { "angle": 10, "other": 20, "expected": false },
+    { "angle": 1980, "other": 0, "expected": false }
+  ],
+  "segmentToneCases": [
+    { "count": 5, "expected": [0, 1, 0, 1, 2] },
+    { "count": 4, "expected": [0, 1, 0, 1] },
+    { "count": 3, "expected": [0, 1, 2] },
+    { "count": 2, "expected": [0, 1] }
+  ],
+  "iconSizeCases": [
+    { "count": 2, "rimRadius": 80, "max": 22, "expected": 22 },
+    { "count": 12, "rimRadius": 80, "max": 22, "expected": 22 },
+    { "count": 24, "rimRadius": 80, "max": 22, "expected": 14.66 },
+    { "count": 60, "rimRadius": 80, "max": 22, "expected": 5.86 }
+  ]
+}

@@ -1043,6 +1043,23 @@ paths:
                 $ref: '#/components/schemas/RecipeDetail'
         '404':
           $ref: '#/components/responses/Problem'
+  /api/v1/public/instance:
+    get:
+      tags: [instance]
+      operationId: getInstance
+      summary: This Mimos instance's server version (unauthenticated)
+      description: >
+        Names the server's version and the oldest Mimos app version it
+        supports. Apps read it when they connect, to tell the person when
+        the server or the app is too old rather than failing on a later
+        call. Versions are `MAJOR.MINOR.PATCH`.
+      responses:
+        '200':
+          description: The instance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instance'
 
   /api/v1/plans/{startDate}:
     parameters:
@@ -2060,6 +2077,17 @@ components:
         (rides only; EASY 0.55, ENDURANCE 0.68, HARD 0.85), or an estimate
         from intensity and weight (EASY 4, ENDURANCE 7, HARD 10 METs).
       enum: [COMPLETED_WORK, PLANNED_WORK, FTP_INTENSITY, REPORTED_CALORIES, ESTIMATE]
+    Instance:
+      type: object
+      description: A Mimos server's version and the oldest app version it supports.
+      required: [version, minAppVersion]
+      properties:
+        version:
+          type: string
+          description: The server's version.
+        minAppVersion:
+          type: string
+          description: The oldest Mimos app version this server supports.
     Problem:
       type: object
       description: RFC 9457 problem details.
@@ -2417,6 +2445,14 @@ components:
             marks the caller.
           items:
             $ref: '#/components/schemas/Person'
+        yourShare:
+          type: number
+          description: >
+            The caller's share of `servings`: servings divided by the number
+            of diners, to the nearest 0.1 and never below it (all of
+            `servings` for a meal they eat alone). What logging this meal
+            starts at, and what the caller's planned totals count. Present
+            exactly when the caller is one of `diners`.
     MealPlan:
       type: object
       description: A week of planned meals, keyed by its Monday.

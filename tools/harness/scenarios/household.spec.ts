@@ -4,7 +4,8 @@ import { apiAs, expect, fillRegistration, register, test } from "./fixtures.ts";
 /**
  * Sharing a household (ADR-0019) between two fresh accounts, each in its
  * own browser: the host adds a recipe and creates an invite link; the
- * guest opens it signed out, registers, comes back to the join page, reads
+ * guest opens it signed out, sees the link that opens it in the Android app,
+ * registers, comes back to the join page, reads
  * what joining does, joins, finds the host's recipe in the list, opens
  * it to see it marked "Added by" the host, and leaves again. Fresh accounts keep `test` and `test2` out of
  * any household.
@@ -53,6 +54,11 @@ test("invite someone, who joins, sees your recipe, and leaves", async ({ page, b
     await test.step("the guest opens the link signed out, creates an account, and comes back to it", async () => {
       await guestPage.goto(link);
       await expect(guestPage.getByRole("heading", { name: "You have an invite" })).toBeVisible();
+      const token = link.split("/").pop() ?? "";
+      await expect(guestPage.getByRole("link", { name: "Open in the app" })).toHaveAttribute(
+        "href",
+        `io.github.noahhhx.mimos://join?instance=${encodeURIComponent(endpoints().web)}&token=${token}`,
+      );
       await guestPage.getByRole("button", { name: "Create account" }).click();
       await fillRegistration(guestPage, guest);
       await expect(guestPage).toHaveURL(link);

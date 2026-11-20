@@ -1,0 +1,48 @@
+appId: io.github.noahhhx.mimos.debug
+# The emulator reaches the stack through adb reverse, which airplane mode does not cut, so this
+# proves the network gate and that ticks survive the app being killed, not a real outage.
+onFlowComplete:
+  - setAirplaneMode: disabled
+---
+- runFlow: connect-and-sign-in.yaml
+- tapOn: Plan
+- assertVisible: Week of .*
+- tapOn:
+    text: Add Dinner for .*
+    index: 0
+- tapOn: Search recipes and ingredients
+- inputText: greek
+- tapOn: Greek Salad
+- assertVisible: Greek Salad
+- tapOn: Shopping
+- tapOn: Generate from this week's plan
+- assertVisible: Regenerate
+- assertVisible: .*cucumber
+- setAirplaneMode: enabled
+- assertVisible: Offline\. Ticks wait on this phone until they can be sent\.
+- tapOn: .*cucumber
+- assertVisible: Offline\. 1 tick waiting to send\.
+- assertVisible:
+    checked: true
+    containsChild: .*cucumber
+- assertVisible: Not sent
+- takeScreenshot: shopping-offline
+- stopApp
+- launchApp
+- assertVisible: Good (morning|afternoon|evening)\.
+- tapOn: Shopping
+- assertVisible: Offline\. 1 tick waiting to send\.
+- assertVisible:
+    checked: true
+    containsChild: .*cucumber
+- setAirplaneMode: disabled
+- extendedWaitUntil:
+    notVisible: .*waiting to send.*
+    timeout: 30000
+- assertNotVisible: Not sent
+- tapOn: Regenerate
+- assertVisible: Generated .*
+- assertVisible:
+    checked: true
+    containsChild: .*cucumber
+- takeScreenshot: shopping-sent

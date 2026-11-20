@@ -10,7 +10,9 @@ behind its commands.
 
 The harness needs Nix, [devenv](https://devenv.sh), and a Docker daemon on
 the host. Everything else comes from the devenv shell — Node, the JDK
-(`jdb`), `jq`, Chromium, and the Playwright MCP server. Run `npm ci` once
+(`jdb`), `jq`, Chromium, the Playwright MCP server, and for `harness
+mobile` the Android SDK (emulator, `adb`), Maestro, and a pinned browser
+APK. `mobile` also needs `/dev/kvm`. Run `npm ci` once
 at the repo root (for `@playwright/test`), then call every command from
 the repo root as:
 
@@ -61,7 +63,7 @@ narrowing the recipe 415.
 
 | Command | What it does |
 | --- | --- |
-| `harness token [--as <user>] [--decode]` | An access token for `test` (default) or `test2`, printed only and never written to disk. |
+| `harness token [--as <user>] [--decode]` | An access token for `test` (default), `test2`, or an account `harness user create` made, printed only and never written to disk. |
 | `harness api <METHOD> <path> [--body <file>\|-] [-H Name:Value]... [--as <user>\|--anon]` | Sends exactly the recorded headers (`-H 'Name:'` removes one). Records the exchange in `api/exchanges.jsonl` and the run's logs. Exit 1 for a status of 400 or above. |
 | `harness ui <scenario> [--headed] [--as <user>]` | Runs `tools/harness/scenarios/<scenario>.spec.ts` in Chromium and writes a trace, HAR, console log, and screenshots (plus a video on failure) under `browser/<scenario>/`. `summary.md` gets the failing step, every API call with its request ID, and each failed request in full with its log lines. Exit 1 when a test failed. |
 
@@ -104,6 +106,45 @@ two fresh accounts: one writes a recipe and downloads its export, which
 it cannot import over its own data; the other imports it, ADR-0011). See [writing a scenario](step-2-browser.md#writing-a-scenario).
 For exploration before a scenario exists, `.mcp.json` registers a
 Playwright MCP browser ([step 2](step-2-browser.md#exploring-with-the-mcp-browser)).
+
+### The emulator — [step 8](step-8-emulator.md)
+
+| Command | What it does |
+| --- | --- |
+| `harness mobile up [--minified] [--no-build]` | Creates the AVD `mimos-pixel` under `.harness/android/` if missing, boots it headless (KVM, software GPU), installs the pinned browser (Cromite, `MIMOS_ANDROID_BROWSER_APK`) once, forwards 8080, 8081, and 3000 with `adb reverse`, proves from the device that the web app, the API, and Keycloak each answer an HTTP request (exit 1 if one does not), builds the debug APK (`./gradlew :androidApp:assembleDebug`), installs it, launches `io.github.noahhhx.mimos.debug`, and screenshots it. Running it again converges. `--no-build` reuses the last APK. `--minified` builds and installs the `minified` build type instead (`./gradlew :androidApp:assembleMinified`): the release as R8 shrinks it, not debuggable, under the same id and debug key, and allowed the local stack. CI's `android-flows` runs every flow on it. A stack trace from it is obfuscated; `apps/mobile/androidApp/build/outputs/mapping/minified/mapping.txt` reads it back (`retrace` in the SDK's `cmdline-tools`). |
+| `harness mobile shot [name]` | Saves a screenshot to `mobile/<name>.png` (`shot.png`, `shot-2.png`, … without a name). |
+| `harness mobile flow <name> [--run <run>]` | Runs `apps/mobile/flows/<name>.yaml` with Maestro on the installed app (`connect-and-sign-in`, `stay-signed-in`, `cook-a-recipe`, `create-recipe`, `recipe-picture`, `plan-a-week`, `shared-week`, `household-invite`, `theme-toggle`, `export-import`, `country-week`, `shopping-list`, `shopping-offline`, `log-a-meal`, `log-planned-share`, `scan-barcode`, `plan-scanned-food`, `fuel-targets`, `intervals-icu`, `kitchen-home`). It builds and installs nothing (that is `up`): it checks the emulator and the installed app, re-makes the reverse rules and probes the stack, clears the app's and Cromite's data, creates a fresh account as `harness user create` does, and passes `MIMOS_USER`, `MIMOS_PASSWORD`, and `MIMOS_WEB_ADDRESS` to the flow. A flow whose config has `tags: [household]` gets a second fresh account too, whose household the first joins (`harness household join`); its username, which the app shows as its name, is `MIMOS_PARTNER`. A flow whose config has `tags: [invitee]` gets a second fresh account on its own, `MIMOS_INVITEE`, with the same password, for a flow that signs out and joins as someone else. A flow whose config has `tags: [country-week]` has Country of the Week choose Italy for the account's next week through the API (turn the plugin on, `choose` with `IT` for the Monday after today in this machine's time zone, turn it off again; the step `Country of the Week` records the week), since Italy is the one cuisine the seed library has and a wheel's landing is random. Turning a plugin off keeps the household's pseudonym, so the plugin still has the choice once the flow turns it on. Maestro's output is captured rather than streamed, because it echoes what a flow types. The run gets `mobile/flows/<name>/` (`-2`, `-3` for a repeat in the same run): Maestro's JUnit `report.xml`, its screenshots and debug logs, `output.log`, `probe.txt`, and `app-requests.log`, with the account's password replaced by value. `summary.md` leads with the failed prerequisite or Maestro assertion, then the steps, then every request the app sent (ID, method, path) for `harness logs --request-id <id>`. A flow that passes with no request IDs in `app-requests.log` fails. When Maestro's driver on the device dies (`DeviceServerDiedException`), which says nothing about the app, the flow runs once more, fresh account and all, into the same run (`<name>-2`), and that attempt decides. Exit 1 on any failure. |
+| `harness mobile logs` | Writes logcat for the app's process to `mobile/logcat.txt` (redacted); `summary.md` counts the lines and shows the last errors. With the app not running, the lines that name it. |
+| `harness mobile down` | `adb emu kill`. Fine when nothing is running. |
+| `harness user create` | A fresh Keycloak user through the admin API. Prints `MIMOS_USER=user-…` and `MIMOS_PASSWORD=mimos-test`. |
+| `harness release up [<tag>] [--run <run>]` | Boots a release's published images (`ghcr.io/noahhhx/mimos-*:<version>`; default the last `v*` tag reachable from HEAD) from that tag's `deploy/selfhost/compose.yml`, with this checkout's `compose.fakes.yml` over it, as compose project `mimos-release`: production-mode Keycloak with no users, on the dev stack's ports, so stop that first (`harness down`). The tag's compose file and a generated `.env` (localhost URLs, the admin login `harness user create` uses, a fresh `MIMOS_SECRET_KEY`) go in `.harness/release/`; the run gets `release/compose.yml`, `release/up.log`, and, when it is not healthy, `release/logs.txt`. Refuses a tag whose realm has no `mimos-mobile` client. `harness mobile up` and `harness mobile flow` then run against it unchanged. |
+| `harness release down` | Removes that stack and its volumes. |
+| `harness household join <owner> <member>` | The owner invites and the member joins, through the API. Prints `MIMOS_OWNER`, `MIMOS_OWNER_PASSWORD`, `MIMOS_MEMBER`, and `MIMOS_MEMBER_PASSWORD`. |
+
+The device's `localhost:8080`, `:8081`, and `:3000` are the host's, so
+the app and its browser use the same URLs as a desktop browser and tokens
+carry the issuer the API accepts ([why](step-8-emulator.md#reaching-the-stack-adb-reverse)).
+The reverse rules belong to the adb server that made them: after an
+`adb kill-server` or a restart by another adb client, the device refuses
+connections to localhost until `harness mobile up` or `harness mobile flow` runs again
+(`flow` re-makes the rules itself). Accounts
+from `user create` work with `--as` in `token`, `api`, and `ui`
+(`harness ui login --as user-1a2b3c4d`). To start the AVD over, stop it and
+delete `.harness/android/`. A browser is one command away for
+exploration: `adb shell am start -a android.intent.action.VIEW -d
+http://localhost:3000/ org.cromite.cromite`, then `harness mobile shot`.
+
+The debug app logs each API request it sends (request ID, method, path; no
+headers, query, or body) as a `MimosRequest` line in logcat; `flow` reads those
+lines into the summary. Release builds do not log them.
+
+`node tools/harness/src/api-parity.ts` lists the API operations the web's code
+calls and the ones the app's code calls (a call to the generated client, not an
+import), as web only, app only, both, and neither. Run it before and after a
+feature lands on either side ([plan item 17](../plans/android-app/17-parity-and-docs.md)).
+An operation the web calls and the app does not is either built in the app or
+listed in the script's `WEB_ONLY_BY_DESIGN` with the reason; `--check` exits 1
+otherwise, and so does the harness's own test of the repo, which CI runs.
 
 ### Observing — steps [3](step-3-logs.md) and [4](step-4-diagnostics.md)
 
@@ -206,6 +247,19 @@ list. It still runs, and it must still fail. When it passes, the job fails
 until the scenario is removed from the list, so a fix also turns its
 reproduction into a regression test. The list is empty: `create-recipe`
 left it when step 7 fixed the recipe 415.
+
+The `android-flows` job runs every Android flow the same way against the
+dev stack, built from source. On a push to main, `android-skew` runs main's
+app against the last release instead: `node tools/harness/src/release.ts
+pick` (Node alone, before devenv) finds the last `v*` tag reachable from
+HEAD and skips the job with a notice while there is none, its realm has no
+`mimos-mobile` client, or its four images are not in the registry. Otherwise
+it runs `harness release up <tag>`, `harness mobile up`, and each flow the
+tag already had: a flow added since may test what the release lacks, and
+gets its first run against the next release. Its evidence is the
+`harness-runs-android-skew` artifact. To reproduce it locally: `harness
+down`, `harness release up <tag>`, `harness mobile up --run latest`, then
+`harness mobile flow <name> --run latest`.
 
 To reproduce a CI failure locally: `harness up` (CI's stack runs the
 fakes but not the debug overlay), then `harness ui <name>`. Or download the artifact

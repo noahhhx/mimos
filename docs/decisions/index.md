@@ -34,6 +34,12 @@ right at the time.
 | [ADR-0026](adr-0026-planned-foods.md)                              | Planned foods |
 | [ADR-0027](adr-0027-shopping-list-added-items.md)                  | Items added to the shopping list by hand |
 | [ADR-0028](adr-0028-plan-ledger.md)                                | The plan page is a ledger |
+| [ADR-0029](adr-0029-android-app.md)                                | Native Android app |
+| [ADR-0030](adr-0030-app-https-only.md)                            | The Android app connects over HTTPS only |
+| [ADR-0031](adr-0031-no-cloud-provider.md)                         | Mimos depends on no cloud provider |
+| [ADR-0032](adr-0032-object-storage.md)                            | Object storage: any S3-compatible server, Garage as reference |
+| [ADR-0033](adr-0033-docs-on-zensical.md)                          | The docs site moves to Zensical |
+| [ADR-0034](adr-0034-offline-shopping-list.md)                     | The app's shopping list works offline            |
 
 New ADRs are sequential: `adr-NNNN-title.md`, with the numbering in this
 index. Once accepted, an ADR is never rewritten — superseding decisions get

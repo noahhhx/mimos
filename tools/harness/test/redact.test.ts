@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { REDACTED, redactBody, redactConfig, redactHar, redactHeaders, redactJson, redactText } from "../src/redact.ts";
+import { REDACTED, redactBody, redactConfig, redactHar, redactHeaders, redactJson, redactLiterals, redactText } from "../src/redact.ts";
 
 const JWT = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxMjMifQ.c2lnbmF0dXJl";
 
@@ -136,4 +136,13 @@ test("actuator config: secret-named keys lose string values, keeping origins, nu
     properties: { password: REDACTED, username: "mimos", maxTokenCount: 100, opaquetoken: { clientId: "api", clientSecret: REDACTED } },
     inputs: { password: { value: REDACTED, origin: "env" }, tokens: [REDACTED, REDACTED] },
   });
+});
+
+test("literal secrets are replaced wherever they appear, and an empty one never matches", () => {
+  assert.equal(
+    redactLiterals('-e MIMOS_PASSWORD=hunter2 {"inputText":"hunter2"}', ["hunter2", ""]),
+    `-e MIMOS_PASSWORD=${REDACTED} {"inputText":"${REDACTED}"}`,
+  );
+  assert.equal(redactLiterals("abc", []), "abc");
+  assert.equal(redactLiterals("pass passphrase", ["pass", "passphrase"]), `${REDACTED} ${REDACTED}`);
 });

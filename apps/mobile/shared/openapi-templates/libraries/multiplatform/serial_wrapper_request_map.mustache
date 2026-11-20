@@ -1,0 +1,9 @@
+    @Serializable({{operationIdCamelCase}}Request.Companion::class)
+    private class {{operationIdCamelCase}}Request(val value: {{#bodyParam}}{{{dataType}}}{{/bodyParam}}) {
+        companion object : KSerializer<{{operationIdCamelCase}}Request> {
+            private val serializer: KSerializer<{{#bodyParam}}{{{dataType}}}{{/bodyParam}}> = serializer<{{#bodyParam}}{{{dataType}}}{{/bodyParam}}>()
+            override val descriptor = serializer.descriptor
+            override fun serialize(encoder: Encoder, value: {{operationIdCamelCase}}Request) = serializer.serialize(encoder, value.value)
+            override fun deserialize(decoder: Decoder) = {{operationIdCamelCase}}Request(serializer.deserialize(decoder))
+        }
+    }

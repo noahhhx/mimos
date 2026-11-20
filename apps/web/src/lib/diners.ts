@@ -2,8 +2,7 @@ import type { MealPlanEntry, MealType } from "@mimos/api-client";
 
 /**
  * Who eats a planned meal (ADR-0019), as the plan page needs it: whose
- * meals to show, how much of a shared meal is yours to log, and what a
- * new meal starts with.
+ * meals to show and what a new meal starts with.
  */
 
 /** The plan page's toggle: the caller's meals, or the whole household's. */
@@ -22,15 +21,6 @@ export function eatsIt(entry: Pick<MealPlanEntry, "diners">): boolean {
 /** The entries a view shows: "mine" keeps the meals the caller eats, shared ones included. */
 export function visibleEntries<T extends Pick<MealPlanEntry, "diners">>(entries: T[], view: PlanView): T[] {
   return view === "everyone" ? entries : entries.filter(eatsIt);
-}
-
-/**
- * The caller's share of a planned meal: the servings cooked divided by
- * the number of diners, to the nearest 0.1 serving and never below it.
- */
-export function shareOf(servings: number, dinerCount: number): number {
-  const share = servings / Math.max(dinerCount, 1);
-  return Math.max(0.1, Math.round(share * 10) / 10);
 }
 
 /**

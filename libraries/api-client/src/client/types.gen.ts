@@ -373,6 +373,20 @@ export type SessionEnergy = {
 export type EnergyMethod = 'COMPLETED_WORK' | 'PLANNED_WORK' | 'FTP_INTENSITY' | 'REPORTED_CALORIES' | 'ESTIMATE';
 
 /**
+ * A Mimos server's version and the oldest app version it supports.
+ */
+export type Instance = {
+    /**
+     * The server's version.
+     */
+    version: string;
+    /**
+     * The oldest Mimos app version this server supports.
+     */
+    minAppVersion: string;
+};
+
+/**
  * RFC 9457 problem details.
  */
 export type Problem = {
@@ -664,6 +678,11 @@ export type MealPlanEntry = {
      *
      */
     diners: Array<Person>;
+    /**
+     * The caller's share of `servings`: servings divided by the number of diners, to the nearest 0.1 and never below it (all of `servings` for a meal they eat alone). What logging this meal starts at, and what the caller's planned totals count. Present exactly when the caller is one of `diners`.
+     *
+     */
+    yourShare?: number;
 };
 
 /**
@@ -2454,6 +2473,22 @@ export type GetPublicRecipeResponses = {
 };
 
 export type GetPublicRecipeResponse = GetPublicRecipeResponses[keyof GetPublicRecipeResponses];
+
+export type GetInstanceData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/public/instance';
+};
+
+export type GetInstanceResponses = {
+    /**
+     * The instance.
+     */
+    200: Instance;
+};
+
+export type GetInstanceResponse = GetInstanceResponses[keyof GetInstanceResponses];
 
 export type GetMealPlanData = {
     body?: never;

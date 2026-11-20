@@ -12,7 +12,8 @@ site links to them (`docs/assets/fonts/`).
 | `public-sans/PublicSans.woff2` | Public Sans, upright | `wght` 400–600 |
 
 Both are SIL Open Font License 1.1; each family's `OFL.txt` sits next to
-its file. A third font, for flags only, is described under "Flags" below.
+its file. A third font, for flags only, is described under "Flags" below,
+and the app's copy of the two under "Mobile".
 
 ## Source
 
@@ -42,6 +43,34 @@ woff2_compress PublicSans.ttf
 
 Copy `Newsreader.woff2` and `PublicSans.woff2` here. Characters outside
 the subset (arrows, "✕") fall back to the next font in the stack.
+
+## Mobile
+
+The Android app (`apps/mobile`, ADR-0029) uses the same two typefaces as
+TrueType files, since Android cannot load `woff2`. They are the web's
+subsets above, unpacked, so both keep their variable axes (`wght`, and
+Newsreader's `opsz`) and the app sets weights as variation settings. The
+files are committed in
+`apps/mobile/shared/src/commonMain/composeResources/font/` as
+`newsreader.ttf` and `public_sans.ttf` (Compose Resources wants lowercase
+names), with each family's `OFL.txt` copied to `apps/mobile/shared/fonts/`,
+outside the resources so it is not packaged twice. The flags font is not
+used: the app draws no flags yet.
+
+`woff2_decompress` writes beside its input, so run it on copies, in the
+devenv shell (`woff2` comes from there):
+
+```sh
+work=$(mktemp -d)
+cp apps/web/src/fonts/newsreader/Newsreader.woff2 apps/web/src/fonts/public-sans/PublicSans.woff2 "$work"
+(cd "$work" && woff2_decompress Newsreader.woff2 && woff2_decompress PublicSans.woff2)
+cp "$work/Newsreader.ttf" apps/mobile/shared/src/commonMain/composeResources/font/newsreader.ttf
+cp "$work/PublicSans.ttf" apps/mobile/shared/src/commonMain/composeResources/font/public_sans.ttf
+```
+
+Rebuild the web files first when the subset or the axes change, then
+repeat these commands; the app's sizes and weights are in
+`apps/mobile/shared/src/commonMain/kotlin/io/github/noahhhx/mimos/ui/Typography.kt`.
 
 ## Flags
 
