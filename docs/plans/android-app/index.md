@@ -58,7 +58,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 16 | [Release: versions, signing, GitHub Releases](16-release.md) | 03, 06 | done (fe5ab25) |
 | 16b | [Flows against the last release](16b-release-skew.md) | 16, a release with `mimos-mobile` | done (4c1ed84): skips until the first release with `mimos-mobile`, whose run is the check |
 | 17 | [Parity audit and user guide](17-parity-and-docs.md) | 07–16 (07b, 07c, and 08b included) | done (d571177) |
-| 18 | [Offline shopping list](18-offline-shopping-list.md) **Review** | 10, 17 | todo |
+| 18 | [Offline shopping list](18-offline-shopping-list.md) **Review** | 10, 17 | built, waiting for review (branch `mobile/18-offline-shopping-list`) |
 
 Once their dependencies are done, items 09 to 12 (11b included) and 14 to 16 are
 independent and can run in parallel in separate worktrees. Item 16 can
@@ -93,7 +93,8 @@ owner can overturn any of it:
 - The Kotlin client is generated at build time, not committed.
 - The visual design mirrors Evening Kitchen exactly, not Material defaults.
 - App and server share one version and release on the same `v*` tag.
-- The app works online only until item 18.
+- The app works online only, except for ticking the shopping list (item 18,
+  ADR-0034).
 - Flows run on every PR in CI. If the emulator job costs too much (item 06
   measures it), they move to main and tags only. Item 06 measured about 4 minutes added
   per PR, so they stay on every PR.
@@ -420,3 +421,20 @@ owner can overturn any of it:
 - The parity check counts calls, not screens. A web page that reuses an
   operation the app already calls for something new (a filter, say)
   passes it, so the route table in item 17 is still walked by hand.
+- Maestro's `setAirplaneMode` works on the API 36 image, and the app's
+  network watcher sees it at once. It does not cut `adb reverse`, which
+  runs over the device's loopback: with airplane mode on, a relaunched app
+  renewed its session and loaded the list from the stack (item 18). So
+  `shopping-offline` proves that the app does not try to send without a
+  network, and that ticks survive the app being killed, not a real outage.
+  Its `onFlowComplete` turns airplane mode off, so a failed run does not
+  leave the next flow offline.
+- A real outage at launch is made by force-stopping the app and removing
+  the `tcp:8080` and `tcp:8081` reverse rules: the session cannot be
+  renewed, and "No answer" shows. `adb reverse tcp:8080 tcp:8080` (and
+  8081), or `harness mobile up`, puts them back. Item 18 checked the stored
+  list and "Try again" that way, by hand; no flow does.
+- The phone's network is only a hint, so a load or a renewed session can
+  reach the server while the watcher says offline (as under airplane mode
+  with `adb reverse`). ADR-0034 says the app does not try to send then, so
+  only **Send now** ignores the hint (`ShoppingModel.reconnected` checks it).

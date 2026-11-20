@@ -36,8 +36,26 @@ light and dark choice, the server you are connected to and the version
 it runs, **Change instance** to connect somewhere else, and the app's
 version and licences.
 
-The app needs a connection to your server. It does not keep a copy of
-your data for when you are offline.
+The app needs a connection to your server, except to tick off the
+shopping list.
+
+## Shop with no signal
+
+The app keeps the shopping lists you open on the phone, the last four
+weeks of them. In a shop with no signal you can still tick items off: the
+list says **Offline** and how many ticks are waiting to send, and each
+waiting item says **Not sent**. The ticks stay on the phone even if it
+closes the app, and they are sent once the phone has a network again. If
+they still have not gone through, choose **Send now**.
+
+If Mimos cannot reach your server when you open the app, it says **No
+answer**. Choose **Shopping list** there to tick the list as it was last
+loaded. The ticks are sent once you are signed in again.
+
+Only ticking works offline. Adding or removing an item, and generating the
+list, need a connection. If someone else in your household regenerates the
+list before your ticks arrive, those ticks are dropped. Signing out
+forgets the stored lists and any ticks not yet sent.
 
 ## Keep it up to date
 
