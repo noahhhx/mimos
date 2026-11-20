@@ -66,14 +66,19 @@ and hash together.
 
 Chromium's first-run screens would block every flow, so `up` also writes
 `_ --disable-fre --no-default-browser-check --no-first-run
---enable-features=AllowExternalIntentRequests` to
+--enable-features=AllowExternalIntentRequests
+--disable-features=AskForRestartOnConnectionChange` to
 `/data/local/tmp/chrome-command-line` (mode 644; the file belongs to
 `shell`, which is allowed there, so no `adb root`). Chromium reads it on a
 userdebug image. It shows a one-line toast saying so. The last switch is
 Cromite's "Allow forward URL requests to external intents", off by
 default: without it Cromite logs "Navigation is blocked" for the redirect
 to the app's own scheme (`io.github.noahhhx.mimos.oauth:`), the sign-in
-tab never returns, and AppAuth waits forever (found in item 04). Cromite
+tab never returns, and AppAuth waits forever (found in item 04). The `--disable-features` switch
+turns off Cromite's "Restart on connection change": when the network
+changes, it pauses every page behind a "Connection to internet has
+changed, execution is paused" prompt, which stalled a CI sign-in on the
+Keycloak page. Cromite
 reads it when it starts, so an old process needs a force-stop. Firefox (Fenix) was
 rejected: its onboarding wall needs taps first.
 

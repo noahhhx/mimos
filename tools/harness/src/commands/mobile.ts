@@ -155,7 +155,7 @@ async function ensureBrowser(): Promise<string> {
     detail = `installed ${BROWSER_ID} from the pinned APK`;
   }
   await device().shell(`echo '${BROWSER_COMMAND_LINE}' > ${BROWSER_COMMAND_LINE_FILE} && chmod 644 ${BROWSER_COMMAND_LINE_FILE}`);
-  return `${detail}; first-run screens off, external intents allowed`;
+  return `${detail}; first-run screens off, external intents allowed, no restart prompt`;
 }
 
 /**

@@ -36,11 +36,13 @@ export const BROWSER_COMMAND_LINE_FILE = "/data/local/tmp/chrome-command-line";
 /**
  * Skips Chromium's first-run screens and default-browser prompt, and turns on Cromite's "Allow forward
  * URL requests to external intents": off by default, it blocks the redirect to an app's own scheme
- * ("Navigation is blocked"), so sign-in could never return to the app. The first word is the
- * (ignored) program name.
+ * ("Navigation is blocked"), so sign-in could never return to the app. It also turns off Cromite's
+ * "Restart on connection change", whose prompt pauses every page when the network changes (airplane
+ * mode in `shopping-offline`, or the emulator's network settling) and stalled a sign-in in CI. The
+ * first word is the (ignored) program name.
  */
 export const BROWSER_COMMAND_LINE =
-  "_ --disable-fre --no-default-browser-check --no-first-run --enable-features=AllowExternalIntentRequests";
+  "_ --disable-fre --no-default-browser-check --no-first-run --enable-features=AllowExternalIntentRequests --disable-features=AskForRestartOnConnectionChange";
 
 export interface AvdPaths {
   /** ANDROID_USER_HOME: the emulator's and adb's own state, kept out of ~/.android. */

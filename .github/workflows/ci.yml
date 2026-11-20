@@ -341,7 +341,7 @@ jobs:
   android-flows:
     name: Android flows (emulator)
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v5
 
@@ -386,8 +386,9 @@ jobs:
           devenv shell -- harness up
           devenv shell -- harness mobile up --minified --run latest
 
+      # 20 flows at 1 to 3 minutes each.
       - name: Android flows
-        timeout-minutes: 20
+        timeout-minutes: 50
         env:
           KNOWN_FAILING: ""
         run: |
@@ -440,7 +441,7 @@ jobs:
     name: Android flows against the last release
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     permissions:
       contents: read
       packages: read
@@ -513,7 +514,7 @@ jobs:
 
       - name: Android flows against ${{ steps.release.outputs.tag }}
         if: steps.release.outputs.tag != ''
-        timeout-minutes: 20
+        timeout-minutes: 50
         env:
           FLOWS: ${{ steps.release.outputs.flows }}
           # Flows the release had that main changed to test something newer.

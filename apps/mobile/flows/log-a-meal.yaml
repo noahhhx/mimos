@@ -13,12 +13,16 @@ appId: io.github.noahhhx.mimos.debug
 - tapOn: What
 - inputText: suga
 - tapOn: Ingredient · .* per 100 g
-- assertVisible: Comes to .* kcal.*
+- scrollUntilVisible:
+    element: Comes to .* kcal.*
+    centerElement: true
 - tapOn: Amount
 - eraseText
 - inputText: "15"
 - hideKeyboard
-- assertVisible: Comes to .* kcal, 0 g protein, 15 g carbs, 0 g fat\.
+- scrollUntilVisible:
+    element: Comes to .* kcal, 0 g protein, 15 g carbs, 0 g fat\.
+    centerElement: true
 - tapOn: Log meal
 - scrollUntilVisible:
     element: Sugar, 15 g

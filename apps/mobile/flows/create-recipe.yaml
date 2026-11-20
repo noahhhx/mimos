@@ -33,7 +33,9 @@ appId: io.github.noahhhx.mimos.debug
 - inputText: tomatoes
 - tapOn: Canned tomatoes
 - hideKeyboard
-- assertVisible: Matched to Canned tomatoes .*
+- scrollUntilVisible:
+    element: Matched to Canned tomatoes .*
+    centerElement: true
 - takeScreenshot: ingredient-matched
 - scrollUntilVisible:
     element: \+ Ingredient
