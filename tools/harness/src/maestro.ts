@@ -116,6 +116,13 @@ export interface FlowFailure {
   message: string;
 }
 
+/**
+ * Maestro's driver on the device died, which says nothing about the app: the flow did not finish, so it
+ * is worth one more attempt.
+ */
+export const driverDied = (failure: FlowFailure | undefined): boolean =>
+  failure !== undefined && /DeviceServerDiedException/.test(`${failure.at}\n${failure.message}`);
+
 export const lastLines = (text: string, count: number): string => text.trimEnd().split("\n").slice(-count).join("\n");
 
 export function flowFailure(input: {

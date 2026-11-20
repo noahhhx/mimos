@@ -24,7 +24,7 @@ import {
 } from "../src/avd.ts";
 import { parseMobileArgs } from "../src/commands/mobile.ts";
 import { copyRedacted } from "../src/evidence.ts";
-import { flowFailure, flowNames, maestroArgs, maestroFailure, parseAppRequests, flowTags } from "../src/maestro.ts";
+import { driverDied, flowFailure, flowNames, maestroArgs, maestroFailure, parseAppRequests, flowTags } from "../src/maestro.ts";
 import { redactLiterals, redactText } from "../src/redact.ts";
 import { renderFlowSection, renderLogcatSection, renderUpSection, summarizeLogcat } from "../src/mobile-report.ts";
 
@@ -346,6 +346,16 @@ test("flow outcome: a passing flow with no request IDs fails as request evidence
   assert.equal(failure?.at, "Request evidence");
   assert.match(failure?.message ?? "", /mobile\/flows\/x\/app-requests\.log/);
   assert.match(failure?.message ?? "", /id=1/);
+});
+
+test("flow outcome: only a dead Maestro driver earns a second attempt", () => {
+  const died = JUNIT_FAIL.replace(
+    /<failure>.*<\/failure>/,
+    "<failure>maestro.android.DeviceServerDiedException: Device server died during 'takeScreenshot' on emulator-5554</failure>",
+  );
+  assert.equal(driverDied(outcome({ junit: died, code: 1 })), true);
+  assert.equal(driverDied(outcome({ junit: JUNIT_FAIL, code: 1 })), false);
+  assert.equal(driverDied(outcome({})), false);
 });
 
 test("flow evidence: the account's password is gone from every copied Maestro file", () => {

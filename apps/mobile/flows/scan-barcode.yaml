@@ -31,7 +31,9 @@ appId: io.github.noahhhx.mimos.debug
 - eraseText
 - inputText: "30"
 - hideKeyboard
-- assertVisible: Comes to .* kcal.*
+- scrollUntilVisible:
+    element: Comes to .* kcal.*
+    centerElement: true
 - takeScreenshot: scan-product
 - scrollUntilVisible:
     element: Log meal

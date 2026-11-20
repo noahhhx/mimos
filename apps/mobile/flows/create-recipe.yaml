@@ -92,7 +92,9 @@ appId: io.github.noahhhx.mimos.debug
 - inputText: Harness soup
 - tapOn: ${output.title}
 - hideKeyboard
-- assertVisible: Uses your recipe ${output.title} \(makes 2 servings\)\.
+- scrollUntilVisible:
+    element: Uses your recipe ${output.title} \(makes 2 servings\)\.
+    centerElement: true
 - scrollUntilVisible:
     element: Step 1
 - tapOn: Step 1

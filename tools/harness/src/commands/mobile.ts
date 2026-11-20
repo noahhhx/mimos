@@ -27,7 +27,7 @@ import { endpoints, FRESH_PASSWORD, REALM, REPO_ROOT } from "../config.ts";
 import { copyRedacted } from "../evidence.ts";
 import { fetchToken } from "./token.ts";
 import { exec } from "../exec.ts";
-import { COUNTRY_WEEK_TAG, flowFailure, flowNames, FLOWS_DIR, maestroArgs, flowTags, HOUSEHOLD_TAG, INVITEE_TAG, parseAppRequests, REQUEST_TAG, type AppRequest, type FlowEnv, type FlowFailure } from "../maestro.ts";
+import { COUNTRY_WEEK_TAG, driverDied, flowFailure, flowNames, FLOWS_DIR, maestroArgs, flowTags, HOUSEHOLD_TAG, INVITEE_TAG, parseAppRequests, REQUEST_TAG, type AppRequest, type FlowEnv, type FlowFailure } from "../maestro.ts";
 import {
   renderFlowSection,
   renderLogcatSection,
@@ -317,6 +317,17 @@ async function flow(args: MobileArgs, argv: string[]): Promise<number> {
   if (!flowNames().includes(name)) {
     throw new UsageError(`no flow ${name}; apps/mobile/flows/ has: ${flowNames().join(" | ") || "none"}`);
   }
+  const first = await flowAttempt(name, args, argv);
+  if (!driverDied(first.failure)) return first.exitCode;
+  process.stdout.write(`flow ${name}: Maestro's driver died, so it runs once more\n`);
+  return (await flowAttempt(name, { ...args, run: first.run }, argv)).exitCode;
+}
+
+async function flowAttempt(
+  name: string,
+  args: MobileArgs,
+  argv: string[],
+): Promise<{ exitCode: number; failure: FlowFailure | undefined; run: string }> {
   const startedAt = new Date();
   const run = startRun(`mobile-flow-${name}`, startedAt, args.run);
   const dir = nextFile(run, `mobile/flows/${name}`, "");
@@ -438,7 +449,7 @@ async function flow(args: MobileArgs, argv: string[]): Promise<number> {
   await finishRun(run, ["mobile", ...argv], startedAt, exitCode);
   process.stdout.write(failure === undefined ? `flow ${name}: passed (${requests.length} requests)\n` : `flow ${name} failed at ${failure.at}\n`);
   process.stdout.write(`summary: ${relative(process.cwd(), join(run.dir, "summary.md"))}\n`);
-  return exitCode;
+  return { exitCode, failure, run: run.dir };
 }
 
 function copyEmulatorLog(run: Run): string {

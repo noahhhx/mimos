@@ -72,7 +72,9 @@ appId: io.github.noahhhx.mimos.debug
 - inputText: Dragon fruit
 - tapOn: \+ Add “Dragon fruit” as a new ingredient
 - hideKeyboard
-- assertVisible: A new ingredient of your own.*
+- scrollUntilVisible:
+    element: A new ingredient of your own.*
+    centerElement: true
 - tapOn: New ingredient calories
 - inputText: "60"
 - tapOn: New ingredient protein g
