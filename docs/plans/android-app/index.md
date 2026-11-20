@@ -59,7 +59,7 @@ them lands with a flow CI runs. Feature items follow the web's pages.
 | 16b | [Flows against the last release](16b-release-skew.md) | 16, a release with `mimos-mobile` | done (4c1ed84): skips until the first release with `mimos-mobile`, whose run is the check |
 | 17 | [Parity audit and user guide](17-parity-and-docs.md) | 07–16 (07b, 07c, and 08b included) | done (d571177) |
 | 18 | [Offline shopping list](18-offline-shopping-list.md) **Review** | 10, 17 | built, waiting for review (branch `mobile/18-offline-shopping-list`) |
-| 19 | [Flows on a minified build](19-minified-flows.md) | 06, 16 | todo |
+| 19 | [Flows on a minified build](19-minified-flows.md) | 06, 16 | done (f261345) |
 
 Once their dependencies are done, items 09 to 12 (11b included) and 14 to 16 are
 independent and can run in parallel in separate worktrees. Item 16 can
