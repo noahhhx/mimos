@@ -148,7 +148,7 @@ commit's `pom.xml` may still say `0.1.0-SNAPSHOT`; the tag decides.
 To release without the Android flows, set the repository variable first:
 `gh variable set RELEASE_WITHOUT_ANDROID_FLOWS --body true`. A `v*` tag then
 skips `android-flows`, and `release-apk` and `publish` run once the other
-jobs pass. Pull requests and main still run the flows. Use it only when the
+jobs pass. Main and the pull requests that touch what the flows run still run them. Use it only when the
 app's code has passed them already (a green run on the same tree), and
 delete the variable afterwards: `gh variable delete
 RELEASE_WITHOUT_ANDROID_FLOWS`.

@@ -98,7 +98,9 @@ owner can overturn any of it:
   ADR-0034).
 - Flows run on every PR in CI. If the emulator job costs too much (item 06
   measures it), they move to main and tags only. Item 06 measured about 4 minutes added
-  per PR, so they stay on every PR.
+  per PR, so they stay on every PR. With 20 flows they took 43 minutes in one
+  job, so they now run in four parallel shards, and a PR that touches nothing
+  they run skips them.
 
 ## Settled by the owner's grant
 
@@ -440,3 +442,15 @@ owner can overturn any of it:
   reach the server while the watcher says offline (as under airplane mode
   with `adb reverse`). ADR-0034 says the app does not try to send then, so
   only **Send now** ignores the hint (`ShoppingModel.reconnected` checks it).
+- `scrollUntilVisible` stops at the first frame where its element shows,
+  so scrolling to one element and then asserting a neighbour depends on the
+  layout. `country-week` scrolled up to "Change country" and then looked
+  for the panel's row above it, which stayed under the header for some
+  countries (Saint Vincent and the Grenadines in CI). Scroll to the element
+  the flow asserts. A copy of the plugin's `wheel.ts` that lands on a
+  chosen country, mounted over the container's, reproduced it.
+- adb can drop the emulator for half a second on a CI runner (`Command
+  failed (host:transport:emulator-5554): device offline`), which a JUnit
+  report shows only as "Unknown error". `harness mobile flow` reads the
+  command from Maestro's log and reruns such a flow once, as it does when
+  the driver dies.

@@ -23,9 +23,11 @@ tags:
 - assertVisible: A wheel of \d+
 - tapOn: Spin
 - extendedWaitUntil:
-    visible: Choose .*
+    visible: "A wheel of \\d+\\. The wheel stopped on .*\\."
     timeout: 20000
-- assertVisible: "A wheel of \\d+\\. The wheel stopped on .*\\."
+- scrollUntilVisible:
+    element: Choose .*
+    centerElement: true
 - copyTextFrom: Choose .*
 - evalScript: ${output.country = maestro.copiedText.substring(7)}
 - takeScreenshot: wheel-landed
@@ -33,8 +35,15 @@ tags:
 - takeScreenshot: wheel-landed-dark
 - tapOn: Toggle light and dark mode
 - tapOn: Choose .*
+# Up to the panel's own row, which names the country: "Change country" can come into view while
+# that row is still under the header, as it did for Saint Vincent and the Grenadines.
+- scrollUntilVisible:
+    element: Country of the Week ${output.country}
+    direction: UP
 - assertVisible: Change country
-- assertVisible: Country of the Week ${output.country}
+- scrollUntilVisible:
+    element: Next →
+    direction: UP
 - tapOn: Next →
 - assertVisible: Country of the Week Italy
 - assertVisible: Suggestions

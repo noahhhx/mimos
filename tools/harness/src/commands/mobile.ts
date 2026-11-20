@@ -319,7 +319,7 @@ async function flow(args: MobileArgs, argv: string[]): Promise<number> {
   }
   const first = await flowAttempt(name, args, argv);
   if (!driverDied(first.failure)) return first.exitCode;
-  process.stdout.write(`flow ${name}: Maestro's driver died, so it runs once more\n`);
+  process.stdout.write(`flow ${name}: Maestro's driver died or adb lost the device, so it runs once more\n`);
   return (await flowAttempt(name, { ...args, run: first.run }, argv)).exitCode;
 }
 
@@ -365,7 +365,9 @@ async function flowAttempt(
       });
       await step("Clear app and browser data", async () => {
         for (const id of [APP_ID, BROWSER_ID]) await device().ok(["shell", "pm", "clear", id]);
-        return `${APP_ID}, ${BROWSER_ID}; ${await ensureBrowser()}`;
+        // A flow whose driver died before its onFlowComplete ran can leave airplane mode on for the next.
+        await device().ok(["shell", "cmd", "connectivity", "airplane-mode", "disable"]);
+        return `${APP_ID}, ${BROWSER_ID}; airplane mode off; ${await ensureBrowser()}`;
       });
       const flowFile = join(FLOWS_DIR, `${name}.yaml`);
       const tags = flowTags(readFileSync(flowFile, "utf8"));
@@ -437,6 +439,7 @@ async function flowAttempt(
         requests: parsed.requests,
         unreadable: parsed.unreadable,
         requestLog: `${dir}/app-requests.log`,
+        log: existsSync(join(staging, "debug", "maestro.log")) ? readFileSync(join(staging, "debug", "maestro.log"), "utf8") : "",
       });
     }
   } finally {
