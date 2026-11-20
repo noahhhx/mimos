@@ -79,7 +79,7 @@ class AppModel(
     pictureShrinker: PictureShrinker,
     documents: DocumentStore,
     shoppingStore: ShoppingStore,
-    private val network: NetworkWatcher,
+    network: NetworkWatcher,
     private val createSession: (Instance) -> SessionModel,
     today: () -> LocalDate = { Clock.System.todayIn(TimeZone.currentSystemDefault()) },
     now: () -> LocalDateTime = {
@@ -204,12 +204,10 @@ class AppModel(
         )
 
     init {
-        // A session that could not be renewed tries again once the phone has a network, and
-        // ticks made offline go as soon as someone is signed in.
         scope.launch {
             network.online.collect { online ->
-                val session = current?.session ?: return@collect
-                if (!online) return@collect
+                val session = current?.session
+                if (!online || session == null) return@collect
                 when (session.state.value) {
                     SessionState.Unreachable -> session.retry()
                     is SessionState.SignedIn -> shopping.reconnected()
