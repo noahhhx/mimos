@@ -1,7 +1,6 @@
 # ADR-0034: The app's shopping list works offline
 
-- Status: Proposed (decided by default under the owner's grant, waiting
-  for the owner's review)
+- Status: Accepted
 - Date: 2026-11-20
 - Settles: "Decide first" in `docs/plans/android-app/18-offline-shopping-list.md`
   (ADR-0029)

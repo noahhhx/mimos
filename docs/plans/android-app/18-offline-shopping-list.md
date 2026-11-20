@@ -7,8 +7,8 @@ Shops have bad signal. Ticking the list should work without it.
 ## Decided
 
 [ADR-0034](../../decisions/adr-0034-offline-shopping-list.md) settles the
-three questions this item asked, by default under the owner's grant and
-waiting for the owner's review:
+three questions this item asked, by default under the owner's grant, and
+the owner accepted it:
 
 - Ticks work offline; adding, removing, and generating do not.
 - Last write wins per item, in the order the server receives them. A tick
