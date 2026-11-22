@@ -267,10 +267,12 @@ app against the last release instead: `node tools/harness/src/release.ts
 pick` (Node alone, before devenv) finds the last `v*` tag reachable from
 HEAD and skips the job with a notice while there is none, its realm has no
 `mimos-mobile` client, or its four images are not in the registry. Otherwise
-it runs `harness release up <tag>`, `harness mobile up`, and each flow the
-tag already had: a flow added since may test what the release lacks, and
-gets its first run against the next release. Its evidence is the
-`harness-runs-android-skew` artifact. To reproduce it locally: `harness
+it runs `harness release up <tag>`, `harness mobile up --no-build` with the
+debug APK the `android` job built, and each flow the tag already had: a flow
+added since may test what the release lacks, and gets its first run against
+the next release. It runs in four shards split as `android-flows` splits
+them, each skipping the flows the tag lacks. Its evidence is the
+`harness-runs-android-skew-<shard>` artifact. To reproduce it locally: `harness
 down`, `harness release up <tag>`, `harness mobile up --run latest`, then
 `harness mobile flow <name> --run latest`.
 

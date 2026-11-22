@@ -525,10 +525,15 @@ jobs:
   # still run (docs/plans/android-app/16b-release-skew.md). Only the flows the
   # release already had: one added since may test what the release lacks.
   android-skew:
-    name: Android flows against the last release
+    name: Android flows against the last release (${{ matrix.shard }}/4)
+    needs: [android]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     permissions:
       contents: read
       packages: read
@@ -581,14 +586,16 @@ jobs:
         if: steps.release.outputs.tag != ''
         run: nix profile install nixpkgs#devenv
 
-      - uses: gradle/actions/setup-gradle@v6
-        if: steps.release.outputs.tag != ''
-        with:
-          cache-provider: basic
-
       - name: Install the npm workspace in the devenv shell
         if: steps.release.outputs.tag != ''
         run: devenv shell -- npm ci
+
+      # main's debug APK, as the Android app job built it.
+      - uses: actions/download-artifact@v4
+        if: steps.release.outputs.tag != ''
+        with:
+          name: mimos-debug-apk
+          path: apps/mobile/androidApp/build/outputs/apk/debug
 
       - name: Boot ${{ steps.release.outputs.tag }} and the emulator
         if: steps.release.outputs.tag != ''
@@ -597,20 +604,26 @@ jobs:
           TAG: ${{ steps.release.outputs.tag }}
         run: |
           devenv shell -- harness release up "$TAG"
-          devenv shell -- harness mobile up --run latest
+          devenv shell -- harness mobile up --no-build --run latest
 
       - name: Android flows against ${{ steps.release.outputs.tag }}
         if: steps.release.outputs.tag != ''
-        timeout-minutes: 50
+        timeout-minutes: 30
         env:
           FLOWS: ${{ steps.release.outputs.flows }}
+          SHARD: ${{ matrix.shard }}
           # Flows the release had that main changed to test something newer.
           # Space-separated; they must still fail, and empty the list at the
           # next release.
           KNOWN_FAILING: ""
         run: |
+          vmstat -t -w 5 > .harness/runs/host-vmstat.log &
           failed=0
-          for name in $FLOWS; do
+          # This shard's share of every flow (as android-flows splits them), less any the release lacks.
+          shard=$(devenv shell -- node tools/harness/src/shards.ts "$SHARD" 4)
+          [ -n "$shard" ] || { echo "::error::shard $SHARD has no flows"; exit 1; }
+          for name in $shard; do
+            [[ " $FLOWS " == *" $name "* ]] || continue
             if devenv shell -- harness mobile flow "$name" --run latest; then outcome=passed; else outcome=failed; fi
             if [[ " $KNOWN_FAILING " == *" $name "* ]]; then
               if [ "$outcome" = passed ]; then
@@ -620,7 +633,7 @@ jobs:
                 echo "::warning::flow $name failed as expected (KNOWN_FAILING)"
               fi
             elif [ "$outcome" = failed ]; then
-              echo "::error::flow $name failed against the release; see the harness-runs-android-skew artifact, summary.md first"
+              echo "::error::flow $name failed against the release; see the harness-runs-android-skew-$SHARD artifact, summary.md first"
               failed=1
             fi
           done
@@ -634,7 +647,7 @@ jobs:
         if: failure() && steps.release.outputs.tag != ''
         uses: actions/upload-artifact@v4
         with:
-          name: harness-runs-android-skew
+          name: harness-runs-android-skew-${{ matrix.shard }}
           path: |
             .harness/runs/
             !.harness/runs/latest
