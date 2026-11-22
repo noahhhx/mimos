@@ -258,7 +258,7 @@ since four Maven builds at once drew 429s from Maven Central, and the
 takes its share of the flows, and uploads
 `harness-runs-android-<shard>` when one fails. `node tools/harness/src/shards.ts <shard> 4`
 picks the share: longest flows first, each to the shard with least so far, by
-the seconds in `apps/mobile/flows/durations.json` (CI's median passing times).
+the seconds in `apps/mobile/flows/durations.json` (CI's passing times).
 A flow missing from that table weighs its median, so a new flow still runs;
 add it, or refresh the table when flows' times move, to keep the shards even. On a pull request it runs
 only when the `changes` job finds a path the flows depend on (its list is in
