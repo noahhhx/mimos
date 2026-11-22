@@ -1,6 +1,6 @@
 appId: io.github.noahhhx.mimos.debug
 ---
-- runFlow: connect-and-sign-in.yaml
+- runFlow: subflows/signed-in.yaml
 - tapOn: Log
 - assertVisible: Week of .*
 - assertVisible: This week, per day

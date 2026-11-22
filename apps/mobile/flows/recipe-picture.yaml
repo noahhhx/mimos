@@ -2,7 +2,7 @@ appId: io.github.noahhhx.mimos.debug
 ---
 - addMedia:
     - assets/recipe-picture.jpg
-- runFlow: connect-and-sign-in.yaml
+- runFlow: subflows/signed-in.yaml
 - evalScript: ${output.title = 'Harness picture ' + new Date().getTime()}
 - tapOn: Recipes
 - tapOn: \+ New recipe

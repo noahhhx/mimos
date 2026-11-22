@@ -20,6 +20,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.CreationExtras
+import io.github.noahhhx.mimos.auth.HarnessSession
+import io.github.noahhhx.mimos.auth.KeystoreTokenStore
 import io.github.noahhhx.mimos.ui.ThemeChoice
 import kotlinx.coroutines.launch
 
@@ -71,6 +73,7 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) {
             if (intent.getBooleanExtra(EXTRA_GALLERY, false)) models.app.openGallery()
             openLink(intent)
+            if (resources.getBoolean(R.bool.dev_build)) HarnessSession.from(intent)?.let(::adopt)
         }
         setContent {
             App(
@@ -87,6 +90,15 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         openLink(intent)
+    }
+
+    /** Stores the harness's tokens before connecting, so the new session restores them. */
+    private fun adopt(session: HarnessSession) {
+        lifecycleScope.launch {
+            KeystoreTokenStore(application).save(session.stored)
+            models.app.connect.edit(session.webAddress)
+            models.app.connect()
+        }
     }
 
     /** An invite from the web's "Open in the app" link. */

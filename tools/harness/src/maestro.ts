@@ -11,6 +11,9 @@ export interface FlowEnv {
   MIMOS_USER: string;
   MIMOS_PASSWORD: string;
   MIMOS_WEB_ADDRESS: string;
+  /** The account's session as the app (`mimos-mobile`), which `subflows/signed-in.yaml` hands the app. */
+  MIMOS_REFRESH_TOKEN: string;
+  MIMOS_ID_TOKEN: string;
   /** The other member's username, which the app shows as their name, for a flow tagged `household`. */
   MIMOS_PARTNER?: string;
   /** A second fresh account in a household of its own, with the same password, for a flow tagged `invitee`. */

@@ -5,6 +5,8 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import {
+  closeAppButton,
+  notRespondingApp,
   parseDevices,
   parseProbeStatus,
   parseReverseList,
@@ -218,7 +220,7 @@ test("maestro: a JUnit failure is the assertion Maestro reported, and a pass has
 });
 
 test("maestro: the command runs one flow on the emulator, with the flow's values and every output under staging", () => {
-  const env = { MIMOS_USER: "user-1", MIMOS_PASSWORD: "pw", MIMOS_WEB_ADDRESS: "http://localhost:3000" };
+  const env = { MIMOS_USER: "user-1", MIMOS_PASSWORD: "pw", MIMOS_WEB_ADDRESS: "http://localhost:3000", MIMOS_REFRESH_TOKEN: "rt", MIMOS_ID_TOKEN: "it" };
   const args = maestroArgs({ serial: "emulator-5554", flowFile: "/repo/apps/mobile/flows/a.yaml", env, staging: "/tmp/s" });
   assert.deepEqual(args.slice(0, 3), ["test", "--udid", "emulator-5554"]);
   assert.equal(args.at(-1), "/repo/apps/mobile/flows/a.yaml");
@@ -227,7 +229,7 @@ test("maestro: the command runs one flow on the emulator, with the flow's values
   assert.equal(args[args.indexOf("--debug-output") + 1], "/tmp/s/debug");
   assert.ok(args.includes("--flatten-debug-output"));
   const passed = args.flatMap((arg, index) => (args[index - 1] === "-e" ? [arg] : []));
-  assert.deepEqual(passed, ["MIMOS_USER=user-1", "MIMOS_PASSWORD=pw", "MIMOS_WEB_ADDRESS=http://localhost:3000"]);
+  assert.deepEqual(passed, ["MIMOS_USER=user-1", "MIMOS_PASSWORD=pw", "MIMOS_WEB_ADDRESS=http://localhost:3000", "MIMOS_REFRESH_TOKEN=rt", "MIMOS_ID_TOKEN=it"]);
 });
 
 test("maestro: a flow's tags are those of its config, not of its steps", () => {
@@ -402,4 +404,16 @@ test("flow evidence: the account's password is gone from every copied Maestro fi
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test("adb: a not-responding dialog with the focus names its app", () => {
+  assert.equal(notRespondingApp("  mCurrentFocus=Window{300ffe2 u0 Application Not Responding: com.android.systemui}\n"), "com.android.systemui");
+  assert.equal(notRespondingApp("  mCurrentFocus=Window{6c88baf u0 com.android.launcher3/com.android.launcher3.uioverrides.QuickstepLauncher}\n"), undefined);
+});
+
+test("adb: the dialog's Close app button is found by its id and tapped at its centre", () => {
+  const close = `<node index="0" text="Close app" resource-id="android:id/aerr_close" class="android.widget.Button" package="android" clickable="true" bounds="[70,1206][1010,1332]" drawing-order="1" hint="" />`;
+  const wait = `<node index="1" text="Wait" resource-id="android:id/aerr_wait" class="android.widget.Button" bounds="[70,1332][1010,1458]" />`;
+  assert.deepEqual(closeAppButton(`<hierarchy>${wait}${close}</hierarchy>`), { x: 540, y: 1269 });
+  assert.equal(closeAppButton(`<hierarchy>${wait}</hierarchy>`), undefined);
 });

@@ -1,0 +1,11 @@
+# Starts the app signed in as MIMOS_USER from the session the harness signed in for
+# (HarnessSession, debug and minified builds only), without the browser. The
+# connect-and-sign-in flow is the one that signs in for real.
+appId: io.github.noahhhx.mimos.debug
+---
+- launchApp:
+    arguments:
+      harnessWebAddress: ${MIMOS_WEB_ADDRESS}
+      harnessRefreshToken: ${MIMOS_REFRESH_TOKEN}
+      harnessIdToken: ${MIMOS_ID_TOKEN}
+- assertVisible: Good (morning|afternoon|evening)\.

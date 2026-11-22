@@ -2,7 +2,7 @@ appId: io.github.noahhhx.mimos.debug
 tags:
   - invitee
 ---
-- runFlow: connect-and-sign-in.yaml
+- runFlow: subflows/signed-in.yaml
 - evalScript: ${output.title = 'Exported soup ' + new Date().getTime()}
 - tapOn: Recipes
 - tapOn: \+ New recipe

@@ -1,0 +1,22 @@
+{
+  "connect-and-sign-in": 55,
+  "cook-a-recipe": 42,
+  "country-week": 56,
+  "create-recipe": 187,
+  "export-import": 131,
+  "fuel-targets": 78,
+  "household-invite": 101,
+  "intervals-icu": 150,
+  "kitchen-home": 65,
+  "log-a-meal": 92,
+  "log-planned-share": 69,
+  "plan-a-week": 106,
+  "plan-scanned-food": 93,
+  "recipe-picture": 89,
+  "scan-barcode": 141,
+  "shared-week": 47,
+  "shopping-list": 65,
+  "shopping-offline": 56,
+  "stay-signed-in": 61,
+  "theme-toggle": 57
+}

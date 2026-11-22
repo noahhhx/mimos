@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { stripVTControlCharacters } from "node:util";
 
-import { adb, parseDevices, parseReverseList, probe, probeOk, probeTargets, type Adb, type ProbeResult } from "../adb.ts";
+import { adb, closeAppButton, notRespondingApp, parseDevices, parseReverseList, probe, probeOk, probeTargets, type Adb, type ProbeResult } from "../adb.ts";
 import {
   APP_BUILDS,
   APP_ID,
@@ -21,13 +21,14 @@ import {
   renderAvdIni,
 } from "../avd.ts";
 import { chooseCountry, createUser, joinHousehold, nextMonday } from "../accounts.ts";
+import { APP_CLIENT_ID, signInAsApp, type AppSession } from "../app-session.ts";
 import { HarnessError, parseCommandArgs, UsageError } from "../args.ts";
 import { finishRun, RUN_OPTION, RUN_USAGE, startRun, type Command } from "../command.ts";
 import { endpoints, FRESH_PASSWORD, REALM, REPO_ROOT } from "../config.ts";
 import { copyRedacted } from "../evidence.ts";
 import { fetchToken } from "./token.ts";
 import { exec } from "../exec.ts";
-import { COUNTRY_WEEK_TAG, driverDied, flowFailure, flowNames, FLOWS_DIR, maestroArgs, flowTags, HOUSEHOLD_TAG, INVITEE_TAG, parseAppRequests, REQUEST_TAG, type AppRequest, type FlowEnv, type FlowFailure } from "../maestro.ts";
+import { COUNTRY_WEEK_TAG, driverDied, flowFailure, flowNames, FLOWS_DIR, maestroArgs, flowTags, HOUSEHOLD_TAG, INVITEE_TAG, lastLines, parseAppRequests, REQUEST_TAG, type AppRequest, type FlowEnv, type FlowFailure } from "../maestro.ts";
 import {
   renderFlowSection,
   renderLogcatSection,
@@ -137,10 +138,37 @@ async function bootEmulator(): Promise<string> {
   const deadline = startedAt + BOOT_TIMEOUT_MS;
   while (Date.now() < deadline) {
     const booted = (await device().run(["shell", "getprop", "sys.boot_completed"])).stdout.trim();
-    if (booted === "1") return state === "device" ? "already running" : `booted (${((Date.now() - startedAt) / 1000).toFixed(0)} s to boot_completed)`;
+    if (booted === "1") {
+      // System UI can stop answering for a while just after boot on a loaded host, and its
+      // "isn't responding" dialog then covers every screen a flow looks at. Without dialogs, the
+      // system restarts System UI instead, as Close app would.
+      await device().ok(["shell", "settings", "put", "global", "hide_error_dialogs", "1"]);
+      const how = state === "device" ? "already running" : `booted (${((Date.now() - startedAt) / 1000).toFixed(0)} s to boot_completed)`;
+      return `${how}; error dialogs hidden`;
+    }
     await sleep(1000);
   }
   throw new HarnessError(`${AVD_SERIAL} did not finish booting in ${BOOT_TIMEOUT_MS / 1000} s:\n${tail(paths.emulatorLog)}`);
+}
+
+const NOT_RESPONDING_DUMP = "/data/local/tmp/harness-not-responding.xml";
+
+/**
+ * Closes an "isn't responding" dialog that has the focus, as a person would with Close app, since it
+ * covers every screen a flow looks at. On a loaded host System UI can hang just after boot, before
+ * error dialogs are hidden, and its dialog then stays up for as long as it hangs.
+ */
+async function closeNotResponding(): Promise<string> {
+  const app = notRespondingApp(await device().shell("dumpsys window"));
+  if (app === undefined) return "none";
+  await device().ok(["shell", "uiautomator", "dump", NOT_RESPONDING_DUMP]);
+  const button = closeAppButton(await device().shell(`cat ${NOT_RESPONDING_DUMP}`));
+  if (button === undefined) throw new HarnessError(`${app} is not responding, and its dialog has no Close app button`);
+  await device().ok(["shell", "input", "tap", String(button.x), String(button.y)]);
+  const deadline = Date.now() + 10_000;
+  while (Date.now() < deadline && notRespondingApp(await device().shell("dumpsys window")) !== undefined) await sleep(500);
+  if (notRespondingApp(await device().shell("dumpsys window")) !== undefined) throw new HarnessError(`${app}'s not-responding dialog stayed after Close app`);
+  return `closed ${app}, which was not responding`;
 }
 
 async function ensureBrowser(): Promise<string> {
@@ -289,6 +317,7 @@ async function up(args: MobileArgs, argv: string[]): Promise<number> {
       files.push("mobile/build.log");
     }
     await step("Install and launch", () => installAndLaunch(args.build));
+    await step("Not-responding dialog", closeNotResponding);
     await sleep(2000);
     await step("Screenshot", async () => {
       const file = await screenshot(run, "up");
@@ -363,6 +392,7 @@ async function flowAttempt(
         if (failed.length > 0) throw await unreachable(run, failed, `${dir}/adb.txt`);
         return `${probes.length} of ${probes.length} answered`;
       });
+      await step("Not-responding dialog", closeNotResponding);
       await step("Clear app and browser data", async () => {
         for (const id of [APP_ID, BROWSER_ID]) await device().ok(["shell", "pm", "clear", id]);
         // A flow whose driver died before its onFlowComplete ran can leave airplane mode on for the next.
@@ -374,6 +404,12 @@ async function flowAttempt(
       await step("Account", async () => {
         account = await createUser();
         return `${account} (fresh)`;
+      });
+      let session: AppSession | undefined;
+      await step("App session", async () => {
+        session = await signInAsApp(account, FRESH_PASSWORD);
+        secrets.push(session.refreshToken, session.idToken);
+        return `signed in as ${APP_CLIENT_ID} for subflows/signed-in.yaml`;
       });
       let partner: string | undefined;
       if (tags.has(HOUSEHOLD_TAG)) {
@@ -403,6 +439,8 @@ async function flowAttempt(
         MIMOS_USER: account,
         MIMOS_PASSWORD: FRESH_PASSWORD,
         MIMOS_WEB_ADDRESS: endpoints().web,
+        MIMOS_REFRESH_TOKEN: session?.refreshToken ?? "",
+        MIMOS_ID_TOKEN: session?.idToken ?? "",
         ...(partner === undefined ? {} : { MIMOS_PARTNER: partner }),
         ...(invitee === undefined ? {} : { MIMOS_INVITEE: invitee }),
       };
@@ -441,6 +479,10 @@ async function flowAttempt(
         requestLog: `${dir}/app-requests.log`,
         log: existsSync(join(staging, "debug", "maestro.log")) ? readFileSync(join(staging, "debug", "maestro.log"), "utf8") : "",
       });
+      if (driverDied(failure)) {
+        writeRunFile(run, `${dir}/device-lost.txt`, clean(await deviceLostEvidence()));
+        files.push(`${dir}/device-lost.txt`);
+      }
     }
   } finally {
     rmSync(staging, { recursive: true, force: true });
@@ -453,6 +495,47 @@ async function flowAttempt(
   process.stdout.write(failure === undefined ? `flow ${name}: passed (${requests.length} requests)\n` : `flow ${name} failed at ${failure.at}\n`);
   process.stdout.write(`summary: ${relative(process.cwd(), join(run.dir, "summary.md"))}\n`);
   return { exitCode, failure, run: run.dir };
+}
+
+const DEVICE_RETURN_MS = 60_000;
+
+/**
+ * What the host and the device looked like just after Maestro lost the device: whether the emulator
+ * process survived, how loaded the host was, whether the guest rebooted, and what the device logged.
+ */
+async function deviceLostEvidence(): Promise<string> {
+  const section = async (title: string, read: () => Promise<string> | string): Promise<string> => {
+    const body = await Promise.resolve()
+      .then(read)
+      .catch((error: unknown) => `(could not read: ${errorText(error)})`);
+    return `## ${title}\n\n${body.trimEnd() || "(empty)"}\n`;
+  };
+  const host = (command: string, args: string[]) => async () => {
+    const result = await exec(command, args, { env: toolEnv });
+    return result.stdout + result.stderr;
+  };
+  const stateAtLoss = (await deviceState()) ?? "absent";
+  const deadline = Date.now() + DEVICE_RETURN_MS;
+  while (Date.now() < deadline && (await deviceState()) !== "device") await sleep(1000);
+  const returned = (await deviceState()) === "device";
+  const ofDevice = (args: string[]) => async () => (returned ? (await device().ok(args)).replaceAll("\r", "") : "(device did not return)");
+  return [
+    `# Device lost\n\nadb state when the flow ended: ${stateAtLoss}; ${returned ? `back within ${DEVICE_RETURN_MS / 1000} s` : `not back after ${DEVICE_RETURN_MS / 1000} s`}.\n`,
+    await section("Host load (/proc/loadavg)", () => readFileSync("/proc/loadavg", "utf8")),
+    await section("Host memory (/proc/meminfo)", () =>
+      readFileSync("/proc/meminfo", "utf8")
+        .split("\n")
+        .filter((line) => /^(MemTotal|MemAvailable|SwapTotal|SwapFree):/.test(line))
+        .join("\n"),
+    ),
+    await section("Emulator process", host("pgrep", ["-a", "-f", "qemu-system"])),
+    await section("Host top, busiest 20", async () => (await host("top", ["-b", "-n", "1", "-o", "%CPU", "-w", "160"])()).split("\n").slice(0, 27).join("\n")),
+    await section("adb devices -l", host("adb", ["devices", "-l"])),
+    await section("Guest uptime", ofDevice(["shell", "uptime"])),
+    await section("Guest crash log", ofDevice(["logcat", "-d", "-b", "crash"])),
+    await section("Guest log, last 400 lines since the flow began", ofDevice(["logcat", "-d", "-b", "main,system", "-v", "threadtime", "-t", "400"])),
+    await section("Emulator log, last 60 lines", () => (existsSync(paths.emulatorLog) ? lastLines(readFileSync(paths.emulatorLog, "utf8"), 60) : "(no emulator log)")),
+  ].join("\n");
 }
 
 function copyEmulatorLog(run: Run): string {

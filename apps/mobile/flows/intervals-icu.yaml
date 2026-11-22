@@ -2,7 +2,7 @@ appId: io.github.noahhhx.mimos.debug
 ---
 # The API talks to the fake intervals.icu (tools/harness/fakes/intervals-icu), which knows athlete
 # i1 by one key and has a 90-minute ride planned today.
-- runFlow: connect-and-sign-in.yaml
+- runFlow: subflows/signed-in.yaml
 - tapOn: Profile
 - tapOn: Fuel
 - tapOn: Show fuel targets
