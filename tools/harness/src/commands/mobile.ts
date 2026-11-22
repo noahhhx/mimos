@@ -138,7 +138,14 @@ async function bootEmulator(): Promise<string> {
   const deadline = startedAt + BOOT_TIMEOUT_MS;
   while (Date.now() < deadline) {
     const booted = (await device().run(["shell", "getprop", "sys.boot_completed"])).stdout.trim();
-    if (booted === "1") return state === "device" ? "already running" : `booted (${((Date.now() - startedAt) / 1000).toFixed(0)} s to boot_completed)`;
+    if (booted === "1") {
+      // System UI can stop answering for a while just after boot on a loaded host, and its
+      // "isn't responding" dialog then covers every screen a flow looks at. Without dialogs, the
+      // system restarts System UI instead, as Close app would.
+      await device().ok(["shell", "settings", "put", "global", "hide_error_dialogs", "1"]);
+      const how = state === "device" ? "already running" : `booted (${((Date.now() - startedAt) / 1000).toFixed(0)} s to boot_completed)`;
+      return `${how}; error dialogs hidden`;
+    }
     await sleep(1000);
   }
   throw new HarnessError(`${AVD_SERIAL} did not finish booting in ${BOOT_TIMEOUT_MS / 1000} s:\n${tail(paths.emulatorLog)}`);
