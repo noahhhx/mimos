@@ -255,8 +255,12 @@ since four Maven builds at once drew 429s from Maven Central, and the
 `android` job builds the minified APK (with its R8 mapping) for them as
 `flow-apk`. Each shard loads both, boots its own stack (`harness up
 --no-build`) and emulator (`harness mobile up --minified --no-build`),
-takes every fourth flow by file name, and uploads
-`harness-runs-android-<shard>` when one fails. On a pull request it runs
+takes its share of the flows, and uploads
+`harness-runs-android-<shard>` when one fails. `node tools/harness/src/shards.ts <shard> 4`
+picks the share: longest flows first, each to the shard with least so far, by
+the seconds in `apps/mobile/flows/durations.json` (CI's median passing times).
+A flow missing from that table weighs its median, so a new flow still runs;
+add it, or refresh the table when flows' times move, to keep the shards even. On a pull request it runs
 only when the `changes` job finds a path the flows depend on (its list is in
 `ci.yml`); a change to docs or to the web's pages alone skips it. On a push to main, `android-skew` runs main's
 app against the last release instead: `node tools/harness/src/release.ts

@@ -477,11 +477,11 @@ jobs:
           # The host's CPU and memory every 5 s, to line up against a flow that lost the device.
           vmstat -t -w 5 > .harness/runs/host-vmstat.log &
           failed=0
-          index=0
-          for file in apps/mobile/flows/*.yaml; do
-            index=$((index + 1))
-            [ $(( (index - 1) % 4 + 1 )) = "$SHARD" ] || continue
-            name=$(basename "$file" .yaml)
+          # Balanced by each flow's time in apps/mobile/flows/durations.json. Assigned first,
+          # so a failure stops the step rather than leaving the shard with no flows.
+          flows=$(devenv shell -- node tools/harness/src/shards.ts "$SHARD" 4)
+          [ -n "$flows" ] || { echo "::error::shard $SHARD has no flows"; exit 1; }
+          for name in $flows; do
             if devenv shell -- harness mobile flow "$name" --run latest; then outcome=passed; else outcome=failed; fi
             if [[ " $KNOWN_FAILING " == *" $name "* ]]; then
               if [ "$outcome" = passed ]; then
