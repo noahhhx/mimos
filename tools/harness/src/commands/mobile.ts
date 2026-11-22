@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { stripVTControlCharacters } from "node:util";
 
-import { adb, parseDevices, parseReverseList, probe, probeOk, probeTargets, type Adb, type ProbeResult } from "../adb.ts";
+import { adb, closeAppButton, notRespondingApp, parseDevices, parseReverseList, probe, probeOk, probeTargets, type Adb, type ProbeResult } from "../adb.ts";
 import {
   APP_BUILDS,
   APP_ID,
@@ -149,6 +149,26 @@ async function bootEmulator(): Promise<string> {
     await sleep(1000);
   }
   throw new HarnessError(`${AVD_SERIAL} did not finish booting in ${BOOT_TIMEOUT_MS / 1000} s:\n${tail(paths.emulatorLog)}`);
+}
+
+const NOT_RESPONDING_DUMP = "/data/local/tmp/harness-not-responding.xml";
+
+/**
+ * Closes an "isn't responding" dialog that has the focus, as a person would with Close app, since it
+ * covers every screen a flow looks at. On a loaded host System UI can hang just after boot, before
+ * error dialogs are hidden, and its dialog then stays up for as long as it hangs.
+ */
+async function closeNotResponding(): Promise<string> {
+  const app = notRespondingApp(await device().shell("dumpsys window"));
+  if (app === undefined) return "none";
+  await device().ok(["shell", "uiautomator", "dump", NOT_RESPONDING_DUMP]);
+  const button = closeAppButton(await device().shell(`cat ${NOT_RESPONDING_DUMP}`));
+  if (button === undefined) throw new HarnessError(`${app} is not responding, and its dialog has no Close app button`);
+  await device().ok(["shell", "input", "tap", String(button.x), String(button.y)]);
+  const deadline = Date.now() + 10_000;
+  while (Date.now() < deadline && notRespondingApp(await device().shell("dumpsys window")) !== undefined) await sleep(500);
+  if (notRespondingApp(await device().shell("dumpsys window")) !== undefined) throw new HarnessError(`${app}'s not-responding dialog stayed after Close app`);
+  return `closed ${app}, which was not responding`;
 }
 
 async function ensureBrowser(): Promise<string> {
@@ -297,6 +317,7 @@ async function up(args: MobileArgs, argv: string[]): Promise<number> {
       files.push("mobile/build.log");
     }
     await step("Install and launch", () => installAndLaunch(args.build));
+    await step("Not-responding dialog", closeNotResponding);
     await sleep(2000);
     await step("Screenshot", async () => {
       const file = await screenshot(run, "up");
@@ -371,6 +392,7 @@ async function flowAttempt(
         if (failed.length > 0) throw await unreachable(run, failed, `${dir}/adb.txt`);
         return `${probes.length} of ${probes.length} answered`;
       });
+      await step("Not-responding dialog", closeNotResponding);
       await step("Clear app and browser data", async () => {
         for (const id of [APP_ID, BROWSER_ID]) await device().ok(["shell", "pm", "clear", id]);
         // A flow whose driver died before its onFlowComplete ran can leave airplane mode on for the next.

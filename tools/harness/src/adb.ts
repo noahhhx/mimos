@@ -90,3 +90,20 @@ export const probeOk = (result: ProbeResult): boolean => result.status !== undef
 export async function probe(device: Adb, target: ProbeTarget): Promise<ProbeResult> {
   return { ...target, status: parseProbeStatus(await device.shell(probeCommand(target))) };
 }
+
+/** The package whose "isn't responding" dialog has the focus, from `dumpsys window`; undefined when none has. */
+export function notRespondingApp(dumpsysWindow: string): string | undefined {
+  return /mCurrentFocus=Window\{\S+ u\d+ Application Not Responding: ([\w.]+)\}/.exec(dumpsysWindow)?.[1];
+}
+
+/** The centre of the dialog's Close app button (`android:id/aerr_close`, in any language) in a `uiautomator dump`. */
+export function closeAppButton(hierarchy: string): { x: number; y: number } | undefined {
+  for (const node of hierarchy.match(/<node\b[^>]*>/g) ?? []) {
+    if (!/\bresource-id="android:id\/aerr_close"/.test(node)) continue;
+    const bounds = /\bbounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/.exec(node);
+    if (bounds === null) continue;
+    const [left, top, right, bottom] = bounds.slice(1).map(Number) as [number, number, number, number];
+    return { x: Math.round((left + right) / 2), y: Math.round((top + bottom) / 2) };
+  }
+  return undefined;
+}
