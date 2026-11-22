@@ -249,8 +249,11 @@ reproduction into a regression test. The list is empty: `create-recipe`
 left it when step 7 fixed the recipe 415.
 
 The `android-flows` job runs every Android flow the same way against the
-dev stack, built from source, in four parallel shards: each boots its own
-stack and emulator and takes every fourth flow by file name, and uploads
+dev stack, built from source, in four parallel shards. The `stack-images` job
+builds the stack's images once and hands them to the shards as an artifact,
+since four Maven builds at once drew 429s from Maven Central. Each shard
+loads them, boots its own stack (`harness up --no-build`) and emulator,
+takes every fourth flow by file name, and uploads
 `harness-runs-android-<shard>` when one fails. On a pull request it runs
 only when the `changes` job finds a path the flows depend on (its list is in
 `ci.yml`); a change to docs or to the web's pages alone skips it. On a push to main, `android-skew` runs main's
