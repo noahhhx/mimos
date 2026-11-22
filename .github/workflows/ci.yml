@@ -463,6 +463,8 @@ jobs:
           KNOWN_FAILING: ""
           SHARD: ${{ matrix.shard }}
         run: |
+          # The host's CPU and memory every 5 s, to line up against a flow that lost the device.
+          vmstat -t -w 5 > .harness/runs/host-vmstat.log &
           failed=0
           index=0
           for file in apps/mobile/flows/*.yaml; do

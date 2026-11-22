@@ -27,7 +27,7 @@ import { endpoints, FRESH_PASSWORD, REALM, REPO_ROOT } from "../config.ts";
 import { copyRedacted } from "../evidence.ts";
 import { fetchToken } from "./token.ts";
 import { exec } from "../exec.ts";
-import { COUNTRY_WEEK_TAG, driverDied, flowFailure, flowNames, FLOWS_DIR, maestroArgs, flowTags, HOUSEHOLD_TAG, INVITEE_TAG, parseAppRequests, REQUEST_TAG, type AppRequest, type FlowEnv, type FlowFailure } from "../maestro.ts";
+import { COUNTRY_WEEK_TAG, driverDied, flowFailure, flowNames, FLOWS_DIR, maestroArgs, flowTags, HOUSEHOLD_TAG, INVITEE_TAG, lastLines, parseAppRequests, REQUEST_TAG, type AppRequest, type FlowEnv, type FlowFailure } from "../maestro.ts";
 import {
   renderFlowSection,
   renderLogcatSection,
@@ -441,6 +441,10 @@ async function flowAttempt(
         requestLog: `${dir}/app-requests.log`,
         log: existsSync(join(staging, "debug", "maestro.log")) ? readFileSync(join(staging, "debug", "maestro.log"), "utf8") : "",
       });
+      if (driverDied(failure)) {
+        writeRunFile(run, `${dir}/device-lost.txt`, clean(await deviceLostEvidence()));
+        files.push(`${dir}/device-lost.txt`);
+      }
     }
   } finally {
     rmSync(staging, { recursive: true, force: true });
@@ -453,6 +457,47 @@ async function flowAttempt(
   process.stdout.write(failure === undefined ? `flow ${name}: passed (${requests.length} requests)\n` : `flow ${name} failed at ${failure.at}\n`);
   process.stdout.write(`summary: ${relative(process.cwd(), join(run.dir, "summary.md"))}\n`);
   return { exitCode, failure, run: run.dir };
+}
+
+const DEVICE_RETURN_MS = 60_000;
+
+/**
+ * What the host and the device looked like just after Maestro lost the device: whether the emulator
+ * process survived, how loaded the host was, whether the guest rebooted, and what the device logged.
+ */
+async function deviceLostEvidence(): Promise<string> {
+  const section = async (title: string, read: () => Promise<string> | string): Promise<string> => {
+    const body = await Promise.resolve()
+      .then(read)
+      .catch((error: unknown) => `(could not read: ${errorText(error)})`);
+    return `## ${title}\n\n${body.trimEnd() || "(empty)"}\n`;
+  };
+  const host = (command: string, args: string[]) => async () => {
+    const result = await exec(command, args, { env: toolEnv });
+    return result.stdout + result.stderr;
+  };
+  const stateAtLoss = (await deviceState()) ?? "absent";
+  const deadline = Date.now() + DEVICE_RETURN_MS;
+  while (Date.now() < deadline && (await deviceState()) !== "device") await sleep(1000);
+  const returned = (await deviceState()) === "device";
+  const ofDevice = (args: string[]) => async () => (returned ? (await device().ok(args)).replaceAll("\r", "") : "(device did not return)");
+  return [
+    `# Device lost\n\nadb state when the flow ended: ${stateAtLoss}; ${returned ? `back within ${DEVICE_RETURN_MS / 1000} s` : `not back after ${DEVICE_RETURN_MS / 1000} s`}.\n`,
+    await section("Host load (/proc/loadavg)", () => readFileSync("/proc/loadavg", "utf8")),
+    await section("Host memory (/proc/meminfo)", () =>
+      readFileSync("/proc/meminfo", "utf8")
+        .split("\n")
+        .filter((line) => /^(MemTotal|MemAvailable|SwapTotal|SwapFree):/.test(line))
+        .join("\n"),
+    ),
+    await section("Emulator process", host("pgrep", ["-a", "-f", "qemu-system"])),
+    await section("Host top, busiest 20", async () => (await host("top", ["-b", "-n", "1", "-o", "%CPU", "-w", "160"])()).split("\n").slice(0, 27).join("\n")),
+    await section("adb devices -l", host("adb", ["devices", "-l"])),
+    await section("Guest uptime", ofDevice(["shell", "uptime"])),
+    await section("Guest crash log", ofDevice(["logcat", "-d", "-b", "crash"])),
+    await section("Guest log, last 400 lines since the flow began", ofDevice(["logcat", "-d", "-b", "main,system", "-v", "threadtime", "-t", "400"])),
+    await section("Emulator log, last 60 lines", () => (existsSync(paths.emulatorLog) ? lastLines(readFileSync(paths.emulatorLog, "utf8"), 60) : "(no emulator log)")),
+  ].join("\n");
 }
 
 function copyEmulatorLog(run: Run): string {
