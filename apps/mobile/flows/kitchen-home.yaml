@@ -1,6 +1,6 @@
 appId: io.github.noahhhx.mimos.debug
 ---
-- runFlow: connect-and-sign-in.yaml
+- runFlow: subflows/signed-in.yaml
 - assertVisible: Tonight
 - assertVisible: Nothing planned for tonight
 - assertVisible: No list yet\.

@@ -2,7 +2,7 @@ appId: io.github.noahhhx.mimos.debug
 tags:
   - household
 ---
-- runFlow: connect-and-sign-in.yaml
+- runFlow: subflows/signed-in.yaml
 - tapOn: Plan
 - assertVisible: Week of .*
 - tapOn:

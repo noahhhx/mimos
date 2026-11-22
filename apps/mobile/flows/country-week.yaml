@@ -2,7 +2,7 @@ appId: io.github.noahhhx.mimos.debug
 tags:
   - country-week
 ---
-- runFlow: connect-and-sign-in.yaml
+- runFlow: subflows/signed-in.yaml
 - tapOn: Profile
 - tapOn: Plugins
 - assertVisible: What plugins are

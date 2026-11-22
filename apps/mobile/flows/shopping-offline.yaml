@@ -4,7 +4,7 @@ appId: io.github.noahhhx.mimos.debug
 onFlowComplete:
   - setAirplaneMode: disabled
 ---
-- runFlow: connect-and-sign-in.yaml
+- runFlow: subflows/signed-in.yaml
 - tapOn: Plan
 - assertVisible: Week of .*
 - tapOn:

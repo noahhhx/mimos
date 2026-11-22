@@ -2,7 +2,7 @@ appId: io.github.noahhhx.mimos.debug
 tags:
   - invitee
 ---
-- runFlow: connect-and-sign-in.yaml
+- runFlow: subflows/signed-in.yaml
 - tapOn: Profile
 - tapOn: Household
 - assertVisible: Who is in it

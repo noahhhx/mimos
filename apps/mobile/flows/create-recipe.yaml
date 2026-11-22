@@ -1,6 +1,6 @@
 appId: io.github.noahhhx.mimos.debug
 ---
-- runFlow: connect-and-sign-in.yaml
+- runFlow: subflows/signed-in.yaml
 - evalScript: ${output.stamp = new Date().getTime()}
 - evalScript: ${output.title = 'Harness soup ' + output.stamp}
 - evalScript: ${output.spice = 'Harness spice ' + output.stamp}

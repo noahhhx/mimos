@@ -218,7 +218,7 @@ test("maestro: a JUnit failure is the assertion Maestro reported, and a pass has
 });
 
 test("maestro: the command runs one flow on the emulator, with the flow's values and every output under staging", () => {
-  const env = { MIMOS_USER: "user-1", MIMOS_PASSWORD: "pw", MIMOS_WEB_ADDRESS: "http://localhost:3000" };
+  const env = { MIMOS_USER: "user-1", MIMOS_PASSWORD: "pw", MIMOS_WEB_ADDRESS: "http://localhost:3000", MIMOS_REFRESH_TOKEN: "rt", MIMOS_ID_TOKEN: "it" };
   const args = maestroArgs({ serial: "emulator-5554", flowFile: "/repo/apps/mobile/flows/a.yaml", env, staging: "/tmp/s" });
   assert.deepEqual(args.slice(0, 3), ["test", "--udid", "emulator-5554"]);
   assert.equal(args.at(-1), "/repo/apps/mobile/flows/a.yaml");
@@ -227,7 +227,7 @@ test("maestro: the command runs one flow on the emulator, with the flow's values
   assert.equal(args[args.indexOf("--debug-output") + 1], "/tmp/s/debug");
   assert.ok(args.includes("--flatten-debug-output"));
   const passed = args.flatMap((arg, index) => (args[index - 1] === "-e" ? [arg] : []));
-  assert.deepEqual(passed, ["MIMOS_USER=user-1", "MIMOS_PASSWORD=pw", "MIMOS_WEB_ADDRESS=http://localhost:3000"]);
+  assert.deepEqual(passed, ["MIMOS_USER=user-1", "MIMOS_PASSWORD=pw", "MIMOS_WEB_ADDRESS=http://localhost:3000", "MIMOS_REFRESH_TOKEN=rt", "MIMOS_ID_TOKEN=it"]);
 });
 
 test("maestro: a flow's tags are those of its config, not of its steps", () => {

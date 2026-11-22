@@ -21,6 +21,7 @@ import {
   renderAvdIni,
 } from "../avd.ts";
 import { chooseCountry, createUser, joinHousehold, nextMonday } from "../accounts.ts";
+import { APP_CLIENT_ID, signInAsApp, type AppSession } from "../app-session.ts";
 import { HarnessError, parseCommandArgs, UsageError } from "../args.ts";
 import { finishRun, RUN_OPTION, RUN_USAGE, startRun, type Command } from "../command.ts";
 import { endpoints, FRESH_PASSWORD, REALM, REPO_ROOT } from "../config.ts";
@@ -375,6 +376,12 @@ async function flowAttempt(
         account = await createUser();
         return `${account} (fresh)`;
       });
+      let session: AppSession | undefined;
+      await step("App session", async () => {
+        session = await signInAsApp(account, FRESH_PASSWORD);
+        secrets.push(session.refreshToken, session.idToken);
+        return `signed in as ${APP_CLIENT_ID} for subflows/signed-in.yaml`;
+      });
       let partner: string | undefined;
       if (tags.has(HOUSEHOLD_TAG)) {
         await step("Household", async () => {
@@ -403,6 +410,8 @@ async function flowAttempt(
         MIMOS_USER: account,
         MIMOS_PASSWORD: FRESH_PASSWORD,
         MIMOS_WEB_ADDRESS: endpoints().web,
+        MIMOS_REFRESH_TOKEN: session?.refreshToken ?? "",
+        MIMOS_ID_TOKEN: session?.idToken ?? "",
         ...(partner === undefined ? {} : { MIMOS_PARTNER: partner }),
         ...(invitee === undefined ? {} : { MIMOS_INVITEE: invitee }),
       };
