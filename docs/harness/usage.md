@@ -251,8 +251,10 @@ left it when step 7 fixed the recipe 415.
 The `android-flows` job runs every Android flow the same way against the
 dev stack, built from source, in four parallel shards. The `stack-images` job
 builds the stack's images once and hands them to the shards as an artifact,
-since four Maven builds at once drew 429s from Maven Central. Each shard
-loads them, boots its own stack (`harness up --no-build`) and emulator,
+since four Maven builds at once drew 429s from Maven Central, and the
+`android` job builds the minified APK (with its R8 mapping) for them as
+`flow-apk`. Each shard loads both, boots its own stack (`harness up
+--no-build`) and emulator (`harness mobile up --minified --no-build`),
 takes every fourth flow by file name, and uploads
 `harness-runs-android-<shard>` when one fails. On a pull request it runs
 only when the `changes` job finds a path the flows depend on (its list is in

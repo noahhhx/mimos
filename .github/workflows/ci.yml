@@ -183,13 +183,24 @@ jobs:
           MIMOS_DEBUG_KEYSTORE_PASSWORD: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.MIMOS_DEBUG_KEYSTORE_PASSWORD || '' }}
           MIMOS_DEBUG_KEY_ALIAS: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.MIMOS_DEBUG_KEY_ALIAS || '' }}
           MIMOS_DEBUG_KEY_PASSWORD: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.MIMOS_DEBUG_KEY_PASSWORD || '' }}
-        run: ./gradlew check assembleDebug
+        run: ./gradlew check assembleDebug assembleMinified
 
       - name: Upload the debug APK
         uses: actions/upload-artifact@v4
         with:
           name: mimos-debug-apk
           path: apps/mobile/androidApp/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      # The four flow shards install this rather than each building it cold in devenv.
+      - name: Upload the minified APK for the flows
+        uses: actions/upload-artifact@v4
+        with:
+          name: flow-apk
+          path: |
+            apps/mobile/androidApp/build/outputs/apk/minified/androidApp-minified.apk
+            apps/mobile/androidApp/build/outputs/mapping/minified/mapping.txt
+          retention-days: 1
           if-no-files-found: error
 
   compose:
@@ -394,7 +405,7 @@ jobs:
 
   android-flows:
     name: Android flows (emulator, ${{ matrix.shard }}/4)
-    needs: [changes, stack-images]
+    needs: [changes, stack-images, android]
     # A release can go out without them: with the repository variable
     # RELEASE_WITHOUT_ANDROID_FLOWS set to true, a v* tag skips this job, and
     # release-apk and publish run without it. Main always runs it, and a pull
@@ -433,17 +444,9 @@ jobs:
       - name: Install devenv
         run: nix profile install nixpkgs#devenv
 
-      # Basic is the open-source (MIT) cache; the default provider is proprietary.
-      - uses: gradle/actions/setup-gradle@v6
-        with:
-          cache-provider: basic
-
       - name: Install the npm workspace in the devenv shell
         run: devenv shell -- npm ci
 
-      # The minified build: the release as R8 shrinks it, so a dependency that
-      # needs keep rules fails a flow here rather than the published APK
-      # (docs/plans/android-app/19-minified-flows.md).
       - uses: actions/download-artifact@v4
         with:
           name: stack-images
@@ -451,11 +454,19 @@ jobs:
       - name: Load the stack images
         run: gunzip -c stack-images.tar.gz | docker load && rm stack-images.tar.gz
 
+      # The minified build: the release as R8 shrinks it, so a dependency that
+      # needs keep rules fails a flow here rather than the published APK
+      # (docs/plans/android-app/19-minified-flows.md). The Android app job builds it.
+      - uses: actions/download-artifact@v4
+        with:
+          name: flow-apk
+          path: apps/mobile/androidApp/build/outputs
+
       - name: Boot the stack and the emulator
         timeout-minutes: 25
         run: |
           devenv shell -- harness up --no-build
-          devenv shell -- harness mobile up --minified --run latest
+          devenv shell -- harness mobile up --minified --no-build --run latest
 
       - name: Android flows
         timeout-minutes: 30
