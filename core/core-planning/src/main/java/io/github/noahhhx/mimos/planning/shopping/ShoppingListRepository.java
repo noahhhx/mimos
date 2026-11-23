@@ -102,9 +102,9 @@ public class ShoppingListRepository {
 
     /** The owner's generated list for the week, if any. */
     public Optional<ShoppingList> findList(UUID ownerId, LocalDate startDate) {
-        List<UUID> ids = jdbc.queryForList(
+        List<UUID> ids = jdbc.query(
                 "select id from shopping_list where household_id = ? and start_date = ?",
-                UUID.class,
+                (rs, row) -> rs.getObject(1, UUID.class),
                 ownerId,
                 startDate);
         if (ids.isEmpty()) {
@@ -120,9 +120,9 @@ public class ShoppingListRepository {
     /** Every list the owner has, oldest week first. */
     public List<ShoppingList> findAllLists(UUID ownerId) {
         return jdbc
-                .queryForList(
+                .query(
                         "select start_date from shopping_list where household_id = ? order by start_date",
-                        LocalDate.class,
+                        (rs, row) -> rs.getObject(1, LocalDate.class),
                         ownerId)
                 .stream()
                 .flatMap(startDate -> findList(ownerId, startDate).stream())

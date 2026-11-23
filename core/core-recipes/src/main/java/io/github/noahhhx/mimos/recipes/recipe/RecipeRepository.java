@@ -127,7 +127,8 @@ public class RecipeRepository {
 
     /** The ids of the recipes an owner owns. */
     public List<UUID> findOwnedIds(UUID ownerId) {
-        return jdbc.queryForList("select id from recipe where household_id = ?", UUID.class, ownerId);
+        return jdbc.query(
+                "select id from recipe where household_id = ?", (rs, row) -> rs.getObject(1, UUID.class), ownerId);
     }
 
     /** Gives every recipe one owner owns to another, keeping who created each. */
@@ -154,7 +155,7 @@ public class RecipeRepository {
         if (recipeIds.isEmpty()) {
             return Optional.empty();
         }
-        List<UUID> found = jdbc.queryForList(
+        List<UUID> found = jdbc.query(
                 """
                 with recursive reachable(root, id) as (
                     select id, id from recipe where id in (%s)
@@ -165,7 +166,7 @@ public class RecipeRepository {
                 )
                 select root from reachable where id = ? limit 1
                 """.formatted(placeholders(recipeIds.size())),
-                UUID.class,
+                (rs, row) -> rs.getObject(1, UUID.class),
                 concat(List.copyOf(recipeIds), List.of(target)).toArray());
         return found.stream().findFirst();
     }

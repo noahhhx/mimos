@@ -59,9 +59,9 @@ public class PluginSubjectService {
     }
 
     private @Nullable UUID find(UUID householdId, String pluginId) {
-        List<UUID> subjects = jdbc.queryForList(
+        List<UUID> subjects = jdbc.query(
                 "select subject from plugin_subject where household_id = ? and plugin_id = ?",
-                UUID.class,
+                (rs, row) -> rs.getObject(1, UUID.class),
                 householdId,
                 pluginId);
         return subjects.isEmpty() ? null : subjects.get(0);
