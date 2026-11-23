@@ -9,5 +9,10 @@
   ],
   "engines": {
     "node": ">=22"
+  },
+  "overrides": {
+    "@hey-api/json-schema-ref-parser": {
+      "js-yaml": "4.3.2"
+    }
   }
 }
