@@ -19,7 +19,7 @@ appId: io.github.noahhhx.mimos.debug
 - tapOn: Make this week's list
 - assertVisible: Shopping list
 - tapOn: Generate from this week's plan
-- assertVisible: Regenerate
+- assertVisible: 0 of \d+ ticked
 - tapOn: Kitchen
 - assertVisible: Still to buy · (\d+) of \1
 - takeScreenshot: kitchen-home
@@ -34,7 +34,7 @@ appId: io.github.noahhhx.mimos.debug
     element: Start cooking
     direction: UP
 - tapOn: Start cooking
-- assertVisible: Ingredients
+- assertVisible: Ingredients · \d+
 - tapOn: Kitchen
 - tapOn: Swap meal
 - assertVisible: Remove from plan

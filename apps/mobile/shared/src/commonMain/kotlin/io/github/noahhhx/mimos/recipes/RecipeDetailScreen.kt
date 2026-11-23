@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -23,6 +24,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import io.github.noahhhx.mimos.api.models.Nutrition
 import io.github.noahhhx.mimos.api.models.NutritionSource
 import io.github.noahhhx.mimos.api.models.RecipeDetail
@@ -36,18 +39,23 @@ import io.github.noahhhx.mimos.ui.MimosDialog
 import io.github.noahhhx.mimos.ui.MimosTheme
 import io.github.noahhhx.mimos.ui.Notice
 import io.github.noahhhx.mimos.ui.PageHeader
+import io.github.noahhhx.mimos.ui.Tabs
 import io.github.noahhhx.mimos.ui.Tag
 import io.github.noahhhx.mimos.ui.Text
 
-/** One recipe, as you cook it: ingredients and steps are ticked by tapping them. */
+/**
+ * One recipe, as you cook it: its ingredients or its method, one list at a time, each ticked by
+ * tapping it.
+ */
 @Composable
 fun RecipeDetailScreen(model: RecipesModel, route: RecipeRoute.Recipe, webOrigin: String) {
     val detail by model.detail.collectAsState()
+    val shownLists = remember { mutableStateMapOf<RecipeId, CookList>() }
     val gutter = Modifier.padding(horizontal = MimosTheme.spacing.page)
     Column(
         Modifier.fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(vertical = MimosTheme.spacing.xxl)
+            .padding(top = 20.dp, bottom = MimosTheme.spacing.xxl)
     ) {
         Trail(model, route, current = (detail as? RecipeDetailState.Loaded)?.recipe?.title)
         // Until the followed recipe loads, the screen would show the one being left.
@@ -66,7 +74,15 @@ fun RecipeDetailScreen(model: RecipesModel, route: RecipeRoute.Recipe, webOrigin
             is RecipeDetailState.Loaded ->
                 if (state.recipe.id == route.id.value) {
                     KeepScreenOn()
-                    LoadedRecipe(model, state.recipe, webOrigin)
+                    val id = RecipeId(state.recipe.id)
+                    LoadedRecipe(
+                        model,
+                        state.recipe,
+                        webOrigin,
+                        shownLists[id] ?: CookList.Ingredients,
+                    ) {
+                        shownLists[id] = it
+                    }
                 } else {
                     Text("Loading…", gutter, color = MimosTheme.colors.muted)
                 }
@@ -82,7 +98,7 @@ private fun Trail(model: RecipesModel, route: RecipeRoute.Recipe, current: Strin
     val states by model.cookBook.states.collectAsState()
     Column(
         Modifier.padding(horizontal = MimosTheme.spacing.page)
-            .padding(bottom = MimosTheme.spacing.xl)
+            .padding(bottom = MimosTheme.spacing.l)
     ) {
         if (route.trail.isEmpty()) {
             Text(
@@ -119,6 +135,11 @@ private fun Crumb(label: String, onClick: () -> Unit) {
     )
 }
 
+private enum class CookList {
+    Ingredients,
+    Method,
+}
+
 private fun whose(recipe: RecipeDetail): String =
     when {
         recipe.isLibrary -> "Library recipe"
@@ -129,9 +150,16 @@ private fun whose(recipe: RecipeDetail): String =
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun LoadedRecipe(model: RecipesModel, recipe: RecipeDetail, webOrigin: String) {
+private fun LoadedRecipe(
+    model: RecipesModel,
+    recipe: RecipeDetail,
+    webOrigin: String,
+    shown: CookList,
+    onShow: (CookList) -> Unit,
+) {
     val colors = MimosTheme.colors
     val type = MimosTheme.typography
+    val spacing = MimosTheme.spacing
     val uriHandler = LocalUriHandler.current
     val id = RecipeId(recipe.id)
     val states by model.cookBook.states.collectAsState()
@@ -139,47 +167,23 @@ private fun LoadedRecipe(model: RecipesModel, recipe: RecipeDetail, webOrigin: S
     val rating by model.rating.collectAsState()
     var confirmDelete by remember { mutableStateOf(false) }
     val ticks = (states[id] ?: CookState()).within(recipe.ingredients.size, recipe.steps.size)
-    val gutter = Modifier.padding(horizontal = MimosTheme.spacing.page)
+    val gutter = Modifier.padding(horizontal = spacing.page)
     val origin = webOrigin.trimEnd('/')
 
-    Column(verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.xl)) {
-        Column(gutter, verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.m)) {
-            Text(whose(recipe), color = colors.muted)
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(MimosTheme.spacing.s),
-                verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.s),
-            ) {
-                if (recipe.isLibrary) {
-                    recipe.slug?.let { slug ->
-                        Button(
-                            "Public page",
-                            onClick = { uriHandler.openUri("$origin/recipes/$slug") },
-                            kind = ButtonKind.Secondary,
-                        )
-                    }
-                } else {
-                    Button("Edit", onClick = model::edit, kind = ButtonKind.Secondary)
-                    Button(
-                        "Delete",
-                        onClick = { confirmDelete = true },
-                        kind = ButtonKind.Danger,
-                        enabled = deletion != DeleteState.Deleting,
-                    )
-                }
-            }
-            if (recipe.isLibrary) {
-                Text("Library recipes are read-only.", style = type.small, color = colors.muted)
-            }
-            (deletion as? DeleteState.Failed)?.let { Notice(it.message) }
-        }
-
-        Column(gutter) {
+    Column(verticalArrangement = Arrangement.spacedBy(spacing.l)) {
+        Column(gutter, verticalArrangement = Arrangement.spacedBy(spacing.s)) {
             Text(
-                servesLine(recipe.servings, recipe.prepMinutes, recipe.cookMinutes),
+                whose(recipe) +
+                    " · " +
+                    servesLine(recipe.servings, recipe.prepMinutes, recipe.cookMinutes),
                 style = type.small,
                 color = colors.muted,
             )
-            PageHeader(recipe.title, Modifier.padding(top = MimosTheme.spacing.s))
+            Text(
+                recipe.title,
+                Modifier.semantics { heading() },
+                style = type.screenTitle,
+            )
             if (!recipe.isLibrary) {
                 StarRating(
                     recipe.rating,
@@ -190,62 +194,102 @@ private fun LoadedRecipe(model: RecipesModel, recipe: RecipeDetail, webOrigin: S
             }
             if (recipe.tags.isNotEmpty()) {
                 FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(MimosTheme.spacing.xs),
-                    verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.xs),
+                    horizontalArrangement = Arrangement.spacedBy(spacing.xs),
+                    verticalArrangement = Arrangement.spacedBy(spacing.xs),
                 ) {
                     recipe.tags.forEach { Tag(it) }
                 }
             }
+            Row(
+                Modifier.padding(top = spacing.xs),
+                horizontalArrangement = Arrangement.spacedBy(spacing.s),
+            ) {
+                if (recipe.isLibrary) {
+                    recipe.slug?.let { slug ->
+                        Button(
+                            "Public page",
+                            onClick = { uriHandler.openUri("$origin/recipes/$slug") },
+                            kind = ButtonKind.Secondary,
+                            small = true,
+                        )
+                    }
+                } else {
+                    Button("Edit", onClick = model::edit, kind = ButtonKind.Secondary, small = true)
+                    Button(
+                        "Delete",
+                        onClick = { confirmDelete = true },
+                        kind = ButtonKind.Danger,
+                        small = true,
+                        enabled = deletion != DeleteState.Deleting,
+                    )
+                }
+            }
+            if (recipe.isLibrary) {
+                Text("Library recipes are read-only.", style = type.small, color = colors.muted)
+            }
+            (deletion as? DeleteState.Failed)?.let { Notice(it.message) }
         }
 
         PictureRow(model.pictures, recipe.id, recipe.title, recipe.pictures.map { it.id })
 
         if (recipe.description.isNotEmpty()) {
-            Text(recipe.description, gutter, style = type.lede, color = colors.muted)
+            Text(
+                recipe.description,
+                gutter,
+                style = type.lede.copy(fontSize = 16.sp),
+                color = colors.muted,
+            )
         }
 
         Column {
-            Text(
-                "Ingredients",
-                gutter.padding(bottom = MimosTheme.spacing.s).semantics { heading() },
-                style = type.heading,
+            Tabs(
+                listOf(
+                    "Ingredients · ${recipe.ingredients.size}",
+                    "Method · ${recipe.steps.size}",
+                ),
+                selected = shown.ordinal,
+                onSelect = { onShow(CookList.entries[it]) },
             )
-            recipe.ingredients.forEachIndexed { index, ingredient ->
-                IngredientRow(
-                    ingredient,
-                    checked = index in ticks.ingredients,
-                    onToggle = { model.cookBook.toggleIngredient(id, index) },
-                    onFollow = model::open,
-                )
-            }
-        }
-
-        Column {
-            Text(
-                "Method",
-                gutter.padding(bottom = MimosTheme.spacing.s).semantics { heading() },
-                style = type.heading,
-            )
-            recipe.steps.forEachIndexed { index, step ->
-                StepRow(
-                    number = index + 1,
-                    step = step,
-                    checked = index in ticks.steps,
-                    onToggle = { model.cookBook.toggleStep(id, index) },
-                )
+            Column(Modifier.padding(top = spacing.s)) {
+                if (shown == CookList.Ingredients) {
+                    recipe.ingredients.forEachIndexed { index, ingredient ->
+                        IngredientRow(
+                            ingredient,
+                            checked = index in ticks.ingredients,
+                            onToggle = { model.cookBook.toggleIngredient(id, index) },
+                            onFollow = model::open,
+                        )
+                    }
+                } else {
+                    recipe.steps.forEachIndexed { index, step ->
+                        StepRow(
+                            number = index + 1,
+                            step = step,
+                            checked = index in ticks.steps,
+                            onToggle = { model.cookBook.toggleStep(id, index) },
+                        )
+                    }
+                }
             }
         }
 
         if (recipe.nutrition.isKnown()) {
-            Column(gutter, verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.s)) {
+            Column(
+                gutter.padding(top = spacing.s),
+                verticalArrangement = Arrangement.spacedBy(spacing.s),
+            ) {
                 Text(
                     "Per serving",
-                    style = type.heading,
+                    style = type.subheading,
                     modifier = Modifier.semantics { heading() },
                 )
                 PerServing(recipe.nutrition)
                 if (recipe.nutritionSource == NutritionSource.INGREDIENTS) {
-                    Text("Calculated from the ingredients.", color = colors.muted)
+                    Text(
+                        "Calculated from the ingredients.",
+                        style = type.small,
+                        color = colors.muted,
+                    )
                 }
             }
         }
@@ -291,7 +335,7 @@ internal fun PerServing(n: Nutrition) {
                 verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.xs),
             ) {
                 Label(label)
-                Text(value, style = MimosTheme.typography.heading)
+                Text(value, style = MimosTheme.typography.subheading)
             }
         }
     }

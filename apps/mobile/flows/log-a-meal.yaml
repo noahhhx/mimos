@@ -2,14 +2,15 @@ appId: io.github.noahhhx.mimos.debug
 ---
 - runFlow: subflows/signed-in.yaml
 - tapOn: Log
-- assertVisible: Week of .*
-- assertVisible: This week, per day
+- assertVisible: Today
+- assertVisible: Nothing logged.*
 - takeScreenshot: log-empty
-- scrollUntilVisible:
-    element: Nothing logged.*
-- scrollUntilVisible:
-    element: Log something else
-    centerElement: true
+- tapOn: Previous day
+- assertVisible: Yesterday
+- tapOn: Next day
+- assertVisible: Today
+- tapOn: \+ Log something else
+- assertVisible: Cancel
 - tapOn: What
 - inputText: suga
 - tapOn: Ingredient · .* per 100 g
@@ -23,15 +24,16 @@ appId: io.github.noahhhx.mimos.debug
 - scrollUntilVisible:
     element: Comes to .* kcal, 0 g protein, 15 g carbs, 0 g fat\.
     centerElement: true
-- tapOn: Log meal
+- takeScreenshot: log-sheet
 - scrollUntilVisible:
-    element: Sugar, 15 g
-    direction: UP
+    element: Log meal
+    centerElement: true
+- tapOn: Log meal
+- assertNotVisible: Cancel
+- assertVisible: Sugar, 15 g
 - assertVisible: Delete Sugar, 15 g
 - takeScreenshot: log-ingredient
-- scrollUntilVisible:
-    element: What
-    centerElement: true
+- tapOn: \+ Log something else
 - tapOn: What
 - inputText: Toast with jam
 - hideKeyboard
@@ -42,18 +44,18 @@ appId: io.github.noahhhx.mimos.debug
     element: Log meal
     centerElement: true
 - tapOn: Log meal
-- scrollUntilVisible:
-    element: Delete Toast with jam
-    direction: UP
-    centerElement: true
+- assertVisible: Delete Toast with jam
 - assertVisible: 310 kcal
 - takeScreenshot: log-custom
 - tapOn: Delete Toast with jam
 - assertNotVisible: Delete Toast with jam
 - assertVisible: Delete Sugar, 15 g
-- scrollUntilVisible:
-    element: This week, per day
-    direction: UP
+- tapOn: Week totals →
+- assertVisible: Tap a day to see its meals\.
+- takeScreenshot: log-week
+- tapOn: ".*: \\d+ kcal, 0 g protein, 15 g carbs, 0 g fat"
+- assertNotVisible: Tap a day to see its meals\.
+- assertVisible: Delete Sugar, 15 g
 - tapOn: Toggle light and dark mode
 - takeScreenshot: log-dark
 - tapOn: Toggle light and dark mode

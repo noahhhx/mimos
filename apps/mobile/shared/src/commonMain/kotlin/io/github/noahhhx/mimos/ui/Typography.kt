@@ -29,10 +29,17 @@ data class MimosTypography(
     val label: TextStyle,
     /** A page's h1: Newsreader 400. The web scales 40 to 68 with the viewport; a phone gets 40. */
     val title: TextStyle,
+    /**
+     * The title of a screen worked through in hand, as the shopping list, a day's log, and a recipe
+     * are: Newsreader 28, 400, so the list under it starts high on the screen.
+     */
+    val screenTitle: TextStyle,
     /** h3, and the titles of dialogs and empty states: Newsreader 22, 500. */
     val heading: TextStyle,
     /** A page's lede: Newsreader 22, muted by the caller. */
     val lede: TextStyle,
+    /** Section headings and figures on those screens: Newsreader 19, 500. */
+    val subheading: TextStyle,
     /** The brand beside the duck: Newsreader 26, 500. */
     val brand: TextStyle,
     /** A person's name in the profile panel: Newsreader 19. */
@@ -44,10 +51,9 @@ data class MimosTypography(
     /** A tab's label: 15. */
     val tab: TextStyle,
     /**
-     * Ingredients and steps while cooking: 20, so they read at arm's length. The web's cook view
-     * uses its body size; a phone propped on a counter is further away.
+     * A row ticked off by tapping it, as a shopping item or an ingredient is: 16, line height 1.4.
      */
-    val cook: TextStyle,
+    val tickRow: TextStyle,
 )
 
 private val letterSpacedLabel = 0.12.em
@@ -91,14 +97,16 @@ private fun newsreader(size: TextUnit): FontFamily {
 internal fun rememberMimosTypography(): MimosTypography {
     val sans = publicSans()
     val title = 40.sp
+    val screenTitle = 28.sp
     val heading = 22.sp
     val brand = 26.sp
     val person = 19.sp
     val titleFont = newsreader(title)
+    val screenTitleFont = newsreader(screenTitle)
     val headingFont = newsreader(heading)
     val brandFont = newsreader(brand)
     val personFont = newsreader(person)
-    return remember(sans, titleFont, headingFont, brandFont, personFont) {
+    return remember(sans, titleFont, screenTitleFont, headingFont, brandFont, personFont) {
         val body = TextStyle(fontFamily = sans, fontSize = 17.sp, lineHeight = 1.6.em)
         MimosTypography(
             body = body,
@@ -117,6 +125,14 @@ internal fun rememberMimosTypography(): MimosTypography {
                     lineHeight = 1.02.em,
                     letterSpacing = (-0.01).em,
                 ),
+            screenTitle =
+                TextStyle(
+                    fontFamily = screenTitleFont,
+                    fontSize = screenTitle,
+                    fontWeight = FontWeight.Normal,
+                    lineHeight = 1.1.em,
+                    letterSpacing = (-0.01).em,
+                ),
             heading =
                 TextStyle(
                     fontFamily = headingFont,
@@ -125,6 +141,13 @@ internal fun rememberMimosTypography(): MimosTypography {
                     lineHeight = 1.25.em,
                 ),
             lede = TextStyle(fontFamily = headingFont, fontSize = heading, lineHeight = 1.45.em),
+            subheading =
+                TextStyle(
+                    fontFamily = personFont,
+                    fontSize = person,
+                    fontWeight = FontWeight.Medium,
+                    lineHeight = 1.25.em,
+                ),
             brand =
                 TextStyle(fontFamily = brandFont, fontSize = brand, fontWeight = FontWeight.Medium),
             person = TextStyle(fontFamily = personFont, fontSize = person),
@@ -134,7 +157,7 @@ internal fun rememberMimosTypography(): MimosTypography {
                 body.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold, lineHeight = 1.2.em),
             input = body.copy(fontSize = 16.sp, lineHeight = 1.3.em),
             tab = body.copy(fontSize = 15.sp, lineHeight = 1.2.em),
-            cook = body.copy(fontSize = 20.sp, lineHeight = 1.4.em),
+            tickRow = body.copy(fontSize = 16.sp, lineHeight = 1.4.em),
         )
     }
 }

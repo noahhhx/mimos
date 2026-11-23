@@ -34,6 +34,32 @@ fun aislesToShop(items: List<ShoppingListItem>): List<Aisle> {
         .sortedWith(compareBy<Aisle> { it.done }.thenBy { rank(it.category) })
 }
 
+/**
+ * The list as the phone shows it in the shop: [aisles] hold only what is still to buy, and every
+ * ticked item gathers in one [basket] at the end, in the order [aislesToShop] gives them. An aisle
+ * with nothing left to buy is not in [aisles].
+ */
+data class BasketView(val aisles: List<Aisle>, val basket: List<ShoppingListItem>) {
+    val total: Int
+        get() = aisles.sumOf { it.items.size } + basket.size
+}
+
+fun basketView(items: List<ShoppingListItem>): BasketView {
+    val inAisles = aislesToShop(items)
+    return BasketView(
+        aisles =
+            inAisles.mapNotNull { aisle ->
+                aisle.items
+                    .filterNot { it.checked }
+                    .takeIf { it.isNotEmpty() }
+                    ?.let {
+                        Aisle(aisle.category, it)
+                    }
+            },
+        basket = inAisles.flatMap { aisle -> aisle.items.filter { it.checked } },
+    )
+}
+
 /** The units the add-an-item form offers: a recipe's metric units, with "" for pieces. */
 val ADD_ITEM_UNITS: List<String> = UNITS
 

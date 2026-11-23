@@ -302,6 +302,49 @@ class LogModelTest {
         }
 
     @Test
+    fun `the pager steps one day at a time, into the next week and back`() = runTest {
+        val server = LogServer()
+        val model = model(server)
+        model.opened()
+        model.loaded()
+
+        repeat(3) { model.nextDay() }
+        assertEquals(LocalDate(2026, 11, 22), model.selected.value)
+        assertEquals(MONDAY, model.monday.value)
+
+        model.nextDay()
+        assertEquals(LocalDate(2026, 11, 23), model.selected.value)
+        model.loaded(LocalDate(2026, 11, 23))
+        assertEquals("2026-11-23" to "2026-11-29", server.reads.last())
+
+        model.previousDay()
+        assertEquals(LocalDate(2026, 11, 22), model.selected.value)
+        model.loaded(MONDAY)
+    }
+
+    @Test
+    fun `the form closes once its meal is logged, and stays open when the log is refused`() =
+        runTest {
+            val server = LogServer()
+            val model = model(server)
+            model.opened()
+            model.loaded()
+
+            model.openForm()
+            server.failWrites = true
+            model.type("Toast")
+            model.editNutrition { it.copy(calories = "310") }
+            model.add()
+            model.error.first { it != null }
+            assertTrue(model.formOpen.value, "a refused log keeps the form open")
+
+            server.failWrites = false
+            model.add()
+            model.formOpen.first { !it }
+            assertEquals(listOf("Toast"), server.created.map { it.description })
+        }
+
+    @Test
     fun `a deleted entry leaves the week`() = runTest {
         val server = LogServer()
         server.logs += MealLog("toast", THURSDAY, MealType.SNACK, "Toast", 1.0, Nutrition(310.0))
@@ -343,12 +386,14 @@ class LogModelTest {
         val model = model(LogServer())
         model.opened()
         model.loaded()
+        assertEquals(false, model.formOpen.value)
 
         model.scanner.open()
         model.scanner.type("50184453")
         model.scanner.lookUpTyped()
 
         val form = model.form.first { it.what is LogWhat.Product }
+        assertTrue(model.formOpen.value, "the product lands in the open form")
         assertEquals("Yeast Extract (Marmite)", whatText(form.what))
         assertEquals(AmountFields("8", "g"), form.amount)
         assertEquals(null, model.scanner.scan.value)

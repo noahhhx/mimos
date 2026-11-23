@@ -34,7 +34,7 @@ appId: io.github.noahhhx.mimos.debug
 - scrollUntilVisible:
     element: Create recipe
 - tapOn: Create recipe
-- assertVisible: Your recipe
+- assertVisible: Your recipe · .*
 - scrollUntilVisible:
     element: ${output.title}, picture 1 of 1
 - takeScreenshot: created
@@ -48,7 +48,7 @@ appId: io.github.noahhhx.mimos.debug
 - scrollUntilVisible:
     element: Save changes
 - tapOn: Save changes
-- assertVisible: Your recipe
+- assertVisible: Your recipe · .*
 - assertNotVisible: ${output.title}, picture 1 of 1
 - tapOn: Delete
 - tapOn:

@@ -10,30 +10,34 @@ appId: io.github.noahhhx.mimos.debug
     element: Greek Salad
 - takeScreenshot: recipes-library
 - tapOn: Greek Salad
-- assertVisible: Library recipe
+- assertVisible: Library recipe · .*
 - assertVisible: Public page
 - scrollUntilVisible:
-    element: 100 g feta
-- tapOn: 100 g feta
+    element: feta
+- tapOn: feta
 - assertVisible:
     checked: true
-    containsChild: 100 g feta
+    containsChild: feta
+- takeScreenshot: cooking-greek-salad
+- tapOn: Method · \d+
 - scrollUntilVisible:
     element: .*Lay the feta on top.*
 - tapOn: .*Lay the feta on top.*
 - assertVisible:
     checked: true
     containsChild: .*Lay the feta on top.*
-- takeScreenshot: cooking-greek-salad
+- takeScreenshot: cooking-greek-salad-method
 - back
 - scrollUntilVisible:
     element: Greek Salad
 - tapOn: Greek Salad
+- tapOn: Ingredients · \d+
 - scrollUntilVisible:
-    element: 100 g feta
+    element: feta
 - assertVisible:
     checked: true
-    containsChild: 100 g feta
+    containsChild: feta
+- tapOn: Method · \d+
 - scrollUntilVisible:
     element: .*Lay the feta on top.*
 - assertVisible:

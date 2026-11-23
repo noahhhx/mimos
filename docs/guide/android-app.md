@@ -31,6 +31,23 @@ describes each of them as the web shows it.
 
 ![The app's Kitchen tab, with Greek Salad tonight and the week's shopping still to buy](../assets/screenshots/android-kitchen.png){ width="300" }
 
+Three tabs are laid out for a phone held in one hand:
+
+- **Shopping** keeps what is still to buy by aisle. A ticked item moves
+  to **In the basket** at the end of the list; choose **Show** to see the
+  basket and untick something. **Add an item** and **Regenerate** are
+  below the list.
+- **Log** shows one day at a time, today first. Choose **‹** and **›** to
+  step a day back or on, and **Week totals** for the week's table. **Log
+  something else** and **Scan** stay at the bottom of the screen and open
+  the form over the day.
+- A recipe shows its **Ingredients** or its **Method**, one at a time;
+  choose the other to switch.
+
+![The app's Shopping tab, with what is left by aisle and a cucumber in the basket](../assets/screenshots/android-shopping.png){ width="300" }
+![The app's Log tab on today, with two entries and the Log something else and Scan buttons along the bottom](../assets/screenshots/android-log.png){ width="300" }
+![A recipe in the app, showing its ingredients with the feta ticked](../assets/screenshots/android-recipe.png){ width="300" }
+
 **Settings** is the one place the web has no match for. It holds the
 light and dark choice, the server you are connected to and the version
 it runs, **Change instance** to connect somewhere else, and the app's
