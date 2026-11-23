@@ -46,6 +46,14 @@ updates:
       - /tools/harness/fakes/open-food-facts
     schedule:
       interval: weekly
+    ignore:
+      # Image runtimes track the toolchain CI builds with: Java 21 (ADR-0001)
+      # and Node 22. Move them together on purpose, not from a weekly bump.
+      - dependency-name: eclipse-temurin
+        update-types: ["version-update:semver-major"]
+      - dependency-name: maven
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
     groups:
       docker:
         patterns: ["*"]
@@ -56,6 +64,11 @@ updates:
       - /deploy/selfhost
     schedule:
       interval: weekly
+    ignore:
+      # A Postgres major version cannot open the previous one's data
+      # directory; self-hosters need an upgrade path first.
+      - dependency-name: postgres
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: pip
     directory: /docs
