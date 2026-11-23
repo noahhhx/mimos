@@ -169,7 +169,7 @@ export default function RecipesPage() {
               <button
                 key={tag}
                 type="button"
-                className={active ? "button small" : "button secondary small"}
+                className={active ? "button small tag-filter" : "button secondary small tag-filter"}
                 aria-pressed={active}
                 onClick={() => toggleTag(tag)}
               >

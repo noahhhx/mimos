@@ -1208,6 +1208,12 @@ input[type="search"]:focus {
   color: var(--muted);
 }
 
+.button.tag-filter {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 /* ---------- Recipe page (components/recipe-view.tsx) ---------- */
 
 .recipe-meta {
