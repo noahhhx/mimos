@@ -707,7 +707,12 @@ writes evidence to `.harness/runs/<run>/` (gitignored), and
   job's last steps run every harness scenario through devenv against the
   booted stack and upload `.harness/runs/` as the `harness-runs` artifact
   when one fails. On a push to main, the `pages` job publishes the docs
-  site to GitHub Pages once `docs` passes.
+  site to GitHub Pages once `docs` passes. The `dependency-graph` job
+  submits the resolved Maven and Gradle dependency trees to GitHub on
+  every push and same-repository PR, because the dependency graph reads
+  `pom.xml` and Gradle files as text and misses BOM-managed versions,
+  transitive dependencies, and the Android app; Dependabot alerts on
+  Java and Kotlin dependencies depend on it.
 
 ## Decision log
 
