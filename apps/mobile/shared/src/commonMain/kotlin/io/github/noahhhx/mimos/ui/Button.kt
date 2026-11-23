@@ -51,27 +51,27 @@ fun Button(
     val colors = MimosTheme.colors
     val spacing = MimosTheme.spacing
     val source = remember { MutableInteractionSource() }
-    val pressed by source.collectIsPressedAsState()
+    val held by source.collectIsPressedAsState()
     val deeper = lerp(colors.accent, colors.fg, 0.18f)
     val look =
         when (kind) {
             ButtonKind.Primary ->
                 ButtonLook(
-                    if (pressed) deeper else colors.accent,
-                    if (pressed) deeper else colors.accent,
+                    if (held) deeper else colors.accent,
+                    if (held) deeper else colors.accent,
                     colors.onAccent,
                 )
             ButtonKind.Secondary ->
                 ButtonLook(
                     Color.Transparent,
-                    if (pressed) colors.accent else colors.line,
+                    if (held) colors.accent else colors.line,
                     colors.fg,
                 )
             ButtonKind.Danger ->
                 ButtonLook(
-                    if (pressed) colors.danger else Color.Transparent,
+                    if (held) colors.danger else Color.Transparent,
                     colors.danger,
-                    if (pressed) colors.onAccent else colors.danger,
+                    if (held) colors.onAccent else colors.danger,
                 )
         }
     Box(
