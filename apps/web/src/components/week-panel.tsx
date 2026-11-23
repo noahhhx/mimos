@@ -80,6 +80,7 @@ export function WeekPanelSection({
           <div className="panel-actions">
             {block.actions.map((button, index) => (
               <button
+                type="button"
                 key={index}
                 className={button.primary ? "button" : "button secondary"}
                 disabled={pressing || spinning}
@@ -99,7 +100,13 @@ export function WeekPanelSection({
   return (
     <section className="week-panel">
       <h2>
-        <button className="week-panel-toggle" aria-expanded={open} aria-controls={bodyId} onClick={toggle}>
+        <button
+          type="button"
+          className="week-panel-toggle"
+          aria-expanded={open}
+          aria-controls={bodyId}
+          onClick={toggle}
+        >
           <span className="week-panel-name">{panel.pluginName}</span>
           {panel.summary && (
             <span className="week-panel-summary">

@@ -90,7 +90,7 @@ export default function AccountPage() {
             {exportError}
           </p>
         )}
-        <button className="button" onClick={() => void download()} disabled={exporting}>
+        <button type="button" className="button" onClick={() => void download()} disabled={exporting}>
           {exporting ? "Exporting…" : "Download export"}
         </button>
       </section>

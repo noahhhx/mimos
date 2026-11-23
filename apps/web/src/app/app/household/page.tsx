@@ -141,7 +141,7 @@ export default function HouseholdPage() {
           Create a link and send it to the person you want to share with. It works once, for seven days, and they choose
           whether to join.
         </p>
-        <button className="button" onClick={() => void createInvite()} disabled={inviting}>
+        <button type="button" className="button" onClick={() => void createInvite()} disabled={inviting}>
           {inviting ? "Creating…" : invite ? "Create another link" : "Create invite link"}
         </button>
         {inviteError && (
@@ -156,7 +156,7 @@ export default function HouseholdPage() {
               <input type="text" readOnly value={link} onFocus={(event) => event.target.select()} />
             </label>
             <div className="button-row">
-              <button className="button secondary" onClick={() => void copy()}>
+              <button type="button" className="button secondary" onClick={() => void copy()}>
                 Copy link
               </button>
               <span className="muted" role="status">
@@ -176,7 +176,7 @@ export default function HouseholdPage() {
         <section className="household-section" aria-labelledby="leave-heading">
           <h2 id="leave-heading">Leave the household</h2>
           {!confirmingLeave ? (
-            <button className="button secondary" onClick={() => setConfirmingLeave(true)}>
+            <button type="button" className="button secondary" onClick={() => setConfirmingLeave(true)}>
               Leave household
             </button>
           ) : (
@@ -198,10 +198,15 @@ export default function HouseholdPage() {
                 </p>
               )}
               <div className="button-row">
-                <button className="button danger" onClick={() => void leave()} disabled={leaving}>
+                <button type="button" className="button danger" onClick={() => void leave()} disabled={leaving}>
                   {leaving ? "Leaving…" : "Leave household"}
                 </button>
-                <button className="button secondary" onClick={() => setConfirmingLeave(false)} disabled={leaving}>
+                <button
+                  type="button"
+                  className="button secondary"
+                  onClick={() => setConfirmingLeave(false)}
+                  disabled={leaving}
+                >
                   Stay
                 </button>
               </div>

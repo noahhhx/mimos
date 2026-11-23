@@ -89,6 +89,7 @@ export function TrainingSlot({
           <TrainingParts parts={sessionParts(session)} />
           {session.source === "MANUAL" && (
             <button
+              type="button"
               className="button secondary small"
               onClick={() => void remove(session)}
               aria-label={removeSessionLabel(session)}
@@ -175,6 +176,7 @@ export function TrainingSlot({
         </form>
       ) : (
         <button
+          type="button"
           className="button secondary small"
           onClick={() => {
             setDraft({ sport: "RIDE", minutes: "", intensity: "ENDURANCE" });

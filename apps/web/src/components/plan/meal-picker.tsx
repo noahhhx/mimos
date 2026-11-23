@@ -104,7 +104,7 @@ export function MealPicker({
         <h2>
           {mealLabel(slot.mealType)} · {dayLabel(slot.date)}
         </h2>
-        <button className="button secondary" onClick={onClose}>
+        <button type="button" className="button secondary" onClick={onClose}>
           Close
         </button>
       </div>
@@ -138,7 +138,7 @@ export function MealPicker({
         <ul className="picker-results">
           {results.map((recipe) => (
             <li key={recipe.id}>
-              <button className="button secondary" onClick={() => void planRecipe(recipe.id)}>
+              <button type="button" className="button secondary" onClick={() => void planRecipe(recipe.id)}>
                 {recipe.title}
                 <span className="muted">
                   {" "}
@@ -150,7 +150,7 @@ export function MealPicker({
           ))}
           {foodResults.map((food) => (
             <li key={food.slug}>
-              <button className="button secondary" onClick={() => void planFood(food)}>
+              <button type="button" className="button secondary" onClick={() => void planFood(food)}>
                 {food.name}
                 <span className="muted"> · {describeIngredient(food)}</span>
               </button>

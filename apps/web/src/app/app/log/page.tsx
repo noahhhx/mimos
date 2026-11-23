@@ -206,10 +206,10 @@ export default function LogPage() {
         title="Log"
         actions={
           <>
-            <button className="button secondary" onClick={() => setWeekStart(addDays(weekStart, -7))}>
+            <button type="button" className="button secondary" onClick={() => setWeekStart(addDays(weekStart, -7))}>
               ← Previous
             </button>
-            <button className="button secondary" onClick={() => setWeekStart(addDays(weekStart, 7))}>
+            <button type="button" className="button secondary" onClick={() => setWeekStart(addDays(weekStart, 7))}>
               Next →
             </button>
           </>
@@ -283,7 +283,7 @@ export default function LogPage() {
                       {log.recipeId ? `(${formatServings(log.servings)}) ` : ""}
                       {formatKcal(log.nutrition?.calories)}
                     </span>
-                    <button className="button secondary small" onClick={() => void remove(log.id)}>
+                    <button type="button" className="button secondary small" onClick={() => void remove(log.id)}>
                       Delete
                     </button>
                   </li>
@@ -397,7 +397,7 @@ export default function LogPage() {
               </div>
             )}
             <p>
-              <button className="button" onClick={() => void addLog()} disabled={body === undefined}>
+              <button type="button" className="button" onClick={() => void addLog()} disabled={body === undefined}>
                 Log meal
               </button>
             </p>

@@ -170,10 +170,10 @@ export default function RecipeDetailPage() {
                 </>
               ) : (
                 <>
-                  <button className="button secondary" onClick={() => setEditing(true)}>
+                  <button type="button" className="button secondary" onClick={() => setEditing(true)}>
                     Edit
                   </button>
-                  <button className="button danger" onClick={() => void remove()}>
+                  <button type="button" className="button danger" onClick={() => void remove()}>
                     Delete
                   </button>
                 </>

@@ -75,6 +75,7 @@ export function Ledger({
                 <th key={day} scope="col" className={day === today ? "today" : undefined}>
                   {fuelByDay.size > 0 ? (
                     <button
+                      type="button"
                       className="ledger-day"
                       aria-label={day === today ? `${dayLabel(day)}, today` : dayLabel(day)}
                       aria-pressed={selectedDay === day}
@@ -101,6 +102,7 @@ export function Ledger({
                 return (
                   <td key={day}>
                     <button
+                      type="button"
                       className="ledger-meta"
                       aria-label={`${trainingLabelFor(day)}: ${sessions.length > 0 ? sessions.map(sessionShort).join(", ") : "none"}`}
                       onClick={(event) => onChoose({ kind: "day", date: day }, event.currentTarget)}
@@ -124,6 +126,7 @@ export function Ledger({
                 return (
                   <td key={day}>
                     <button
+                      type="button"
                       className="ledger-meta"
                       aria-label={ledgerFuelLabel(day, figures)}
                       onClick={(event) => onChoose({ kind: "day", date: day }, event.currentTarget)}
@@ -146,6 +149,7 @@ export function Ledger({
                     <div className={slot.length === 0 ? "ledger-cell empty" : "ledger-cell"}>
                       {slot.map((entry) => (
                         <button
+                          type="button"
                           key={entry.id}
                           className={eatsIt(entry) ? "ledger-entry" : "ledger-entry others"}
                           aria-pressed={selectedEntryId === entry.id}
@@ -167,6 +171,7 @@ export function Ledger({
                         </button>
                       ))}
                       <button
+                        type="button"
                         className="ledger-add"
                         onClick={() => onAdd(day, mealType)}
                         aria-label={`Add ${mealLabel(mealType)} for ${dayLabel(day)}`}

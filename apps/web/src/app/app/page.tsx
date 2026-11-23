@@ -232,7 +232,12 @@ export default function KitchenPage() {
                   )}
                   from {thought.suggestion.pluginName}
                 </p>
-                <button className="button secondary" disabled={applying} onClick={() => void addThought()}>
+                <button
+                  type="button"
+                  className="button secondary"
+                  disabled={applying}
+                  onClick={() => void addThought()}
+                >
                   {applying ? "Adding…" : `Add to ${weekdayName(thought.entry.date)}`}
                 </button>
               </>

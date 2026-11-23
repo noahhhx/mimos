@@ -121,6 +121,7 @@ export default function RecipesPage() {
 
       <div className="tabs" role="tablist">
         <button
+          type="button"
           role="tab"
           aria-selected={tab === "mine"}
           className={tab === "mine" ? "active" : undefined}
@@ -129,6 +130,7 @@ export default function RecipesPage() {
           My recipes ({mine?.length ?? "…"})
         </button>
         <button
+          type="button"
           role="tab"
           aria-selected={tab === "library"}
           className={tab === "library" ? "active" : undefined}

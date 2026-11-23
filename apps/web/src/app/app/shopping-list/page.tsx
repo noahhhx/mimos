@@ -154,10 +154,10 @@ export default function ShoppingListPage() {
         title="Shopping list"
         actions={
           <>
-            <button className="button secondary" onClick={() => setWeekStart(addDays(weekStart, -7))}>
+            <button type="button" className="button secondary" onClick={() => setWeekStart(addDays(weekStart, -7))}>
               ← Previous
             </button>
-            <button className="button secondary" onClick={() => setWeekStart(addDays(weekStart, 7))}>
+            <button type="button" className="button secondary" onClick={() => setWeekStart(addDays(weekStart, 7))}>
               Next →
             </button>
             <Link className="button secondary" href={`/app/plan?week=${weekStart}`}>
@@ -168,7 +168,7 @@ export default function ShoppingListPage() {
       />
 
       <p className="generate">
-        <button className="button" onClick={() => void generate()} disabled={generating}>
+        <button type="button" className="button" onClick={() => void generate()} disabled={generating}>
           {generating ? "Generating…" : neverGenerated ? "Generate from this week's plan" : "Regenerate"}
         </button>
       </p>
@@ -251,6 +251,7 @@ export default function ShoppingListPage() {
                     {" "}
                     <span className="muted">Added</span>{" "}
                     <button
+                      type="button"
                       className="button secondary small"
                       aria-label={`Remove ${item.name}`}
                       onClick={() => void remove(item.id)}

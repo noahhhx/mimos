@@ -24,7 +24,7 @@ export function CreateAccountButton({ returnTo, primary = false }: { returnTo?: 
     return null;
   }
   return (
-    <button className={primary ? "button" : "button secondary"} onClick={() => void signUp(returnTo)}>
+    <button type="button" className={primary ? "button" : "button secondary"} onClick={() => void signUp(returnTo)}>
       Create account
     </button>
   );

@@ -72,7 +72,7 @@ export function Suggestions({
               ))}
             </ul>
             <div className="suggestion-actions">
-              <button className="button" disabled={applying} onClick={() => void apply(suggestion)}>
+              <button type="button" className="button" disabled={applying} onClick={() => void apply(suggestion)}>
                 {applying ? "Adding…" : "Add to plan"}
               </button>
               <span className="muted">via {suggestion.pluginName}</span>

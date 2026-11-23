@@ -10,7 +10,7 @@ export function SignInPrompt({ children, returnTo }: { children: React.ReactNode
     <>
       <p>{children}</p>
       <p className="cta">
-        <button className="button" onClick={() => void signIn(returnTo)}>
+        <button type="button" className="button" onClick={() => void signIn(returnTo)}>
           Sign in
         </button>
         <CreateAccountButton returnTo={returnTo} />

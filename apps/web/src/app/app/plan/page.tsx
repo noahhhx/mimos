@@ -191,13 +191,13 @@ export default function PlanPage() {
         title="Plan"
         actions={
           <>
-            <button className="button secondary" onClick={() => changeWeek(addDays(weekStart, -7))}>
+            <button type="button" className="button secondary" onClick={() => changeWeek(addDays(weekStart, -7))}>
               ← Previous
             </button>
-            <button className="button secondary" onClick={() => changeWeek(mondayOf(new Date()))}>
+            <button type="button" className="button secondary" onClick={() => changeWeek(mondayOf(new Date()))}>
               This week
             </button>
-            <button className="button secondary" onClick={() => changeWeek(addDays(weekStart, 7))}>
+            <button type="button" className="button secondary" onClick={() => changeWeek(addDays(weekStart, 7))}>
               Next →
             </button>
             <Link className="button secondary" href={`/app/shopping-list?week=${weekStart}`}>
@@ -216,6 +216,7 @@ export default function PlanPage() {
       {shared && (
         <div className="tabs" role="tablist" aria-label="Whose meals">
           <button
+            type="button"
             role="tab"
             aria-selected={view === "mine"}
             className={view === "mine" ? "active" : undefined}
@@ -224,6 +225,7 @@ export default function PlanPage() {
             Mine
           </button>
           <button
+            type="button"
             role="tab"
             aria-selected={view === "everyone"}
             className={view === "everyone" ? "active" : undefined}

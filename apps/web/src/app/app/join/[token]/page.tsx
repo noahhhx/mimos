@@ -157,7 +157,7 @@ export default function JoinPage() {
         </p>
       )}
       <div className="button-row">
-        <button className="button" onClick={() => void join()} disabled={joining}>
+        <button type="button" className="button" onClick={() => void join()} disabled={joining}>
           {joining ? "Joining…" : "Join household"}
         </button>
         <Link className="button secondary" href="/app">

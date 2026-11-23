@@ -138,7 +138,7 @@ export function EntryInspector({
         <p className="eyebrow">
           {dayLabel(entry.date)} · {mealLabel(entry.mealType)}
         </p>
-        <button className="button secondary small" onClick={onClose} aria-label="Close details">
+        <button type="button" className="button secondary small" onClick={onClose} aria-label="Close details">
           ✕
         </button>
       </div>
@@ -152,6 +152,7 @@ export function EntryInspector({
         {what.kind === "recipe" ? (
           <div className="stepper">
             <button
+              type="button"
               className="button secondary small"
               onClick={() => void changeServings(entry.servings - 0.5)}
               aria-label="Fewer servings"
@@ -160,6 +161,7 @@ export function EntryInspector({
             </button>
             <span>{formatServings(entry.servings)}</span>
             <button
+              type="button"
               className="button secondary small"
               onClick={() => void changeServings(entry.servings + 0.5)}
               aria-label="More servings"
@@ -181,6 +183,7 @@ export function EntryInspector({
               const last = eats && entry.diners.length === 1;
               return (
                 <button
+                  type="button"
                   key={member.id}
                   className={eats ? "button small" : "button secondary small"}
                   aria-pressed={eats}
@@ -231,7 +234,7 @@ export function EntryInspector({
               </button>
             </form>
           ) : (
-            <button className="button" onClick={startLog}>
+            <button type="button" className="button" onClick={startLog}>
               Log
             </button>
           ))}
@@ -240,7 +243,12 @@ export function EntryInspector({
             {logged}
           </p>
         )}
-        <button className="button danger" onClick={() => void unplan()} aria-label={`Remove ${entryName(entry)}`}>
+        <button
+          type="button"
+          className="button danger"
+          onClick={() => void unplan()}
+          aria-label={`Remove ${entryName(entry)}`}
+        >
           Remove from plan
         </button>
       </div>
@@ -268,7 +276,7 @@ export function DayInspector({
     <section className="inspector" aria-labelledby={INSPECTOR_TITLE}>
       <div className="inspector-head">
         <p className="eyebrow">{date === today ? `Today · ${dayLabel(date)}` : dayLabel(date)}</p>
-        <button className="button secondary small" onClick={onClose} aria-label="Close details">
+        <button type="button" className="button secondary small" onClick={onClose} aria-label="Close details">
           ✕
         </button>
       </div>
