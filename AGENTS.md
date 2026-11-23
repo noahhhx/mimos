@@ -100,6 +100,8 @@ directories listed in `exclude_docs`.
   `@mimos/web`, `@mimos/harness`, and `@mimos/country-week`.
 - `npm run generate -w @mimos/api-client` and `-w @mimos/plugin-sdk` after a
   spec change; commit the result.
+- `npm run lint` checks TypeScript lint and formatting (Biome); `npm run
+  format` fixes formatting.
 - `node tools/harness/src/repo-rules.ts` checks copy, colours, and config
   rules across tracked files.
 - `devenv shell -- bash -c 'cd apps/mobile && ./gradlew check assembleDebug'`

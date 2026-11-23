@@ -149,6 +149,9 @@ jobs:
           git show "$tag:contracts/api/openapi.yaml" > "$RUNNER_TEMP/openapi-$tag.yaml"
           node tools/harness/src/contract-additive.ts "$RUNNER_TEMP/openapi-$tag.yaml" contracts/api/openapi.yaml
 
+      - name: Lint and format TypeScript
+        run: npx biome ci .
+
       - name: Repository rules
         run: node tools/harness/src/repo-rules.ts
 
