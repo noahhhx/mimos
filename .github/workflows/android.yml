@@ -12,9 +12,9 @@ jobs:
       run:
         working-directory: apps/mobile
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
@@ -56,7 +56,7 @@ jobs:
         run: ./gradlew check assembleDebug assembleMinified
 
       - name: Upload the debug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mimos-debug-apk
           path: apps/mobile/androidApp/build/outputs/apk/debug/*.apk
@@ -64,7 +64,7 @@ jobs:
 
       # The four flow shards install this rather than each building it cold in devenv.
       - name: Upload the minified APK for the flows
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: flow-apk
           path: |
@@ -85,7 +85,7 @@ jobs:
     outputs:
       app: ${{ steps.app.outputs.app }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - id: app
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
@@ -112,7 +112,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Build the images
         run: |
@@ -120,7 +120,7 @@ jobs:
           $compose build
           $compose config --images | grep -v '^postgres:' | xargs docker save | gzip -1 > stack-images.tar.gz
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: stack-images
           path: stack-images.tar.gz
@@ -142,7 +142,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       # The emulator needs KVM, and the runner's /dev/kvm is not open to its user.
       - name: Open /dev/kvm to the runner
@@ -154,7 +154,7 @@ jobs:
 
       - uses: cachix/install-nix-action@v31
 
-      - uses: cachix/cachix-action@v16
+      - uses: cachix/cachix-action@v17
         with:
           name: devenv
 
@@ -171,7 +171,7 @@ jobs:
       - name: Install the npm workspace in the devenv shell
         run: devenv shell -- npm ci
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: stack-images
 
@@ -181,7 +181,7 @@ jobs:
       # The minified build: the release as R8 shrinks it, so a dependency that
       # needs keep rules fails a flow here rather than the published APK
       # (docs/harness/releasing.md). The Android app job builds it.
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: flow-apk
           path: apps/mobile/androidApp/build/outputs
@@ -227,7 +227,7 @@ jobs:
 
       - name: Upload harness evidence
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: harness-runs-android-${{ matrix.shard }}
           # `latest` is a symlink to the run; leave it out so the run is not uploaded twice.

@@ -19,9 +19,9 @@ jobs:
       run:
         working-directory: apps/mobile
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
@@ -78,7 +78,7 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Upload the APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mimos-${{ steps.apk.outputs.version }}-apk
           path: ${{ runner.temp }}/release/
@@ -86,7 +86,7 @@ jobs:
 
       # Reads a stack trace from this build back into the source's names.
       - name: Upload the R8 mapping
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mimos-${{ steps.apk.outputs.version }}-mapping
           path: ${{ runner.temp }}/mapping.txt
@@ -136,7 +136,7 @@ jobs:
           - image: mimos-country-week
             dockerfile: plugins/country-week/Dockerfile
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - uses: docker/setup-buildx-action@v4
 
