@@ -61,6 +61,53 @@ class ShoppingRulesTest {
         }
     }
 
+    private fun item(name: String, category: String, checked: Boolean = false) =
+        ShoppingListItem(name, name, category, checked, added = false)
+
+    private fun BasketView.names() =
+        aisles.map { it.category to it.items.map { i -> i.name } } to basket.map { it.name }
+
+    @Test
+    fun `ticked items leave their aisle for the basket, and an aisle with nothing left goes`() {
+        val view =
+            basketView(
+                listOf(
+                    item("milk", "Dairy & Eggs", checked = true),
+                    item("onion", "Produce"),
+                    item("garlic", "Produce", checked = true),
+                    item("salt", "Pantry"),
+                    item("leeks", "Produce"),
+                )
+            )
+        assertEquals(
+            listOf("Produce" to listOf("onion", "leeks"), "Pantry" to listOf("salt")) to
+                listOf("garlic", "milk"),
+            view.names(),
+        )
+        assertEquals(5, view.total)
+    }
+
+    @Test
+    fun `an unticked item goes back to its aisle, and nothing ticked leaves the basket empty`() {
+        val view = basketView(listOf(item("milk", "Dairy & Eggs"), item("onion", "Produce")))
+        assertEquals(
+            listOf("Produce" to listOf("onion"), "Dairy & Eggs" to listOf("milk")) to
+                emptyList<String>(),
+            view.names(),
+        )
+    }
+
+    @Test
+    fun `with everything ticked, only the basket is left`() {
+        val view =
+            basketView(listOf(item("onion", "Produce", true), item("milk", "Dairy & Eggs", true)))
+        assertEquals(
+            emptyList<Pair<String, List<String>>>() to listOf("onion", "milk"),
+            view.names(),
+        )
+        assertEquals(2, view.total)
+    }
+
     @Test
     fun `the form offers the web's units`() {
         assertEquals(cases.units, ADD_ITEM_UNITS)

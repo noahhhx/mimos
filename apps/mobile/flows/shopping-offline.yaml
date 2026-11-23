@@ -16,15 +16,18 @@ onFlowComplete:
 - assertVisible: Greek Salad
 - tapOn: Shopping
 - tapOn: Generate from this week's plan
-- assertVisible: Regenerate
+- assertVisible: 0 of \d+ ticked
 - assertVisible: .*cucumber
 - setAirplaneMode: enabled
 - assertVisible: Offline\. Ticks wait on this phone until they can be sent\.
 - tapOn: .*cucumber
 - assertVisible: Offline\. 1 tick waiting to send\.
-- assertVisible:
-    checked: true
-    containsChild: .*cucumber
+- tapOn: In the basket · 1.*
+- scrollUntilVisible:
+    element:
+      checked: true
+      containsChild: .*cucumber
+    centerElement: true
 - assertVisible: Not sent
 - takeScreenshot: shopping-offline
 - stopApp
@@ -32,17 +35,34 @@ onFlowComplete:
 - assertVisible: Good (morning|afternoon|evening)\.
 - tapOn: Shopping
 - assertVisible: Offline\. 1 tick waiting to send\.
-- assertVisible:
-    checked: true
-    containsChild: .*cucumber
+- tapOn: In the basket · 1.*
+- scrollUntilVisible:
+    element:
+      checked: true
+      containsChild: .*cucumber
+    centerElement: true
+- assertVisible: Not sent
+- scrollUntilVisible:
+    element: Offline\. 1 tick waiting to send\.
+    direction: UP
 - setAirplaneMode: disabled
 - extendedWaitUntil:
     notVisible: .*waiting to send.*
     timeout: 30000
+- scrollUntilVisible:
+    element:
+      checked: true
+      containsChild: .*cucumber
+    centerElement: true
 - assertNotVisible: Not sent
+- scrollUntilVisible:
+    element: Regenerate
+    centerElement: true
 - tapOn: Regenerate
 - assertVisible: Generated .*
-- assertVisible:
-    checked: true
-    containsChild: .*cucumber
+- scrollUntilVisible:
+    element:
+      checked: true
+      containsChild: .*cucumber
+    direction: UP
 - takeScreenshot: shopping-sent

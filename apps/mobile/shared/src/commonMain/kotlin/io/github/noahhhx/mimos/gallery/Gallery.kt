@@ -98,6 +98,7 @@ fun Gallery(theme: ThemeModel, brandMark: Painter, onClose: () -> Unit) {
 
         Section("Type")
         Text("Page title", style = type.title)
+        Text("Screen title, Newsreader 28", style = type.screenTitle)
         Text("Heading, Newsreader 22 medium", style = type.heading)
         Text(
             "A lede in the serif, muted, for the line under a page title.",
@@ -114,6 +115,8 @@ fun Gallery(theme: ThemeModel, brandMark: Painter, onClose: () -> Unit) {
             style = type.body.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
         )
         Label("Label, eyebrow and section heading")
+        Text("Subheading, Newsreader 19 medium", style = type.subheading)
+        Text("A ticked row: a shopping item or an ingredient, 16", style = type.tickRow)
         Text("Cook text: ingredients and steps, 20", style = type.cook)
 
         Section("Buttons")

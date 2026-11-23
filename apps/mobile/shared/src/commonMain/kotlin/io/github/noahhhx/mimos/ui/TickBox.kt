@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
@@ -16,11 +17,11 @@ import androidx.compose.ui.unit.dp
  * It draws only; the row around it is the toggle.
  */
 @Composable
-fun TickBox(checked: Boolean, modifier: Modifier = Modifier) {
+fun TickBox(checked: Boolean, modifier: Modifier = Modifier, side: Dp = 24.dp) {
     val colors = MimosTheme.colors
     Canvas(
         modifier
-            .size(24.dp)
+            .size(side)
             .background(if (checked) colors.accent else colors.surface)
             .border(1.5.dp, if (checked) colors.accent else colors.line)
     ) {
