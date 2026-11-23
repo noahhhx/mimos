@@ -20,11 +20,11 @@ jobs:
       contents: read
       packages: read
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
 
@@ -51,7 +51,7 @@ jobs:
       - uses: cachix/install-nix-action@v31
         if: steps.release.outputs.tag != ''
 
-      - uses: cachix/cachix-action@v16
+      - uses: cachix/cachix-action@v17
         if: steps.release.outputs.tag != ''
         with:
           name: devenv
@@ -73,7 +73,7 @@ jobs:
         run: devenv shell -- npm ci
 
       # main's debug APK, as the Android app job built it.
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         if: steps.release.outputs.tag != ''
         with:
           name: mimos-debug-apk
@@ -127,7 +127,7 @@ jobs:
 
       - name: Upload harness evidence
         if: failure() && steps.release.outputs.tag != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: harness-runs-android-skew-${{ matrix.shard }}
           path: |

@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Validate the self-host compose file
         # .env.example leaves the secrets blank on purpose; the file must
@@ -94,7 +94,7 @@ jobs:
       # harness runs through devenv, which provides Node and the browsers.
       - uses: cachix/install-nix-action@v31
 
-      - uses: cachix/cachix-action@v16
+      - uses: cachix/cachix-action@v17
         with:
           name: devenv
 
@@ -135,7 +135,7 @@ jobs:
 
       - name: Upload harness evidence
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: harness-runs
           # `latest` is a symlink to the run; leave it out so the run is not uploaded twice.
