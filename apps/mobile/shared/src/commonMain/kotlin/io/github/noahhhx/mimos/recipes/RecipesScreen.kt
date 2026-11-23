@@ -264,6 +264,7 @@ private fun RecipeRow(recipe: RecipeSummary, onClick: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.xs),
         ) {
             Text(recipe.title, style = MimosTheme.typography.heading)
+            RatedStars(recipe.rating)
             if (recipe.description.isNotEmpty()) {
                 Text(
                     recipe.description,

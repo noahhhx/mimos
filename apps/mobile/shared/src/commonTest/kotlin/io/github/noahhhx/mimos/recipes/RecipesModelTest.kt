@@ -2,6 +2,7 @@ package io.github.noahhhx.mimos.recipes
 
 import io.github.noahhhx.mimos.api.apis.RecipePicturesApi
 import io.github.noahhhx.mimos.api.apis.RecipesApi
+import io.github.noahhhx.mimos.api.models.RecipeDetail
 import io.github.noahhhx.mimos.client.MimosHttp
 import io.github.noahhhx.mimos.recipes.form.RecipeFormState
 import io.github.noahhhx.mimos.recipes.pictures.PickedPicture
@@ -10,6 +11,7 @@ import io.github.noahhhx.mimos.recipes.pictures.RecipePictures
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.respondError
+import io.ktor.client.engine.mock.toByteArray
 import io.ktor.client.request.HttpRequestData
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -32,9 +34,9 @@ private fun summary(id: String, title: String, tags: String = "") =
         "createdAt":"2026-11-01T10:00:00Z","updatedAt":"2026-11-01T10:00:00Z",
         "tags":[${tags}],"nutrition":{"calories":400}}"""
 
-private fun detail(id: String, title: String) =
+private fun detail(id: String, title: String, rating: Int? = null) =
     """{"id":"$id","title":"$title","description":"d","servings":2,"isLibrary":false,
-        "tags":[],"nutrition":{},"nutritionSource":"MANUAL",
+        ${rating?.let { "\"rating\":$it," } ?: ""}"tags":[],"nutrition":{},"nutritionSource":"MANUAL",
         "ingredients":[{"name":"flour","quantity":200,"unit":"g"}],
         "steps":[{"instruction":"Mix."}],"pictures":[]}"""
 
@@ -53,6 +55,11 @@ private class Server {
     var library = "[${summary("l1", "Greek Salad")},${summary("l2", "Shakshuka")}]"
     var failList = false
     var deleteStatus = HttpStatusCode.NoContent
+    var rateStatus = HttpStatusCode.OK
+    var rating: Int? = 2
+
+    /** The body of each rating sent, as it arrives. */
+    val rated = Channel<String>(Channel.UNLIMITED)
     val missing = mutableSetOf<String>()
 
     /** The `q` of each request for the household's own recipes, as it arrives. */
@@ -73,13 +80,22 @@ private class Server {
                 respond(detail("created", "Made"), headers = json)
             path == "/api/v1/recipes" -> respond(mine, headers = json)
             path == "/api/v1/recipes/library" -> respond(library, headers = json)
+            path.endsWith("/rating") && request.method == HttpMethod.Put -> {
+                val body = request.body.toByteArray().decodeToString()
+                rated.trySend(body)
+                if (rateStatus.value >= 300) respondError(rateStatus)
+                else {
+                    val stars = Regex("\"stars\"\\s*:\\s*(\\d)").find(body)!!.groupValues[1]
+                    respond(detail("m1", "Recipe m1", stars.toInt()), headers = json)
+                }
+            }
             request.method == HttpMethod.Delete ->
                 if (deleteStatus.value < 300) respond("", deleteStatus)
                 else respondError(deleteStatus)
             else -> {
                 val id = path.substringAfterLast('/')
                 if (id in missing) respondError(HttpStatusCode.NotFound)
-                else respond(detail(id, "Recipe $id"), headers = json)
+                else respond(detail(id, "Recipe $id", rating), headers = json)
             }
         }
     }
@@ -282,6 +298,54 @@ class RecipesModelTest {
     }
 
     @Test
+    fun `tapping a star rates the recipe and shows the rating the API answers`() = runTest {
+        val server = Server()
+        val model = model(server)
+        model.open(RecipeId("m1"))
+        val recipe = model.loaded()
+
+        model.rate(recipe, 4)
+
+        assertEquals("""{"stars":4}""", server.rated.receive().filterNot { it.isWhitespace() })
+        assertEquals(4, model.loaded { it.rating == 4 }.rating)
+        assertEquals(RateState.Idle, model.rating.first { it !is RateState.Saving })
+    }
+
+    @Test
+    fun `tapping the current star clears the rating`() = runTest {
+        val server = Server()
+        val model = model(server)
+        model.open(RecipeId("m1"))
+        val recipe = model.loaded()
+
+        model.rate(recipe, 2)
+        server.awaitRequest(HttpMethod.Delete, "/api/v1/recipes/m1/rating")
+
+        assertNull(model.loaded { it.rating == null }.rating)
+        assertEquals(RecipeRoute.Recipe(emptyList(), RecipeId("m1")), model.route.value)
+    }
+
+    @Test
+    fun `a refused rating keeps the old one and says so`() = runTest {
+        val server = Server().apply { rateStatus = HttpStatusCode.Forbidden }
+        val model = model(server)
+        model.open(RecipeId("m1"))
+        val recipe = model.loaded()
+
+        model.rate(recipe, 5)
+        model.rating.first { it is RateState.Failed }
+
+        assertEquals(2, model.loaded().rating)
+    }
+
+    @Test
+    fun `the next rating is the tapped star, or none when it is the current one`() {
+        assertEquals(3, nextRating(null, 3))
+        assertEquals(5, nextRating(3, 5))
+        assertNull(nextRating(3, 3))
+    }
+
+    @Test
     fun `resetting returns to a fresh list and clears the cook book`() = runTest {
         val model = model(Server())
         model.ensureLoaded()
@@ -347,3 +411,8 @@ class RecipesModelTest {
         assertEquals(RecipeFormState.Closed, model.form.state.value)
     }
 }
+
+private suspend fun RecipesModel.loaded(until: (RecipeDetail) -> Boolean = { true }): RecipeDetail =
+    (detail.first { it is RecipeDetailState.Loaded && until(it.recipe) }
+            as RecipeDetailState.Loaded)
+        .recipe

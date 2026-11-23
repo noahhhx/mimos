@@ -2,6 +2,7 @@ package io.github.noahhhx.mimos.recipes
 
 import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.api.models.RecipeDetail
+import io.github.noahhhx.mimos.api.models.RecipeRatingInput
 import io.github.noahhhx.mimos.api.models.RecipeSummary
 import io.github.noahhhx.mimos.client.ApiProblem
 import io.github.noahhhx.mimos.recipes.form.RecipeFormModel
@@ -64,6 +65,14 @@ sealed interface DeleteState {
     data class Failed(val message: String) : DeleteState
 }
 
+sealed interface RateState {
+    data object Idle : RateState
+
+    data object Saving : RateState
+
+    data class Failed(val message: String) : RateState
+}
+
 /**
  * The Recipes tab: the library and the household's recipes, cooking from one, and the [form] that
  * writes them. It owns the route (see [RecipeRoute]), the list with its search, tab, sort, and tag
@@ -102,6 +111,9 @@ class RecipesModel(
 
     private val mutableDeletion = MutableStateFlow<DeleteState>(DeleteState.Idle)
     val deletion: StateFlow<DeleteState> = mutableDeletion.asStateFlow()
+
+    private val mutableRating = MutableStateFlow<RateState>(RateState.Idle)
+    val rating: StateFlow<RateState> = mutableRating.asStateFlow()
 
     private var listJob: Job? = null
     private var detailJob: Job? = null
@@ -195,6 +207,35 @@ class RecipesModel(
         }
     }
 
+    /**
+     * Rates the recipe on screen [star] stars, or clears its rating when [star] is the current one.
+     */
+    fun rate(recipe: RecipeDetail, star: Int) {
+        if (rating.value is RateState.Saving) return
+        mutableRating.value = RateState.Saving
+        scope.launch {
+            try {
+                val stars = nextRating(recipe.rating, star)
+                val rated =
+                    if (stars == null) {
+                        api().clearRecipeRating(recipe.id)
+                        recipe.copy(rating = null)
+                    } else {
+                        api().rateRecipe(recipe.id, RecipeRatingInput(stars)).body()
+                    }
+                val shown = detail.value
+                if (shown is RecipeDetailState.Loaded && shown.recipe.id == recipe.id) {
+                    mutableDetail.value = RecipeDetailState.Loaded(rated)
+                }
+                mutableRating.value = RateState.Idle
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                mutableRating.value = RateState.Failed(describe(failure))
+            }
+        }
+    }
+
     /** Back to the start, for when the person signs out and someone else may sign in. */
     fun reset() {
         listJob?.cancel()
@@ -206,6 +247,7 @@ class RecipesModel(
         mutableList.value = RecipeListState.Loading
         mutableDetail.value = RecipeDetailState.Loading
         mutableDeletion.value = DeleteState.Idle
+        mutableRating.value = RateState.Idle
         form.close()
         cookBook.clear()
         pictures.clear()
@@ -214,6 +256,7 @@ class RecipesModel(
     private fun go(to: RecipeRoute) {
         detailJob?.cancel()
         mutableDeletion.value = DeleteState.Idle
+        mutableRating.value = RateState.Idle
         mutableDetail.value = RecipeDetailState.Loading
         mutableRoute.value = to
         when (to) {
