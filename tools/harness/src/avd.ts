@@ -135,6 +135,8 @@ export function emulatorArgs(name = AVD_NAME): string[] {
     "swiftshader_indirect",
     "-no-snapshot",
     "-no-boot-anim",
+    "-debug",
+    "adbserver,adbclient,adb,qemud",
   ];
 }
 

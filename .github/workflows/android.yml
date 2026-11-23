@@ -140,7 +140,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1]
     steps:
       - uses: actions/checkout@v7
 
@@ -189,6 +189,7 @@ jobs:
       - name: Boot the stack and the emulator
         timeout-minutes: 25
         run: |
+          devenv shell -- bash -c 'adb kill-server || true; ADB_TRACE=transport,adb,services adb start-server'
           devenv shell -- harness up --no-build
           devenv shell -- harness mobile up --minified --no-build --run latest
 
@@ -219,14 +220,19 @@ jobs:
               failed=1
             fi
           done
+          for i in 1 2 3; do devenv shell -- harness mobile flow log-a-meal --run latest || failed=1; done
           exit $failed
 
       - name: Add the run summary to the job
         if: always()
         run: '[ -f .harness/runs/latest/summary.md ] && cat .harness/runs/latest/summary.md >> "$GITHUB_STEP_SUMMARY" || true'
 
+      - name: Copy the host adb server log
+        if: always()
+        run: cp /tmp/adb.*.log .harness/runs/ || true
+
       - name: Upload harness evidence
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: harness-runs-android-${{ matrix.shard }}
