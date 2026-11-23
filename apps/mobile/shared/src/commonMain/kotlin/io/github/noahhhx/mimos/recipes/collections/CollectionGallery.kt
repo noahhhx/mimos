@@ -112,7 +112,12 @@ private fun CollectionTile(
                 )
             }
         }
-        Text(collection.name, style = MimosTheme.typography.heading, maxLines = 1)
+        Text(
+            collection.name,
+            Modifier.padding(top = MimosTheme.spacing.xs),
+            style = MimosTheme.typography.heading,
+            maxLines = 1,
+        )
         Text(
             tileCaption(collection),
             style = MimosTheme.typography.small,

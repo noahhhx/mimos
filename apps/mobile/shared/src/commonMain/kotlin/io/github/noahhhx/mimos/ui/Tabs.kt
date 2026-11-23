@@ -83,8 +83,8 @@ fun Tabs(
 
 /**
  * [Tabs] for more labels than fit a phone: each as wide as its label, the row scrolling sideways
- * inside [contentPadding], the rule under the whole width. The selected label is scrolled into view
- * at once, without motion (ADR-0008).
+ * inside [contentPadding], the rule under the whole width. The selected label is scrolled just into
+ * view at once, without motion (ADR-0008).
  */
 @Composable
 fun ScrollingTabs(
@@ -96,10 +96,16 @@ fun ScrollingTabs(
 ) {
     val colors = MimosTheme.colors
     val scroll = rememberScrollState()
-    val starts = remember { mutableStateMapOf<Int, Int>() }
+    val spans = remember { mutableStateMapOf<Int, IntRange>() }
     val inset = with(LocalDensity.current) { contentPadding.roundToPx() }
-    LaunchedEffect(selected, starts[selected]) {
-        starts[selected]?.let { scroll.scrollTo((it - inset).coerceAtLeast(0)) }
+    LaunchedEffect(selected, spans[selected], scroll.viewportSize) {
+        val span = spans[selected] ?: return@LaunchedEffect
+        // Spans exclude the padding, so a label scrolled into view keeps its inset either side.
+        val end = span.last + 2 * inset - scroll.viewportSize
+        when {
+            span.first < scroll.value -> scroll.scrollTo(span.first)
+            end > scroll.value -> scroll.scrollTo(end)
+        }
     }
     Box(modifier.fillMaxWidth()) {
         Rule(Modifier.align(Alignment.BottomCenter))
@@ -111,7 +117,10 @@ fun ScrollingTabs(
                 val active = index == selected
                 Column(
                     Modifier.width(IntrinsicSize.Max)
-                        .onPlaced { starts[index] = it.positionInParent().x.roundToInt() }
+                        .onPlaced {
+                            val start = it.positionInParent().x.roundToInt()
+                            spans[index] = start..start + it.size.width
+                        }
                         .semantics { this.selected = active }
                         .clickable(
                             interactionSource = null,
