@@ -16,7 +16,7 @@ import io.github.noahhhx.mimos.planning.logging.MealLogService;
 import io.github.noahhhx.mimos.planning.plan.MealPlanService;
 import io.github.noahhhx.mimos.planning.plan.MealType;
 import io.github.noahhhx.mimos.planning.plan.PlannedItem;
-import io.github.noahhhx.mimos.planning.shopping.ShoppingListRepository;
+import io.github.noahhhx.mimos.planning.shopping.ShoppingListItemDraft;
 import io.github.noahhhx.mimos.planning.shopping.ShoppingListService;
 import io.github.noahhhx.mimos.recipes.recipe.Ingredient;
 import io.github.noahhhx.mimos.recipes.recipe.IngredientDraft;
@@ -322,8 +322,8 @@ public class AccountImporter {
                 if (!weeks.add(startDate)) {
                     throw new IllegalArgumentException("another list is for the same week, " + startDate);
                 }
-                List<ShoppingListRepository.ItemRow> items = new ArrayList<>();
-                eachAt("items", present(list.getItems(), "items"), item -> items.add(toItemRow(item)));
+                List<ShoppingListItemDraft> items = new ArrayList<>();
+                eachAt("items", present(list.getItems(), "items"), item -> items.add(toItemDraft(item)));
                 shoppingLists.restore(
                         household,
                         startDate,
@@ -576,8 +576,8 @@ public class AccountImporter {
         }
     }
 
-    private static ShoppingListRepository.ItemRow toItemRow(ExportedShoppingListItem item) {
-        return new ShoppingListRepository.ItemRow(
+    private static ShoppingListItemDraft toItemDraft(ExportedShoppingListItem item) {
+        return new ShoppingListItemDraft(
                 present(item.getName(), "name"),
                 item.getUnit(),
                 fromBigDecimal(item.getQuantity()),

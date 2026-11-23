@@ -52,17 +52,17 @@ public class ShoppingListRepository {
     }
 
     /** Replaces a list's items, in the order given, and when it was generated. */
-    public void replaceItems(UUID listId, Instant generatedAt, List<ItemRow> items) {
+    public void replaceItems(UUID listId, Instant generatedAt, List<ShoppingListItemDraft> items) {
         jdbc.update("update shopping_list set generated_at = ? where id = ?", Timestamp.from(generatedAt), listId);
         jdbc.update("delete from shopping_list_item where shopping_list_id = ?", listId);
         int position = 0;
-        for (ItemRow item : items) {
+        for (ShoppingListItemDraft item : items) {
             insertItem(listId, position++, item);
         }
     }
 
     /** Adds an item after the list's last one and returns its id. */
-    public UUID appendItem(UUID listId, ItemRow item) {
+    public UUID appendItem(UUID listId, ShoppingListItemDraft item) {
         Integer last = jdbc.queryForObject(
                 "select max(position) from shopping_list_item where shopping_list_id = ?", Integer.class, listId);
         return insertItem(listId, last == null ? 0 : last + 1, item);
@@ -79,7 +79,7 @@ public class ShoppingListRepository {
         jdbc.update("delete from shopping_list_item where id = ?", itemId);
     }
 
-    private UUID insertItem(UUID listId, int position, ItemRow item) {
+    private UUID insertItem(UUID listId, int position, ShoppingListItemDraft item) {
         return java.util.Objects.requireNonNull(
                 jdbc.queryForObject(
                         """
@@ -163,15 +163,6 @@ public class ShoppingListRepository {
         return java.util.Objects.requireNonNull(value, "generated_at must not be null")
                 .toInstant();
     }
-
-    /** An item to insert (id and position are assigned by the repository). */
-    public record ItemRow(
-            String name,
-            @Nullable String unit,
-            @Nullable Double quantity,
-            String category,
-            boolean checked,
-            boolean added) {}
 
     private static @Nullable Double nullableDouble(ResultSet rs, String column) throws SQLException {
         java.math.BigDecimal value = rs.getBigDecimal(column);

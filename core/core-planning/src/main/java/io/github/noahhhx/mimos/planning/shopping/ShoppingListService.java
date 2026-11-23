@@ -79,9 +79,9 @@ public class ShoppingListService {
                         item -> lineKey(Aisles.normalizeName(item.name()), item.unit()),
                         ShoppingList.ShoppingListItem::checked,
                         (a, b) -> a));
-        List<ShoppingListRepository.ItemRow> added = previous.stream()
+        List<ShoppingListItemDraft> added = previous.stream()
                 .filter(ShoppingList.ShoppingListItem::added)
-                .map(item -> new ShoppingListRepository.ItemRow(
+                .map(item -> new ShoppingListItemDraft(
                         item.name(), item.unit(), item.quantity(), item.category(), item.checked(), true))
                 .toList();
 
@@ -109,13 +109,13 @@ public class ShoppingListService {
             }
         }
 
-        List<ShoppingListRepository.ItemRow> items = java.util.stream.Stream.concat(
+        List<ShoppingListItemDraft> items = java.util.stream.Stream.concat(
                         displayNames.entrySet().stream().map(entry -> {
                             String key = entry.getKey();
                             String name = entry.getValue();
                             String unit = unitOf(key);
                             Double total = totals.get(key);
-                            return new ShoppingListRepository.ItemRow(
+                            return new ShoppingListItemDraft(
                                     name,
                                     unit,
                                     total == null ? null : unit == null ? wholeItems(total) : round(total),
@@ -124,8 +124,8 @@ public class ShoppingListService {
                                     false);
                         }),
                         added.stream())
-                .sorted(Comparator.comparing((ShoppingListRepository.ItemRow item) -> categoryRank(item.category()))
-                        .thenComparing(ShoppingListRepository.ItemRow::name, String.CASE_INSENSITIVE_ORDER))
+                .sorted(Comparator.comparing((ShoppingListItemDraft item) -> categoryRank(item.category()))
+                        .thenComparing(ShoppingListItemDraft::name, String.CASE_INSENSITIVE_ORDER))
                 .toList();
         repository.replaceItems(listId, generatedAt, items);
         return find(ownerId, startDate)
@@ -164,8 +164,7 @@ public class ShoppingListService {
         }
         UUID itemId = repository.appendItem(
                 listId,
-                new ShoppingListRepository.ItemRow(
-                        itemName, itemUnit, quantity, Aisles.categorize(itemName), false, true));
+                new ShoppingListItemDraft(itemName, itemUnit, quantity, Aisles.categorize(itemName), false, true));
         return repository
                 .findItem(ownerId, startDate, itemId)
                 .orElseThrow(() -> new IllegalStateException("item must exist after adding it"));
@@ -268,12 +267,12 @@ public class ShoppingListService {
      */
     @Transactional
     public ShoppingList restore(
-            UUID ownerId, LocalDate startDate, Instant generatedAt, List<ShoppingListRepository.ItemRow> items) {
+            UUID ownerId, LocalDate startDate, Instant generatedAt, List<ShoppingListItemDraft> items) {
         requireMonday(startDate);
         if (items.size() > MAX_ITEMS) {
             throw new IllegalArgumentException("a shopping list can have at most " + MAX_ITEMS + " items");
         }
-        for (ShoppingListRepository.ItemRow item : items) {
+        for (ShoppingListItemDraft item : items) {
             requireText("item name", item.name(), MAX_NAME_LENGTH);
             requireText("item category", item.category(), MAX_NAME_LENGTH);
             if (item.unit() != null && item.unit().length() > MAX_UNIT_LENGTH) {
