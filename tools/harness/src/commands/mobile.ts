@@ -616,6 +616,10 @@ async function deviceLostEvidence(): Promise<string> {
       (await host("top", ["-b", "-n", "1", "-o", "%CPU", "-w", "160"])()).split("\n").slice(0, 27).join("\n"),
     ),
     await section("adb devices -l", host("adb", ["devices", "-l"])),
+    await section("Host adb server log, last 80 lines", () => {
+      const log = join(tmpdir(), `adb.${process.getuid?.() ?? ""}.log`);
+      return existsSync(log) ? lastLines(readFileSync(log, "utf8"), 80) : `(no ${log})`;
+    }),
     await section("Guest uptime", ofDevice(["shell", "uptime"])),
     await section("Guest crash log", ofDevice(["logcat", "-d", "-b", "crash"])),
     await section(
