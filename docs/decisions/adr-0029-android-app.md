@@ -130,7 +130,7 @@ Constraints the app inherits:
   in the app without changing.
 - Online only at first. Every screen needs the server, as the web does.
   An offline shopping list (ticks queued while the store has no signal) is
-  its own later decision and plan item.
+  its own later decision (ADR-0034).
 - Rules both clients apply (units, nutrition estimates, sorting) are tested
   from shared JSON cases in `libraries/test-cases/`, read by `node --test`
   and `commonTest`, so the two copies cannot drift unnoticed. Where the
@@ -140,7 +140,12 @@ Constraints the app inherits:
   verification. The web's join page offers "Open in the app" through the
   app's scheme instead, naming the instance and the token.
 - Losing the signing key means every install must be removed and
-  reinstalled. The key's backup is part of the release step.
+  reinstalled. The key's backup is part of the release step; setup and
+  recovery are in `docs/harness/releasing.md`.
 - iOS later needs a Mac, an `iosMain` for the platform services, an Apple
   developer account, and a distribution decision; a new ADR.
-- The plan is in `docs/plans/android-app/`.
+- CI's flows run the `minified` build type, not the debug build: the
+  release as R8 shrinks it, not debuggable (R8 barely shrinks a
+  debuggable build), with the debug build's id, key, and local-stack
+  allowances. A missing keep rule then fails a flow rather than the
+  published APK. Added 2026-11-20.

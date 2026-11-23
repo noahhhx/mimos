@@ -22,7 +22,7 @@ export const APP_ID = "io.github.noahhhx.mimos.debug";
 
 /**
  * `debug`, or `minified`: the release as R8 shrinks it, signed with the debug key and allowed the
- * local stack (docs/plans/android-app/19-minified-flows.md).
+ * local stack (docs/harness/releasing.md).
  */
 export const APP_BUILDS = {
   debug: { task: ":androidApp:assembleDebug", apk: "apps/mobile/androidApp/build/outputs/apk/debug/androidApp-debug.apk" },

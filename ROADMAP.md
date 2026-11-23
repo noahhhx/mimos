@@ -136,7 +136,7 @@ Rules for using this file:
     daily calorie and macro targets in core, from energy availability and
     the day's training, with intervals.icu as an optional training
     source. It is not a plugin; ADR-0022 says why. Delivered in this
-    order, tracked as small work items in `docs/plans/fuel-targets/`:
+    order:
     1. *Planned totals.* Each person's planned calories and macros per
        day (entries they eat × servings ÷ diners), in the API and on the
        plan page's Mine view. No targets yet. This closes step 10's
@@ -157,7 +157,7 @@ Rules for using this file:
     hand and see targets, a connected person's targets follow their
     planned and completed workouts, and a person with targets off sees
     no change.*
-    **Done.** ADR-0022, built as the 22 items in `docs/plans/fuel-targets/`.
+    **Done.** ADR-0022.
     A person turns targets on in the Fuel page and sees "Fuel for the
     day" beside what they planned on the plan page (Mine view) and what
     they logged on the Log page. Targets are energy availability times
@@ -237,21 +237,25 @@ Rules for using this file:
       `apps/web/src/lib/diners.ts`, pinned to the same cases by tests.
       The API returning each entry's share for the caller would remove
       the copy. **Done:** each entry answers `yourShare`, and the web's
-      copy is gone (Android plan item 08).
+      copy is gone.
     - An intervals.icu sync takes "today" as the server's UTC date and
       reads a `Retry-After` given as an HTTP date as the 15-minute
-      default (item 16 of `docs/plans/fuel-targets/`).
+      default.
 
 ## Phase 7 — Android app
 
 20. **A native Android app with parity.** Designed in ADR-0029: Kotlin
     Multiplatform with only the Android target, no Google Play Services,
     connected to any instance, verified with Maestro flows on an emulator
-    in CI, and released as a signed APK on GitHub Releases. Work items in
-    `docs/plans/android-app/`.
+    in CI, and released as a signed APK on GitHub Releases.
     *Done when: every page of the web has its screen in the app, and the
-    user guide tells people how to install it.* **Done** (items 01 to 17):
+    user guide tells people how to install it.* **Done**:
     the parity script finds no operation the web calls that the app does
     not, apart from the signed-out library pages, and `docs/guide/android-app.md`
     covers installing, connecting, and updating. The first APK is attached
-    to the first `v*` release. The offline shopping list (item 18) follows.
+    to the first `v*` release. The offline shopping list followed
+    (ADR-0034). Not built yet: the plan ledger on tablets (ADR-0028), which
+    use the phone layout until then; an F-Droid build (reproducible APKs,
+    and a check that zxing-cpp's prebuilt native libraries are acceptable
+    there); a QR code on the web for connecting, if typing the web address
+    proves a stumbling block; and iOS, which needs a Mac and its own ADR.

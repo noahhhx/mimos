@@ -2,8 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-16
-- Settles: "Plain HTTP in release builds" in
-  `docs/plans/android-app/index.md` (ADR-0029)
+- Settles: whether release builds of the app allow plain HTTP (ADR-0029)
 
 ## Context
 

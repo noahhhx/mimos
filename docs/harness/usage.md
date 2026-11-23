@@ -140,10 +140,13 @@ lines into the summary. Release builds do not log them.
 `node tools/harness/src/api-parity.ts` lists the API operations the web's code
 calls and the ones the app's code calls (a call to the generated client, not an
 import), as web only, app only, both, and neither. Run it before and after a
-feature lands on either side ([plan item 17](../plans/android-app/17-parity-and-docs.md)).
+feature lands on either side.
 An operation the web calls and the app does not is either built in the app or
 listed in the script's `WEB_ONLY_BY_DESIGN` with the reason; `--check` exits 1
-otherwise, and so does the harness's own test of the repo, which CI runs.
+otherwise, and so does the harness's own test of the repo, which CI runs. It
+counts calls, not screens: a web page that reuses an operation the app already
+calls for something new passes it, so walk the web's routes under
+`apps/web/src/app` against the app's screens by hand as well.
 
 ### Observing — steps [3](step-3-logs.md) and [4](step-4-diagnostics.md)
 
@@ -170,7 +173,9 @@ For attaching IntelliJ, VS Code, or Chrome DevTools instead, see
 Mimos talks to some outside services (intervals.icu, ADR-0022; Open Food
 Facts, ADR-0025). The stack the harness runs replaces each with a fake: a
 zero-dependency `node:http` service in `tools/harness/fakes/<service>/`, run by
-`deploy/docker/compose.fakes.yml`, never by `compose.yml`. The overlay
+`deploy/docker/compose.fakes.yml`, never by `compose.yml`. It is its own
+overlay rather than part of `compose.debug.yml` because CI boots without the
+debug overlay, and every scenario must run in CI. The overlay
 points the API at the fake and publishes the fake on `127.0.0.1` only, so
 a scenario drives its control routes over HTTP as it drives the API. Each
 fake keeps its state in memory; a restart or `POST /_fake/reset` puts its
@@ -288,7 +293,8 @@ the next release. It runs in four shards split as `android-flows` splits
 them, each skipping the flows the tag lacks. Its evidence is the
 `harness-runs-android-skew-<shard>` artifact. To reproduce it locally: `harness
 down`, `harness release up <tag>`, `harness mobile up --run latest`, then
-`harness mobile flow <name> --run latest`.
+`harness mobile flow <name> --run latest`. Why each job runs the build it
+does, and how a release is cut and signed, is in [Releasing](releasing.md).
 
 To reproduce a CI failure locally: `harness up` (CI's stack runs the
 fakes but not the debug overlay), then `harness ui <name>`. Or download the artifact

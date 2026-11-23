@@ -7,7 +7,7 @@ import { REPO_ROOT } from "./config.ts";
 
 /**
  * The last release, for running main's Android flows against the server
- * people still run (docs/plans/android-app/16b-release-skew.md). Imports
+ * people still run (docs/harness/releasing.md). Imports
  * only Node's own modules, so CI runs `node tools/harness/src/release.ts
  * pick` before it installs anything.
  */

@@ -157,7 +157,7 @@ export const releaseCommand: Command = {
 ${RUN_USAGE}
 
 Then: harness mobile up --run latest, and harness mobile flow <name> --run latest.
-CI's android-skew job does the same on main (docs/plans/android-app/16b-release-skew.md).`,
+CI's android-skew job does the same on main (docs/harness/releasing.md).`,
   async run(argv) {
     const args = parseReleaseArgs(argv);
     return args.action === "up" ? up(args, argv) : down();

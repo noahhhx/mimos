@@ -3,12 +3,12 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { ATHLETE_ID, type Calendar, fixtures, GOOD_KEY, type IcuRecord } from "./fixtures.ts";
 
 /**
- * A fake intervals.icu for the compose stack and harness scenarios (item 13
- * of docs/plans/fuel-targets). It serves the four reads Mimos makes
- * (integrations/intervals-icu) for athlete `i1` and one good key, and
- * control routes under `/_fake/` that let a scenario change what it serves,
- * force a 401 or a 429, and read which requests reached it. State lives in
- * memory: a restart or `POST /_fake/reset` puts the fixtures back.
+ * A fake intervals.icu for the compose stack and harness scenarios. It
+ * serves the four reads Mimos makes (integrations/intervals-icu) for
+ * athlete `i1` and one good key, and control routes under `/_fake/` that
+ * let a scenario change what it serves, force a 401 or a 429, and read
+ * which requests reached it. State lives in memory: a restart or
+ * `POST /_fake/reset` puts the fixtures back.
  */
 
 /** A forced answer for every intervals.icu read, `times` reads in a row (or until cleared). */

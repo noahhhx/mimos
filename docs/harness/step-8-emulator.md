@@ -1,7 +1,7 @@
 # Step 8 — A virtual device for agents
 
-**Status:** done (2026-11-16) · [Back to the plan](index.md) · built as item 02 of
-the [Android app plan](../plans/android-app/index.md)
+**Status:** done (2026-11-16) · [Back to the plan](index.md) · built for
+the Android app ([ADR-0029](../decisions/adr-0029-android-app.md))
 
 ## Goal
 
@@ -17,7 +17,7 @@ devenv shell -- harness up            # the stack, as always
 devenv shell -- harness mobile up     # AVD, boot, browser, ports, build, install, launch
 devenv shell -- harness mobile shot   # a screenshot into the run
 devenv shell -- harness mobile logs   # logcat for the app's process
-devenv shell -- harness mobile flow connect-and-sign-in   # a Maestro flow (item 06)
+devenv shell -- harness mobile flow connect-and-sign-in   # a Maestro flow
 devenv shell -- harness mobile down   # stop the emulator
 eval "$(devenv shell -- harness user create | sed 's/^/export /')"   # MIMOS_USER, MIMOS_PASSWORD
 devenv shell -- harness household join <owner> <member>
@@ -56,7 +56,7 @@ installed. To start over, delete `.harness/android/`.
 ### The browser: Cromite, pinned in devenv.nix
 
 The `default` image ships no browser; only the WebView shell handles
-`VIEW http`. Sign-in (item 04) runs in the device's browser. Cromite is
+`VIEW http`. Sign-in runs in the device's browser. Cromite is
 free software and Chromium-based, so Custom Tabs work. `devenv.nix`
 fetches its APK with `pkgs.fetchurl` at a fixed release URL and hash, and
 exports the path as `MIMOS_ANDROID_BROWSER_APK`. The harness installs it
@@ -74,7 +74,7 @@ userdebug image. It shows a one-line toast saying so. The last switch is
 Cromite's "Allow forward URL requests to external intents", off by
 default: without it Cromite logs "Navigation is blocked" for the redirect
 to the app's own scheme (`io.github.noahhhx.mimos.oauth:`), the sign-in
-tab never returns, and AppAuth waits forever (found in item 04). The `--disable-features` switch
+tab never returns, and AppAuth waits forever. The `--disable-features` switch
 turns off Cromite's "Restart on connection change": when the network
 changes, it pauses every page behind a "Connection to internet has
 changed, execution is paused" prompt, which stalled a CI sign-in on the
@@ -91,7 +91,7 @@ and `10.0.2.2` would give tokens a different issuer. So `up` runs
 same variables as compose): the device's `localhost:P` is the host's.
 The app and the device's browser then use the very URLs a desktop browser
 does, `/runtime-config.json` needs no special case, the issuer matches,
-and the debug build's cleartext permission for `localhost` alone (item 01)
+and the debug build's cleartext permission for `localhost` alone
 is enough.
 
 Reverse rules live in `adbd`, **tied to the adb server that made them**.
@@ -164,7 +164,7 @@ still a usage error rather than a failed login.
   repairs that, and `harness mobile flow` re-makes them before every flow
   and probes the stack again.
 
-## Flows (item 06)
+## Flows
 
 `harness mobile flow <name>` is the device-state owner's next action, beside
 `up`, in `src/commands/mobile.ts`; Maestro's argument list, JUnit failure,
@@ -184,3 +184,55 @@ interceptor in `androidApp` (`RequestLog.kt`) logs `requestId=… method=…
 path=…` for each request that carries `X-Request-Id`, and the harness reads
 them after the flow. A flow that passes with none fails as an evidence
 error, so the two sides cannot drift apart silently.
+
+### Writing a flow
+
+What building the app's flows taught, on the API 36 image:
+
+- Maestro's text match is a full-string regex that ignores case, so escape
+  `+`, `(`, and `?`. Text with a trailing space in its own node ("1
+  serving ") matches with `\s*`.
+- A `TextField`'s visible label is hidden from accessibility, and the field
+  carries the name, so `tapOn: Title` lands in the field. Fields that share
+  a label take the web's `aria-label` as their `description` ("Ingredient 1
+  amount").
+- On a Compose toggle, the state is on the row's `View` and the text on a
+  child: assert `checked: true` with `containsChild: <text>`. `checked:
+  false` with `containsChild` never matches, and `selected` never reaches
+  the accessibility node, so prove a toggle by its effect when you can.
+- An element under the tab bar is not visible to Maestro, even when
+  `scrollUntilVisible` stopped on it, and `scrollUntilVisible` stops at the
+  first frame where its element shows. Scroll to the element the flow
+  asserts, and assert a row before scrolling past it.
+- `launchApp` grants every permission the app declares. A flow that needs
+  one refused launches with `permissions: { camera: deny }`. The emulator's
+  rear camera shows a scene with no barcode, so flows type numbers.
+- `openLink` opens a custom-scheme link as `am start` does; build an app
+  link in `evalScript` from `maestro.copiedText`. `evalScript` left a
+  variable unset, and reported success, when its script used a regex
+  replacement with `$&`.
+- System screens: the photo picker labels each photo "Photo taken on
+  <date>" and confirms with "Add (1)"; the share sheet is titled "Sharing
+  link"; the file pickers open in Downloads, newest first, and save a
+  repeated name as `name (1).json`, so pick the newest by index.
+- `setAirplaneMode` works and the app sees it at once, but it does not cut
+  `adb reverse`, which runs over the device's loopback, so it proves the
+  network gate, not an outage. For a real outage, force-stop the app and
+  remove the `tcp:8080` and `tcp:8081` reverse rules; `harness mobile up`
+  puts them back. A flow that sets airplane mode turns it off in
+  `onFlowComplete`.
+- Keycloak's pages driven with `adb input`: tap a field or Tab between
+  fields, type, and press Enter (keyevent 66). Fixed coordinates miss when
+  the page's zoom differs.
+- Running Maestro from its MCP server while `harness mobile flow` runs
+  kills the device's driver, and the flow fails late with "Unknown error".
+  Use one or the other. With the driver dead, `adb shell uiautomator dump`
+  still reads the screen.
+- A planned meal logs on the plan's date, not today. The `country-week`
+  tag counts next week in the host's time zone, so a run across midnight
+  on a Sunday can pick the wrong week. No flow changes the intervals.icu
+  fake; a scenario that leaves a fault set breaks `intervals-icu` until
+  `curl -X POST http://127.0.0.1:8090/_fake/reset`.
+- To check that the wheel lands at once with animations off, set `adb shell
+  settings put global animator_duration_scale 0` (`settings delete` puts it
+  back); no flow asserts it.

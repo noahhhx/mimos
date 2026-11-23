@@ -2,8 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-20
-- Settles: "Decide first" in `docs/plans/android-app/18-offline-shopping-list.md`
-  (ADR-0029)
+- Settles: what the app's shopping list does without a network (ADR-0029)
 
 ## Context
 

@@ -7,7 +7,7 @@ on:
     tags: ['v*']
   pull_request:
   # A dry run of the release: every job, then a signed release APK as a workflow
-  # artifact, attached to no release (docs/plans/android-app/16-release.md).
+  # artifact, attached to no release (docs/harness/releasing.md).
   workflow_dispatch:
 
 concurrency:
@@ -494,7 +494,7 @@ jobs:
 
       # The minified build: the release as R8 shrinks it, so a dependency that
       # needs keep rules fails a flow here rather than the published APK
-      # (docs/plans/android-app/19-minified-flows.md). The Android app job builds it.
+      # (docs/harness/releasing.md). The Android app job builds it.
       - uses: actions/download-artifact@v4
         with:
           name: flow-apk
@@ -560,7 +560,7 @@ jobs:
           docker compose -f deploy/docker/compose.yml -f deploy/docker/compose.fakes.yml down -v --remove-orphans
 
   # main's app against the last release's published images, the server people
-  # still run (docs/plans/android-app/16b-release-skew.md). Only the flows the
+  # still run (docs/harness/releasing.md). Only the flows the
   # release already had: one added since may test what the release lacks.
   android-skew:
     name: Android flows against the last release (${{ matrix.shard }}/4)
@@ -698,7 +698,7 @@ jobs:
           devenv shell -- harness mobile down || true
           devenv shell -- harness release down
 
-  # The signed release APK (ADR-0029, docs/plans/android-app/16-release.md):
+  # The signed release APK (ADR-0029, docs/harness/releasing.md):
   # only what passed every job above. A v1.2.3 or v1.2.3-rc.1 tag attaches
   # mimos-<version>.apk and its .sha256 to the tag's GitHub Release; a manual
   # run builds the same from the root pom's version as a workflow artifact.
@@ -741,7 +741,7 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.MIMOS_RELEASE_KEYSTORE_BASE64 }}
         run: |
           if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "::error::MIMOS_RELEASE_KEYSTORE_BASE64 is not set; see docs/plans/android-app/16-release.md"
+            echo "::error::MIMOS_RELEASE_KEYSTORE_BASE64 is not set; see docs/harness/releasing.md#setting-up-once"
             exit 1
           fi
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"

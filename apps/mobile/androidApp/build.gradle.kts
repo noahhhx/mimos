@@ -61,8 +61,8 @@ android {
         manifestPlaceholders["appAuthRedirectScheme"] = "io.github.noahhhx.mimos.oauth"
     }
 
-    // Keys come from the environment, never the repository (16-release.md). Without them, debug
-    // builds use the SDK's own key and release builds stay unsigned.
+    // Keys come from the environment, never the repository (docs/harness/releasing.md). Without
+    // them, debug builds use the SDK's own key and release builds stay unsigned.
     fun env(name: String): String? = providers.environmentVariable(name).orNull?.ifEmpty { null }
 
     signingConfigs {
@@ -83,7 +83,7 @@ android {
         }
         // The release, minified the same way and not debuggable (R8 barely shrinks a debuggable
         // build), but with the debug build's id, key, and local-stack allowances, so CI's flows
-        // run on what ships (19-minified-flows.md).
+        // run on what ships (docs/harness/releasing.md).
         create("minified") {
             initWith(getByName("release"))
             applicationIdSuffix = ".debug"

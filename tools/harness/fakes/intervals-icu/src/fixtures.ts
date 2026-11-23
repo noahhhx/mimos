@@ -2,8 +2,8 @@
  * What the fake serves until a scenario changes it: one athlete, `i1`, with
  * a week of training around today. Dates are offsets from the day the fake
  * starts or resets, so a scenario on any day finds a planned ride today.
- * The records carry the fields item 12's client reads plus a few it
- * ignores, as intervals.icu's responses do.
+ * The records carry the fields the client in integrations/intervals-icu
+ * reads plus a few it ignores, as intervals.icu's responses do.
  */
 
 export const ATHLETE_ID = "i1";
