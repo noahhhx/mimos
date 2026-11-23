@@ -7,7 +7,6 @@ import { PageHeader } from "@/components/page-header";
 import { RecipeTabForm } from "@/components/recipe-tab-form";
 import { SignInPrompt } from "@/components/sign-in-prompt";
 
-/** Make a tab: recipes picked by hand or gathered by tag, with a cover for the gallery. */
 export default function NewRecipeTabPage() {
   const { user } = useAuth();
 

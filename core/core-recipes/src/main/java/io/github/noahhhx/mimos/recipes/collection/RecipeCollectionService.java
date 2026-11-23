@@ -64,7 +64,6 @@ public class RecipeCollectionService {
         return restore(ownerId, personId, submitted, clock.instant());
     }
 
-    /** Creates a collection with the time it was first made, for an account import (ADR-0011). */
     public RecipeCollection restore(UUID ownerId, UUID personId, RecipeCollectionDraft submitted, Instant createdAt) {
         RecipeCollectionDraft draft = validated(ownerId, submitted);
         UUID id = ids.generateId();
@@ -89,7 +88,6 @@ public class RecipeCollectionService {
         repository.delete(collectionId);
     }
 
-    /** The collection's member recipes, optionally filtered by a search term. */
     @Transactional(readOnly = true)
     public List<Recipe> members(UUID ownerId, UUID collectionId, @Nullable String query) {
         requireOwned(ownerId, collectionId);
@@ -137,7 +135,6 @@ public class RecipeCollectionService {
         return repository.existsOwnedBy(ownerId);
     }
 
-    /** Deletes every collection the owner has, for a household that is going away. */
     public void deleteAll(UUID ownerId) {
         repository.deleteOwned(ownerId);
     }
@@ -168,10 +165,6 @@ public class RecipeCollectionService {
                 .toList();
     }
 
-    /**
-     * The draft with its name trimmed, its tags trimmed, lowercased, and
-     * distinct, and its picks distinct, each one a recipe the owner may see.
-     */
     private RecipeCollectionDraft validated(UUID ownerId, RecipeCollectionDraft draft) {
         String name = draft.name() == null ? "" : draft.name().strip();
         if (name.isEmpty()) {

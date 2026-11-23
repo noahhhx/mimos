@@ -209,7 +209,6 @@ class ExportUpgraderTest {
         assertThat(upgraded).isEqualTo(v9);
     }
 
-    /** Checks the document now has an empty recipeCollections section, then takes it off. */
     private static void assertGainedNoRecipeCollections(ObjectNode upgraded) {
         JsonNode collections = upgraded.remove("recipeCollections");
         assertThat(collections).isNotNull();

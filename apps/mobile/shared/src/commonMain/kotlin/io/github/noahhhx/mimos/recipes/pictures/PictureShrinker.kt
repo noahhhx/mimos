@@ -25,10 +25,7 @@ interface PictureShrinker {
 /** The platform's ways to get pictures. [takePhoto] is null when the phone has no camera app. */
 class PicturePicker(val pick: () -> Unit, val takePhoto: (() -> Unit)?)
 
-/**
- * The photo picker and the camera, which hand what they got to [onPicked]. A [single] picker takes
- * one picture with a tap, for a tab's cover.
- */
+/** The photo picker and the camera, which hand what they got to [onPicked]. */
 @Composable
 expect fun rememberPicturePicker(
     onPicked: (List<PickedPicture>) -> Unit,

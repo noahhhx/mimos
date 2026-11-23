@@ -81,11 +81,6 @@ fun Tabs(
     }
 }
 
-/**
- * [Tabs] for more labels than fit a phone: each as wide as its label, the row scrolling sideways
- * inside [contentPadding], the rule under the whole width. The selected label is scrolled just into
- * view at once, without motion (ADR-0008).
- */
 @Composable
 fun ScrollingTabs(
     labels: List<String>,
@@ -100,7 +95,6 @@ fun ScrollingTabs(
     val inset = with(LocalDensity.current) { contentPadding.roundToPx() }
     LaunchedEffect(selected, spans[selected], scroll.viewportSize) {
         val span = spans[selected] ?: return@LaunchedEffect
-        // Spans exclude the padding, so a label scrolled into view keeps its inset either side.
         val end = span.last + 2 * inset - scroll.viewportSize
         when {
             span.first < scroll.value -> scroll.scrollTo(span.first)

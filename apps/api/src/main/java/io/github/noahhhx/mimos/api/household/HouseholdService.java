@@ -130,7 +130,7 @@ public class HouseholdService {
     /**
      * Uses the invite and moves the caller into its household. From a
      * household of one, its recipes and ingredients come along and the
-     * rest of it, recipe tabs included (ADR-0036), is deleted; from a shared household, the caller leaves it
+     * rest of it is deleted; from a shared household, the caller leaves it
      * first and brings nothing. Returns the household joined.
      */
     @Transactional

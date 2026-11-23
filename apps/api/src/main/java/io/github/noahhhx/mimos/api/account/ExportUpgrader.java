@@ -159,10 +159,6 @@ public final class ExportUpgrader {
         return document;
     }
 
-    /**
-     * Version 10 (ADR-0036): the household's recipe tabs. Version 9 had
-     * none, so it gets an empty section.
-     */
     private static ObjectNode addRecipeCollections(ObjectNode document) {
         document.putArray("recipeCollections");
         return document;

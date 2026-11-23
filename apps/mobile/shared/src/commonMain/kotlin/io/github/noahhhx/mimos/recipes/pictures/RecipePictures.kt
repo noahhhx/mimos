@@ -24,16 +24,9 @@ class RecipePictures(
     override suspend fun upload(recipeId: String, jpeg: ByteArray): String =
         api().addRecipePicture(recipeId, jpegFilePart(jpeg)).body().id
 
-    /** A saved picture's image bytes, kept as [cached] keeps them. */
     suspend fun image(recipeId: String, pictureId: String): ByteArray =
         cached(pictureId) { api().getRecipePicture(recipeId, pictureId).response.readRawBytes() }
 
-    /**
-     * The image [pictureId] names, from [fetch] the first time. A picture never changes, so the
-     * most recently shown are kept in memory, up to [cacheBytes] in all, and a picture shown again
-     * asks nothing. Tab covers share the cache, so signing out forgets them too. Called from the
-     * main thread only.
-     */
     suspend fun cached(pictureId: String, fetch: suspend () -> ByteArray): ByteArray {
         cache.remove(pictureId)?.let {
             cache[pictureId] = it
@@ -58,7 +51,6 @@ class RecipePictures(
     }
 }
 
-/** A shrunk picture as the `file` part of an upload. */
 fun jpegFilePart(jpeg: ByteArray): FormPart<InputProvider> {
     // Spring reads a part as a file only when it names one.
     val headers = Headers.build {

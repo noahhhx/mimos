@@ -57,9 +57,8 @@ import org.springframework.transaction.annotation.Transactional;
  * version (ADR-0011, ADR-0019), read through the core modules' public
  * services: their household's recipes, ingredients, and shopping lists,
  * the planned meals they eat, their own logs, and their fuel profile and
- * hand-entered training (ADR-0022), and the household's recipe tabs with
- * the exporter's default (ADR-0036). Personal recipes are exported in
- * full; library recipes only by slug.
+ * hand-entered training (ADR-0022). Personal recipes are exported in full;
+ * library recipes only by slug.
  */
 @Service
 public class AccountExporter {
@@ -204,7 +203,6 @@ public class AccountExporter {
                 .updatedAt(toOffset(recipe.updatedAt()));
     }
 
-    /** A tab with its picks, its picture's bytes, and whether it is the exporter's default. */
     private ExportedRecipeCollection toExported(
             UUID householdId, RecipeCollection tab, Set<UUID> ownedIds, Map<UUID, String> librarySlugs) {
         UUID pictureId = tab.pictureId();

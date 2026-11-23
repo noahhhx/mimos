@@ -18,7 +18,6 @@ import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
-/** The recipe_collection tables (V24): collections, their tags, picks, cover, and each person's default. */
 @Repository
 class RecipeCollectionRepository {
 
@@ -40,11 +39,6 @@ class RecipeCollectionRepository {
         this.jdbc = jdbc;
     }
 
-    /**
-     * The ids of a collection's members: the owner's recipes and library
-     * recipes that are picked into it or carry any of its tags, ignoring the
-     * tag's case. This is the only statement of the membership rule.
-     */
     List<UUID> memberIds(UUID ownerId, UUID collectionId) {
         return jdbc.query("""
                 select r.id from recipe r
@@ -57,7 +51,6 @@ class RecipeCollectionRepository {
                 """, (rs, row) -> rs.getObject(1, UUID.class), ownerId, collectionId, collectionId);
     }
 
-    /** The owner's collections, oldest first. */
     List<Row> findOwned(UUID ownerId) {
         return jdbc.query(SELECT + " where c.household_id = ? order by c.created_at, c.id", ROW, ownerId);
     }
@@ -72,7 +65,6 @@ class RecipeCollectionRepository {
                 "select exists (select 1 from recipe_collection where household_id = ?)", Boolean.class, ownerId));
     }
 
-    /** Locks the collection's row for the rest of the transaction, so writes to one collection run one at a time. */
     void lock(UUID collectionId) {
         jdbc.query("select id from recipe_collection where id = ? for update", rs -> {}, collectionId);
     }
@@ -98,7 +90,6 @@ class RecipeCollectionRepository {
         }
     }
 
-    /** Replaces the collection's tags and picks. */
     void replaceContents(UUID id, List<String> tags, List<UUID> recipeIds) {
         jdbc.update("delete from recipe_collection_tag where collection_id = ?", id);
         jdbc.update("delete from recipe_collection_recipe where collection_id = ?", id);
@@ -110,7 +101,6 @@ class RecipeCollectionRepository {
                 recipeIds.stream().map(recipeId -> new Object[] {id, recipeId}).toList());
     }
 
-    /** Deletes a collection with its tags, picks, cover, and anyone's default on it. */
     void delete(UUID id) {
         jdbc.update("delete from recipe_collection where id = ?", id);
     }
@@ -146,7 +136,6 @@ class RecipeCollectionRepository {
         return byCollection;
     }
 
-    /** The collection a person opens Recipes on, if it is one of the owner's. */
     Optional<UUID> defaultOf(UUID ownerId, UUID personId) {
         return jdbc.query("""
                         select d.collection_id from recipe_collection_default d
@@ -170,7 +159,6 @@ class RecipeCollectionRepository {
                 collectionId);
     }
 
-    /** Sets the collection's cover, replacing any it had. */
     void putPicture(UUID collectionId, UUID pictureId, PictureFormat format, byte[] bytes) {
         jdbc.update("""
                 insert into recipe_collection_picture (collection_id, id, format, bytes) values (?, ?, ?, ?)

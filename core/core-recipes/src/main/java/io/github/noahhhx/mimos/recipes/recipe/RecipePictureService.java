@@ -64,8 +64,7 @@ public class RecipePictureService {
 
     /**
      * The format of a valid picture: at most {@link #MAX_PICTURE_BYTES}, and a
-     * JPEG, PNG, or WebP by its bytes. Recipe pictures and collection covers
-     * (ADR-0036) both pass through here.
+     * JPEG, PNG, or WebP by its bytes.
      */
     public static PictureFormat requirePicture(byte[] bytes) {
         if (bytes.length == 0) {

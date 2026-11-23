@@ -62,13 +62,6 @@ const tabApi: TabApi = {
     ),
 };
 
-/**
- * Create/edit form for a tab (a recipe collection, ADR-0036): its name, a
- * cover for the gallery, the tags that gather recipes into it, recipes
- * picked by hand from your own and the library, and whether Recipes opens
- * on it. Save sends the fields, then the cover, then the default, and
- * keeps what reached the server, so saving again never makes a second tab.
- */
 export function RecipeTabForm({ initial }: { initial?: RecipeCollection }) {
   const router = useRouter();
   const [progress, setProgress] = useState<SaveProgress>(() => ({ saved: initial, draft: tabDraftOf(initial) }));
@@ -83,7 +76,6 @@ export function RecipeTabForm({ initial }: { initial?: RecipeCollection }) {
   const setDraft = (next: typeof draft) => setProgress((current) => ({ ...current, draft: next }));
 
   useEffect(() => {
-    // The tab's saved picks come first, ordered once here so a row never moves under the pointer when ticked.
     const picked = new Set(initial?.recipeIds ?? []);
     void Promise.all([listMyRecipes({ client: apiClient }), listLibraryRecipes({ client: apiClient })]).then(
       ([mine, library]) => {

@@ -33,8 +33,8 @@ import { sameTab, tabFromParam, tabParam, type RecipeTab } from "@/lib/recipe-ta
 
 /**
  * The recipe book: your own recipes and the curated library side by side,
- * both searchable, plus the household's own tabs (ADR-0036). Personal
- * recipes are edited here; library recipes link to their public pages.
+ * both searchable. Personal recipes are edited here; library recipes link
+ * to their public pages.
  */
 export default function RecipesPage() {
   // useSearchParams needs a boundary, or the build cannot prerender the page.
@@ -93,7 +93,6 @@ function RecipeBook() {
       if (result.error) {
         setError("The API rejected the request.");
       }
-      // Without its tabs the page still works as it did before tabs existed.
       setCollections(result.data ?? []);
     });
     return () => {
@@ -175,7 +174,6 @@ function RecipeBook() {
       setError("The API rejected the request.");
       return;
     }
-    // A page that landed here as the default would leave once it is not, so the URL names the tab.
     if (param !== collection.id) {
       router.replace(`/app/recipes?tab=${collection.id}`, { scroll: false });
     }
@@ -355,7 +353,6 @@ function RecipeBook() {
   );
 }
 
-/** The household's tabs as tiles, each opening its tab, and a last tile for a new one. */
 function TabGallery({ collections }: { collections: RecipeCollection[] }) {
   return (
     <ul className="tab-gallery" aria-label="Tabs">

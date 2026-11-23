@@ -27,11 +27,6 @@ sealed interface CollectionFormState {
 
     data class Failed(val message: String) : CollectionFormState
 
-    /**
-     * The form. [saved] is the tab as the server last answered it, null for a new tab until its
-     * first save. [recipes] are the household's own then the library's, which the form picks from
-     * and takes its tag choices from.
-     */
     data class Editing(
         val saved: RecipeCollection?,
         val draft: CollectionDraft,
@@ -46,12 +41,6 @@ sealed interface CollectionFormState {
     }
 }
 
-/**
- * The tab form, new or edit (ADR-0036). Save converges as the recipe form does: the fields, then
- * the cover, then the default, each answer kept as [CollectionFormState.Editing.saved] at once, so
- * a failure leaves the form editing the tab it made and saving again never makes it twice.
- * [onSaved] gets the tab, [onDeleted] is told when it is gone.
- */
 class CollectionFormModel(
     private val scope: CoroutineScope,
     private val recipes: () -> RecipesApi,
@@ -66,7 +55,6 @@ class CollectionFormModel(
     private var openedFor: String? = null
     private var job: Job? = null
 
-    /** Opens the form for the tab [collectionId], or for a new one. */
     fun open(collectionId: String?) {
         close()
         openedFor = collectionId
@@ -106,7 +94,6 @@ class CollectionFormModel(
         if (it.busy) it else it.copy(draft = change(it.draft))
     }
 
-    /** Shrinks [picked] as recipe pictures are, and makes it the cover; nothing is sent yet. */
     fun pickCover(picked: List<PickedPicture>) {
         val form = mutableState.value as? CollectionFormState.Editing ?: return
         val first = picked.firstOrNull() ?: return
@@ -190,7 +177,6 @@ class CollectionFormModel(
         }
     }
 
-    /** Deletes the tab being edited; it drops out of every gallery and default with it. */
     fun delete() {
         val form = mutableState.value as? CollectionFormState.Editing ?: return
         val saved = form.saved ?: return

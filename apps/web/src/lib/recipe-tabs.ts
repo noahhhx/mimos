@@ -2,10 +2,6 @@ import type { RecipeCollection, RecipeCollectionInput } from "@mimos/api-client"
 
 import type { PictureResult, PreparedPicture } from "./recipe-pictures.ts";
 
-/**
- * What the Recipes page shows: the gallery of the household's tabs, one of
- * the two built-in lists, or a tab (a recipe collection, ADR-0036).
- */
 export type RecipeTab =
   | { kind: "gallery" }
   | { kind: "mine" }
@@ -14,11 +10,6 @@ export type RecipeTab =
 
 type Listed = Pick<RecipeCollection, "id" | "isDefault">;
 
-/**
- * Where Recipes opens when no tab is chosen (ADR-0036): the caller's
- * default tab, else the gallery when the household has tabs, else My
- * recipes, as it did before tabs existed.
- */
 export function landingTab(collections: readonly Listed[]): RecipeTab {
   const preferred = collections.find((collection) => collection.isDefault);
   if (preferred) {
@@ -27,7 +18,6 @@ export function landingTab(collections: readonly Listed[]): RecipeTab {
   return collections.length > 0 ? { kind: "gallery" } : { kind: "mine" };
 }
 
-/** The `?tab=` value that reopens a tab. */
 export function tabParam(tab: RecipeTab): string {
   switch (tab.kind) {
     case "gallery":
@@ -40,10 +30,6 @@ export function tabParam(tab: RecipeTab): string {
   }
 }
 
-/**
- * The tab a `?tab=` value names. No value, a deleted tab, or the gallery
- * of a household without tabs falls back to the landing rule.
- */
 export function tabFromParam(param: string | null, collections: readonly Listed[]): RecipeTab {
   if (param === "mine" || param === "library") {
     return { kind: param };
@@ -61,12 +47,10 @@ export function sameTab(a: RecipeTab, b: RecipeTab): boolean {
   return tabParam(a) === tabParam(b);
 }
 
-/** Mirrors RecipeCollectionService's limits; the API is the authority. */
 export const MAX_NAME = 60;
 export const MAX_TAGS = 12;
 export const MAX_TAG = 30;
 
-/** The cover as the form holds it: none, the saved picture, or a shrunk pick not uploaded yet. */
 export type CoverDraft =
   | { kind: "none" }
   | { kind: "saved"; pictureId: string }
@@ -90,13 +74,11 @@ export function tabDraftOf(collection?: RecipeCollection): TabDraft {
   };
 }
 
-/** A tag as the server stores it on a tab: trimmed and lowercase. Empty input is no tag. */
 export function normalizeTag(raw: string): string | undefined {
   const tag = raw.trim().toLowerCase();
   return tag === "" ? undefined : tag;
 }
 
-/** Adds the tag, or takes it away when the tab already has it. */
 export function toggleTag(draft: TabDraft, tag: string): TabDraft {
   return draft.tags.includes(tag)
     ? { ...draft, tags: draft.tags.filter((t) => t !== tag) }
@@ -109,7 +91,6 @@ export function togglePick(draft: TabDraft, recipeId: string): TabDraft {
     : { ...draft, recipeIds: [...draft.recipeIds, recipeId] };
 }
 
-/** Every tag a recipe carries, lowercase, A to Z: what a tab can gather by. */
 export function tagChoices(recipes: readonly { tags: readonly string[] }[], chosen: readonly string[]): string[] {
   const tags = new Set(chosen);
   for (const recipe of recipes) {
@@ -141,7 +122,6 @@ export function toCollectionInput(draft: TabDraft): { input: RecipeCollectionInp
   return errors.length > 0 ? { errors } : { input: { name, tags: draft.tags, recipeIds: draft.recipeIds } };
 }
 
-/** The calls Save makes, injected so the save runs without a browser or a server. */
 export type TabApi = {
   create: (input: RecipeCollectionInput) => Promise<PictureResult<RecipeCollection>>;
   replace: (id: string, input: RecipeCollectionInput) => Promise<PictureResult<RecipeCollection>>;
@@ -152,12 +132,6 @@ export type TabApi = {
 
 export type SaveProgress = { saved?: RecipeCollection; draft: TabDraft; error?: string };
 
-/**
- * Saves the tab's fields, then its cover, then whether it is the caller's
- * default, and returns how far the server got. A failure stops there with
- * the API's message; keeping `saved` means saving again replaces the tab
- * rather than creating a second one, and sends only what is left.
- */
 export async function saveTab(api: TabApi, start: SaveProgress): Promise<SaveProgress> {
   const checked = toCollectionInput(start.draft);
   if ("errors" in checked) {

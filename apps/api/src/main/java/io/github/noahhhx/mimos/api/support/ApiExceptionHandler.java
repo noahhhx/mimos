@@ -29,8 +29,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 /**
  * Maps every error raised in Spring MVC to an RFC 9457 problem-details
  * response: domain exceptions (400 invalid, 404 not found or not visible,
- * 403 read-only curated content, 409 a recipe tab name the household already
- * uses, an import into a non-empty account, or a
+ * 403 read-only curated content, 409 import into a non-empty account or a
  * join or leave that contradicts the caller's membership, 410 an expired or
  * used household invite, 502 a
  * plugin that failed to answer a button press, an intervals.icu that did

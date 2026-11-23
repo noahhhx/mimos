@@ -148,11 +148,6 @@ public class RecipeRepository {
         return loadAll(sql.text() + " order by title", sql.args());
     }
 
-    /**
-     * The recipes among {@code ids}, optionally filtered by a search term:
-     * personal ones newest first, as listMyRecipes orders them, then library
-     * ones by title, as listLibraryRecipes does.
-     */
     public List<Recipe> findAmong(Collection<UUID> ids, @Nullable String query) {
         if (ids.isEmpty()) {
             return List.of();

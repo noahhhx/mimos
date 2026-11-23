@@ -1343,8 +1343,6 @@ label.file-button {
   }
 }
 
-/* ---------- Recipe tabs (app/app/recipes, components/recipe-tab-form.tsx, ADR-0036) ---------- */
-
 .tab-gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -1362,7 +1360,6 @@ label.file-button {
   text-decoration: none;
 }
 
-/* The cover fills a 4:3 frame, cropped rather than stretched. */
 .tab-tile-cover {
   display: block;
   aspect-ratio: 4 / 3;
@@ -1389,7 +1386,6 @@ label.file-button {
   object-fit: cover;
 }
 
-/* A tab without a picture: a solid amber block, unlike the pale frame of a picture still loading. */
 .tab-tile-blank {
   display: flex;
   align-items: flex-end;
@@ -1460,7 +1456,6 @@ label.file-button {
   margin-bottom: 12px;
 }
 
-/* The recipes a tab can pick: a checklist that scrolls in its own box. */
 .pick-list {
   max-height: 360px;
   margin: 12px 0 24px;

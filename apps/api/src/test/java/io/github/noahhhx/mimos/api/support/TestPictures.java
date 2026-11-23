@@ -68,7 +68,6 @@ public final class TestPictures {
         return UUID.fromString(MAPPER.readTree(upload.body()).get("id").asText());
     }
 
-    /** PUTs bytes as the multipart part `file` to a single-picture path, like a recipe tab's, and returns the body. */
     public static Upload put(RestClient api, String token, String uri, byte[] bytes) {
         MultipartBodyBuilder body = new MultipartBodyBuilder();
         body.part("file", new ByteArrayResource(bytes) {

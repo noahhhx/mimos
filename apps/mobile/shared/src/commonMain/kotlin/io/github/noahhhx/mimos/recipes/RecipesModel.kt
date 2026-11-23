@@ -34,17 +34,12 @@ interface RecipeSortStore {
 sealed interface RecipeListState {
     data object Loading : RecipeListState
 
-    /**
-     * Both lists, as searched, so the tabs name how many each holds; the household's tabs; and the
-     * recipes of each tab shown since the search, by tab id.
-     */
     data class Loaded(
         val mine: List<RecipeSummary>,
         val library: List<RecipeSummary>,
         val collections: List<RecipeCollection> = emptyList(),
         val members: Map<String, List<RecipeSummary>> = emptyMap(),
     ) : RecipeListState {
-        /** The recipes [tab] lists: none for the gallery, null for a tab not loaded yet. */
         fun of(tab: RecipeTab): List<RecipeSummary>? =
             when (tab) {
                 RecipeTab.Gallery -> null
@@ -96,10 +91,8 @@ sealed interface RateState {
 /**
  * The Recipes tab: the library and the household's recipes, cooking from one, and the [form] that
  * writes them. It owns the route (see [RecipeRoute]), the list with its search, tab, sort, and tag
- * filter, the recipe on screen, and the [cookBook]. The household's own tabs (ADR-0036) come from
- * [collections], and [tabForm] writes them. [api] and [collections] are asked for on every call,
- * because the instance can change. [pictures] shows recipes' pictures and tab covers, and saves the
- * form's.
+ * filter, the recipe on screen, and the [cookBook]. [api] is asked for on every call, because the
+ * instance can change. [pictures] shows recipes' pictures and saves the form's.
  */
 class RecipesModel(
     private val scope: CoroutineScope,
@@ -114,11 +107,9 @@ class RecipesModel(
     private val mutableRoute = MutableStateFlow<RecipeRoute>(RecipeRoute.List)
     val route: StateFlow<RecipeRoute> = mutableRoute.asStateFlow()
 
-    /** The tab the person chose; null until they do, when the landing rule decides. */
     private var chosen: RecipeTab? = null
     private val mutableTab = MutableStateFlow<RecipeTab>(RecipeTab.Mine)
 
-    /** The tab shown, as [shownTab] decides it from the choice and the household's tabs. */
     val tab: StateFlow<RecipeTab> = mutableTab.asStateFlow()
 
     private val mutableQuery = MutableStateFlow("")
@@ -151,7 +142,6 @@ class RecipesModel(
 
     val form = RecipeFormModel(scope, api, pictures, shrinker, onSaved = ::saved)
 
-    /** A saved tab opens; a deleted one leaves Recipes to the landing rule. */
     val tabForm =
         CollectionFormModel(
             scope,
@@ -182,7 +172,6 @@ class RecipesModel(
         startLoading(waitFirst = true)
     }
 
-    /** Shows [tab], loading its recipes when it is one of the household's tabs not listed yet. */
     fun selectTab(tab: RecipeTab) {
         chosen = tab
         val loaded = list.value as? RecipeListState.Loaded
@@ -193,15 +182,12 @@ class RecipesModel(
         }
     }
 
-    /** Opens the form for a new tab. */
     fun newTab() = go(RecipeRoute.NewTab)
 
-    /** Opens the form for the tab shown. */
     fun editTab() {
         (tab.value as? RecipeTab.Collection)?.let { go(RecipeRoute.EditTab(it.id)) }
     }
 
-    /** Makes the tab [collectionId] the one Recipes opens on for this person, or stops it being. */
     fun toggleDefault(collectionId: String) {
         val collection = (list.value as? RecipeListState.Loaded)?.collection(collectionId) ?: return
         if (defaulting.value is DefaultState.Saving) return
@@ -230,7 +216,6 @@ class RecipesModel(
         }
     }
 
-    /** A tab's cover image, cached with the recipes' pictures. */
     suspend fun cover(collectionId: String, pictureId: String): ByteArray =
         pictures.cached(pictureId) {
             collections()

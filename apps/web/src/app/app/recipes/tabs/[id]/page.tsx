@@ -12,7 +12,6 @@ import { RecipeTabForm } from "@/components/recipe-tab-form";
 import { SignInPrompt } from "@/components/sign-in-prompt";
 import { apiClient } from "@/lib/api";
 
-/** Edit or delete one of the household's tabs. */
 export default function EditRecipeTabPage() {
   const { user } = useAuth();
   const params = useParams<{ id: string }>();

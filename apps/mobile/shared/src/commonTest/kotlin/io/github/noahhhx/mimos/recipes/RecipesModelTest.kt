@@ -61,7 +61,6 @@ private class Server {
     var failList = false
     var collections = "[]"
 
-    /** Each tab's recipes, by tab id. */
     val members = mutableMapOf<String, String>()
     var deleteStatus = HttpStatusCode.NoContent
     var rateStatus = HttpStatusCode.OK

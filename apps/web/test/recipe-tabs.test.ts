@@ -109,7 +109,6 @@ const collection = (patch: Partial<RecipeCollection> = {}): RecipeCollection => 
   ...patch,
 });
 
-/** A fake API that records calls, fails the ones named in `failing`, and answers with the tab as `stored`. */
 function fakeApi(failing: Set<string> = new Set(), stored: RecipeCollection = collection()) {
   const calls: string[] = [];
   const fail = { ok: false as const, status: 500, message: "boom" };

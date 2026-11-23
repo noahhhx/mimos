@@ -44,7 +44,6 @@ private fun collection(
         "createdAt":"2026-11-01T10:00:00Z"}"""
 
 private class Server {
-    /** Every write, in order: "POST /api/v1/recipe-collections", and the like. */
     val writes = mutableListOf<String>()
     val bodies = mutableListOf<String>()
     var pictureFails = false

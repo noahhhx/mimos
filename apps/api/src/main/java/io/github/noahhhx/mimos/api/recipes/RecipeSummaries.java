@@ -12,7 +12,6 @@ import org.openapitools.model.Person;
 import org.openapitools.model.RecipeSummary;
 import org.springframework.stereotype.Component;
 
-/** Recipes as list entries, each household recipe naming who added it (ADR-0019). */
 @Component
 class RecipeSummaries {
 
@@ -32,7 +31,6 @@ class RecipeSummaries {
                 .toList();
     }
 
-    /** Who added a household recipe; null for library recipes and when the creator's profile is gone. */
     static @Nullable Person creator(Recipe recipe, Map<UUID, String> names, UUID callerId) {
         UUID creatorId = recipe.createdByProfileId();
         String name = creatorId == null ? null : names.get(creatorId);

@@ -21,12 +21,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-/**
- * Recipe tabs (ADR-0036): household data the caller's household owns, read
- * as the caller, whose own default each tab reports. A cover's URL carries
- * its id, and a replaced cover gets a new one, so its image caches for a
- * year like a recipe picture's.
- */
 @RestController
 public class RecipeCollectionsController implements RecipeCollectionsApi {
 

@@ -6,14 +6,6 @@ const COVER = fileURLToPath(new URL("../../../apps/mobile/flows/assets/recipe-pi
 
 const naturalWidth = (img: unknown) => (img as { naturalWidth: number }).naturalWidth;
 
-/**
- * A household's own tabs (ADR-0036). A fresh account sees Recipes as it
- * was before tabs. It makes a tab with a picked library recipe, a tag that
- * gathers a library recipe and its own recipe, and a cover; then sees the
- * gallery, opens the tab, makes it the default so a reload lands on it,
- * and deletes it, which brings back My recipes. The account is registered
- * afresh, so no other scenario's test user ever lands on a tab.
- */
 test("makes a tab, lands on it by default, and deletes it", async ({ page }) => {
   await register(page, `tabs-${Date.now().toString(36)}`);
   const tabs = page.getByRole("tablist");

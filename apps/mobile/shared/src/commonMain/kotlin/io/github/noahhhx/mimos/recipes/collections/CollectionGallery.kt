@@ -40,15 +40,10 @@ import io.github.noahhhx.mimos.ui.Text
 private const val TILES_PER_ROW = 2
 private const val TILE_RATIO = 4f / 3f
 
-/** What a tile says under its name: "3 recipes · Default". */
 fun tileCaption(collection: RecipeCollection): String =
     (if (collection.recipeCount == 1) "1 recipe" else "${collection.recipeCount} recipes") +
         if (collection.isDefault) " · Default" else ""
 
-/**
- * The gallery (ADR-0036): a tile for each of the household's tabs, its cover filling a 4:3 frame,
- * then a last tile for a new one. Two to a row on a phone.
- */
 fun LazyListScope.collectionGallery(
     collections: List<RecipeCollection>,
     model: RecipesModel,
@@ -143,7 +138,6 @@ private fun NewTile(onClick: () -> Unit, modifier: Modifier) {
     }
 }
 
-/** A tile pressed fills deeper, as a row does; nothing animates. */
 @Composable
 private fun Tile(
     onClick: () -> Unit,
@@ -165,7 +159,6 @@ private fun Tile(
     }
 }
 
-/** A tab's own actions above its list: edit it, and open Recipes on it. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CollectionActions(

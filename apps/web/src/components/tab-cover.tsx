@@ -7,11 +7,6 @@ import { getRecipeCollectionPicture } from "@mimos/api-client";
 import { BlobImage } from "@/components/recipe-pictures";
 import { apiClient } from "@/lib/api";
 
-/**
- * A tab's saved cover (ADR-0036). Like a recipe picture it needs the
- * bearer token, so it comes through the API client, and its path carries
- * the picture id, so the browser may cache it for good.
- */
 export function TabCoverImage({
   collectionId,
   pictureId,
@@ -35,9 +30,7 @@ export function TabCoverImage({
           setBlob(result.data);
         }
       })
-      .catch(() => {
-        // Aborted on unmount, or the network failed: the frame stays empty.
-      });
+      .catch(() => {});
     return () => controller.abort();
   }, [collectionId, pictureId]);
   return blob ? <BlobImage blob={blob} alt={alt} /> : null;

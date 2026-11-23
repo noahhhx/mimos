@@ -3,8 +3,7 @@ package io.github.noahhhx.mimos.recipes
 /**
  * Where the Recipes tab is. Following an ingredient that is one of your recipes pushes (ADR-0018),
  * so the route is the cook trail: [Recipe.trail] holds the recipes followed to reach [Recipe.id],
- * first one first. The form is [New], from the list, or [Edit], from the recipe it edits. The tab
- * form (ADR-0036) is [NewTab] or [EditTab], both from the list.
+ * first one first. The form is [New], from the list, or [Edit], from the recipe it edits.
  */
 sealed interface RecipeRoute {
     data object List : RecipeRoute

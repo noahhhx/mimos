@@ -88,16 +88,11 @@ fun SavedPicture(
     PictureFrame(image, description, height, widest)
 }
 
-/** A picture not uploaded yet, decoded from its bytes. */
 @Composable
 fun NewPicture(prepared: PreparedPicture, description: String, height: Dp, widest: Dp) {
     PictureFrame(rememberNewImage(prepared), description, height, widest)
 }
 
-/**
- * The image [pictureId] names, once [load] has fetched and decoded it; null until then, and when
- * the network failed, so the frame stays empty, as on the web.
- */
 @Composable
 fun rememberSavedImage(pictureId: String, load: suspend () -> ByteArray): ImageBitmap? {
     val image by
@@ -114,7 +109,6 @@ fun rememberSavedImage(pictureId: String, load: suspend () -> ByteArray): ImageB
     return image
 }
 
-/** A picture not uploaded yet, decoded; null until it is. */
 @Composable
 fun rememberNewImage(prepared: PreparedPicture): ImageBitmap? {
     val image by

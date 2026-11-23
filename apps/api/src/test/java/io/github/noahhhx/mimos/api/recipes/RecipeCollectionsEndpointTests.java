@@ -27,11 +27,6 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
-/**
- * Recipe tabs (ADR-0036): a tab holds its picked recipes and every recipe
- * with any of its tags, personal or library; it belongs to the household,
- * while the default tab is each person's own.
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class RecipeCollectionsEndpointTests extends ApiIntegrationTestSupport {
 
@@ -311,7 +306,6 @@ class RecipeCollectionsEndpointTests extends ApiIntegrationTestSupport {
         return new TestUser(port, objectMapper, jdbc);
     }
 
-    /** A personal recipe with exactly these tags. */
     private UUID tagged(TestUser cook, String title, String... tags) {
         UUID id = cook.recipe(title);
         ObjectNode detail = (ObjectNode) cook.ok(HttpMethod.GET, "/api/v1/recipes/" + id, null);

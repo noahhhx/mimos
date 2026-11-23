@@ -199,7 +199,6 @@ public class AccountImporter {
         private final Map<UUID, UUID> recipeIds = new HashMap<>();
         /** Library slugs resolved so far; empty when the slug is not in this library. */
         private final Map<String, Optional<UUID>> librarySlugs = new HashMap<>();
-        /** Per missing library slug: planned meals skipped, logged meals unlinked, and tabs without it. */
         private final Map<String, int[]> missingSlugs = new LinkedHashMap<>();
         /** The export's own ingredient slugs to the slugs they were imported as. */
         private final Map<String, String> ingredientSlugs = new HashMap<>();
@@ -309,7 +308,6 @@ public class AccountImporter {
                     picture -> pictures.add(household, restored.id(), present(picture.getData(), "data")));
         }
 
-        /** Restores each tab with its picks, its picture through the upload's own checks, and the default. */
         void importCollections(List<ExportedRecipeCollection> exported) {
             eachAt("recipeCollections", exported, tab -> {
                 List<UUID> picks = new ArrayList<>();

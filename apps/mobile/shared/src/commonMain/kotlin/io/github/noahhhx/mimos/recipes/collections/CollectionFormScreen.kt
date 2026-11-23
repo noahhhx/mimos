@@ -52,7 +52,6 @@ import io.github.noahhhx.mimos.ui.Text
 import io.github.noahhhx.mimos.ui.TextField
 import io.github.noahhhx.mimos.ui.TickBox
 
-/** The tab form: [title] is "New tab" or "Edit tab"; cancelling returns to Recipes. */
 @Composable
 fun CollectionFormScreen(model: RecipesModel, title: String, onCancel: () -> Unit) {
     val state by model.tabForm.state.collectAsState()
@@ -250,7 +249,6 @@ private fun Form(
     }
 }
 
-/** The cover as it will be saved, with ways to pick, replace, or remove it. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun CoverField(model: RecipesModel, form: CollectionFormState.Editing) {
