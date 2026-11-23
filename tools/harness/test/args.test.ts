@@ -163,6 +163,7 @@ test("ui: scenarios are the spec files in tools/harness/scenarios", () => {
     "recipe-pictures",
     "recipe-rating",
     "recipe-sort-filter",
+    "recipe-tabs",
     "session-expiry",
     "shared-week",
     "shopping-added-items",

@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddMealPlanEntryData, AddMealPlanEntryErrors, AddMealPlanEntryResponses, AddMyTrainingData, AddMyTrainingErrors, AddMyTrainingResponses, AddRecipePictureData, AddRecipePictureErrors, AddRecipePictureResponses, AddShoppingListItemData, AddShoppingListItemErrors, AddShoppingListItemResponses, ClearRecipeRatingData, ClearRecipeRatingErrors, ClearRecipeRatingResponses, ConnectMyIntervalsIcuData, ConnectMyIntervalsIcuErrors, ConnectMyIntervalsIcuResponses, CreateHouseholdInviteData, CreateHouseholdInviteErrors, CreateHouseholdInviteResponses, CreateIngredientData, CreateIngredientErrors, CreateIngredientResponses, CreateMealLogData, CreateMealLogErrors, CreateMealLogResponses, CreateRecipeData, CreateRecipeErrors, CreateRecipeResponses, DeleteIngredientData, DeleteIngredientErrors, DeleteIngredientResponses, DeleteMealLogData, DeleteMealLogErrors, DeleteMealLogResponses, DeleteMealPlanEntryData, DeleteMealPlanEntryErrors, DeleteMealPlanEntryResponses, DeleteMyTrainingData, DeleteMyTrainingErrors, DeleteMyTrainingResponses, DeleteRecipeData, DeleteRecipeErrors, DeleteRecipePictureData, DeleteRecipePictureErrors, DeleteRecipePictureResponses, DeleteRecipeResponses, DisconnectMyIntervalsIcuData, DisconnectMyIntervalsIcuErrors, DisconnectMyIntervalsIcuResponses, EstimateRecipeNutritionData, EstimateRecipeNutritionErrors, EstimateRecipeNutritionResponses, ExportAccountData, ExportAccountErrors, ExportAccountResponses, GenerateShoppingListData, GenerateShoppingListErrors, GenerateShoppingListResponses, GetHouseholdData, GetHouseholdErrors, GetHouseholdResponses, GetInstanceData, GetInstanceResponses, GetMealPlanData, GetMealPlanErrors, GetMealPlanResponses, GetMeData, GetMeErrors, GetMeResponses, GetMyFuelData, GetMyFuelErrors, GetMyFuelProfileData, GetMyFuelProfileErrors, GetMyFuelProfileResponses, GetMyFuelResponses, GetMyIntervalsIcuData, GetMyIntervalsIcuErrors, GetMyIntervalsIcuResponses, GetMyPlannedTotalsData, GetMyPlannedTotalsErrors, GetMyPlannedTotalsResponses, GetMyTrainingSessionData, GetMyTrainingSessionErrors, GetMyTrainingSessionResponses, GetPlanSuggestionsData, GetPlanSuggestionsErrors, GetPlanSuggestionsResponses, GetPublicRecipeData, GetPublicRecipeErrors, GetPublicRecipeResponses, GetRecipeData, GetRecipeErrors, GetRecipePictureData, GetRecipePictureErrors, GetRecipePictureResponses, GetRecipeResponses, GetShoppingListData, GetShoppingListErrors, GetShoppingListResponses, GetWeekPanelsData, GetWeekPanelsErrors, GetWeekPanelsResponses, ImportAccountData, ImportAccountErrors, ImportAccountResponses, JoinHouseholdData, JoinHouseholdErrors, JoinHouseholdResponses, LeaveHouseholdData, LeaveHouseholdErrors, LeaveHouseholdResponses, ListIngredientsData, ListIngredientsErrors, ListIngredientsResponses, ListLibraryRecipesData, ListLibraryRecipesErrors, ListLibraryRecipesResponses, ListMealLogsData, ListMealLogsErrors, ListMealLogsResponses, ListMyPluginsData, ListMyPluginsErrors, ListMyPluginsResponses, ListMyRecipesData, ListMyRecipesErrors, ListMyRecipesResponses, ListMyTrainingData, ListMyTrainingErrors, ListMyTrainingResponses, ListPublicRecipesData, ListPublicRecipesResponses, LookUpFoodProductData, LookUpFoodProductErrors, LookUpFoodProductResponses, PressWeekPanelActionData, PressWeekPanelActionErrors, PressWeekPanelActionResponses, PreviewHouseholdInviteData, PreviewHouseholdInviteErrors, PreviewHouseholdInviteResponses, RateRecipeData, RateRecipeErrors, RateRecipeResponses, RemoveShoppingListItemData, RemoveShoppingListItemErrors, RemoveShoppingListItemResponses, ReplaceIngredientData, ReplaceIngredientErrors, ReplaceIngredientResponses, ReplaceRecipeData, ReplaceRecipeErrors, ReplaceRecipeResponses, SummarizeMealLogsData, SummarizeMealLogsErrors, SummarizeMealLogsResponses, SyncMyIntervalsIcuData, SyncMyIntervalsIcuErrors, SyncMyIntervalsIcuResponses, UpdateMealPlanEntryData, UpdateMealPlanEntryErrors, UpdateMealPlanEntryResponses, UpdateMyFuelProfileData, UpdateMyFuelProfileErrors, UpdateMyFuelProfileResponses, UpdateMyPluginData, UpdateMyPluginErrors, UpdateMyPluginResponses, UpdateShoppingListItemData, UpdateShoppingListItemErrors, UpdateShoppingListItemResponses } from './types.gen';
+import type { AddMealPlanEntryData, AddMealPlanEntryErrors, AddMealPlanEntryResponses, AddMyTrainingData, AddMyTrainingErrors, AddMyTrainingResponses, AddRecipePictureData, AddRecipePictureErrors, AddRecipePictureResponses, AddShoppingListItemData, AddShoppingListItemErrors, AddShoppingListItemResponses, ClearDefaultRecipeCollectionData, ClearDefaultRecipeCollectionErrors, ClearDefaultRecipeCollectionResponses, ClearRecipeRatingData, ClearRecipeRatingErrors, ClearRecipeRatingResponses, ConnectMyIntervalsIcuData, ConnectMyIntervalsIcuErrors, ConnectMyIntervalsIcuResponses, CreateHouseholdInviteData, CreateHouseholdInviteErrors, CreateHouseholdInviteResponses, CreateIngredientData, CreateIngredientErrors, CreateIngredientResponses, CreateMealLogData, CreateMealLogErrors, CreateMealLogResponses, CreateRecipeCollectionData, CreateRecipeCollectionErrors, CreateRecipeCollectionResponses, CreateRecipeData, CreateRecipeErrors, CreateRecipeResponses, DeleteIngredientData, DeleteIngredientErrors, DeleteIngredientResponses, DeleteMealLogData, DeleteMealLogErrors, DeleteMealLogResponses, DeleteMealPlanEntryData, DeleteMealPlanEntryErrors, DeleteMealPlanEntryResponses, DeleteMyTrainingData, DeleteMyTrainingErrors, DeleteMyTrainingResponses, DeleteRecipeCollectionData, DeleteRecipeCollectionErrors, DeleteRecipeCollectionPictureData, DeleteRecipeCollectionPictureErrors, DeleteRecipeCollectionPictureResponses, DeleteRecipeCollectionResponses, DeleteRecipeData, DeleteRecipeErrors, DeleteRecipePictureData, DeleteRecipePictureErrors, DeleteRecipePictureResponses, DeleteRecipeResponses, DisconnectMyIntervalsIcuData, DisconnectMyIntervalsIcuErrors, DisconnectMyIntervalsIcuResponses, EstimateRecipeNutritionData, EstimateRecipeNutritionErrors, EstimateRecipeNutritionResponses, ExportAccountData, ExportAccountErrors, ExportAccountResponses, GenerateShoppingListData, GenerateShoppingListErrors, GenerateShoppingListResponses, GetHouseholdData, GetHouseholdErrors, GetHouseholdResponses, GetInstanceData, GetInstanceResponses, GetMealPlanData, GetMealPlanErrors, GetMealPlanResponses, GetMeData, GetMeErrors, GetMeResponses, GetMyFuelData, GetMyFuelErrors, GetMyFuelProfileData, GetMyFuelProfileErrors, GetMyFuelProfileResponses, GetMyFuelResponses, GetMyIntervalsIcuData, GetMyIntervalsIcuErrors, GetMyIntervalsIcuResponses, GetMyPlannedTotalsData, GetMyPlannedTotalsErrors, GetMyPlannedTotalsResponses, GetMyTrainingSessionData, GetMyTrainingSessionErrors, GetMyTrainingSessionResponses, GetPlanSuggestionsData, GetPlanSuggestionsErrors, GetPlanSuggestionsResponses, GetPublicRecipeData, GetPublicRecipeErrors, GetPublicRecipeResponses, GetRecipeCollectionData, GetRecipeCollectionErrors, GetRecipeCollectionPictureData, GetRecipeCollectionPictureErrors, GetRecipeCollectionPictureResponses, GetRecipeCollectionResponses, GetRecipeData, GetRecipeErrors, GetRecipePictureData, GetRecipePictureErrors, GetRecipePictureResponses, GetRecipeResponses, GetShoppingListData, GetShoppingListErrors, GetShoppingListResponses, GetWeekPanelsData, GetWeekPanelsErrors, GetWeekPanelsResponses, ImportAccountData, ImportAccountErrors, ImportAccountResponses, JoinHouseholdData, JoinHouseholdErrors, JoinHouseholdResponses, LeaveHouseholdData, LeaveHouseholdErrors, LeaveHouseholdResponses, ListIngredientsData, ListIngredientsErrors, ListIngredientsResponses, ListLibraryRecipesData, ListLibraryRecipesErrors, ListLibraryRecipesResponses, ListMealLogsData, ListMealLogsErrors, ListMealLogsResponses, ListMyPluginsData, ListMyPluginsErrors, ListMyPluginsResponses, ListMyRecipesData, ListMyRecipesErrors, ListMyRecipesResponses, ListMyTrainingData, ListMyTrainingErrors, ListMyTrainingResponses, ListPublicRecipesData, ListPublicRecipesResponses, ListRecipeCollectionRecipesData, ListRecipeCollectionRecipesErrors, ListRecipeCollectionRecipesResponses, ListRecipeCollectionsData, ListRecipeCollectionsErrors, ListRecipeCollectionsResponses, LookUpFoodProductData, LookUpFoodProductErrors, LookUpFoodProductResponses, PressWeekPanelActionData, PressWeekPanelActionErrors, PressWeekPanelActionResponses, PreviewHouseholdInviteData, PreviewHouseholdInviteErrors, PreviewHouseholdInviteResponses, RateRecipeData, RateRecipeErrors, RateRecipeResponses, RemoveShoppingListItemData, RemoveShoppingListItemErrors, RemoveShoppingListItemResponses, ReplaceIngredientData, ReplaceIngredientErrors, ReplaceIngredientResponses, ReplaceRecipeCollectionData, ReplaceRecipeCollectionErrors, ReplaceRecipeCollectionResponses, ReplaceRecipeData, ReplaceRecipeErrors, ReplaceRecipeResponses, SetDefaultRecipeCollectionData, SetDefaultRecipeCollectionErrors, SetDefaultRecipeCollectionResponses, SetRecipeCollectionPictureData, SetRecipeCollectionPictureErrors, SetRecipeCollectionPictureResponses, SummarizeMealLogsData, SummarizeMealLogsErrors, SummarizeMealLogsResponses, SyncMyIntervalsIcuData, SyncMyIntervalsIcuErrors, SyncMyIntervalsIcuResponses, UpdateMealPlanEntryData, UpdateMealPlanEntryErrors, UpdateMealPlanEntryResponses, UpdateMyFuelProfileData, UpdateMyFuelProfileErrors, UpdateMyFuelProfileResponses, UpdateMyPluginData, UpdateMyPluginErrors, UpdateMyPluginResponses, UpdateShoppingListItemData, UpdateShoppingListItemErrors, UpdateShoppingListItemResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -406,6 +406,116 @@ export const replaceIngredient = <ThrowOnError extends boolean = false>(options:
  * The curated recipe library
  */
 export const listLibraryRecipes = <ThrowOnError extends boolean = false>(options?: Options<ListLibraryRecipesData, ThrowOnError>): RequestResult<ListLibraryRecipesResponses, ListLibraryRecipesErrors, ThrowOnError> => (options?.client ?? client).get<ListLibraryRecipesResponses, ListLibraryRecipesErrors, ThrowOnError>({ url: '/api/v1/recipes/library', ...options });
+
+/**
+ * The household's recipe tabs
+ *
+ * The recipe collections ("tabs") the caller's household made, oldest first. A tab holds the recipes picked into it (recipeIds) plus every recipe carrying any of its tags, among the household's recipes and the library; recipeCount counts them, and listRecipeCollectionRecipes lists them. Everyone in the household sees and edits the same tabs. isDefault is the caller's own choice: each person may pick one tab to open Recipes on. A client opening Recipes with no tab chosen opens the caller's default tab; without one, a gallery of all tabs when there are any; and otherwise the household's personal recipes.
+ *
+ */
+export const listRecipeCollections = <ThrowOnError extends boolean = false>(options?: Options<ListRecipeCollectionsData, ThrowOnError>): RequestResult<ListRecipeCollectionsResponses, ListRecipeCollectionsErrors, ThrowOnError> => (options?.client ?? client).get<ListRecipeCollectionsResponses, ListRecipeCollectionsErrors, ThrowOnError>({ url: '/api/v1/recipe-collections', ...options });
+
+/**
+ * Create a recipe tab
+ *
+ * Creates a tab for the caller's household. name is required, 1 to 60 characters after trimming, and unique in the household ignoring case (a taken name is a 409). tags (at most 12, each at most 30 characters) are trimmed and lowercased, and match recipe tags ignoring case. recipeIds picks recipes by id, from listMyRecipes or listLibraryRecipes; an id that is not one of the household's recipes or a library recipe is a 400. Either list may be empty, so a tab can be made empty and filled later. A new tab has no picture and is nobody's default.
+ *
+ */
+export const createRecipeCollection = <ThrowOnError extends boolean = false>(options: Options<CreateRecipeCollectionData, ThrowOnError>): RequestResult<CreateRecipeCollectionResponses, CreateRecipeCollectionErrors, ThrowOnError> => (options.client ?? client).post<CreateRecipeCollectionResponses, CreateRecipeCollectionErrors, ThrowOnError>({
+    url: '/api/v1/recipe-collections',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete a recipe tab
+ *
+ * Deletes the tab and its picture for the whole household. Its recipes stay. Anyone who had it as their default has no default afterwards.
+ *
+ */
+export const deleteRecipeCollection = <ThrowOnError extends boolean = false>(options: Options<DeleteRecipeCollectionData, ThrowOnError>): RequestResult<DeleteRecipeCollectionResponses, DeleteRecipeCollectionErrors, ThrowOnError> => (options.client ?? client).delete<DeleteRecipeCollectionResponses, DeleteRecipeCollectionErrors, ThrowOnError>({ url: '/api/v1/recipe-collections/{collectionId}', ...options });
+
+/**
+ * One of the household's recipe tabs
+ *
+ * The tab, with its tags, picked recipe ids, picture id, member count, and whether it is the caller's default. List its recipes with listRecipeCollectionRecipes.
+ *
+ */
+export const getRecipeCollection = <ThrowOnError extends boolean = false>(options: Options<GetRecipeCollectionData, ThrowOnError>): RequestResult<GetRecipeCollectionResponses, GetRecipeCollectionErrors, ThrowOnError> => (options.client ?? client).get<GetRecipeCollectionResponses, GetRecipeCollectionErrors, ThrowOnError>({ url: '/api/v1/recipe-collections/{collectionId}', ...options });
+
+/**
+ * Replace a recipe tab's name, tags, and picks
+ *
+ * Replaces name, tags, and recipeIds with the rules of createRecipeCollection, so send all three (read the tab first with getRecipeCollection). The picture and everyone's default stay.
+ *
+ */
+export const replaceRecipeCollection = <ThrowOnError extends boolean = false>(options: Options<ReplaceRecipeCollectionData, ThrowOnError>): RequestResult<ReplaceRecipeCollectionResponses, ReplaceRecipeCollectionErrors, ThrowOnError> => (options.client ?? client).put<ReplaceRecipeCollectionResponses, ReplaceRecipeCollectionErrors, ThrowOnError>({
+    url: '/api/v1/recipe-collections/{collectionId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * The recipes in a recipe tab
+ *
+ * Every recipe that is picked into the tab or carries at least one of its tags (ignoring case), from the household's personal recipes and the library together; isLibrary tells them apart. A deleted recipe drops out. Personal recipes come first, newest first, then library recipes by title.
+ *
+ */
+export const listRecipeCollectionRecipes = <ThrowOnError extends boolean = false>(options: Options<ListRecipeCollectionRecipesData, ThrowOnError>): RequestResult<ListRecipeCollectionRecipesResponses, ListRecipeCollectionRecipesErrors, ThrowOnError> => (options.client ?? client).get<ListRecipeCollectionRecipesResponses, ListRecipeCollectionRecipesErrors, ThrowOnError>({ url: '/api/v1/recipe-collections/{collectionId}/recipes', ...options });
+
+/**
+ * Stop opening Recipes on this tab, for the caller
+ *
+ * Clears the caller's default when it is this tab, so their Recipes page opens on the gallery of tabs again. When the tab is not their default, nothing changes and it is not an error.
+ *
+ */
+export const clearDefaultRecipeCollection = <ThrowOnError extends boolean = false>(options: Options<ClearDefaultRecipeCollectionData, ThrowOnError>): RequestResult<ClearDefaultRecipeCollectionResponses, ClearDefaultRecipeCollectionErrors, ThrowOnError> => (options.client ?? client).delete<ClearDefaultRecipeCollectionResponses, ClearDefaultRecipeCollectionErrors, ThrowOnError>({ url: '/api/v1/recipe-collections/{collectionId}/default', ...options });
+
+/**
+ * Open Recipes on this tab, for the caller
+ *
+ * Makes the tab the caller's default, the one their Recipes page opens on, in place of any other they had. Only the caller's default changes: others in the household keep their own. Setting the current default again is not an error.
+ *
+ */
+export const setDefaultRecipeCollection = <ThrowOnError extends boolean = false>(options: Options<SetDefaultRecipeCollectionData, ThrowOnError>): RequestResult<SetDefaultRecipeCollectionResponses, SetDefaultRecipeCollectionErrors, ThrowOnError> => (options.client ?? client).put<SetDefaultRecipeCollectionResponses, SetDefaultRecipeCollectionErrors, ThrowOnError>({ url: '/api/v1/recipe-collections/{collectionId}/default', ...options });
+
+/**
+ * Remove a recipe tab's picture
+ *
+ * Removes the tab's picture, so its tile shows its name alone. Removing a picture from a tab that has none is not an error.
+ *
+ */
+export const deleteRecipeCollectionPicture = <ThrowOnError extends boolean = false>(options: Options<DeleteRecipeCollectionPictureData, ThrowOnError>): RequestResult<DeleteRecipeCollectionPictureResponses, DeleteRecipeCollectionPictureErrors, ThrowOnError> => (options.client ?? client).delete<DeleteRecipeCollectionPictureResponses, DeleteRecipeCollectionPictureErrors, ThrowOnError>({ url: '/api/v1/recipe-collections/{collectionId}/picture', ...options });
+
+/**
+ * Set a recipe tab's picture
+ *
+ * Uploads the tab's picture, shown on its tile in the gallery, sent as the multipart part `file`: a JPEG, PNG, or WebP image of at most 2 MB, read from its bytes. A tab has at most one picture, so this replaces any it had, under a new pictureId. Returns the tab.
+ *
+ */
+export const setRecipeCollectionPicture = <ThrowOnError extends boolean = false>(options: Options<SetRecipeCollectionPictureData, ThrowOnError>): RequestResult<SetRecipeCollectionPictureResponses, SetRecipeCollectionPictureErrors, ThrowOnError> => (options.client ?? client).put<SetRecipeCollectionPictureResponses, SetRecipeCollectionPictureErrors, ThrowOnError>({
+    ...formDataBodySerializer,
+    url: '/api/v1/recipe-collections/{collectionId}/picture',
+    ...options,
+    headers: {
+        'Content-Type': null,
+        ...options.headers
+    }
+});
+
+/**
+ * The image of a recipe tab's picture
+ *
+ * The image of the tab's picture, as it was uploaded. A replaced picture gets a new id and the old one is a 404, so the response may be cached privately for a year.
+ *
+ */
+export const getRecipeCollectionPicture = <ThrowOnError extends boolean = false>(options: Options<GetRecipeCollectionPictureData, ThrowOnError>): RequestResult<GetRecipeCollectionPictureResponses, GetRecipeCollectionPictureErrors, ThrowOnError> => (options.client ?? client).get<GetRecipeCollectionPictureResponses, GetRecipeCollectionPictureErrors, ThrowOnError>({ url: '/api/v1/recipe-collections/{collectionId}/picture/{pictureId}', ...options });
 
 /**
  * The curated recipe library (unauthenticated)

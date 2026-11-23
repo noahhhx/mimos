@@ -1,5 +1,7 @@
 package io.github.noahhhx.mimos.api.recipes;
 
+import io.github.noahhhx.mimos.recipes.collection.RecipeCollection;
+import io.github.noahhhx.mimos.recipes.collection.RecipeCollectionDraft;
 import io.github.noahhhx.mimos.recipes.recipe.CatalogIngredient;
 import io.github.noahhhx.mimos.recipes.recipe.Ingredient;
 import io.github.noahhhx.mimos.recipes.recipe.IngredientDraft;
@@ -18,6 +20,7 @@ import org.openapitools.model.IngredientInput;
 import org.openapitools.model.IngredientLineStatus;
 import org.openapitools.model.IngredientQuantity;
 import org.openapitools.model.NutritionBasis;
+import org.openapitools.model.RecipeCollectionInput;
 import org.openapitools.model.RecipeDetail;
 import org.openapitools.model.RecipeInput;
 import org.openapitools.model.RecipeSummary;
@@ -78,6 +81,22 @@ public final class RecipeApiMapper {
                 NutritionSource.valueOf(input.getNutritionSource().name()),
                 fromApiIngredients(input.getIngredients()),
                 fromApiSteps(input));
+    }
+
+    public static org.openapitools.model.RecipeCollection toApiCollection(RecipeCollection collection) {
+        return new org.openapitools.model.RecipeCollection()
+                .id(collection.id())
+                .name(collection.name())
+                .tags(collection.tags())
+                .recipeIds(collection.recipeIds())
+                .pictureId(collection.pictureId())
+                .isDefault(collection.isDefault())
+                .recipeCount(collection.recipeCount())
+                .createdAt(collection.createdAt().atOffset(ZoneOffset.UTC));
+    }
+
+    public static RecipeCollectionDraft toCollectionDraft(RecipeCollectionInput input) {
+        return new RecipeCollectionDraft(input.getName(), input.getTags(), input.getRecipeIds());
     }
 
     public static org.openapitools.model.CatalogIngredient toApiCatalogIngredient(CatalogIngredient entry) {

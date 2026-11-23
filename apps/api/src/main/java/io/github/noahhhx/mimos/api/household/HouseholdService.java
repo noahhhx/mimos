@@ -7,6 +7,7 @@ import io.github.noahhhx.mimos.planning.plan.MealPlanService;
 import io.github.noahhhx.mimos.planning.shopping.ShoppingListService;
 import io.github.noahhhx.mimos.plugins.PluginOptInService;
 import io.github.noahhhx.mimos.plugins.PluginSubjectService;
+import io.github.noahhhx.mimos.recipes.collection.RecipeCollectionService;
 import io.github.noahhhx.mimos.recipes.recipe.IngredientService;
 import io.github.noahhhx.mimos.recipes.recipe.RecipeService;
 import java.nio.charset.StandardCharsets;
@@ -44,6 +45,7 @@ public class HouseholdService {
     private final IdentityService identity;
     private final RecipeService recipes;
     private final IngredientService ingredients;
+    private final RecipeCollectionService collections;
     private final MealPlanService mealPlans;
     private final ShoppingListService shoppingLists;
     private final MealLogService mealLogs;
@@ -57,6 +59,7 @@ public class HouseholdService {
             IdentityService identity,
             RecipeService recipes,
             IngredientService ingredients,
+            RecipeCollectionService collections,
             MealPlanService mealPlans,
             ShoppingListService shoppingLists,
             MealLogService mealLogs,
@@ -68,6 +71,7 @@ public class HouseholdService {
         this.identity = identity;
         this.recipes = recipes;
         this.ingredients = ingredients;
+        this.collections = collections;
         this.mealPlans = mealPlans;
         this.shoppingLists = shoppingLists;
         this.mealLogs = mealLogs;
@@ -147,6 +151,7 @@ public class HouseholdService {
         } else {
             recipes.moveAll(current, target);
             ingredients.moveAll(current, target);
+            collections.deleteAll(current);
             mealPlans.deleteAll(current);
             shoppingLists.deleteAll(current);
             pluginOptIns.deleteAll(current);

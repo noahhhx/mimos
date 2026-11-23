@@ -1,13 +1,17 @@
 package io.github.noahhhx.mimos.recipes
 
+import io.github.noahhhx.mimos.api.apis.RecipeCollectionsApi
 import io.github.noahhhx.mimos.api.apis.RecipesApi
+import io.github.noahhhx.mimos.api.models.RecipeCollection
 import io.github.noahhhx.mimos.api.models.RecipeDetail
 import io.github.noahhhx.mimos.api.models.RecipeRatingInput
 import io.github.noahhhx.mimos.api.models.RecipeSummary
 import io.github.noahhhx.mimos.client.ApiProblem
+import io.github.noahhhx.mimos.recipes.collections.CollectionFormModel
 import io.github.noahhhx.mimos.recipes.form.RecipeFormModel
 import io.github.noahhhx.mimos.recipes.pictures.PictureShrinker
 import io.github.noahhhx.mimos.recipes.pictures.RecipePictures
+import io.ktor.client.statement.readRawBytes
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -17,6 +21,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Keeps the chosen sort on this install, so it outlasts the app. */
@@ -26,22 +31,23 @@ interface RecipeSortStore {
     fun save(sort: RecipeSort)
 }
 
-enum class RecipeTab(val label: String) {
-    Mine("My recipes"),
-    Library("Library"),
-}
-
 sealed interface RecipeListState {
     data object Loading : RecipeListState
 
-    /** Both lists, as searched: the tabs name how many each holds. */
-    data class Loaded(val mine: List<RecipeSummary>, val library: List<RecipeSummary>) :
-        RecipeListState {
-        fun of(tab: RecipeTab): List<RecipeSummary> =
+    data class Loaded(
+        val mine: List<RecipeSummary>,
+        val library: List<RecipeSummary>,
+        val collections: List<RecipeCollection> = emptyList(),
+        val members: Map<String, List<RecipeSummary>> = emptyMap(),
+    ) : RecipeListState {
+        fun of(tab: RecipeTab.Listing): List<RecipeSummary>? =
             when (tab) {
                 RecipeTab.Mine -> mine
                 RecipeTab.Library -> library
+                is RecipeTab.Collection -> members[tab.id]
             }
+
+        fun collection(id: String): RecipeCollection? = collections.firstOrNull { it.id == id }
     }
 
     data class Failed(val message: String) : RecipeListState
@@ -65,6 +71,14 @@ sealed interface DeleteState {
     data class Failed(val message: String) : DeleteState
 }
 
+sealed interface DefaultState {
+    data object Idle : DefaultState
+
+    data object Saving : DefaultState
+
+    data class Failed(val message: String) : DefaultState
+}
+
 sealed interface RateState {
     data object Idle : RateState
 
@@ -83,6 +97,7 @@ class RecipesModel(
     private val scope: CoroutineScope,
     private val sortStore: RecipeSortStore,
     private val api: () -> RecipesApi,
+    private val collections: () -> RecipeCollectionsApi,
     val pictures: RecipePictures,
     shrinker: PictureShrinker,
     val cookBook: CookBook = CookBook(),
@@ -91,7 +106,9 @@ class RecipesModel(
     private val mutableRoute = MutableStateFlow<RecipeRoute>(RecipeRoute.List)
     val route: StateFlow<RecipeRoute> = mutableRoute.asStateFlow()
 
-    private val mutableTab = MutableStateFlow(RecipeTab.Mine)
+    private var chosen: RecipeTab? = null
+    private val mutableTab = MutableStateFlow<RecipeTab>(RecipeTab.Mine)
+
     val tab: StateFlow<RecipeTab> = mutableTab.asStateFlow()
 
     private val mutableQuery = MutableStateFlow("")
@@ -115,10 +132,30 @@ class RecipesModel(
     private val mutableRating = MutableStateFlow<RateState>(RateState.Idle)
     val rating: StateFlow<RateState> = mutableRating.asStateFlow()
 
+    private val mutableDefaulting = MutableStateFlow<DefaultState>(DefaultState.Idle)
+    val defaulting: StateFlow<DefaultState> = mutableDefaulting.asStateFlow()
+
     private var listJob: Job? = null
+    private var membersJob: Job? = null
     private var detailJob: Job? = null
 
     val form = RecipeFormModel(scope, api, pictures, shrinker, onSaved = ::saved)
+
+    val tabForm =
+        CollectionFormModel(
+            scope,
+            api,
+            collections,
+            shrinker,
+            onSaved = {
+                chosen = RecipeTab.Collection(it.id)
+                go(RecipeRoute.List)
+            },
+            onDeleted = {
+                chosen = null
+                go(RecipeRoute.List)
+            },
+        )
 
     /** Loads the lists the first time the tab is shown. */
     fun ensureLoaded() {
@@ -135,8 +172,56 @@ class RecipesModel(
     }
 
     fun selectTab(tab: RecipeTab) {
-        mutableTab.value = tab
+        chosen = tab
+        val loaded = list.value as? RecipeListState.Loaded
+        val shown = shownTab(tab, loaded?.collections.orEmpty())
+        mutableTab.value = shown
+        if (loaded != null && shown is RecipeTab.Collection && shown.id !in loaded.members) {
+            loadMembers(shown.id)
+        }
     }
+
+    fun newTab() = go(RecipeRoute.NewTab)
+
+    fun editTab() {
+        (tab.value as? RecipeTab.Collection)?.let { go(RecipeRoute.EditTab(it.id)) }
+    }
+
+    fun toggleDefault(collectionId: String) {
+        val collection = (list.value as? RecipeListState.Loaded)?.collection(collectionId) ?: return
+        if (defaulting.value is DefaultState.Saving) return
+        mutableDefaulting.value = DefaultState.Saving
+        scope.launch {
+            try {
+                val on = !collection.isDefault
+                if (on) collections().setDefaultRecipeCollection(collectionId)
+                else collections().clearDefaultRecipeCollection(collectionId)
+                mutableList.update { state ->
+                    if (state !is RecipeListState.Loaded) state
+                    else
+                        state.copy(
+                            collections =
+                                state.collections.map {
+                                    it.copy(isDefault = on && it.id == collectionId)
+                                }
+                        )
+                }
+                mutableDefaulting.value = DefaultState.Idle
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                mutableDefaulting.value = DefaultState.Failed(describe(failure))
+            }
+        }
+    }
+
+    suspend fun cover(collectionId: String, pictureId: String): ByteArray =
+        pictures.cached(pictureId) {
+            collections()
+                .getRecipeCollectionPicture(collectionId, pictureId)
+                .response
+                .readRawBytes()
+        }
 
     fun chooseSort(sort: RecipeSort) {
         mutableSort.value = sort
@@ -239,8 +324,10 @@ class RecipesModel(
     /** Back to the start, for when the person signs out and someone else may sign in. */
     fun reset() {
         listJob?.cancel()
+        membersJob?.cancel()
         detailJob?.cancel()
         mutableRoute.value = RecipeRoute.List
+        chosen = null
         mutableTab.value = RecipeTab.Mine
         mutableQuery.value = ""
         mutableTags.value = emptySet()
@@ -248,7 +335,9 @@ class RecipesModel(
         mutableDetail.value = RecipeDetailState.Loading
         mutableDeletion.value = DeleteState.Idle
         mutableRating.value = RateState.Idle
+        mutableDefaulting.value = DefaultState.Idle
         form.close()
+        tabForm.close()
         cookBook.clear()
         pictures.clear()
     }
@@ -257,6 +346,7 @@ class RecipesModel(
         detailJob?.cancel()
         mutableDeletion.value = DeleteState.Idle
         mutableRating.value = RateState.Idle
+        mutableDefaulting.value = DefaultState.Idle
         mutableDetail.value = RecipeDetailState.Loading
         mutableRoute.value = to
         when (to) {
@@ -264,9 +354,34 @@ class RecipesModel(
             is RecipeRoute.Recipe -> loadDetail(to.id)
             RecipeRoute.New -> form.open(null)
             is RecipeRoute.Edit -> form.open(to.from.id.value)
+            RecipeRoute.NewTab -> tabForm.open(null)
+            is RecipeRoute.EditTab -> tabForm.open(to.collectionId)
         }
         if (to !is RecipeRoute.New && to !is RecipeRoute.Edit) form.close()
+        if (to !is RecipeRoute.NewTab && to !is RecipeRoute.EditTab) tabForm.close()
     }
+
+    private fun loadMembers(collectionId: String) {
+        membersJob?.cancel()
+        membersJob = scope.launch {
+            try {
+                val members = members(collectionId)
+                mutableList.update { state ->
+                    if (state !is RecipeListState.Loaded) state
+                    else state.copy(members = state.members + (collectionId to members))
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                mutableList.value = RecipeListState.Failed(describe(failure))
+            }
+        }
+    }
+
+    private suspend fun members(collectionId: String): List<RecipeSummary> =
+        collections().listRecipeCollectionRecipes(collectionId, searched()).body()
+
+    private fun searched(): String? = query.value.trim().ifEmpty { null }
 
     private fun loadDetail(id: RecipeId) {
         detailJob?.cancel()
@@ -289,21 +404,31 @@ class RecipesModel(
     /** A new search replaces the one before it, so a slow answer never lands after a newer one. */
     private fun startLoading(waitFirst: Boolean) {
         listJob?.cancel()
+        membersJob?.cancel()
         listJob = scope.launch {
             if (waitFirst) delay(searchDelayMillis)
-            mutableList.value =
+            val loaded =
                 try {
-                    val q = query.value.trim().ifEmpty { null }
+                    val q = searched()
                     coroutineScope {
                         val mine = async { api().listMyRecipes(q).body() }
                         val library = async { api().listLibraryRecipes(q).body() }
-                        RecipeListState.Loaded(mine.await(), library.await())
+                        val tabs = collections().listRecipeCollections().body()
+                        val shown = shownTab(chosen, tabs)
+                        val members =
+                            if (shown is RecipeTab.Collection) mapOf(shown.id to members(shown.id))
+                            else emptyMap()
+                        RecipeListState.Loaded(mine.await(), library.await(), tabs, members)
                     }
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (failure: Exception) {
                     RecipeListState.Failed(describe(failure))
                 }
+            if (loaded is RecipeListState.Loaded) {
+                mutableTab.value = shownTab(chosen, loaded.collections)
+            }
+            mutableList.value = loaded
         }
     }
 

@@ -27,7 +27,8 @@ private const val EXPORT =
 
 private const val REPORT =
     """{"sourceVersion":8,"recipes":2,"plannedMeals":0,"shoppingLists":1,"mealLogs":0,""" +
-        """"fuelProfile":false,"trainingSessions":0,"warnings":["A picture was left out."]}"""
+        """"fuelProfile":false,"trainingSessions":0,"recipeCollections":0,""" +
+        """"warnings":["A picture was left out."]}"""
 
 /** Files the person chose, by URI; a URI in [unreadable] or [unwritable] fails. */
 internal class MemoryDocuments : DocumentStore {

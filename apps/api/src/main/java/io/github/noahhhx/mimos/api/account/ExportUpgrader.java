@@ -29,7 +29,8 @@ public final class ExportUpgrader {
             ExportUpgrader::addRecipePictures,
             ExportUpgrader::allowPlannedFoods,
             ExportUpgrader::allowAddedShoppingItems,
-            ExportUpgrader::allowRecipeRatings);
+            ExportUpgrader::allowRecipeRatings,
+            ExportUpgrader::addRecipeCollections);
 
     /** The version this instance exports. */
     public static final int CURRENT_VERSION = STEPS.size() + 1;
@@ -155,6 +156,11 @@ public final class ExportUpgrader {
      * data comes through unchanged.
      */
     private static ObjectNode allowRecipeRatings(ObjectNode document) {
+        return document;
+    }
+
+    private static ObjectNode addRecipeCollections(ObjectNode document) {
+        document.putArray("recipeCollections");
         return document;
     }
 

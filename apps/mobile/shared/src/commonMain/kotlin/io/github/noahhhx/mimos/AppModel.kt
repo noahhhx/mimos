@@ -11,6 +11,7 @@ import io.github.noahhhx.mimos.api.apis.LoggingApi
 import io.github.noahhhx.mimos.api.apis.PlanningApi
 import io.github.noahhhx.mimos.api.apis.PluginSettingsApi
 import io.github.noahhhx.mimos.api.apis.PluginsApi
+import io.github.noahhhx.mimos.api.apis.RecipeCollectionsApi
 import io.github.noahhhx.mimos.api.apis.RecipePicturesApi
 import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.api.apis.ShoppingListsApi
@@ -109,6 +110,7 @@ class AppModel(
             scope,
             recipeSortStore,
             api = { connected().api(::RecipesApi) },
+            collections = { connected().api(::RecipeCollectionsApi) },
             pictures = RecipePictures({ connected().api(::RecipePicturesApi) }),
             shrinker = pictureShrinker,
         )

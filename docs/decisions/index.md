@@ -40,6 +40,7 @@ right at the time.
 | [ADR-0032](adr-0032-object-storage.md)                            | Object storage: any S3-compatible server, Garage as reference |
 | [ADR-0034](adr-0034-offline-shopping-list.md)                     | The app's shopping list works offline            |
 | [ADR-0035](adr-0035-recipe-ratings.md)                            | Recipe ratings                                   |
+| [ADR-0036](adr-0036-recipe-tabs.md)                               | Recipe tabs                                      |
 
 New ADRs are sequential: `adr-NNNN-title.md`, with the numbering in this
 index. Once accepted, an ADR is never rewritten — superseding decisions get

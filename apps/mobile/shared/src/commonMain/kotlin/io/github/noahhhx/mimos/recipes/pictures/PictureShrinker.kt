@@ -26,4 +26,8 @@ interface PictureShrinker {
 class PicturePicker(val pick: () -> Unit, val takePhoto: (() -> Unit)?)
 
 /** The photo picker and the camera, which hand what they got to [onPicked]. */
-@Composable expect fun rememberPicturePicker(onPicked: (List<PickedPicture>) -> Unit): PicturePicker
+@Composable
+expect fun rememberPicturePicker(
+    onPicked: (List<PickedPicture>) -> Unit,
+    single: Boolean = false,
+): PicturePicker

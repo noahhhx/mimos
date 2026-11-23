@@ -1,6 +1,7 @@
 # Recipes
 
-Open **Recipes** to see your recipe book. It has two tabs:
+Open **Recipes** to see your recipe book. It has two tabs, plus any
+[tabs you add](#tabs):
 
 - **My recipes**: the recipes you and your [household](household.md) have
   written. Only your household can see them, and a recipe someone else
@@ -22,6 +23,85 @@ or choose **Clear tags** to widen the list back out. The tab counts stay
 as totals; only the list below them is filtered.
 
 ![The recipe book, showing the Library tab](../assets/screenshots/recipes.png)
+
+## Tabs
+
+Add your own tabs to sort recipes the way you cook, like "Weekend brunch"
+or "Soups and stews". A tab holds:
+
+- recipes you pick for it, from your recipes and the library, and
+- every recipe with any of the tab's tags, including recipes you write or
+  tag later.
+
+A recipe can be in more than one tab. Tabs belong to your
+[household](household.md): everyone in it sees and edits the same tabs.
+
+### Making a tab
+
+1. In **Recipes**, choose **+ New tab**.
+2. Give it a name. Two tabs in a household can't share a name.
+3. Optional: under **Picture**, choose **Choose picture** to give the tab
+   a cover for the gallery. Mimos shrinks it before it sends it, the same
+   way it shrinks [recipe pictures](#pictures).
+4. Under **Tags**, press the tags the tab gathers by. Every tag in your
+   recipes and the library is listed. To use a tag no recipe has yet, type
+   it in **New tag** and choose **Add tag**.
+5. Under **Recipes**, tick the recipes to keep in the tab whatever their
+   tags. Use the search box to find one.
+6. Optional: tick **Open Recipes on this tab**.
+7. Choose **Create tab**.
+
+![The tab form, with a cover, a tag, and two picked recipes](../assets/screenshots/recipe-tabs-form.png)
+
+A tab can start empty and be filled later.
+
+### The gallery
+
+When your household has tabs, Recipes opens on a gallery of them, and the
+tab bar gains **Tabs**, which brings the gallery back. Each tile shows the
+tab's cover, its name, and how many recipes it holds. A tab without a
+cover shows its name on a plain block. The last tile, **New tab**, makes
+another one.
+
+![The gallery of tabs, one marked Default](../assets/screenshots/recipe-tabs-gallery.png)
+
+Choose a tile, or the tab's name in the tab bar, to open the tab. Its
+recipes are listed like **My recipes**, with the same search, sort, and
+tag buttons.
+
+![A tab open, listing its recipes](../assets/screenshots/recipe-tab.png)
+
+### Opening Recipes on a tab
+
+To skip the gallery, open a tab and choose **Open by default**, or tick
+**Open Recipes on this tab** in its form. Recipes then opens straight on
+that tab, and the gallery marks its tile **Default**. Choose **Open by
+default** again to go back to the gallery.
+
+Your default is your own choice. Someone else in your household can
+choose a different tab, or none.
+
+### Editing and deleting a tab
+
+Open the tab and choose **Edit tab**. Change what you like and choose
+**Save changes**. To change the cover, choose **Replace picture** or
+**Remove picture**. If something can't be saved, the form stays open and
+says why. Save again to send the rest.
+
+To delete the tab, choose **Delete tab** in its form. Its recipes stay
+where they are. Once a household has no tabs, Recipes opens on **My
+recipes** again.
+
+Tabs travel with your recipes in [your export](your-data.md).
+
+### Tabs in the Android app
+
+Tabs work the same way in the app. Tap **+ New tab** beside **+ New
+recipe**, give the tab a name, and choose a cover from your photos or take
+one with the camera. The tab bar scrolls sideways to show every tab after
+**My recipes** and **Library**.
+
+![The app's Recipes tab, showing the gallery of two tabs with covers](../assets/screenshots/android-recipe-tabs.png)
 
 ## Cooking from a recipe
 

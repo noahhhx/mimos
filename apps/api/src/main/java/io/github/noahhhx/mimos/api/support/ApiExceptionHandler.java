@@ -6,6 +6,7 @@ import io.github.noahhhx.mimos.api.household.MembershipConflictException;
 import io.github.noahhhx.mimos.intervalsicu.IntervalsIcuUnavailableException;
 import io.github.noahhhx.mimos.openfoodfacts.OpenFoodFactsUnavailableException;
 import io.github.noahhhx.mimos.plugins.PluginActionFailedException;
+import io.github.noahhhx.mimos.recipes.collection.CollectionNameTakenException;
 import io.github.noahhhx.mimos.recipes.recipe.ReadOnlyIngredientException;
 import io.github.noahhhx.mimos.recipes.recipe.ReadOnlyRecipeException;
 import java.net.URI;
@@ -67,6 +68,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AccountNotEmptyException.class)
     ProblemDetail conflict(AccountNotEmptyException exception) {
         return problem(HttpStatus.CONFLICT, "Account not empty", exception.getMessage());
+    }
+
+    @ExceptionHandler(CollectionNameTakenException.class)
+    ProblemDetail conflict(CollectionNameTakenException exception) {
+        return problem(HttpStatus.CONFLICT, "Name taken", exception.getMessage());
     }
 
     @ExceptionHandler(MembershipConflictException.class)

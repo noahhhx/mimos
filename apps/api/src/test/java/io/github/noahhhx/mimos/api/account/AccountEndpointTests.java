@@ -80,6 +80,28 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
                 "/api/v1/recipes/" + soupId + "/rating",
                 objectMapper.createObjectNode().put("stars", 4));
 
+        JsonNode tab = send(
+                api,
+                source,
+                "POST",
+                "/api/v1/recipe-collections",
+                objectMapper.valueToTree(Map.of(
+                        "name", "Export tab", "tags", List.of("Test"), "recipeIds", List.of(soupId, shakshukaId))));
+        String tabId = tab.get("id").asText();
+        TestPictures.put(api, source, "/api/v1/recipe-collections/" + tabId + "/picture", jpeg);
+        api.put()
+                .uri("/api/v1/recipe-collections/{tab}/default", tabId)
+                .headers(headers -> headers.setBearerAuth(source))
+                .retrieve()
+                .toBodilessEntity();
+        send(
+                api,
+                source,
+                "POST",
+                "/api/v1/recipe-collections",
+                objectMapper.valueToTree(
+                        Map.of("name", "Empty export tab", "tags", List.of(), "recipeIds", List.of())));
+
         plan(api, source, MONDAY, "DINNER", soupId, 2);
         plan(api, source, MONDAY.plusDays(1), "BREAKFAST", shakshukaId, 1);
         plan(api, source, MONDAY.plusDays(2), "LUNCH", toastId, 1.5);
@@ -119,11 +141,22 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
         assertThat(pictureData(recipeTitled(exported, "Export Toast"))).isEmpty();
         assertThat(recipeTitled(exported, "Export Soup").get("rating").asInt()).isEqualTo(4);
         assertThat(recipeTitled(exported, "Export Toast").has("rating")).isFalse();
+        JsonNode tabs = exported.get("recipeCollections");
+        assertThat(tabs).hasSize(2);
+        assertThat(tabs.get(0).get("name").asText()).isEqualTo("Export tab");
+        assertThat(tabs.get(0).get("tags").get(0).asText()).isEqualTo("test");
+        assertThat(tabs.get(0).get("recipeIds").get(0).asText()).isEqualTo(soupId);
+        assertThat(tabs.get(0).get("librarySlugs").get(0).asText()).isEqualTo("shakshuka");
+        assertThat(tabs.get(0).get("picture").asText()).isEqualTo(base64(jpeg));
+        assertThat(tabs.get(0).get("isDefault").asBoolean()).isTrue();
+        assertThat(tabs.get(1).has("picture")).isFalse();
+        assertThat(tabs.get(1).has("isDefault")).isFalse();
 
         String target = accessToken(createUser());
         JsonNode report = importInto(api, target, exported, 200);
         assertThat(report.get("sourceVersion").asInt()).isEqualTo(ExportUpgrader.CURRENT_VERSION);
         assertThat(report.get("recipes").asInt()).isEqualTo(2);
+        assertThat(report.get("recipeCollections").asInt()).isEqualTo(2);
         assertThat(report.get("plannedMeals").asInt()).isEqualTo(3);
         assertThat(report.get("shoppingLists").asInt()).isEqualTo(1);
         assertThat(report.get("mealLogs").asInt()).isEqualTo(3);
@@ -396,6 +429,37 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
     }
 
     @Test
+    void aRecipeTabAloneMakesAnAccountNotEmpty() {
+        TestUser withTab = new TestUser(port, objectMapper, jdbc);
+        withTab.ok(
+                HttpMethod.POST,
+                "/api/v1/recipe-collections",
+                Map.of("name", "Only a tab", "tags", List.of(), "recipeIds", List.of()));
+
+        assertThat(withTab.status(HttpMethod.POST, "/api/v1/account/import", fixture()))
+                .isEqualTo(409);
+        assertThat(withTab.ok(HttpMethod.GET, "/api/v1/recipes", null)).isEmpty();
+    }
+
+    @Test
+    void aLibraryRecipeMissingHereIsLeftOutOfItsTabs() {
+        TestUser target = new TestUser(port, objectMapper, jdbc);
+        ObjectNode document = fixture("export/v10.json");
+        ((ArrayNode) document.get("recipeCollections").get(0).get("librarySlugs")).add("retired-recipe");
+
+        JsonNode report = target.ok(HttpMethod.POST, "/api/v1/account/import", document);
+
+        assertThat(report.get("recipeCollections").asInt()).isEqualTo(2);
+        assertThat(report.get("warnings").get(0).asText())
+                .isEqualTo("Library recipe \"retired-recipe\" is not in this instance's library:"
+                        + " 1 recipe tab kept without it.");
+        assertThat(target.ok(HttpMethod.GET, "/api/v1/recipe-collections", null)
+                        .get(0)
+                        .get("recipeIds"))
+                .hasSize(2);
+    }
+
+    @Test
     void refusesToImportIntoAnAccountWithData() {
         RestClient api = api();
         String token = accessToken(createUser());
@@ -550,6 +614,13 @@ class AccountEndpointTests extends ApiIntegrationTestSupport {
         }
         copy.get("mealPlans").forEach(plan -> plan.get("entries").forEach(entry -> relink(entry, ids)));
         copy.get("mealLogs").forEach(log -> relink(log, ids));
+        copy.get("recipeCollections").forEach(tab -> {
+            List<String> picks = new ArrayList<>();
+            tab.get("recipeIds").forEach(id -> picks.add(ids.get(id.asText())));
+            picks.sort(String::compareTo);
+            ArrayNode relinked = ((ObjectNode) tab).putArray("recipeIds");
+            picks.forEach(relinked::add);
+        });
         return copy;
     }
 

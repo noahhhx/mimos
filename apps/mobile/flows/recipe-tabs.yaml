@@ -1,0 +1,90 @@
+appId: io.github.noahhhx.mimos.debug
+---
+- addMedia:
+    - assets/tab-cover-2.jpg
+    - assets/tab-cover.jpg
+- runFlow: subflows/signed-in.yaml
+- tapOn: Recipes
+- assertVisible: My recipes \(0\)
+- assertNotVisible: Tabs
+- tapOn: \+ New tab
+- assertVisible: New tab
+- tapOn: Name
+- inputText: Mornings
+- hideKeyboard
+- tapOn: Choose a cover
+- tapOn:
+    text: Photo taken on.*
+    index: 0
+- assertVisible: Not saved yet
+- scrollUntilVisible:
+    element: New tag
+- tapOn: breakfast
+- assertVisible:
+    checked: true
+    containsChild: breakfast
+- scrollUntilVisible:
+    element: Open Recipes on this tab
+- tapOn: Open Recipes on this tab
+- scrollUntilVisible:
+    element: Create tab
+- tapOn: Create tab
+- assertVisible: Edit tab
+- assertVisible: Fluffy Buttermilk Pancakes
+- tapOn: \+ New tab
+- assertVisible: New tab
+- tapOn: Name
+- inputText: Weeknight soup
+- hideKeyboard
+- tapOn: Choose a cover
+- tapOn:
+    text: Photo taken on.*
+    index: 1
+- assertVisible: Not saved yet
+- scrollUntilVisible:
+    element: Find a recipe
+- tapOn: Find a recipe
+- inputText: Minestrone
+- hideKeyboard
+- tapOn:
+    text: Minestrone
+    index: 1
+- assertVisible: 1 recipe picked\.
+- scrollUntilVisible:
+    element: Create tab
+- tapOn: Create tab
+- assertVisible: Edit tab
+- assertVisible: Minestrone
+- swipe:
+    from: Library \(13\)
+    direction: RIGHT
+- tapOn: Tabs
+- assertVisible: 3 recipes · Default
+- assertVisible: 1 recipe
+- takeScreenshot: gallery
+- stopApp
+- launchApp
+- tapOn: Recipes
+- assertVisible: Edit tab
+- assertVisible: Fluffy Buttermilk Pancakes
+- tapOn: Edit tab
+- assertVisible: Edit tab
+- scrollUntilVisible:
+    element: Delete tab
+- tapOn: Delete tab
+- tapOn:
+    text: Delete
+    below: Delete “Mornings”\?
+- assertVisible: \+ New tab
+- assertVisible: 1 recipe
+- assertNotVisible: 3 recipes · Default
+- tapOn: Weeknight soup
+- tapOn: Edit tab
+- scrollUntilVisible:
+    element: Delete tab
+- tapOn: Delete tab
+- tapOn:
+    text: Delete
+    below: Delete “Weeknight soup”\?
+- assertVisible: No personal recipes yet.*
+- assertNotVisible: Tabs

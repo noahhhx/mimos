@@ -106,6 +106,7 @@ class ExportUpgraderTest {
             ObjectNode upgraded = ExportUpgrader.standard().upgrade(old).document();
 
             assertThat(upgraded.remove("version").asInt()).isEqualTo(ExportUpgrader.CURRENT_VERSION);
+            assertGainedNoRecipeCollections(upgraded);
             assertThat(upgraded.remove("trainingSessions")).isEmpty();
             assertEveryRecipeGainedNoPictures(upgraded);
             old.remove("version");
@@ -123,6 +124,7 @@ class ExportUpgraderTest {
         ObjectNode upgraded = ExportUpgrader.standard().upgrade(v4).document();
 
         assertThat(upgraded.remove("version").asInt()).isEqualTo(ExportUpgrader.CURRENT_VERSION);
+        assertGainedNoRecipeCollections(upgraded);
         assertThat(upgraded.remove("trainingSessions")).isEmpty();
         assertThat(upgraded.has("fuelProfile")).isFalse();
         assertEveryRecipeGainedNoPictures(upgraded);
@@ -140,6 +142,7 @@ class ExportUpgraderTest {
         ObjectNode upgraded = ExportUpgrader.standard().upgrade(v5).document();
 
         assertThat(upgraded.remove("version").asInt()).isEqualTo(ExportUpgrader.CURRENT_VERSION);
+        assertGainedNoRecipeCollections(upgraded);
         assertThat(upgraded.get("recipes")).hasSize(4);
         assertEveryRecipeGainedNoPictures(upgraded);
         v5.remove("version");
@@ -156,6 +159,7 @@ class ExportUpgraderTest {
         ObjectNode upgraded = ExportUpgrader.standard().upgrade(v6).document();
 
         assertThat(upgraded.remove("version").asInt()).isEqualTo(ExportUpgrader.CURRENT_VERSION);
+        assertGainedNoRecipeCollections(upgraded);
         v6.remove("version");
         assertThat(upgraded).isEqualTo(v6);
     }
@@ -170,6 +174,7 @@ class ExportUpgraderTest {
         ObjectNode upgraded = ExportUpgrader.standard().upgrade(v7).document();
 
         assertThat(upgraded.remove("version").asInt()).isEqualTo(ExportUpgrader.CURRENT_VERSION);
+        assertGainedNoRecipeCollections(upgraded);
         v7.remove("version");
         assertThat(upgraded).isEqualTo(v7);
     }
@@ -184,8 +189,31 @@ class ExportUpgraderTest {
         ObjectNode upgraded = ExportUpgrader.standard().upgrade(v8).document();
 
         assertThat(upgraded.remove("version").asInt()).isEqualTo(ExportUpgrader.CURRENT_VERSION);
+        assertGainedNoRecipeCollections(upgraded);
         v8.remove("version");
         assertThat(upgraded).isEqualTo(v8);
+    }
+
+    @Test
+    void version9GainsAnEmptyRecipeCollectionsSection() throws IOException {
+        ObjectNode v9;
+        try (InputStream in = new ClassPathResource("export/v9.json").getInputStream()) {
+            v9 = (ObjectNode) MAPPER.readTree(in);
+        }
+
+        ObjectNode upgraded = ExportUpgrader.standard().upgrade(v9).document();
+
+        assertThat(upgraded.remove("version").asInt()).isEqualTo(ExportUpgrader.CURRENT_VERSION);
+        assertGainedNoRecipeCollections(upgraded);
+        v9.remove("version");
+        assertThat(upgraded).isEqualTo(v9);
+    }
+
+    private static void assertGainedNoRecipeCollections(ObjectNode upgraded) {
+        JsonNode collections = upgraded.remove("recipeCollections");
+        assertThat(collections).isNotNull();
+        assertThat(collections.isArray()).isTrue();
+        assertThat(collections).isEmpty();
     }
 
     /** Checks each recipe now has an empty pictures list, then takes it off so the rest can be compared. */

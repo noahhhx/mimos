@@ -643,6 +643,49 @@ export type RecipePicture = {
 };
 
 /**
+ * A recipe tab of the household (ADR-0036). Its recipes are the ones picked into it and every recipe carrying any of its tags, among the household's recipes and the library.
+ *
+ */
+export type RecipeCollection = {
+    id: string;
+    /**
+     * Unique in the household, ignoring case.
+     */
+    name: string;
+    /**
+     * Lowercase; a recipe with any of them is in the tab.
+     */
+    tags: Array<string>;
+    /**
+     * The recipes picked into the tab, personal or library, as a set.
+     */
+    recipeIds: Array<string>;
+    /**
+     * The tab's picture, served by getRecipeCollectionPicture. Absent when it has none.
+     *
+     */
+    pictureId?: string;
+    /**
+     * True when this is the caller's own default tab, which their Recipes page opens on.
+     */
+    isDefault: boolean;
+    /**
+     * How many recipes the tab holds, picked or by tag.
+     */
+    recipeCount: number;
+    createdAt: string;
+};
+
+/**
+ * A recipe tab as submitted. Its picture and the default are set by their own operations.
+ */
+export type RecipeCollectionInput = {
+    name: string;
+    tags: Array<string>;
+    recipeIds: Array<string>;
+};
+
+/**
  * A personal recipe as submitted by its author.
  */
 export type RecipeInput = {
@@ -1070,13 +1113,13 @@ export type DailyLogSummary = {
 };
 
 /**
- * One person's data, in export format version 9 (ADR-0011, ADR-0019, ADR-0022, ADR-0023, ADR-0026, ADR-0027, ADR-0035). Any change to this schema, or to what a section holds, bumps the version and adds an upgrade step from the previous one.
+ * One person's data, in export format version 10 (ADR-0011, ADR-0019, ADR-0022, ADR-0023, ADR-0026, ADR-0027, ADR-0035, ADR-0036). Any change to this schema, or to what a section holds, bumps the version and adds an upgrade step from the previous one.
  *
  */
 export type AccountExport = {
     format: 'mimos.export';
     /**
-     * The format version. This instance exports version 9.
+     * The format version. This instance exports version 10.
      */
     version: number;
     exportedAt: string;
@@ -1088,6 +1131,10 @@ export type AccountExport = {
      * The household's personal recipes.
      */
     recipes: Array<ExportedRecipe>;
+    /**
+     * The household's recipe tabs, oldest first.
+     */
+    recipeCollections: Array<ExportedRecipeCollection>;
     /**
      * The weeks the exporter eats a planned meal in, with only those meals. Who else ate a meal is not exported.
      *
@@ -1182,6 +1229,28 @@ export type ExportedRecipePicture = {
 };
 
 /**
+ * A recipe tab. Its picked recipes are `recipeIds`, recipes in this document's `recipes`, and `librarySlugs`, library recipes; the recipes its tags gather are not listed, since import gathers them again.
+ *
+ */
+export type ExportedRecipeCollection = {
+    name: string;
+    tags: Array<string>;
+    recipeIds: Array<string>;
+    librarySlugs: Array<string>;
+    /**
+     * The tab's picture, base64-encoded; absent when it has none. Import checks it like an upload.
+     *
+     */
+    picture?: string;
+    /**
+     * True on the one tab the exporter opens Recipes on; absent on the others. Import makes it the importer's default.
+     *
+     */
+    isDefault?: boolean;
+    createdAt: string;
+};
+
+/**
  * A week of planned meals, keyed by its Monday.
  */
 export type ExportedMealPlan = {
@@ -1270,6 +1339,10 @@ export type ImportReport = {
      */
     recipes: number;
     /**
+     * Recipe tabs imported.
+     */
+    recipeCollections: number;
+    /**
      * Planned meals imported.
      */
     plannedMeals: number;
@@ -1307,6 +1380,8 @@ export type IntervalsIcuConnectionInputWritable = {
 };
 
 export type RecipeId = string;
+
+export type CollectionId = string;
 
 export type RecipeSlug = string;
 
@@ -2518,6 +2593,370 @@ export type ListLibraryRecipesResponses = {
 };
 
 export type ListLibraryRecipesResponse = ListLibraryRecipesResponses[keyof ListLibraryRecipesResponses];
+
+export type ListRecipeCollectionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/recipe-collections';
+};
+
+export type ListRecipeCollectionsErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+};
+
+export type ListRecipeCollectionsError = ListRecipeCollectionsErrors[keyof ListRecipeCollectionsErrors];
+
+export type ListRecipeCollectionsResponses = {
+    /**
+     * The household's tabs, oldest first.
+     */
+    200: Array<RecipeCollection>;
+};
+
+export type ListRecipeCollectionsResponse = ListRecipeCollectionsResponses[keyof ListRecipeCollectionsResponses];
+
+export type CreateRecipeCollectionData = {
+    body: RecipeCollectionInput;
+    path?: never;
+    query?: never;
+    url: '/api/v1/recipe-collections';
+};
+
+export type CreateRecipeCollectionErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    409: Problem;
+};
+
+export type CreateRecipeCollectionError = CreateRecipeCollectionErrors[keyof CreateRecipeCollectionErrors];
+
+export type CreateRecipeCollectionResponses = {
+    /**
+     * The created tab.
+     */
+    201: RecipeCollection;
+};
+
+export type CreateRecipeCollectionResponse = CreateRecipeCollectionResponses[keyof CreateRecipeCollectionResponses];
+
+export type DeleteRecipeCollectionData = {
+    body?: never;
+    path: {
+        collectionId: string;
+    };
+    query?: never;
+    url: '/api/v1/recipe-collections/{collectionId}';
+};
+
+export type DeleteRecipeCollectionErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type DeleteRecipeCollectionError = DeleteRecipeCollectionErrors[keyof DeleteRecipeCollectionErrors];
+
+export type DeleteRecipeCollectionResponses = {
+    /**
+     * Deleted.
+     */
+    204: void;
+};
+
+export type DeleteRecipeCollectionResponse = DeleteRecipeCollectionResponses[keyof DeleteRecipeCollectionResponses];
+
+export type GetRecipeCollectionData = {
+    body?: never;
+    path: {
+        collectionId: string;
+    };
+    query?: never;
+    url: '/api/v1/recipe-collections/{collectionId}';
+};
+
+export type GetRecipeCollectionErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type GetRecipeCollectionError = GetRecipeCollectionErrors[keyof GetRecipeCollectionErrors];
+
+export type GetRecipeCollectionResponses = {
+    /**
+     * The tab.
+     */
+    200: RecipeCollection;
+};
+
+export type GetRecipeCollectionResponse = GetRecipeCollectionResponses[keyof GetRecipeCollectionResponses];
+
+export type ReplaceRecipeCollectionData = {
+    body: RecipeCollectionInput;
+    path: {
+        collectionId: string;
+    };
+    query?: never;
+    url: '/api/v1/recipe-collections/{collectionId}';
+};
+
+export type ReplaceRecipeCollectionErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    409: Problem;
+};
+
+export type ReplaceRecipeCollectionError = ReplaceRecipeCollectionErrors[keyof ReplaceRecipeCollectionErrors];
+
+export type ReplaceRecipeCollectionResponses = {
+    /**
+     * The replaced tab.
+     */
+    200: RecipeCollection;
+};
+
+export type ReplaceRecipeCollectionResponse = ReplaceRecipeCollectionResponses[keyof ReplaceRecipeCollectionResponses];
+
+export type ListRecipeCollectionRecipesData = {
+    body?: never;
+    path: {
+        collectionId: string;
+    };
+    query?: {
+        /**
+         * Case-insensitive filter on title, description, tags, and ingredient names.
+         */
+        q?: string;
+    };
+    url: '/api/v1/recipe-collections/{collectionId}/recipes';
+};
+
+export type ListRecipeCollectionRecipesErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type ListRecipeCollectionRecipesError = ListRecipeCollectionRecipesErrors[keyof ListRecipeCollectionRecipesErrors];
+
+export type ListRecipeCollectionRecipesResponses = {
+    /**
+     * The tab's recipes.
+     */
+    200: Array<RecipeSummary>;
+};
+
+export type ListRecipeCollectionRecipesResponse = ListRecipeCollectionRecipesResponses[keyof ListRecipeCollectionRecipesResponses];
+
+export type ClearDefaultRecipeCollectionData = {
+    body?: never;
+    path: {
+        collectionId: string;
+    };
+    query?: never;
+    url: '/api/v1/recipe-collections/{collectionId}/default';
+};
+
+export type ClearDefaultRecipeCollectionErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type ClearDefaultRecipeCollectionError = ClearDefaultRecipeCollectionErrors[keyof ClearDefaultRecipeCollectionErrors];
+
+export type ClearDefaultRecipeCollectionResponses = {
+    /**
+     * It is not the caller's default.
+     */
+    204: void;
+};
+
+export type ClearDefaultRecipeCollectionResponse = ClearDefaultRecipeCollectionResponses[keyof ClearDefaultRecipeCollectionResponses];
+
+export type SetDefaultRecipeCollectionData = {
+    body?: never;
+    path: {
+        collectionId: string;
+    };
+    query?: never;
+    url: '/api/v1/recipe-collections/{collectionId}/default';
+};
+
+export type SetDefaultRecipeCollectionErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type SetDefaultRecipeCollectionError = SetDefaultRecipeCollectionErrors[keyof SetDefaultRecipeCollectionErrors];
+
+export type SetDefaultRecipeCollectionResponses = {
+    /**
+     * It is the caller's default.
+     */
+    204: void;
+};
+
+export type SetDefaultRecipeCollectionResponse = SetDefaultRecipeCollectionResponses[keyof SetDefaultRecipeCollectionResponses];
+
+export type DeleteRecipeCollectionPictureData = {
+    body?: never;
+    path: {
+        collectionId: string;
+    };
+    query?: never;
+    url: '/api/v1/recipe-collections/{collectionId}/picture';
+};
+
+export type DeleteRecipeCollectionPictureErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type DeleteRecipeCollectionPictureError = DeleteRecipeCollectionPictureErrors[keyof DeleteRecipeCollectionPictureErrors];
+
+export type DeleteRecipeCollectionPictureResponses = {
+    /**
+     * The tab has no picture.
+     */
+    204: void;
+};
+
+export type DeleteRecipeCollectionPictureResponse = DeleteRecipeCollectionPictureResponses[keyof DeleteRecipeCollectionPictureResponses];
+
+export type SetRecipeCollectionPictureData = {
+    body: {
+        file: Blob | File;
+    };
+    path: {
+        collectionId: string;
+    };
+    query?: never;
+    url: '/api/v1/recipe-collections/{collectionId}/picture';
+};
+
+export type SetRecipeCollectionPictureErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    400: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    413: Problem;
+};
+
+export type SetRecipeCollectionPictureError = SetRecipeCollectionPictureErrors[keyof SetRecipeCollectionPictureErrors];
+
+export type SetRecipeCollectionPictureResponses = {
+    /**
+     * The tab with its new pictureId.
+     */
+    200: RecipeCollection;
+};
+
+export type SetRecipeCollectionPictureResponse = SetRecipeCollectionPictureResponses[keyof SetRecipeCollectionPictureResponses];
+
+export type GetRecipeCollectionPictureData = {
+    body?: never;
+    path: {
+        collectionId: string;
+        /**
+         * The tab's current pictureId.
+         */
+        pictureId: string;
+    };
+    query?: never;
+    url: '/api/v1/recipe-collections/{collectionId}/picture/{pictureId}';
+};
+
+export type GetRecipeCollectionPictureErrors = {
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    401: Problem;
+    /**
+     * An RFC 9457 problem-details error.
+     */
+    404: Problem;
+};
+
+export type GetRecipeCollectionPictureError = GetRecipeCollectionPictureErrors[keyof GetRecipeCollectionPictureErrors];
+
+export type GetRecipeCollectionPictureResponses = {
+    /**
+     * The image.
+     */
+    200: Blob | File;
+};
+
+export type GetRecipeCollectionPictureResponse = GetRecipeCollectionPictureResponses[keyof GetRecipeCollectionPictureResponses];
 
 export type ListPublicRecipesData = {
     body?: never;

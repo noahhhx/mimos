@@ -148,6 +148,18 @@ public class RecipeRepository {
         return loadAll(sql.text() + " order by title", sql.args());
     }
 
+    public List<Recipe> findAmong(Collection<UUID> ids, @Nullable String query) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        List<UUID> distinct = ids.stream().distinct().toList();
+        Sql sql = searchSql(" where id in (" + placeholders(distinct.size()) + ")", List.copyOf(distinct), query);
+        return loadAll(
+                sql.text() + " order by household_id is null, case when household_id is not null then created_at end"
+                        + " desc, title",
+                sql.args());
+    }
+
     public Optional<Recipe> findBySlug(String slug) {
         List<Recipe> found = loadAll(SELECT_BASE + " where slug = ?", List.of(slug));
         return found.isEmpty() ? Optional.empty() : Optional.of(found.getFirst());

@@ -1055,6 +1055,295 @@ paths:
         '401':
           $ref: '#/components/responses/Problem'
 
+  /api/v1/recipe-collections:
+    get:
+      tags: [recipe-collections]
+      operationId: listRecipeCollections
+      summary: The household's recipe tabs
+      description: >
+        The recipe collections ("tabs") the caller's household made, oldest
+        first. A tab holds the recipes picked into it (recipeIds) plus every
+        recipe carrying any of its tags, among the household's recipes and
+        the library; recipeCount counts them, and
+        listRecipeCollectionRecipes lists them. Everyone in the household
+        sees and edits the same tabs. isDefault is the caller's own choice:
+        each person may pick one tab to open Recipes on. A client opening
+        Recipes with no tab chosen opens the caller's default tab; without
+        one, a gallery of all tabs when there are any; and otherwise the
+        household's personal recipes.
+      responses:
+        '200':
+          description: The household's tabs, oldest first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipeCollection'
+        '401':
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [recipe-collections]
+      operationId: createRecipeCollection
+      summary: Create a recipe tab
+      description: >
+        Creates a tab for the caller's household. name is required, 1 to 60
+        characters after trimming, and unique in the household ignoring case
+        (a taken name is a 409). tags (at most 12, each at most 30
+        characters) are trimmed and lowercased, and match recipe tags
+        ignoring case. recipeIds picks recipes by id, from listMyRecipes or
+        listLibraryRecipes; an id that is not one of the household's recipes
+        or a library recipe is a 400. Either list may be empty, so a tab can
+        be made empty and filled later. A new tab has no picture and is
+        nobody's default.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeCollectionInput'
+      responses:
+        '201':
+          description: The created tab.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeCollection'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/recipe-collections/{collectionId}:
+    parameters:
+      - $ref: '#/components/parameters/CollectionId'
+    get:
+      tags: [recipe-collections]
+      operationId: getRecipeCollection
+      summary: One of the household's recipe tabs
+      description: >
+        The tab, with its tags, picked recipe ids, picture id, member count,
+        and whether it is the caller's default. List its recipes with
+        listRecipeCollectionRecipes.
+      responses:
+        '200':
+          description: The tab.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeCollection'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+    put:
+      tags: [recipe-collections]
+      operationId: replaceRecipeCollection
+      summary: Replace a recipe tab's name, tags, and picks
+      description: >
+        Replaces name, tags, and recipeIds with the rules of
+        createRecipeCollection, so send all three (read the tab first with
+        getRecipeCollection). The picture and everyone's default stay.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeCollectionInput'
+      responses:
+        '200':
+          description: The replaced tab.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeCollection'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+    delete:
+      tags: [recipe-collections]
+      operationId: deleteRecipeCollection
+      summary: Delete a recipe tab
+      description: >
+        Deletes the tab and its picture for the whole household. Its recipes
+        stay. Anyone who had it as their default has no default afterwards.
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/recipe-collections/{collectionId}/recipes:
+    parameters:
+      - $ref: '#/components/parameters/CollectionId'
+    get:
+      tags: [recipe-collections]
+      operationId: listRecipeCollectionRecipes
+      summary: The recipes in a recipe tab
+      description: >
+        Every recipe that is picked into the tab or carries at least one of
+        its tags (ignoring case), from the household's personal recipes and
+        the library together; isLibrary tells them apart. A deleted recipe
+        drops out. Personal recipes come first, newest first, then library
+        recipes by title.
+      parameters:
+        - name: q
+          in: query
+          description: Case-insensitive filter on title, description, tags, and ingredient names.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The tab's recipes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipeSummary'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/recipe-collections/{collectionId}/default:
+    parameters:
+      - $ref: '#/components/parameters/CollectionId'
+    put:
+      tags: [recipe-collections]
+      operationId: setDefaultRecipeCollection
+      summary: Open Recipes on this tab, for the caller
+      description: >
+        Makes the tab the caller's default, the one their Recipes page opens
+        on, in place of any other they had. Only the caller's default
+        changes: others in the household keep their own. Setting the current
+        default again is not an error.
+      responses:
+        '204':
+          description: It is the caller's default.
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+    delete:
+      tags: [recipe-collections]
+      operationId: clearDefaultRecipeCollection
+      summary: Stop opening Recipes on this tab, for the caller
+      description: >
+        Clears the caller's default when it is this tab, so their Recipes
+        page opens on the gallery of tabs again. When the tab is not their
+        default, nothing changes and it is not an error.
+      responses:
+        '204':
+          description: It is not the caller's default.
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/recipe-collections/{collectionId}/picture:
+    parameters:
+      - $ref: '#/components/parameters/CollectionId'
+    put:
+      tags: [recipe-collections]
+      operationId: setRecipeCollectionPicture
+      x-mcp: false
+      summary: Set a recipe tab's picture
+      description: >
+        Uploads the tab's picture, shown on its tile in the gallery, sent as
+        the multipart part `file`: a JPEG, PNG, or WebP image of at most 2
+        MB, read from its bytes. A tab has at most one picture, so this
+        replaces any it had, under a new pictureId. Returns the tab.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: The tab with its new pictureId.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeCollection'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '413':
+          $ref: '#/components/responses/Problem'
+    delete:
+      tags: [recipe-collections]
+      operationId: deleteRecipeCollectionPicture
+      summary: Remove a recipe tab's picture
+      description: >
+        Removes the tab's picture, so its tile shows its name alone.
+        Removing a picture from a tab that has none is not an error.
+      responses:
+        '204':
+          description: The tab has no picture.
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/recipe-collections/{collectionId}/picture/{pictureId}:
+    parameters:
+      - $ref: '#/components/parameters/CollectionId'
+      - name: pictureId
+        in: path
+        required: true
+        description: The tab's current pictureId.
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [recipe-collections]
+      operationId: getRecipeCollectionPicture
+      x-mcp: false
+      summary: The image of a recipe tab's picture
+      description: >
+        The image of the tab's picture, as it was uploaded. A replaced
+        picture gets a new id and the old one is a 404, so the response may
+        be cached privately for a year.
+      responses:
+        '200':
+          description: The image.
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+
   /api/v1/public/recipes:
     get:
       tags: [public]
@@ -1656,6 +1945,13 @@ components:
   parameters:
     RecipeId:
       name: recipeId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CollectionId:
+      name: collectionId
       in: path
       required: true
       schema:
@@ -2447,6 +2743,62 @@ components:
         id:
           type: string
           format: uuid
+    RecipeCollection:
+      type: object
+      description: >
+        A recipe tab of the household (ADR-0036). Its recipes are the ones
+        picked into it and every recipe carrying any of its tags, among the
+        household's recipes and the library.
+      required: [id, name, tags, recipeIds, isDefault, recipeCount, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: Unique in the household, ignoring case.
+        tags:
+          type: array
+          description: Lowercase; a recipe with any of them is in the tab.
+          items:
+            type: string
+        recipeIds:
+          type: array
+          description: The recipes picked into the tab, personal or library, as a set.
+          items:
+            type: string
+            format: uuid
+        pictureId:
+          type: string
+          format: uuid
+          description: >
+            The tab's picture, served by getRecipeCollectionPicture. Absent
+            when it has none.
+        isDefault:
+          type: boolean
+          description: True when this is the caller's own default tab, which their Recipes page opens on.
+        recipeCount:
+          type: integer
+          description: How many recipes the tab holds, picked or by tag.
+        createdAt:
+          type: string
+          format: date-time
+    RecipeCollectionInput:
+      type: object
+      description: A recipe tab as submitted. Its picture and the default are set by their own operations.
+      required: [name, tags, recipeIds]
+      properties:
+        name:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        recipeIds:
+          type: array
+          items:
+            type: string
+            format: uuid
     RecipeInput:
       type: object
       description: A personal recipe as submitted by its author.
@@ -2970,17 +3322,18 @@ components:
     AccountExport:
       type: object
       description: >
-        One person's data, in export format version 9 (ADR-0011, ADR-0019, ADR-0022, ADR-0023, ADR-0026, ADR-0027, ADR-0035).
+        One person's data, in export format version 10 (ADR-0011, ADR-0019, ADR-0022, ADR-0023, ADR-0026, ADR-0027, ADR-0035, ADR-0036).
         Any change to this schema, or to what a section holds, bumps the
         version and adds an upgrade step from the previous one.
-      required: [format, version, exportedAt, ingredients, recipes, mealPlans, shoppingLists, mealLogs, trainingSessions]
+      required:
+        [format, version, exportedAt, ingredients, recipes, recipeCollections, mealPlans, shoppingLists, mealLogs, trainingSessions]
       properties:
         format:
           type: string
           enum: [mimos.export]
         version:
           type: integer
-          description: The format version. This instance exports version 9.
+          description: The format version. This instance exports version 10.
         exportedAt:
           type: string
           format: date-time
@@ -2994,6 +3347,11 @@ components:
           description: The household's personal recipes.
           items:
             $ref: '#/components/schemas/ExportedRecipe'
+        recipeCollections:
+          type: array
+          description: The household's recipe tabs, oldest first.
+          items:
+            $ref: '#/components/schemas/ExportedRecipeCollection'
         mealPlans:
           type: array
           description: >
@@ -3140,6 +3498,44 @@ components:
         data:
           type: string
           format: byte
+    ExportedRecipeCollection:
+      type: object
+      description: >
+        A recipe tab. Its picked recipes are `recipeIds`, recipes in this
+        document's `recipes`, and `librarySlugs`, library recipes; the
+        recipes its tags gather are not listed, since import gathers them
+        again.
+      required: [name, tags, recipeIds, librarySlugs, createdAt]
+      properties:
+        name:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        recipeIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        librarySlugs:
+          type: array
+          items:
+            type: string
+        picture:
+          type: string
+          format: byte
+          description: >
+            The tab's picture, base64-encoded; absent when it has none.
+            Import checks it like an upload.
+        isDefault:
+          type: boolean
+          description: >
+            True on the one tab the exporter opens Recipes on; absent on the
+            others. Import makes it the importer's default.
+        createdAt:
+          type: string
+          format: date-time
     ExportedMealPlan:
       type: object
       description: A week of planned meals, keyed by its Monday.
@@ -3247,7 +3643,8 @@ components:
     ImportReport:
       type: object
       description: The outcome of an import.
-      required: [sourceVersion, recipes, plannedMeals, shoppingLists, mealLogs, fuelProfile, trainingSessions, warnings]
+      required:
+        [sourceVersion, recipes, recipeCollections, plannedMeals, shoppingLists, mealLogs, fuelProfile, trainingSessions, warnings]
       properties:
         sourceVersion:
           type: integer
@@ -3255,6 +3652,9 @@ components:
         recipes:
           type: integer
           description: Personal recipes imported.
+        recipeCollections:
+          type: integer
+          description: Recipe tabs imported.
         plannedMeals:
           type: integer
           description: Planned meals imported.

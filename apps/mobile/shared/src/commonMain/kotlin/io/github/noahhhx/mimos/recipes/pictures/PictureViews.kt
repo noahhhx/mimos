@@ -84,29 +84,38 @@ fun SavedPicture(
     height: Dp,
     widest: Dp,
 ) {
-    val image by
-        produceState<ImageBitmap?>(null, recipeId, pictureId) {
-            value =
-                try {
-                    decode(pictures.image(recipeId, pictureId))
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (_: Exception) {
-                    // The network failed: the frame stays empty, as on the web.
-                    null
-                }
-        }
+    val image = rememberSavedImage(pictureId) { pictures.image(recipeId, pictureId) }
     PictureFrame(image, description, height, widest)
 }
 
-/** A picture not uploaded yet, decoded from its bytes. */
 @Composable
 fun NewPicture(prepared: PreparedPicture, description: String, height: Dp, widest: Dp) {
+    PictureFrame(rememberNewImage(prepared), description, height, widest)
+}
+
+@Composable
+fun rememberSavedImage(pictureId: String, load: suspend () -> ByteArray): ImageBitmap? {
+    val image by
+        produceState<ImageBitmap?>(null, pictureId) {
+            value =
+                try {
+                    decode(load())
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    null
+                }
+        }
+    return image
+}
+
+@Composable
+fun rememberNewImage(prepared: PreparedPicture): ImageBitmap? {
     val image by
         produceState<ImageBitmap?>(null, prepared) {
             value = runCatching { decode(prepared.jpeg) }.getOrNull()
         }
-    PictureFrame(image, description, height, widest)
+    return image
 }
 
 /**

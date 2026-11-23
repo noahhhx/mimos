@@ -14,6 +14,8 @@ import io.github.noahhhx.mimos.planning.plan.PlannedItem;
 import io.github.noahhhx.mimos.planning.plan.PlannedMeal;
 import io.github.noahhhx.mimos.planning.shopping.ShoppingList;
 import io.github.noahhhx.mimos.planning.shopping.ShoppingListService;
+import io.github.noahhhx.mimos.recipes.collection.RecipeCollection;
+import io.github.noahhhx.mimos.recipes.collection.RecipeCollectionService;
 import io.github.noahhhx.mimos.recipes.recipe.IngredientService;
 import io.github.noahhhx.mimos.recipes.recipe.Nutrition;
 import io.github.noahhhx.mimos.recipes.recipe.Recipe;
@@ -27,6 +29,7 @@ import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -39,6 +42,7 @@ import org.openapitools.model.ExportedMealLog;
 import org.openapitools.model.ExportedMealPlan;
 import org.openapitools.model.ExportedPlanEntry;
 import org.openapitools.model.ExportedRecipe;
+import org.openapitools.model.ExportedRecipeCollection;
 import org.openapitools.model.ExportedRecipePicture;
 import org.openapitools.model.ExportedShoppingList;
 import org.openapitools.model.ExportedShoppingListItem;
@@ -61,6 +65,7 @@ public class AccountExporter {
 
     private final RecipeService recipes;
     private final RecipePictureService pictures;
+    private final RecipeCollectionService collections;
     private final IngredientService ingredients;
     private final MealPlanService mealPlans;
     private final ShoppingListService shoppingLists;
@@ -71,6 +76,7 @@ public class AccountExporter {
     public AccountExporter(
             RecipeService recipes,
             RecipePictureService pictures,
+            RecipeCollectionService collections,
             IngredientService ingredients,
             MealPlanService mealPlans,
             ShoppingListService shoppingLists,
@@ -79,6 +85,7 @@ public class AccountExporter {
             Clock clock) {
         this.recipes = recipes;
         this.pictures = pictures;
+        this.collections = collections;
         this.ingredients = ingredients;
         this.mealPlans = mealPlans;
         this.shoppingLists = shoppingLists;
@@ -98,6 +105,7 @@ public class AccountExporter {
                 .toList();
         List<ShoppingList> lists = shoppingLists.findAll(householdId);
         List<MealLog> logs = mealLogs.findAll(exporter.id());
+        List<RecipeCollection> tabs = collections.list(householdId, exporter.id());
 
         Set<UUID> ownedIds = owned.stream().map(Recipe::id).collect(Collectors.toSet());
         Map<UUID, String> librarySlugs = librarySlugs(Stream.concat(
@@ -107,7 +115,9 @@ public class AccountExporter {
                                 .filter(PlannedItem.Recipe.class::isInstance)
                                 .map(PlannedItem.Recipe.class::cast)
                                 .map(PlannedItem.Recipe::recipeId),
-                        logs.stream().map(MealLog::recipeId))
+                        Stream.concat(
+                                logs.stream().map(MealLog::recipeId),
+                                tabs.stream().flatMap(tab -> tab.recipeIds().stream())))
                 .filter(id -> id != null && !ownedIds.contains(id))
                 .collect(Collectors.toSet()));
 
@@ -125,6 +135,9 @@ public class AccountExporter {
                         .toList())
                 .recipes(owned.stream()
                         .map(recipe -> toExported(householdId, recipe))
+                        .toList())
+                .recipeCollections(tabs.stream()
+                        .map(tab -> toExported(householdId, tab, ownedIds, librarySlugs))
                         .toList())
                 .mealPlans(plans.stream()
                         .map(plan -> toExported(plan, ownedIds, librarySlugs))
@@ -188,6 +201,28 @@ public class AccountExporter {
                 .rating(recipe.rating())
                 .createdAt(toOffset(recipe.createdAt()))
                 .updatedAt(toOffset(recipe.updatedAt()));
+    }
+
+    private ExportedRecipeCollection toExported(
+            UUID householdId, RecipeCollection tab, Set<UUID> ownedIds, Map<UUID, String> librarySlugs) {
+        UUID pictureId = tab.pictureId();
+        return new ExportedRecipeCollection()
+                .name(tab.name())
+                .tags(tab.tags())
+                .recipeIds(tab.recipeIds().stream().filter(ownedIds::contains).toList())
+                .librarySlugs(tab.recipeIds().stream()
+                        .map(librarySlugs::get)
+                        .filter(Objects::nonNull)
+                        .sorted()
+                        .toList())
+                .picture(
+                        pictureId == null
+                                ? null
+                                : collections
+                                        .picture(householdId, tab.id(), pictureId)
+                                        .bytes())
+                .isDefault(tab.isDefault() ? true : null)
+                .createdAt(toOffset(tab.createdAt()));
     }
 
     /**

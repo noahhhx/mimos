@@ -24,6 +24,7 @@
         "mealLogs": 3,
         "fuelProfile": false,
         "trainingSessions": 0,
+        "recipeCollections": 0,
         "warnings": []
       },
       "expected": "Imported 2 recipes, 1 planned meal, no shopping lists, 3 logged meals, no fuel settings and no training sessions."
@@ -37,6 +38,7 @@
         "mealLogs": 0,
         "fuelProfile": true,
         "trainingSessions": 2,
+        "recipeCollections": 0,
         "warnings": ["A recipe's picture could not be read."]
       },
       "expected": "Imported no recipes, no planned meals, 1 shopping list, no logged meals, your fuel settings and 2 training sessions."
@@ -50,6 +52,7 @@
         "mealLogs": 1,
         "fuelProfile": false,
         "trainingSessions": 1,
+        "recipeCollections": 0,
         "warnings": []
       },
       "expected": "Imported 1 recipe, 12 planned meals, 2 shopping lists, 1 logged meal, no fuel settings and 1 training session."

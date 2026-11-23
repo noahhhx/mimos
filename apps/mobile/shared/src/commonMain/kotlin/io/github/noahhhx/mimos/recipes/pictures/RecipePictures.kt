@@ -21,32 +21,18 @@ class RecipePictures(
         api().deleteRecipePicture(recipeId, pictureId)
     }
 
-    override suspend fun upload(recipeId: String, jpeg: ByteArray): String {
-        // Spring reads a part as a file only when it names one.
-        val headers = Headers.build {
-            append(HttpHeaders.ContentType, ContentType.Image.JPEG.toString())
-            append(HttpHeaders.ContentDisposition, "filename=\"picture.jpg\"")
-        }
-        val file =
-            FormPart(
-                "file",
-                InputProvider(jpeg.size.toLong()) { buildPacket { writeFully(jpeg) } },
-                headers,
-            )
-        return api().addRecipePicture(recipeId, file).body().id
-    }
+    override suspend fun upload(recipeId: String, jpeg: ByteArray): String =
+        api().addRecipePicture(recipeId, jpegFilePart(jpeg)).body().id
 
-    /**
-     * A saved picture's image bytes. A picture never changes, so the most recently shown are kept
-     * in memory, up to [cacheBytes] in all, and a recipe shown again asks nothing. Called from the
-     * main thread only.
-     */
-    suspend fun image(recipeId: String, pictureId: String): ByteArray {
+    suspend fun image(recipeId: String, pictureId: String): ByteArray =
+        cached(pictureId) { api().getRecipePicture(recipeId, pictureId).response.readRawBytes() }
+
+    suspend fun cached(pictureId: String, fetch: suspend () -> ByteArray): ByteArray {
         cache.remove(pictureId)?.let {
             cache[pictureId] = it
             return it
         }
-        val bytes = api().getRecipePicture(recipeId, pictureId).response.readRawBytes()
+        val bytes = fetch()
         cache[pictureId] = bytes
         var total = cache.values.sumOf { it.size }
         val oldest = cache.keys.iterator()
@@ -63,4 +49,17 @@ class RecipePictures(
     companion object {
         const val CACHE_BYTES = 24 * 1024 * 1024
     }
+}
+
+fun jpegFilePart(jpeg: ByteArray): FormPart<InputProvider> {
+    // Spring reads a part as a file only when it names one.
+    val headers = Headers.build {
+        append(HttpHeaders.ContentType, ContentType.Image.JPEG.toString())
+        append(HttpHeaders.ContentDisposition, "filename=\"picture.jpg\"")
+    }
+    return FormPart(
+        "file",
+        InputProvider(jpeg.size.toLong()) { buildPacket { writeFully(jpeg) } },
+        headers,
+    )
 }
