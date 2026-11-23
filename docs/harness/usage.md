@@ -92,7 +92,10 @@ recipe gets two pictures, which load in a row above its description,
 re-encoded as JPEG and shrunk to 1600px; at phone width the row scrolls
 and the page does not; cancelling a removal keeps both, saving one
 leaves one, ADR-0023), `recipe-rating` (rates a recipe from its page,
-across a reload, and clears it, ADR-0035), `log-barcode` (logs 15 g of sugar by ingredient
+across a reload, and clears it, ADR-0035), `recipe-tabs` (a fresh account
+makes a tab with a picked recipe, a tag, and a cover, sees it in the
+gallery, makes it the default so Recipes opens on it, and deletes it,
+which brings back My recipes, ADR-0036), `log-barcode` (logs 15 g of sugar by ingredient
 search, then products from the scan dialog by typed barcode against the
 fake Open Food Facts: an unknown barcode, an outage, a serving size, and
 30 g of Nutella, while the camera is refused; then, with the camera
