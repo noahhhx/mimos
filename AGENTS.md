@@ -34,7 +34,7 @@ prose here.
 | Households | All shared data is keyed by household; meal logs stay per person (ADR-0019) |
 | Deploy | Published images on ghcr carry no deployment config; servers run `deploy/selfhost` (ADR-0012, ADR-0031) |
 | Visual design | Evening Kitchen: tokens in `apps/web/src/app/globals.css`, straight edges, no motion except the plugin wheel (ADR-0008) |
-| Docs | MkDocs Material, moving to Zensical before 2027-05-05; the site is the user guide only (ADR-0033) |
+| Docs | MkDocs Material; the site is the user guide only |
 
 ## Rules the repo does not enforce
 
