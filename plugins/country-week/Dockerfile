@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- build stage: install workspace deps (types only) and typecheck ----
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /build
 
 # Install with the workspace manifests first so the layer caches.
@@ -25,7 +25,7 @@ RUN npm run typecheck -w @mimos/country-week
 # sidecar; the SDK is type-only, so no node_modules at runtime. Each user's
 # wheel lives in a node:sqlite file under /data: mount a volume there
 # (ADR-0017).
-FROM node:22-alpine
+FROM node:26-alpine
 
 RUN addgroup --system --gid 1001 mimos \
  && adduser --system --uid 1001 --ingroup mimos --home /app mimos \

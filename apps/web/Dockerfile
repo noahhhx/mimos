@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- build stage ----
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /build
 
 # Install with the workspace manifests first so the layer caches.
@@ -26,7 +26,7 @@ COPY apps/web/ apps/web/
 RUN npm run build -w @mimos/web
 
 # ---- runtime stage ----
-FROM node:22-alpine
+FROM node:26-alpine
 
 RUN addgroup --system --gid 1001 mimos \
  && adduser --system --uid 1001 --ingroup mimos --home /app mimos

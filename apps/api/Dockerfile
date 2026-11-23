@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- build stage ----
-FROM maven:3.9-eclipse-temurin-21 AS build
+FROM maven:3.9-eclipse-temurin-26 AS build
 WORKDIR /build
 
 COPY pom.xml ./
@@ -24,7 +24,7 @@ RUN --mount=type=cache,target=/root/.m2 \
  && mvn -B -DskipTests package
 
 # ---- runtime stage ----
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:22-jre-jammy
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends curl \

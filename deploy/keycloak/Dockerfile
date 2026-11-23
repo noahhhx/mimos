@@ -6,7 +6,7 @@
 # The baked-in realm is the export minus its local test users, so a
 # published image never ships accounts with known passwords. The dev
 # compose stack mounts the full export over it.
-FROM node:22-alpine AS realm
+FROM node:26-alpine AS realm
 WORKDIR /realm
 COPY deploy/keycloak/mimos-realm.json ./
 RUN node -e 'const fs = require("node:fs"); \
@@ -14,7 +14,7 @@ RUN node -e 'const fs = require("node:fs"); \
   delete realm.users; \
   fs.writeFileSync("mimos-realm.json", JSON.stringify(realm, null, 2));'
 
-FROM quay.io/keycloak/keycloak:26.5
+FROM quay.io/keycloak/keycloak:26.8
 
 COPY deploy/keycloak/themes/mimos/ /opt/keycloak/themes/mimos/
 COPY apps/web/src/fonts/newsreader/ /opt/keycloak/themes/mimos/login/resources/fonts/newsreader/
