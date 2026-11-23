@@ -7,7 +7,8 @@
       "tools/**",
       "plugins/**",
       "libraries/**",
-      "!libraries/*/src/client",
+      "!libraries/api-client/src/client",
+      "!libraries/plugin-sdk/src",
       "!**/*.gen.ts",
       "!**/*.css",
       "!libraries/test-cases"
