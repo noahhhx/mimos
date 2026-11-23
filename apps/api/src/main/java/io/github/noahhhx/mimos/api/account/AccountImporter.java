@@ -199,7 +199,8 @@ public class AccountImporter {
         private final Map<UUID, UUID> recipeIds = new HashMap<>();
         /** Library slugs resolved so far; empty when the slug is not in this library. */
         private final Map<String, Optional<UUID>> librarySlugs = new HashMap<>();
-        private final Map<String, int[]> missingSlugs = new LinkedHashMap<>();
+
+        private final Map<String, MissingLibraryRecipe> missingSlugs = new LinkedHashMap<>();
         /** The export's own ingredient slugs to the slugs they were imported as. */
         private final Map<String, String> ingredientSlugs = new HashMap<>();
         /** Catalog slugs not in this instance's catalog, and the recipes that linked them. */
@@ -314,7 +315,7 @@ public class AccountImporter {
                 present(tab.getRecipeIds(), "recipeIds").forEach(id -> picks.add(imported(present(id, "recipeId"))));
                 for (String slug : present(tab.getLibrarySlugs(), "librarySlugs")) {
                     Optional<UUID> library = library(present(slug, "librarySlug"));
-                    library.ifPresentOrElse(picks::add, () -> missing(slug)[2]++);
+                    library.ifPresentOrElse(picks::add, () -> missing(slug).tabsKeptWithout++);
                 }
                 RecipeCollection restored = collections.restore(
                         household,
@@ -446,7 +447,7 @@ public class AccountImporter {
             String librarySlug = present(slug, "librarySlug");
             Optional<UUID> library = library(librarySlug);
             if (library.isEmpty()) {
-                missing(librarySlug)[0]++;
+                missing(librarySlug).plannedMealsSkipped++;
             }
             return library.map(PlannedItem.Recipe::new).orElse(null);
         }
@@ -479,7 +480,7 @@ public class AccountImporter {
             }
             Optional<UUID> library = library(slug);
             if (library.isEmpty()) {
-                missing(slug)[1]++;
+                missing(slug).loggedMealsUnlinked++;
             }
             return library.orElse(null);
         }
@@ -533,22 +534,22 @@ public class AccountImporter {
                     slug, key -> recipes.findBySlug(key).map(Recipe::id));
         }
 
-        private int[] missing(String slug) {
-            return missingSlugs.computeIfAbsent(slug, key -> new int[3]);
+        private MissingLibraryRecipe missing(String slug) {
+            return missingSlugs.computeIfAbsent(slug, key -> new MissingLibraryRecipe());
         }
 
         List<String> warnings() {
             List<String> warnings = new ArrayList<>();
             missingSlugs.forEach((slug, counts) -> {
                 List<String> effects = new ArrayList<>();
-                if (counts[0] > 0) {
-                    effects.add(count(counts[0], "planned meal") + " skipped");
+                if (counts.plannedMealsSkipped > 0) {
+                    effects.add(count(counts.plannedMealsSkipped, "planned meal") + " skipped");
                 }
-                if (counts[1] > 0) {
-                    effects.add(count(counts[1], "logged meal") + " kept without the recipe link");
+                if (counts.loggedMealsUnlinked > 0) {
+                    effects.add(count(counts.loggedMealsUnlinked, "logged meal") + " kept without the recipe link");
                 }
-                if (counts[2] > 0) {
-                    effects.add(count(counts[2], "recipe tab") + " kept without it");
+                if (counts.tabsKeptWithout > 0) {
+                    effects.add(count(counts.tabsKeptWithout, "recipe tab") + " kept without it");
                 }
                 warnings.add("Library recipe \"" + slug + "\" is not in this instance's library: "
                         + String.join(", ", effects) + ".");
@@ -657,6 +658,12 @@ public class AccountImporter {
             String separator = NESTED_PATH.matcher(message).lookingAt() ? "." : ": ";
             throw new IllegalArgumentException(path + separator + message, exception);
         }
+    }
+
+    private static final class MissingLibraryRecipe {
+        private int plannedMealsSkipped;
+        private int loggedMealsUnlinked;
+        private int tabsKeptWithout;
     }
 
     /** A required value the document left out (or set to null). */
