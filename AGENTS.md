@@ -38,11 +38,12 @@ prose here.
 
 ## Rules the repo does not enforce
 
-**Module seams.** Modules talk through public services, never each other's
-tables. Core modules take an opaque `ownerId` and know nothing about
-households; `apps/api` decides who that is. Plugins never see personal
-recipes, profiles, or logs. External API types never leave their
-`integrations/*` module.
+**Module seams.** `ArchitectureTest` in `apps/api` checks the Java side of
+the seams and the injected clocks and ids; it cannot read SQL. A module
+queries only its own tables. Core takes an opaque `ownerId` that `apps/api`
+sets to a household id, and the schema `apps/api` owns may name that
+column `household_id`. Plugins never see personal recipes, profiles, or
+logs. External API types never leave their `integrations/*` module.
 
 **API contract.** From the first app release `/api/v1` is additive only.
 CI's contract check misses a `$ref` swapped to another schema and a new
@@ -56,8 +57,7 @@ the seed files and a restart, never Flyway (ADR-0005). Any change to what
 the account export holds bumps its version with an `ExportUpgrader` step
 and a frozen `export/v<N>.json` fixture (ADR-0011).
 
-**Domain code.** Clocks and randomness are injected (`TimeConfig`), never
-read directly. Domain errors map to problem details once, in
+**Domain code.** Domain errors map to problem details once, in
 `ApiExceptionHandler`. An error raised in the security chain must reach
 `RequestLoggingFilter.recordFailure`, or its log line cannot name it.
 
