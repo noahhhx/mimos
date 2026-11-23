@@ -6,6 +6,7 @@ import type { RecipeCollection, RecipeCollectionInput } from "@mimos/api-client"
 import {
   landingTab,
   normalizeTag,
+  pickedFirst,
   saveTab,
   tabDraftOf,
   tabFromParam,
@@ -31,6 +32,31 @@ describe("landingTab", () => {
 
   it("opens the caller's default tab", () => {
     assert.deepEqual(landingTab([tab("a"), tab("b", true)]), { kind: "collection", id: "b" });
+  });
+});
+
+describe("pickedFirst", () => {
+  const recipes = [{ id: "a" }, { id: "b" }, { id: "c" }, { id: "d" }];
+
+  it("lists the picked recipes first, each group in its original order", () => {
+    assert.deepEqual(
+      pickedFirst(recipes, ["d", "b"]).map((r) => r.id),
+      ["b", "d", "a", "c"],
+    );
+  });
+
+  it("keeps the order when nothing is picked", () => {
+    assert.deepEqual(
+      pickedFirst(recipes, []).map((r) => r.id),
+      ["a", "b", "c", "d"],
+    );
+  });
+
+  it("ignores picks that are not in the list", () => {
+    assert.deepEqual(
+      pickedFirst(recipes, ["gone", "c"]).map((r) => r.id),
+      ["c", "a", "b", "d"],
+    );
   });
 });
 

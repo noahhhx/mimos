@@ -25,6 +25,7 @@ import { preparePicture } from "@/lib/prepare-picture";
 import {
   MAX_NAME,
   normalizeTag,
+  pickedFirst,
   saveTab,
   tabDraftOf,
   tagChoices,
@@ -76,11 +77,9 @@ export function RecipeTabForm({ initial }: { initial?: RecipeCollection }) {
   const setDraft = (next: typeof draft) => setProgress((current) => ({ ...current, draft: next }));
 
   useEffect(() => {
-    const picked = new Set(initial?.recipeIds ?? []);
     void Promise.all([listMyRecipes({ client: apiClient }), listLibraryRecipes({ client: apiClient })]).then(
       ([mine, library]) => {
-        const all = [...(mine.data ?? []), ...(library.data ?? [])];
-        setRecipes([...all.filter((r) => picked.has(r.id)), ...all.filter((r) => !picked.has(r.id))]);
+        setRecipes(pickedFirst([...(mine.data ?? []), ...(library.data ?? [])], initial?.recipeIds ?? []));
       },
     );
   }, [initial?.recipeIds]);

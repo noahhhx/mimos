@@ -91,6 +91,11 @@ export function togglePick(draft: TabDraft, recipeId: string): TabDraft {
     : { ...draft, recipeIds: [...draft.recipeIds, recipeId] };
 }
 
+export function pickedFirst<T extends { id: string }>(recipes: readonly T[], picked: readonly string[]): T[] {
+  const chosen = new Set(picked);
+  return [...recipes.filter((r) => chosen.has(r.id)), ...recipes.filter((r) => !chosen.has(r.id))];
+}
+
 export function tagChoices(recipes: readonly { tags: readonly string[] }[], chosen: readonly string[]): string[] {
   const tags = new Set(chosen);
   for (const recipe of recipes) {
