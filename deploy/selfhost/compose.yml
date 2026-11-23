@@ -35,7 +35,7 @@ services:
       start_period: 10s
 
   keycloak:
-    image: ghcr.io/noahhhx/mimos-keycloak:${MIMOS_VERSION:-main}
+    image: ghcr.io/noahhhx/mimos-keycloak:${MIMOS_VERSION:-latest}
     restart: unless-stopped
     # Production mode. The image's realm (no users) is imported on the first
     # start; after that the realm in the database is left alone, so manage
@@ -69,7 +69,7 @@ services:
       start_period: 60s
 
   api:
-    image: ghcr.io/noahhhx/mimos-api:${MIMOS_VERSION:-main}
+    image: ghcr.io/noahhhx/mimos-api:${MIMOS_VERSION:-latest}
     restart: unless-stopped
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mimos
@@ -106,7 +106,7 @@ services:
 
   # Reference plugin: reachable on the compose network only.
   country-week:
-    image: ghcr.io/noahhhx/mimos-country-week:${MIMOS_VERSION:-main}
+    image: ghcr.io/noahhhx/mimos-country-week:${MIMOS_VERSION:-latest}
     restart: unless-stopped
     volumes:
       # Each user's wheel (ADR-0017). Losing it forgets every wheel, nothing else.
@@ -119,7 +119,7 @@ services:
       start_period: 10s
 
   web:
-    image: ghcr.io/noahhhx/mimos-web:${MIMOS_VERSION:-main}
+    image: ghcr.io/noahhhx/mimos-web:${MIMOS_VERSION:-latest}
     restart: unless-stopped
     environment:
       MIMOS_APP_URL: ${WEB_ORIGIN}

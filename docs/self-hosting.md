@@ -16,9 +16,11 @@ checkout or build is needed.
 
 ## Tags
 
-- `main` follows the main branch. Every green push to main updates it.
-- `1.2.3`, `1.2` and `latest` come from release tags (`v1.2.3`).
-- `sha-<commit>` pins one exact build of main.
+Images are published only for releases. A release tag `v1.2.3` publishes:
+
+- `latest`, the newest release. This is the default.
+- `1.2`, the newest release in that minor line.
+- `1.2.3`, that exact release.
 
 Set the tag with `MIMOS_VERSION` in `.env`.
 

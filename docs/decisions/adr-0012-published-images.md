@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-02
+- Amended: 2026-11-23, main no longer publishes images
 - Supersedes: the build-time URL injection in
   [ADR-0004](adr-0004-frontend-auth-in-the-browser.md)
 
@@ -38,9 +39,11 @@ pointed at that machine's `localhost`.
   so `test`/`test2` exist only there.
 - **CI publishes four images to GHCR**: `mimos-api`, `mimos-web`,
   `mimos-keycloak`, `mimos-country-week`. They are published only after
-  every other CI job passes on a push. `main` publishes `main` and
-  `sha-<commit>`. A tag `v1.2.3` publishes `1.2.3`, `1.2` and `latest`.
-  Images are amd64 only.
+  every other CI job passes on a release tag: `v1.2.3` publishes `1.2.3`,
+  `1.2` and `latest`. Pushes to main publish nothing; until 2026-11-23 they
+  published `main` and `sha-<commit>`, which filled the registry with a
+  build per merge. `deploy/selfhost` now defaults to `latest`. Images are
+  amd64 only.
 - **`deploy/selfhost` runs the published images in production mode.** The
   compose file runs Keycloak with `start`, keeps its data in its own
   database on the same Postgres, sits behind the operator's reverse proxy
