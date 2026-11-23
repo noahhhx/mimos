@@ -52,14 +52,7 @@ public class RecipePictureService {
     public RecipePicture add(UUID ownerId, UUID recipeId, byte[] bytes) {
         repository.lockRecipe(recipeId);
         recipes.requireOwned(ownerId, recipeId);
-        if (bytes.length == 0) {
-            throw new IllegalArgumentException("a picture is required");
-        }
-        if (bytes.length > MAX_PICTURE_BYTES) {
-            throw new IllegalArgumentException("a picture can be at most " + MAX_PICTURE_BYTES / (1024 * 1024) + " MB");
-        }
-        PictureFormat format = ImageSniffer.detect(bytes)
-                .orElseThrow(() -> new IllegalArgumentException("a picture must be a JPEG, PNG, or WebP image"));
+        PictureFormat format = requirePicture(bytes);
         if (repository.count(recipeId) >= MAX_PICTURES) {
             throw new IllegalArgumentException("a recipe can have at most " + MAX_PICTURES + " pictures");
         }
@@ -67,6 +60,22 @@ public class RecipePictureService {
         repository.insert(recipeId, picture, clock.instant());
         store.put(picture.id(), bytes);
         return picture;
+    }
+
+    /**
+     * The format of a valid picture: at most {@link #MAX_PICTURE_BYTES}, and a
+     * JPEG, PNG, or WebP by its bytes. Recipe pictures and collection covers
+     * (ADR-0036) both pass through here.
+     */
+    public static PictureFormat requirePicture(byte[] bytes) {
+        if (bytes.length == 0) {
+            throw new IllegalArgumentException("a picture is required");
+        }
+        if (bytes.length > MAX_PICTURE_BYTES) {
+            throw new IllegalArgumentException("a picture can be at most " + MAX_PICTURE_BYTES / (1024 * 1024) + " MB");
+        }
+        return ImageSniffer.detect(bytes)
+                .orElseThrow(() -> new IllegalArgumentException("a picture must be a JPEG, PNG, or WebP image"));
     }
 
     /** Removes a picture from a personal recipe; the others keep their order. */

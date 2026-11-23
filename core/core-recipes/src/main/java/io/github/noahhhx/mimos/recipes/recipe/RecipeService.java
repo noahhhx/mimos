@@ -254,6 +254,15 @@ public class RecipeService {
         return repository.findBySlug(slug).filter(Recipe::isLibrary);
     }
 
+    /**
+     * The recipes among {@code recipeIds}, optionally filtered by a search
+     * term: personal ones newest first, then library ones by title. The
+     * caller decides which ids the viewer may see.
+     */
+    public List<Recipe> findAmong(java.util.Collection<UUID> recipeIds, @Nullable String query) {
+        return repository.findAmong(recipeIds, normalizeQuery(query));
+    }
+
     /** Loads several recipes at once (used by core-planning); missing ids are omitted. */
     public java.util.Map<UUID, Recipe> findByIds(java.util.Collection<UUID> recipeIds) {
         return repository.findByIds(recipeIds);

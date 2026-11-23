@@ -59,6 +59,8 @@ class McpEndpointTests extends ApiIntegrationTestSupport {
             "leaveHousehold",
             "addRecipePicture",
             "getRecipePicture",
+            "setRecipeCollectionPicture",
+            "getRecipeCollectionPicture",
             "connectMyIntervalsIcu",
             "disconnectMyIntervalsIcu");
 

@@ -11,17 +11,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.openapitools.api.RecipesApi;
 import org.openapitools.model.CatalogIngredient;
 import org.openapitools.model.IngredientInput;
 import org.openapitools.model.NutritionEstimate;
 import org.openapitools.model.NutritionEstimateInput;
-import org.openapitools.model.Person;
 import org.openapitools.model.RecipeDetail;
 import org.openapitools.model.RecipeInput;
 import org.openapitools.model.RecipeRatingInput;
@@ -44,31 +41,27 @@ public class RecipesController implements RecipesApi {
     private final IngredientService ingredients;
     private final CurrentUserService currentUser;
     private final IdentityService identity;
+    private final RecipeSummaries summaries;
 
     public RecipesController(
             RecipeService recipeService,
             RecipePictureService pictures,
             IngredientService ingredients,
             CurrentUserService currentUser,
-            IdentityService identity) {
+            IdentityService identity,
+            RecipeSummaries summaries) {
         this.recipeService = recipeService;
         this.pictures = pictures;
         this.ingredients = ingredients;
         this.currentUser = currentUser;
         this.identity = identity;
+        this.summaries = summaries;
     }
 
     @Override
     public ResponseEntity<List<RecipeSummary>> listMyRecipes(@Nullable String q) {
         UserProfileRecord profile = currentUser.requireProfile();
-        List<Recipe> recipes = recipeService.findOwned(profile.householdId(), q);
-        Map<UUID, String> names = identity.displayNames(recipes.stream()
-                .map(Recipe::createdByProfileId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet()));
-        return ResponseEntity.ok(recipes.stream()
-                .map(recipe -> RecipeApiMapper.toSummary(recipe).createdBy(creator(recipe, names, profile.id())))
-                .toList());
+        return ResponseEntity.ok(summaries.of(recipeService.findOwned(profile.householdId(), q), profile.id()));
     }
 
     @Override
@@ -115,17 +108,8 @@ public class RecipesController implements RecipesApi {
     private RecipeDetail detail(Recipe recipe, UUID callerId) {
         UUID creatorId = recipe.createdByProfileId();
         Map<UUID, String> names = creatorId == null ? Map.of() : identity.displayNames(Set.of(creatorId));
-        return RecipeApiMapper.toDetail(recipe, pictures.list(recipe.id())).createdBy(creator(recipe, names, callerId));
-    }
-
-    /** Who added a household recipe; null for library recipes and when the creator's profile is gone. */
-    private static @Nullable Person creator(Recipe recipe, Map<UUID, String> names, UUID callerId) {
-        UUID creatorId = recipe.createdByProfileId();
-        String name = creatorId == null ? null : names.get(creatorId);
-        if (creatorId == null || name == null) {
-            return null;
-        }
-        return new Person().id(creatorId).displayName(name).you(creatorId.equals(callerId));
+        return RecipeApiMapper.toDetail(recipe, pictures.list(recipe.id()))
+                .createdBy(RecipeSummaries.creator(recipe, names, callerId));
     }
 
     @Override
