@@ -24,7 +24,7 @@ tags:
 - scrollUntilVisible:
     element: Create recipe
 - tapOn: Create recipe
-- assertVisible: Your recipe
+- assertVisible: Your recipe · .*
 - tapOn: Profile
 - tapOn: Your data
 - assertVisible: Download export

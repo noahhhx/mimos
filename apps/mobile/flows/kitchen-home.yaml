@@ -34,7 +34,7 @@ appId: io.github.noahhhx.mimos.debug
     element: Start cooking
     direction: UP
 - tapOn: Start cooking
-- assertVisible: Ingredients
+- assertVisible: Ingredients · \d+
 - tapOn: Kitchen
 - tapOn: Swap meal
 - assertVisible: Remove from plan

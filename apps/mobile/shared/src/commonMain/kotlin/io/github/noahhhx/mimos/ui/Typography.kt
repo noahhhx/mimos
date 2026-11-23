@@ -54,7 +54,6 @@ data class MimosTypography(
      * A row ticked off by tapping it, as a shopping item or an ingredient is: 16, line height 1.4.
      */
     val tickRow: TextStyle,
-    val cook: TextStyle,
 )
 
 private val letterSpacedLabel = 0.12.em
@@ -159,7 +158,6 @@ internal fun rememberMimosTypography(): MimosTypography {
             input = body.copy(fontSize = 16.sp, lineHeight = 1.3.em),
             tab = body.copy(fontSize = 15.sp, lineHeight = 1.2.em),
             tickRow = body.copy(fontSize = 16.sp, lineHeight = 1.4.em),
-            cook = body.copy(fontSize = 20.sp, lineHeight = 1.4.em),
         )
     }
 }

@@ -75,7 +75,7 @@ appId: io.github.noahhhx.mimos.debug
     element: Create recipe
 - tapOn: Create recipe
 - assertVisible: ${output.title}
-- assertVisible: Your recipe
+- assertVisible: Your recipe · .*
 - takeScreenshot: created
 - tapOn: ← Recipes
 - tapOn: \+ New recipe

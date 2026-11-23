@@ -117,7 +117,6 @@ fun Gallery(theme: ThemeModel, brandMark: Painter, onClose: () -> Unit) {
         Label("Label, eyebrow and section heading")
         Text("Subheading, Newsreader 19 medium", style = type.subheading)
         Text("A ticked row: a shopping item or an ingredient, 16", style = type.tickRow)
-        Text("Cook text: ingredients and steps, 20", style = type.cook)
 
         Section("Buttons")
         Row(horizontalArrangement = Arrangement.spacedBy(MimosTheme.spacing.s)) {

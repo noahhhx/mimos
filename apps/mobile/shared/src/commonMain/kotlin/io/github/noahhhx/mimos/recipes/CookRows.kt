@@ -21,9 +21,15 @@ import io.github.noahhhx.mimos.ui.MimosTheme
 import io.github.noahhhx.mimos.ui.Text
 import io.github.noahhhx.mimos.ui.TickBox
 
+private val AMOUNT_WIDTH = 64.dp
+
+/** Figures line up down the amount column. */
+private const val TABULAR = "tnum"
+
 /**
- * One ingredient, ticked by tapping anywhere on its row. A line that is one of the household's
- * recipes is a link inside the row: tapping its name calls [onFollow] instead.
+ * One ingredient, ticked by tapping anywhere on its row: its amount in a column, its name beside
+ * it. A line that is one of the household's recipes is a link inside the row: tapping its name
+ * calls [onFollow] instead.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -34,40 +40,43 @@ fun IngredientRow(
     onFollow: (RecipeId) -> Unit,
 ) {
     val colors = MimosTheme.colors
-    val style = MimosTheme.typography.cook
+    val struck =
+        MimosTheme.typography.tickRow.copy(
+            textDecoration = if (checked) TextDecoration.LineThrough else TextDecoration.None
+        )
     val color = if (checked) colors.muted else colors.fg
-    val decoration = if (checked) TextDecoration.LineThrough else TextDecoration.None
-    val amount = formatQuantity(ingredient.quantity, ingredient.unit)
     val note = ingredient.note?.takeIf { it.isNotEmpty() }?.let { ", $it" } ?: ""
     Row(
         Modifier.fillMaxWidth()
             .toggleable(value = checked, role = Role.Checkbox, onValueChange = { onToggle() })
-            .padding(horizontal = MimosTheme.spacing.page, vertical = 10.dp),
+            .padding(horizontal = MimosTheme.spacing.page, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(MimosTheme.spacing.m),
         verticalAlignment = Alignment.Top,
     ) {
-        TickBox(checked, Modifier.padding(top = 3.dp))
-        val linked = ingredient.recipeId
-        if (linked == null) {
-            val name = countedName(ingredient.name, ingredient.quantity, ingredient.unit)
+        TickBox(checked, Modifier.padding(top = 2.dp), side = 20.dp)
+        Row(horizontalArrangement = Arrangement.spacedBy(MimosTheme.spacing.s)) {
             Text(
-                listOf(amount, name).filter { it.isNotEmpty() }.joinToString(" ") + note,
-                style = style.copy(textDecoration = decoration),
-                color = color,
+                formatQuantity(ingredient.quantity, ingredient.unit),
+                Modifier.width(AMOUNT_WIDTH),
+                style = struck.copy(fontFeatureSettings = TABULAR),
+                color = colors.muted,
             )
-        } else {
-            FlowRow {
-                if (amount.isNotEmpty()) {
-                    Text("$amount ", style = style.copy(textDecoration = decoration), color = color)
-                }
+            val linked = ingredient.recipeId
+            if (linked == null) {
                 Text(
-                    ingredient.name,
-                    Modifier.clickable(role = Role.Button) { onFollow(RecipeId(linked)) },
-                    style = style.copy(textDecoration = TextDecoration.Underline),
-                    color = colors.fg,
+                    countedName(ingredient.name, ingredient.quantity, ingredient.unit) + note,
+                    style = struck,
+                    color = color,
                 )
-                if (note.isNotEmpty()) {
-                    Text(note, style = style.copy(textDecoration = decoration), color = color)
+            } else {
+                FlowRow {
+                    Text(
+                        ingredient.name,
+                        Modifier.clickable(role = Role.Button) { onFollow(RecipeId(linked)) },
+                        style = struck.copy(textDecoration = TextDecoration.Underline),
+                        color = colors.fg,
+                    )
+                    if (note.isNotEmpty()) Text(note, style = struck, color = color)
                 }
             }
         }
@@ -81,19 +90,14 @@ fun StepRow(number: Int, step: RecipeStep, checked: Boolean, onToggle: () -> Uni
     Row(
         Modifier.fillMaxWidth()
             .toggleable(value = checked, role = Role.Checkbox, onValueChange = { onToggle() })
-            .padding(horizontal = MimosTheme.spacing.page, vertical = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(MimosTheme.spacing.m),
+            .padding(horizontal = MimosTheme.spacing.page, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(MimosTheme.spacing.s),
     ) {
-        Text(
-            "$number.",
-            Modifier.width(28.dp),
-            style = MimosTheme.typography.cook,
-            color = colors.muted,
-        )
+        Text("$number.", Modifier.width(25.dp), color = colors.muted)
         Text(
             step.instruction,
             style =
-                MimosTheme.typography.cook.copy(
+                MimosTheme.typography.body.copy(
                     textDecoration =
                         if (checked) TextDecoration.LineThrough else TextDecoration.None
                 ),
