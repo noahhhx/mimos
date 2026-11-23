@@ -36,6 +36,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import io.github.noahhhx.mimos.api.models.RecipeSummary
+import io.github.noahhhx.mimos.recipes.collections.CollectionActions
+import io.github.noahhhx.mimos.recipes.collections.CollectionFormScreen
+import io.github.noahhhx.mimos.recipes.collections.collectionGallery
 import io.github.noahhhx.mimos.recipes.form.RecipeFormScreen
 import io.github.noahhhx.mimos.ui.BottomSheet
 import io.github.noahhhx.mimos.ui.Button
@@ -47,6 +50,7 @@ import io.github.noahhhx.mimos.ui.ListRow
 import io.github.noahhhx.mimos.ui.MimosTheme
 import io.github.noahhhx.mimos.ui.PageHeader
 import io.github.noahhhx.mimos.ui.Rule
+import io.github.noahhhx.mimos.ui.ScrollingTabs
 import io.github.noahhhx.mimos.ui.Tabs
 import io.github.noahhhx.mimos.ui.Tag
 import io.github.noahhhx.mimos.ui.Text
@@ -68,6 +72,8 @@ fun RecipesScreen(model: RecipesModel, webOrigin: String) {
             RecipeFormScreen(model.form, model.pictures, "New recipe", "Recipes", model::back)
         is RecipeRoute.Edit ->
             RecipeFormScreen(model.form, model.pictures, "Edit recipe", "Recipe", model::back)
+        RecipeRoute.NewTab -> CollectionFormScreen(model, "New tab", model::back)
+        is RecipeRoute.EditTab -> CollectionFormScreen(model, "Edit tab", model::back)
     }
 }
 
@@ -79,8 +85,12 @@ private fun RecipeListScreen(model: RecipesModel, listState: LazyListState) {
     val query by model.query.collectAsState()
     val sort by model.sort.collectAsState()
     val selectedTags by model.selectedTags.collectAsState()
+    val defaulting by model.defaulting.collectAsState()
     var sortOpen by remember { mutableStateOf(false) }
     val loaded = list as? RecipeListState.Loaded
+    val collections = loaded?.collections.orEmpty()
+    val bar = remember(collections) { tabBar(collections) }
+    val shownCollection = (tab as? RecipeTab.Collection)?.let { loaded?.collection(it.id) }
     val tabRecipes = loaded?.of(tab)
     val available = remember(tabRecipes) { recipeTags(tabRecipes ?: emptyList()) }
     val active = remember(available, selectedTags) { activeTags(available, selectedTags) }
@@ -104,19 +114,32 @@ private fun RecipeListScreen(model: RecipesModel, listState: LazyListState) {
                 modifier = gutter,
                 actions = {
                     Button("+ New recipe", onClick = model::newRecipe)
+                    Button("+ New tab", onClick = model::newTab, kind = ButtonKind.Secondary)
                 },
             )
         }
         item(key = "tabs") {
-            Tabs(
-                labels =
-                    RecipeTab.entries.map {
-                        "${it.label} (${loaded?.of(it)?.size?.toString() ?: "…"})"
-                    },
-                selected = tab.ordinal,
-                onSelect = { model.selectTab(RecipeTab.entries[it]) },
-                modifier = gutter,
-            )
+            val labels = bar.map { tabLabel(it, loaded) }
+            val selected = bar.indexOf(tab).coerceAtLeast(0)
+            if (collections.isEmpty()) {
+                Tabs(labels, selected, { model.selectTab(bar[it]) }, gutter)
+            } else {
+                ScrollingTabs(
+                    labels,
+                    selected,
+                    { model.selectTab(bar[it]) },
+                    contentPadding = MimosTheme.spacing.page,
+                )
+            }
+        }
+        if (tab == RecipeTab.Gallery) {
+            collectionGallery(collections, model, gutter)
+            return@LazyColumn
+        }
+        if (shownCollection != null) {
+            item(key = "tab-actions") {
+                CollectionActions(shownCollection, defaulting, model, gutter)
+            }
         }
         item(key = "search") {
             TextField(
@@ -194,6 +217,7 @@ private fun RecipeListScreen(model: RecipesModel, listState: LazyListState) {
                         tagsActive = active.isNotEmpty(),
                         modifier = gutter,
                         onLibrary = { model.selectTab(RecipeTab.Library) },
+                        onEditTab = model::editTab,
                     )
                 }
             else ->
@@ -224,10 +248,20 @@ private fun EmptyRecipes(
     query: String,
     tagsActive: Boolean,
     onLibrary: () -> Unit,
+    onEditTab: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when {
         tagsActive -> EmptyState("No matches", "No recipes have all of these tags.", modifier)
+        tab is RecipeTab.Collection && query.isNotEmpty() ->
+            EmptyState("No matches", "Nothing in this tab matches “$query”.", modifier)
+        tab is RecipeTab.Collection ->
+            EmptyState(
+                "Nothing in this tab yet",
+                "Pick recipes for it, or tags whose recipes it gathers.",
+                modifier,
+                action = { Button("Edit tab", onEditTab, kind = ButtonKind.Secondary) },
+            )
         tab == RecipeTab.Mine ->
             EmptyState(
                 "No recipes yet",
@@ -242,6 +276,14 @@ private fun EmptyRecipes(
         else -> EmptyState("Nothing here", "The library is empty.", modifier)
     }
 }
+
+private fun tabLabel(tab: RecipeTab, loaded: RecipeListState.Loaded?): String =
+    when (tab) {
+        RecipeTab.Gallery -> "Tabs"
+        RecipeTab.Mine -> "My recipes (${loaded?.mine?.size?.toString() ?: "…"})"
+        RecipeTab.Library -> "Library (${loaded?.library?.size?.toString() ?: "…"})"
+        is RecipeTab.Collection -> loaded?.collection(tab.id)?.name.orEmpty()
+    }
 
 /** A recipe as a row: title, description and tags, and servings and calories. */
 @OptIn(ExperimentalLayoutApi::class)

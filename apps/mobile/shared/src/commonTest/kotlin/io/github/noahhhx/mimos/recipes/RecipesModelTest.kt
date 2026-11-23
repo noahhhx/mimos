@@ -1,5 +1,6 @@
 package io.github.noahhhx.mimos.recipes
 
+import io.github.noahhhx.mimos.api.apis.RecipeCollectionsApi
 import io.github.noahhhx.mimos.api.apis.RecipePicturesApi
 import io.github.noahhhx.mimos.api.apis.RecipesApi
 import io.github.noahhhx.mimos.api.models.RecipeDetail
@@ -40,6 +41,10 @@ private fun detail(id: String, title: String, rating: Int? = null) =
         "ingredients":[{"name":"flour","quantity":200,"unit":"g"}],
         "steps":[{"instruction":"Mix."}],"pictures":[]}"""
 
+private fun collection(id: String, name: String, isDefault: Boolean = false) =
+    """{"id":"$id","name":"$name","tags":[],"recipeIds":[],"isDefault":$isDefault,
+        "recipeCount":0,"createdAt":"2026-11-01T10:00:00Z"}"""
+
 private class MemorySortStore(var saved: RecipeSort? = null) : RecipeSortStore {
     override fun load() = saved
 
@@ -54,6 +59,10 @@ private class Server {
     var mine = "[${summary("m1", "Soup")}]"
     var library = "[${summary("l1", "Greek Salad")},${summary("l2", "Shakshuka")}]"
     var failList = false
+    var collections = "[]"
+
+    /** Each tab's recipes, by tab id. */
+    val members = mutableMapOf<String, String>()
     var deleteStatus = HttpStatusCode.NoContent
     var rateStatus = HttpStatusCode.OK
     var rating: Int? = 2
@@ -74,6 +83,11 @@ private class Server {
             failList && path.endsWith("/recipes") ->
                 respondError(HttpStatusCode.InternalServerError)
             path == "/api/v1/ingredients" -> respond("[]", headers = json)
+            path == "/api/v1/recipe-collections" -> respond(collections, headers = json)
+            path.startsWith("/api/v1/recipe-collections/") && path.endsWith("/default") ->
+                respond("", HttpStatusCode.NoContent)
+            path.startsWith("/api/v1/recipe-collections/") && path.endsWith("/recipes") ->
+                respond(members[path.split('/')[4]] ?: "[]", headers = json)
             path == "/api/v1/recipes/nutrition-estimate" ->
                 respond("""{"nutrition":{},"lines":[]}""", headers = json)
             path == "/api/v1/recipes" && request.method == HttpMethod.Post ->
@@ -113,6 +127,7 @@ private fun TestScope.model(server: Server, store: RecipeSortStore = MemorySortS
         this,
         store,
         { MimosHttp(server.engine, API).api(::RecipesApi) },
+        { MimosHttp(server.engine, API).api(::RecipeCollectionsApi) },
         RecipePictures({ MimosHttp(server.engine, API).api(::RecipePicturesApi) }),
         object : PictureShrinker {
             override suspend fun shrink(picked: PickedPicture) = error("nothing is picked")
@@ -129,8 +144,8 @@ class RecipesModelTest {
         val loaded = model.list.first { it !is RecipeListState.Loading }
 
         assertIs<RecipeListState.Loaded>(loaded)
-        assertEquals(listOf("m1"), loaded.of(RecipeTab.Mine).map { it.id })
-        assertEquals(listOf("l1", "l2"), loaded.of(RecipeTab.Library).map { it.id })
+        assertEquals(listOf("m1"), loaded.of(RecipeTab.Mine)?.map { it.id })
+        assertEquals(listOf("l1", "l2"), loaded.of(RecipeTab.Library)?.map { it.id })
         assertEquals(RecipeTab.Mine, model.tab.value)
     }
 
@@ -410,7 +425,101 @@ class RecipesModelTest {
         assertEquals(from, model.route.value)
         assertEquals(RecipeFormState.Closed, model.form.state.value)
     }
+
+    @Test
+    fun `a household with tabs opens on the gallery, and a tab lists its own recipes`() = runTest {
+        val server =
+            Server().apply {
+                collections = "[${collection("c1", "Weeknight")},${collection("c2", "Soups")}]"
+                members["c2"] = "[${summary("m1", "Soup")},${summary("l2", "Shakshuka")}]"
+            }
+        val model = model(server)
+
+        model.ensureLoaded()
+        val loaded = model.list.first { it is RecipeListState.Loaded } as RecipeListState.Loaded
+        assertEquals(RecipeTab.Gallery, model.tab.value)
+        assertNull(loaded.of(RecipeTab.Gallery))
+
+        model.selectTab(RecipeTab.Collection("c2"))
+        assertEquals(RecipeTab.Collection("c2"), model.tab.value)
+        val listed =
+            model.list.first { (it as? RecipeListState.Loaded)?.members?.containsKey("c2") == true }
+                as RecipeListState.Loaded
+        assertEquals(listOf("m1", "l2"), listed.of(RecipeTab.Collection("c2"))?.map { it.id })
+    }
+
+    @Test
+    fun `the default tab opens with its recipes already listed`() = runTest {
+        val server =
+            Server().apply {
+                collections =
+                    "[${collection("c1", "Weeknight")},${collection("c2", "Soups", isDefault = true)}]"
+                members["c2"] = "[${summary("m1", "Soup")}]"
+            }
+        val model = model(server)
+
+        model.ensureLoaded()
+        val loaded = model.list.first { it is RecipeListState.Loaded } as RecipeListState.Loaded
+
+        assertEquals(RecipeTab.Collection("c2"), model.tab.value)
+        assertEquals(listOf("m1"), loaded.of(RecipeTab.Collection("c2"))?.map { it.id })
+    }
+
+    @Test
+    fun `a tab deleted elsewhere falls back to the landing rule on the next load`() = runTest {
+        val server = Server().apply { collections = "[${collection("c1", "Weeknight")}]" }
+        val model = model(server)
+        model.ensureLoaded()
+        model.list.first { it is RecipeListState.Loaded }
+        model.selectTab(RecipeTab.Collection("c1"))
+
+        server.collections = "[]"
+        model.refresh()
+        model.list.first { (it as? RecipeListState.Loaded)?.collections?.isEmpty() == true }
+
+        assertEquals(RecipeTab.Mine, model.tab.value)
+    }
+
+    @Test
+    fun `open by default sets the tab and clears it again`() = runTest {
+        val server =
+            Server().apply {
+                collections =
+                    "[${collection("c1", "Weeknight", isDefault = true)},${collection("c2", "Soups")}]"
+            }
+        val model = model(server)
+        model.ensureLoaded()
+        model.list.first { it is RecipeListState.Loaded }
+
+        model.toggleDefault("c2")
+        server.awaitRequest(HttpMethod.Put, "/api/v1/recipe-collections/c2/default")
+        model.defaulting.first { it == DefaultState.Idle }
+        assertEquals(listOf("c2"), model.defaults())
+
+        model.toggleDefault("c2")
+        server.awaitRequest(HttpMethod.Delete, "/api/v1/recipe-collections/c2/default")
+        model.defaulting.first { it == DefaultState.Idle }
+        assertEquals(emptyList(), model.defaults())
+    }
+
+    @Test
+    fun `resetting forgets the chosen tab`() = runTest {
+        val server = Server().apply { collections = "[${collection("c1", "Weeknight")}]" }
+        val model = model(server)
+        model.ensureLoaded()
+        model.list.first { it is RecipeListState.Loaded }
+        model.selectTab(RecipeTab.Library)
+
+        model.reset()
+        model.ensureLoaded()
+        model.list.first { it is RecipeListState.Loaded }
+
+        assertEquals(RecipeTab.Gallery, model.tab.value)
+    }
 }
+
+private fun RecipesModel.defaults(): List<String> =
+    (list.value as RecipeListState.Loaded).collections.filter { it.isDefault }.map { it.id }
 
 private suspend fun RecipesModel.loaded(until: (RecipeDetail) -> Boolean = { true }): RecipeDetail =
     (detail.first { it is RecipeDetailState.Loaded && until(it.recipe) }
