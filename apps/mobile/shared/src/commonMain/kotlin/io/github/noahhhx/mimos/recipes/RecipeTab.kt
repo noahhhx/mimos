@@ -5,11 +5,13 @@ import io.github.noahhhx.mimos.api.models.RecipeCollection
 sealed interface RecipeTab {
     data object Gallery : RecipeTab
 
-    data object Mine : RecipeTab
+    sealed interface Listing : RecipeTab
 
-    data object Library : RecipeTab
+    data object Mine : Listing
 
-    data class Collection(val id: String) : RecipeTab
+    data object Library : Listing
+
+    data class Collection(val id: String) : Listing
 }
 
 fun landingTab(collections: List<RecipeCollection>): RecipeTab =

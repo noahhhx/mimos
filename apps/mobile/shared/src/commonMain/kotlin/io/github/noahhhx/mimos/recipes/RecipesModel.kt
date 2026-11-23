@@ -40,9 +40,8 @@ sealed interface RecipeListState {
         val collections: List<RecipeCollection> = emptyList(),
         val members: Map<String, List<RecipeSummary>> = emptyMap(),
     ) : RecipeListState {
-        fun of(tab: RecipeTab): List<RecipeSummary>? =
+        fun of(tab: RecipeTab.Listing): List<RecipeSummary>? =
             when (tab) {
-                RecipeTab.Gallery -> null
                 RecipeTab.Mine -> mine
                 RecipeTab.Library -> library
                 is RecipeTab.Collection -> members[tab.id]

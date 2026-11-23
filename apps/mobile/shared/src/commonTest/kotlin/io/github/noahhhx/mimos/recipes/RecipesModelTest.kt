@@ -437,7 +437,7 @@ class RecipesModelTest {
         model.ensureLoaded()
         val loaded = model.list.first { it is RecipeListState.Loaded } as RecipeListState.Loaded
         assertEquals(RecipeTab.Gallery, model.tab.value)
-        assertNull(loaded.of(RecipeTab.Gallery))
+        assertNull(loaded.of(RecipeTab.Collection("c2")))
 
         model.selectTab(RecipeTab.Collection("c2"))
         assertEquals(RecipeTab.Collection("c2"), model.tab.value)

@@ -91,7 +91,7 @@ private fun RecipeListScreen(model: RecipesModel, listState: LazyListState) {
     val collections = loaded?.collections.orEmpty()
     val bar = remember(collections) { tabBar(collections) }
     val shownCollection = (tab as? RecipeTab.Collection)?.let { loaded?.collection(it.id) }
-    val tabRecipes = loaded?.of(tab)
+    val tabRecipes = (tab as? RecipeTab.Listing)?.let { loaded?.of(it) }
     val available = remember(tabRecipes) { recipeTags(tabRecipes ?: emptyList()) }
     val active = remember(available, selectedTags) { activeTags(available, selectedTags) }
     val shown =
