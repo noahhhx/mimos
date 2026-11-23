@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
+import java.time.Clock;
 import java.time.Instant;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -32,9 +33,11 @@ public final class ProblemDetailSecurityHandlers implements AuthenticationEntryP
     private static final String PROTECTED_RESOURCE_METADATA = "/.well-known/oauth-protected-resource";
 
     private final ObjectMapper objectMapper;
+    private final Clock clock;
 
-    public ProblemDetailSecurityHandlers(ObjectMapper objectMapper) {
+    public ProblemDetailSecurityHandlers(ObjectMapper objectMapper, Clock clock) {
         this.objectMapper = objectMapper;
+        this.clock = clock;
     }
 
     @Override
@@ -86,6 +89,6 @@ public final class ProblemDetailSecurityHandlers implements AuthenticationEntryP
                         status.value(),
                         detail,
                         URI.create(request.getRequestURI()),
-                        Instant.now())));
+                        clock.instant())));
     }
 }

@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.IdGenerator;
 
 /**
  * Calorie and macro logging. Logging from a recipe copies the recipe's
@@ -28,11 +29,13 @@ public class MealLogService {
     private final MealLogRepository repository;
     private final RecipeService recipes;
     private final Clock clock;
+    private final IdGenerator ids;
 
-    public MealLogService(MealLogRepository repository, RecipeService recipes, Clock clock) {
+    public MealLogService(MealLogRepository repository, RecipeService recipes, Clock clock, IdGenerator ids) {
         this.repository = repository;
         this.recipes = recipes;
         this.clock = clock;
+        this.ids = ids;
     }
 
     /**
@@ -54,7 +57,7 @@ public class MealLogService {
                             ? draft.description().strip()
                             : recipe.title();
             log = new MealLog(
-                    UUID.randomUUID(),
+                    ids.generateId(),
                     draft.date(),
                     draft.mealType(),
                     recipe.id(),
@@ -67,7 +70,7 @@ public class MealLogService {
                 throw new IllegalArgumentException("description is required for ad-hoc logs");
             }
             log = new MealLog(
-                    UUID.randomUUID(),
+                    ids.generateId(),
                     draft.date(),
                     draft.mealType(),
                     null,
@@ -99,7 +102,7 @@ public class MealLogService {
             throw new IllegalArgumentException("description is required");
         }
         MealLog log = new MealLog(
-                UUID.randomUUID(),
+                ids.generateId(),
                 draft.date(),
                 draft.mealType(),
                 draft.recipeId(),

@@ -18,6 +18,7 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.IdGenerator;
 
 /**
  * Meal planning use cases. Plans are keyed by their Monday and created
@@ -38,11 +39,14 @@ public class MealPlanService {
     private final MealPlanRepository plans;
     private final RecipeService recipes;
     private final IngredientService ingredients;
+    private final IdGenerator ids;
 
-    public MealPlanService(MealPlanRepository plans, RecipeService recipes, IngredientService ingredients) {
+    public MealPlanService(
+            MealPlanRepository plans, RecipeService recipes, IngredientService ingredients, IdGenerator ids) {
         this.plans = plans;
         this.recipes = recipes;
         this.ingredients = ingredients;
+        this.ids = ids;
     }
 
     /** The owner's plan for the week, created empty on first access. */
@@ -90,7 +94,7 @@ public class MealPlanService {
         }
         UUID planId = plans.ensurePlan(ownerId, startDate);
         MealPlanRepository.PlannedMealInput entry = new MealPlanRepository.PlannedMealInput(
-                UUID.randomUUID(), date, mealType, item, amount, Set.copyOf(dinerProfileIds));
+                ids.generateId(), date, mealType, item, amount, Set.copyOf(dinerProfileIds));
         plans.insertEntry(planId, entry);
         return withTitle(ownerId, entry);
     }

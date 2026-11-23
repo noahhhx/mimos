@@ -19,6 +19,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.IdGenerator;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -41,11 +42,13 @@ public class LibrarySeeder implements ApplicationRunner {
     private final RecipeRepository repository;
     private final Clock clock;
     private final ObjectMapper objectMapper;
+    private final IdGenerator ids;
 
-    public LibrarySeeder(RecipeRepository repository, Clock clock, ObjectMapper objectMapper) {
+    public LibrarySeeder(RecipeRepository repository, Clock clock, ObjectMapper objectMapper, IdGenerator ids) {
         this.repository = repository;
         this.clock = clock;
         this.objectMapper = objectMapper;
+        this.ids = ids;
     }
 
     @Override
@@ -81,7 +84,7 @@ public class LibrarySeeder implements ApplicationRunner {
                     return Outcome.SKIPPED;
                 })
                 .orElseGet(() -> {
-                    repository.insert(toRecipe(UUID.randomUUID(), clock.instant(), seed));
+                    repository.insert(toRecipe(ids.generateId(), clock.instant(), seed));
                     return Outcome.INSERTED;
                 });
     }

@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.IdGenerator;
 
 /**
  * Recipe use cases: personal recipe CRUD with validation, library browse
@@ -37,18 +38,20 @@ public class RecipeService {
     private final RecipeRepository repository;
     private final IngredientService ingredients;
     private final Clock clock;
+    private final IdGenerator ids;
 
-    public RecipeService(RecipeRepository repository, IngredientService ingredients, Clock clock) {
+    public RecipeService(RecipeRepository repository, IngredientService ingredients, Clock clock, IdGenerator ids) {
         this.repository = repository;
         this.ingredients = ingredients;
         this.clock = clock;
+        this.ids = ids;
     }
 
     /** Creates a personal recipe for the given owner, recording the profile that created it. */
     @Transactional
     public Recipe create(UUID ownerId, UUID createdByProfileId, RecipeDraft submitted) {
         Instant now = clock.instant();
-        return save(UUID.randomUUID(), ownerId, createdByProfileId, null, submitted, now, now, true);
+        return save(ids.generateId(), ownerId, createdByProfileId, null, submitted, now, now, true);
     }
 
     /**
@@ -58,7 +61,7 @@ public class RecipeService {
     @Transactional
     public Recipe restore(
             UUID ownerId, UUID createdByProfileId, RecipeDraft submitted, Instant createdAt, Instant updatedAt) {
-        return save(UUID.randomUUID(), ownerId, createdByProfileId, null, submitted, createdAt, updatedAt, true);
+        return save(ids.generateId(), ownerId, createdByProfileId, null, submitted, createdAt, updatedAt, true);
     }
 
     /** Replaces a personal recipe; library recipes are read-only. */

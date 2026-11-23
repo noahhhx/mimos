@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.IdGenerator;
 
 @Service
 public class FuelService {
@@ -14,9 +15,11 @@ public class FuelService {
     static final int MAX_RANGE_DAYS = 62;
 
     private final FuelRepository repository;
+    private final IdGenerator ids;
 
-    public FuelService(FuelRepository repository) {
+    public FuelService(FuelRepository repository, IdGenerator ids) {
         this.repository = repository;
+        this.ids = ids;
     }
 
     public Optional<FuelProfile> profile(UUID profileId) {
@@ -57,7 +60,7 @@ public class FuelService {
 
     public TrainingSession addManual(UUID profileId, TrainingSessionDraft draft) {
         TrainingSession session = new TrainingSession(
-                UUID.randomUUID(),
+                ids.generateId(),
                 profileId,
                 draft.date(),
                 Source.MANUAL,

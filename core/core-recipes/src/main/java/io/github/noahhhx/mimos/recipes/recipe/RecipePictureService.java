@@ -6,6 +6,7 @@ import java.util.NoSuchElementException;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.IdGenerator;
 
 /**
  * Recipe pictures (ADR-0023): the one owner of what a valid picture is and
@@ -28,13 +29,19 @@ public class RecipePictureService {
     private final RecipePictureRepository repository;
     private final PictureStore store;
     private final Clock clock;
+    private final IdGenerator ids;
 
     public RecipePictureService(
-            RecipeService recipes, RecipePictureRepository repository, PictureStore store, Clock clock) {
+            RecipeService recipes,
+            RecipePictureRepository repository,
+            PictureStore store,
+            Clock clock,
+            IdGenerator ids) {
         this.recipes = recipes;
         this.repository = repository;
         this.store = store;
         this.clock = clock;
+        this.ids = ids;
     }
 
     /**
@@ -56,7 +63,7 @@ public class RecipePictureService {
         if (repository.count(recipeId) >= MAX_PICTURES) {
             throw new IllegalArgumentException("a recipe can have at most " + MAX_PICTURES + " pictures");
         }
-        RecipePicture picture = new RecipePicture(UUID.randomUUID(), format);
+        RecipePicture picture = new RecipePicture(ids.generateId(), format);
         repository.insert(recipeId, picture, clock.instant());
         store.put(picture.id(), bytes);
         return picture;

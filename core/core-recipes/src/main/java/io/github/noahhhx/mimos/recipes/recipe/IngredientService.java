@@ -10,6 +10,7 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.IdGenerator;
 
 /**
  * Ingredient use cases (ADR-0016): the catalog a user sees (shared entries
@@ -23,9 +24,11 @@ public class IngredientService {
     static final int MAX_NAME_LENGTH = 100;
 
     private final IngredientCatalog catalog;
+    private final IdGenerator ids;
 
-    public IngredientService(IngredientCatalog catalog) {
+    public IngredientService(IngredientCatalog catalog, IdGenerator ids) {
         this.catalog = catalog;
+        this.ids = ids;
     }
 
     /** The shared entries and the viewer's own, by name. */
@@ -116,13 +119,13 @@ public class IngredientService {
     }
 
     /** A readable, unique slug: the name's words, then a random suffix ("dragon-fruit-k3f9q2"). */
-    private static String slugFor(String name) {
+    private String slugFor(String name) {
         String words =
                 name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("(^-+|-+$)", "");
         if (words.length() > 40) {
             words = words.substring(0, 40).replaceAll("-+$", "");
         }
-        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 6);
+        String suffix = ids.generateId().toString().replace("-", "").substring(0, 6);
         return (words.isEmpty() ? "ingredient" : words) + "-" + suffix;
     }
 }
