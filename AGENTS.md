@@ -468,6 +468,14 @@ mimos/
   Gradle scripts follow the same rule with Gradle's Spotless (ktfmt,
   kotlinlang style): `./gradlew check` applies it, CI gates with
   `./gradlew spotlessCheck`.
+- **Dependency advisories:** a vulnerable Java module on the backend is
+  fixed by bumping the Spring Boot parent (or the BOM property it
+  manages). A vulnerable module the Android build pulls in transitively
+  (the Android Gradle Plugin, its lint tool, openapi-generator, or a
+  library) gets a patched floor in `securityFloors` in
+  `apps/mobile/settings.gradle.kts`, which raises it in every
+  configuration, the plugin classpath included; drop a floor once
+  upstream passes it.
 - **Null safety:** NullAway (JSpecify mode) via Error Prone; nullness
   violations in `@NullMarked` code fail the build. Every package needs a
   `@NullMarked` `package-info.java` (the build fails otherwise); annotate
