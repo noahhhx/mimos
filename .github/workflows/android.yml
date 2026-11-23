@@ -229,7 +229,7 @@ jobs:
 
       - name: Copy the host adb server log
         if: always()
-        run: cp /tmp/adb.*.log .harness/runs/ || true
+        run: cp "${TMPDIR:-/tmp}"/adb.*.log .harness/runs/ || ls -la "${TMPDIR:-/tmp}"
 
       - name: Upload harness evidence
         if: always()
