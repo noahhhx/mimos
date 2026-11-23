@@ -74,6 +74,7 @@ export function NewIngredient({
   };
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: a <fieldset> has the same group role but brings its own border, padding, and form semantics.
     <div
       className="new-ingredient"
       role="group"
@@ -96,7 +97,13 @@ export function NewIngredient({
       <div className="field-row">
         <label>
           Name
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={100} autoFocus />
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={100}
+            // biome-ignore lint/a11y/noAutofocus: the panel opens on the person's click, and its first field is where they type next.
+            autoFocus
+          />
         </label>
         <label>
           Nutrition per

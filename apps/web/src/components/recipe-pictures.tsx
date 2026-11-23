@@ -16,6 +16,7 @@ export function RecipePictures({ recipe }: { recipe: RecipeDetail }) {
     return null;
   }
   return (
+    // biome-ignore lint/a11y/noNoninteractiveTabindex: the row scrolls sideways in its own box, so it takes focus for keyboard scrolling (it has a focus-visible style).
     <ul className="picture-row" aria-label="Pictures" tabIndex={0}>
       {recipe.pictures.map((picture, index) => (
         <li className="picture" key={picture.id}>
@@ -64,5 +65,6 @@ export function BlobImage({ blob, alt }: { blob: Blob; alt: string }) {
     setUrl(next);
     return () => URL.revokeObjectURL(next);
   }, [blob]);
+  // biome-ignore lint/performance/noImgElement: the source is a blob: object URL, which next/image cannot load or optimize.
   return url ? <img src={url} alt={alt} /> : null;
 }

@@ -82,11 +82,14 @@ export function Combobox<T>({
         />
       </label>
       {showing && (
+        // biome-ignore lint/a11y/noNoninteractiveElementToInteractiveRole: the ARIA combobox pattern's listbox; focus stays in the input and moves through aria-activedescendant.
         <ul className="picker-options" role="listbox" id={listId}>
           {options.map((option, index) => (
+            // biome-ignore lint/a11y/useFocusableInteractive: an option of the ARIA combobox pattern, reached through aria-activedescendant and never focused.
             <li
               key={keyOf(option)}
               id={`${listId}-${index}`}
+              // biome-ignore lint/a11y/noNoninteractiveElementToInteractiveRole: the ARIA combobox pattern's option.
               role="option"
               aria-selected={index === active}
               className={index === active ? "active" : undefined}

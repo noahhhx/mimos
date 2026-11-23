@@ -81,6 +81,7 @@ export function TrainingSlot({
   };
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: a <fieldset> has the same group role but brings its own border, padding, and form semantics.
     <div className="inspector-section" role="group" aria-label={trainingLabelFor(date)}>
       <span className="label">{TRAINING_LABEL}</span>
       {sessions.length === 0 && !draft && <p className="muted">No training.</p>}

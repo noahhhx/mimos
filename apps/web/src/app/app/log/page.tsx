@@ -260,6 +260,7 @@ export default function LogPage() {
                     >
                       <td>{row.label}</td>
                       {row.cells.map((cell, index) => (
+                        // biome-ignore lint/suspicious/noArrayIndexKey: the four nutrition columns, always in the same order.
                         <td key={index}>{cell}</td>
                       ))}
                     </tr>

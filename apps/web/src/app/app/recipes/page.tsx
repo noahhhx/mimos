@@ -161,6 +161,7 @@ export default function RecipesPage() {
       </div>
 
       {availableTags.length > 0 && (
+        // biome-ignore lint/a11y/useSemanticElements: a <fieldset> has the same group role but brings its own border, padding, and form semantics.
         <div className="button-row" role="group" aria-label="Filter by tag">
           {availableTags.map((tag) => {
             const active = activeTags.has(tag);

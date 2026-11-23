@@ -81,6 +81,7 @@ export function WeekPanelSection({
             {block.actions.map((button, index) => (
               <button
                 type="button"
+                // biome-ignore lint/suspicious/noArrayIndexKey: a plugin's buttons hold no state, are redrawn whole with each panel, and need not have distinct ids.
                 key={index}
                 className={button.primary ? "button" : "button secondary"}
                 disabled={pressing || spinning}

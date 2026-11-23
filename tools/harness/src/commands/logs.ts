@@ -65,7 +65,7 @@ writes logs/request-<id>.log, prints the matching lines, and exits 1 when none m
       writeRunFile(
         run,
         file,
-        matches.flatMap((match) => match.lines.map((line) => `${match.service} | ${line}`)).join("\n") + "\n",
+        `${matches.flatMap((match) => match.lines.map((line) => `${match.service} | ${line}`)).join("\n")}\n`,
       );
       const lines = describeRequestLines(matches);
       section.push(

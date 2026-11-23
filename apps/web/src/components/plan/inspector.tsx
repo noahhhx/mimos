@@ -177,6 +177,7 @@ export function EntryInspector({
       {shared && (
         <div className="inspector-section">
           <span className="label">Who eats it</span>
+          {/* biome-ignore lint/a11y/useSemanticElements: a <fieldset> has the same group role but brings its own border, padding, and form semantics. */}
           <div className="diners" role="group" aria-label="Who eats it">
             {members.map((member) => {
               const eats = entry.diners.some((diner) => diner.id === member.id);

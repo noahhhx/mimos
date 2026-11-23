@@ -89,6 +89,6 @@ test("a request's lines are gathered across services", () => {
   );
   const described = describeRequestLines(matches);
   assert.equal(described.length, 3);
-  assert.match(described[1]!, /^api \| 2026-10-01T15:56:11.194000000Z WARN  RequestLoggingFilter: POST/);
+  assert.match(described[1]!, /^api \| 2026-10-01T15:56:11.194000000Z WARN {2}RequestLoggingFilter: POST/);
   assert.match(described[2]!, /^web \| 2026-10-01T15:56:12Z \[mimos-api\] GET \/x -> 404/);
 });

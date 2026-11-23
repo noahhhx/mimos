@@ -95,6 +95,7 @@ export function parseBreakArgs(argv: string[], roots: readonly string[] = source
     args: argv,
     allowPositionals: true,
     options: {
+      // biome-ignore lint/suspicious/noThenProperty: the --then option's name; this object is parseArgs config and is never awaited.
       then: { type: "string" },
       print: { type: "string", multiple: true },
       hits: { type: "string" },

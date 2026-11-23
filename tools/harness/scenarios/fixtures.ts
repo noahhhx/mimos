@@ -15,6 +15,7 @@ export interface HarnessFixtures {
   /** The realm user to sign in as — `harness ui --as`, default `test`. */
   user: string;
   /** Records console messages and uncaught page errors to console.jsonl. */
+  // biome-ignore lint/suspicious/noConfusingVoidType: Playwright's type for a fixture with no value, whose use() is called with nothing.
   consoleLog: void;
   /**
    * A page on the app shell (`/app`), signed in through the real Keycloak

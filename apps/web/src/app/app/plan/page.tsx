@@ -290,6 +290,7 @@ export default function PlanPage() {
           )}
 
           {panels !== null && panels.week === weekStart && panels.list.length > 0 && (
+            // biome-ignore lint/a11y/useSemanticElements: a <fieldset> has the same group role but brings its own border, padding, and form semantics.
             <div className="week-panels" aria-label="Plugins for this week" role="group">
               {panels.list.map((panel) => (
                 <WeekPanelSection

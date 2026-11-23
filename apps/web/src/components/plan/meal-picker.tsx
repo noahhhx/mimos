@@ -17,7 +17,7 @@ import { ScanBarcode } from "@/components/scan-barcode";
 import { apiClient } from "@/lib/api";
 import { searchCatalog } from "@/lib/catalog-match";
 import { defaultServings } from "@/lib/diners";
-import { MEAL_TYPES, dayLabel, formatServings, mealLabel } from "@/lib/format";
+import { type MEAL_TYPES, dayLabel, formatServings, mealLabel } from "@/lib/format";
 import { describeIngredient, productName } from "@/lib/log-entry";
 import { existingIngredient, newFoodEntry, productIngredient } from "@/lib/planned-item";
 
@@ -68,7 +68,7 @@ export function MealPicker({
     return () => {
       cancelled = true;
     };
-  }, [slot, query]);
+  }, [query]);
 
   const foodResults = searchCatalog(query, ingredients);
 
@@ -115,6 +115,7 @@ export function MealPicker({
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search recipes and ingredients…"
           aria-label="Search recipes and ingredients"
+          // biome-ignore lint/a11y/noAutofocus: the picker opens on the person's click, and its search is where they type next.
           autoFocus
         />
         <ScanBarcode onFound={(product) => void planProduct(product)} />

@@ -273,9 +273,9 @@ passed, 1 otherwise.`;
       }
       const evidence = tests.map((test) => testEvidence(run, test));
       const logLines = linesFor(logs);
-      tests.forEach((test, index) =>
-        section.push("", ...testSection(test, evidence[index]!, endpoints().api, logLines)),
-      );
+      for (const [index, test] of tests.entries()) {
+        section.push("", ...testSection(test, evidence[index]!, endpoints().api, logLines));
+      }
       // Without per-request lines (no failed request, or an API that logs no IDs), fall back to the time window.
       const correlated = evidence.some((each) =>
         each.exchanges.filter(isFailure).some((failure) => logLines(failure).length > 0),

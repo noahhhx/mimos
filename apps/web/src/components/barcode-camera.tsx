@@ -68,7 +68,9 @@ export function BarcodeCamera({
     const stop = () => {
       stopped = true;
       clearInterval(timer);
-      stream?.getTracks().forEach((track) => track.stop());
+      for (const track of stream?.getTracks() ?? []) {
+        track.stop();
+      }
     };
 
     const detectOnce = async (video: HTMLVideoElement) => {

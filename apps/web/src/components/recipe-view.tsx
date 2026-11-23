@@ -109,6 +109,7 @@ export function RecipeView({
         <h2>Ingredients</h2>
         <ul className="ingredients cook">
           {recipe.ingredients.map((ingredient, index) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: a saved recipe's lines never move while it is shown, and the cook ticks are kept by position.
             <li key={index}>
               <label className={doneIngredients.has(index) ? "done" : undefined}>
                 <input type="checkbox" checked={doneIngredients.has(index)} onChange={() => toggleIngredient(index)} />{" "}
@@ -144,6 +145,7 @@ export function RecipeView({
           <h2>Method</h2>
           <ol className="steps cook">
             {recipe.steps.map((step, index) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: a saved recipe's steps never move while it is shown, and the cook ticks are kept by position.
               <li key={index} className={doneSteps.has(index) ? "done" : undefined}>
                 <label>
                   <input

@@ -136,6 +136,7 @@ export function RecipeForm({
     );
   }, [initial?.id]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: estimateKey stands for estimateRequest, so it refetches when what is sent changes, not on every keystroke elsewhere.
   useEffect(() => {
     if (!estimateRequest) {
       setEstimate(undefined);
@@ -152,7 +153,9 @@ export function RecipeForm({
           return;
         }
         const statuses = new Map<number, IngredientLineStatus>();
-        result.data.lines.forEach((status, line) => statuses.set(estimateRequest.rows[line], status));
+        for (const [line, status] of result.data.lines.entries()) {
+          statuses.set(estimateRequest.rows[line], status);
+        }
         setEstimate({ nutrition: result.data.nutrition, statuses });
       });
     }, 300);
@@ -160,7 +163,6 @@ export function RecipeForm({
       current = false;
       clearTimeout(timer);
     };
-    // estimateKey stands for estimateRequest: refetch when what is sent changes, not on every keystroke elsewhere.
   }, [estimateKey]);
 
   const set = (patch: Partial<RecipeFormValues>) => setValues((current) => ({ ...current, ...patch }));
@@ -264,6 +266,7 @@ export function RecipeForm({
         leave the amount blank for things like salt to taste.
       </p>
       {values.ingredients.map((row, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: rows have no id; every field is controlled, and the one uncontrolled state, the name's open list, closes when focus leaves for Remove.
         <div className="field-row ingredient-row" key={index}>
           <label className="narrow">
             Amount
@@ -404,6 +407,7 @@ export function RecipeForm({
 
       <h2>Steps</h2>
       {values.steps.map((step, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: steps are plain strings with no id, and the textarea is controlled.
         <div className="field-row step-row" key={index}>
           <label>
             Step {index + 1}

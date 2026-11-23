@@ -67,6 +67,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <head>
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: a constant inline script, so the saved theme applies before first paint. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         {/* Public URLs from the container's env (ADR-0012), set before any app code runs. */}
         <Script src="/runtime-config.js" strategy="beforeInteractive" />

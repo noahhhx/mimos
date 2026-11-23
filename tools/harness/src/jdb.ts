@@ -357,7 +357,10 @@ export class JdbSession {
         resolve(result);
       };
       const check = (): void => {
-        if (this.#exitCode !== undefined) return finish(false);
+        if (this.#exitCode !== undefined) {
+          finish(false);
+          return;
+        }
         clearTimeout(quietTimer);
         if (!done(this.output.slice(offset))) return;
         const wait = Math.max(0, this.#lastOutputAt + QUIET_MS - Date.now());

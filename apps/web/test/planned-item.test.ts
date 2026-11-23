@@ -18,13 +18,6 @@ const stew = { recipeId: "r1", recipeTitle: "Lentil stew", servings: 4 };
 const banana = { food: { catalogSlug: "banana", name: "Banana", unit: undefined }, servings: 1 };
 const bagel = { food: { catalogSlug: "bagel-x", name: "Bagel", unit: "g" }, servings: 85 };
 
-const bananaEntry: CatalogIngredient = {
-  slug: "banana",
-  name: "Banana",
-  isShared: true,
-  basis: "PER_PIECE",
-  nutrition: { calories: 105, proteinG: 1.3, carbsG: 27, fatG: 0.4 },
-};
 const bagelEntry: CatalogIngredient = {
   slug: "bagel-x",
   name: "Bagel",

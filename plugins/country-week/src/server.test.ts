@@ -3,7 +3,7 @@ import { after, test } from "node:test";
 
 import type { PluginSuggestions, WeekPanel } from "@mimos/plugin-sdk";
 
-import { createPluginServer, MANIFEST } from "./server.ts";
+import { createPluginServer, type MANIFEST } from "./server.ts";
 import { openStore } from "./store.ts";
 
 /** The HTTP surface of the plugin (ADR-0006, ADR-0017): manifest, plan-suggestions, week-panel. */

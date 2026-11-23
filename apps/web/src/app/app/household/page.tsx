@@ -180,6 +180,7 @@ export default function HouseholdPage() {
               Leave household
             </button>
           ) : (
+            // biome-ignore lint/a11y/useSemanticElements: a <fieldset> has the same group role but brings its own border, padding, and form semantics.
             <div className="card" role="group" aria-labelledby="leave-confirm-heading">
               <h3 id="leave-confirm-heading">Leave this household?</h3>
               <ul className="consequences">

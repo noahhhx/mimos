@@ -1,6 +1,6 @@
 "use client";
 
-import { User } from "oidc-client-ts";
+import type { User } from "oidc-client-ts";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 import { currentUser, userManager } from "@/lib/auth";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import type { PanelWheelSegment } from "@mimos/api-client";
 
@@ -49,6 +49,8 @@ export function Wheel({
     setAnnouncement(landedLabel ? `The wheel stopped on ${landedLabel}.` : "");
     onStop();
   };
+  // Under reduced motion the wheel lands at once, from the effect, without restarting it.
+  const stopAtOnce = useEffectEvent(stop);
 
   useEffect(() => {
     if (landing === undefined) {
@@ -64,11 +66,11 @@ export function Wheel({
     disc.current?.getBoundingClientRect();
     setAngle((current) => spinTarget(current, landing, count));
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      stop();
+      stopAtOnce();
     } else {
       setTurning(true);
     }
-  }, [segments, landing, spin, count]);
+  }, [landing, spin, count]);
 
   const size = iconSize(count, RADIUS - 20, ICON_MAX);
   const rim = RADIUS - 6 - size / 2;
@@ -92,6 +94,7 @@ export function Wheel({
         >
           {segments.map((segment, index) => (
             <path
+              // biome-ignore lint/suspicious/noArrayIndexKey: a segment is its position on the wheel; labels need not be unique.
               key={index}
               className={`wheel-segment tone-${segmentTone(index, count)}`}
               d={segmentPath(index, count, RADIUS)}
@@ -107,6 +110,7 @@ export function Wheel({
             const at = polar(center, rim);
             return (
               <text
+                // biome-ignore lint/suspicious/noArrayIndexKey: a segment is its position on the wheel; labels need not be unique.
                 key={index}
                 className="wheel-icon"
                 x={at.x}
@@ -115,7 +119,6 @@ export function Wheel({
                 textAnchor="middle"
                 dominantBaseline="central"
                 transform={`rotate(${center} ${at.x} ${at.y})`}
-                aria-hidden="true"
               >
                 {segment.icon}
               </text>

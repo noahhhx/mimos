@@ -72,7 +72,12 @@ export function Ledger({
                 </>
               );
               return (
-                <th key={day} scope="col" className={day === today ? "today" : undefined}>
+                <th
+                  key={day}
+                  scope="col"
+                  className={day === today ? "today" : undefined}
+                  aria-label={fuelByDay.size > 0 ? undefined : dayLabel(day)}
+                >
                   {fuelByDay.size > 0 ? (
                     <button
                       type="button"
@@ -84,9 +89,7 @@ export function Ledger({
                       {content}
                     </button>
                   ) : (
-                    <span className="ledger-day" aria-label={dayLabel(day)}>
-                      {content}
-                    </span>
+                    <span className="ledger-day">{content}</span>
                   )}
                 </th>
               );
