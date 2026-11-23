@@ -29,7 +29,8 @@ public final class ExportUpgrader {
             ExportUpgrader::addRecipePictures,
             ExportUpgrader::allowPlannedFoods,
             ExportUpgrader::allowAddedShoppingItems,
-            ExportUpgrader::allowRecipeRatings);
+            ExportUpgrader::allowRecipeRatings,
+            ExportUpgrader::addRecipeCollections);
 
     /** The version this instance exports. */
     public static final int CURRENT_VERSION = STEPS.size() + 1;
@@ -155,6 +156,15 @@ public final class ExportUpgrader {
      * data comes through unchanged.
      */
     private static ObjectNode allowRecipeRatings(ObjectNode document) {
+        return document;
+    }
+
+    /**
+     * Version 10 (ADR-0036): the household's recipe tabs. Version 9 had
+     * none, so it gets an empty section.
+     */
+    private static ObjectNode addRecipeCollections(ObjectNode document) {
+        document.putArray("recipeCollections");
         return document;
     }
 

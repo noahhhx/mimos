@@ -3322,17 +3322,18 @@ components:
     AccountExport:
       type: object
       description: >
-        One person's data, in export format version 9 (ADR-0011, ADR-0019, ADR-0022, ADR-0023, ADR-0026, ADR-0027, ADR-0035).
+        One person's data, in export format version 10 (ADR-0011, ADR-0019, ADR-0022, ADR-0023, ADR-0026, ADR-0027, ADR-0035, ADR-0036).
         Any change to this schema, or to what a section holds, bumps the
         version and adds an upgrade step from the previous one.
-      required: [format, version, exportedAt, ingredients, recipes, mealPlans, shoppingLists, mealLogs, trainingSessions]
+      required:
+        [format, version, exportedAt, ingredients, recipes, recipeCollections, mealPlans, shoppingLists, mealLogs, trainingSessions]
       properties:
         format:
           type: string
           enum: [mimos.export]
         version:
           type: integer
-          description: The format version. This instance exports version 9.
+          description: The format version. This instance exports version 10.
         exportedAt:
           type: string
           format: date-time
@@ -3346,6 +3347,11 @@ components:
           description: The household's personal recipes.
           items:
             $ref: '#/components/schemas/ExportedRecipe'
+        recipeCollections:
+          type: array
+          description: The household's recipe tabs, oldest first.
+          items:
+            $ref: '#/components/schemas/ExportedRecipeCollection'
         mealPlans:
           type: array
           description: >
@@ -3492,6 +3498,44 @@ components:
         data:
           type: string
           format: byte
+    ExportedRecipeCollection:
+      type: object
+      description: >
+        A recipe tab. Its picked recipes are `recipeIds`, recipes in this
+        document's `recipes`, and `librarySlugs`, library recipes; the
+        recipes its tags gather are not listed, since import gathers them
+        again.
+      required: [name, tags, recipeIds, librarySlugs, createdAt]
+      properties:
+        name:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        recipeIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        librarySlugs:
+          type: array
+          items:
+            type: string
+        picture:
+          type: string
+          format: byte
+          description: >
+            The tab's picture, base64-encoded; absent when it has none.
+            Import checks it like an upload.
+        isDefault:
+          type: boolean
+          description: >
+            True on the one tab the exporter opens Recipes on; absent on the
+            others. Import makes it the importer's default.
+        createdAt:
+          type: string
+          format: date-time
     ExportedMealPlan:
       type: object
       description: A week of planned meals, keyed by its Monday.
@@ -3599,7 +3643,8 @@ components:
     ImportReport:
       type: object
       description: The outcome of an import.
-      required: [sourceVersion, recipes, plannedMeals, shoppingLists, mealLogs, fuelProfile, trainingSessions, warnings]
+      required:
+        [sourceVersion, recipes, recipeCollections, plannedMeals, shoppingLists, mealLogs, fuelProfile, trainingSessions, warnings]
       properties:
         sourceVersion:
           type: integer
@@ -3607,6 +3652,9 @@ components:
         recipes:
           type: integer
           description: Personal recipes imported.
+        recipeCollections:
+          type: integer
+          description: Recipe tabs imported.
         plannedMeals:
           type: integer
           description: Planned meals imported.

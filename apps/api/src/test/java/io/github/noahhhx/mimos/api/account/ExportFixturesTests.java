@@ -307,6 +307,30 @@ class ExportFixturesTests extends ApiIntegrationTestSupport {
         assertThat(rated).isEqualTo(1);
     }
 
+    @Test
+    void version10RestoresRecipeTabs() {
+        RestClient api = api();
+        String token = accessToken(createUser());
+
+        JsonNode report = importFixture(api, token, 10);
+
+        assertThat(report.get("recipeCollections").asInt()).isEqualTo(2);
+        JsonNode tabs = get(api, token, "/api/v1/recipe-collections");
+        assertThat(tabs).hasSize(2);
+        JsonNode weeknights = tabs.get(0);
+        assertThat(weeknights.get("name").asText()).isEqualTo("Fixture weeknights");
+        assertThat(weeknights.get("isDefault").asBoolean()).isTrue();
+        assertThat(weeknights.get("recipeIds")).hasSize(2);
+        assertThat(weeknights.has("pictureId")).isTrue();
+        List<String> members = titles(get(
+                api, token, "/api/v1/recipe-collections/" + weeknights.get("id").asText() + "/recipes"));
+        assertThat(members).contains("Shakshuka");
+        assertThat(members).hasSize(weeknights.get("recipeCount").asInt());
+        JsonNode empty = tabs.get(1);
+        assertThat(empty.get("isDefault").asBoolean()).isFalse();
+        assertThat(empty.get("recipeCount").asInt()).isZero();
+    }
+
     private JsonNode importFixture(RestClient api, String token, int version) {
         JsonNode document;
         try (InputStream in = new ClassPathResource(fixturePath(version)).getInputStream()) {

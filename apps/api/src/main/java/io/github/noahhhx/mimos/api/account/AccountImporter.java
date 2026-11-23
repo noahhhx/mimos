@@ -18,6 +18,9 @@ import io.github.noahhhx.mimos.planning.plan.MealType;
 import io.github.noahhhx.mimos.planning.plan.PlannedItem;
 import io.github.noahhhx.mimos.planning.shopping.ShoppingListItemDraft;
 import io.github.noahhhx.mimos.planning.shopping.ShoppingListService;
+import io.github.noahhhx.mimos.recipes.collection.RecipeCollection;
+import io.github.noahhhx.mimos.recipes.collection.RecipeCollectionDraft;
+import io.github.noahhhx.mimos.recipes.collection.RecipeCollectionService;
 import io.github.noahhhx.mimos.recipes.recipe.Ingredient;
 import io.github.noahhhx.mimos.recipes.recipe.IngredientDraft;
 import io.github.noahhhx.mimos.recipes.recipe.IngredientService;
@@ -52,6 +55,7 @@ import org.openapitools.model.ExportedMealLog;
 import org.openapitools.model.ExportedMealPlan;
 import org.openapitools.model.ExportedPlanEntry;
 import org.openapitools.model.ExportedRecipe;
+import org.openapitools.model.ExportedRecipeCollection;
 import org.openapitools.model.ExportedShoppingList;
 import org.openapitools.model.ExportedShoppingListItem;
 import org.openapitools.model.ExportedTrainingSession;
@@ -82,6 +86,7 @@ public class AccountImporter {
     private final HouseholdService households;
     private final RecipeService recipes;
     private final RecipePictureService pictures;
+    private final RecipeCollectionService collections;
     private final IngredientService ingredients;
     private final MealPlanService mealPlans;
     private final ShoppingListService shoppingLists;
@@ -95,6 +100,7 @@ public class AccountImporter {
             HouseholdService households,
             RecipeService recipes,
             RecipePictureService pictures,
+            RecipeCollectionService collections,
             IngredientService ingredients,
             MealPlanService mealPlans,
             ShoppingListService shoppingLists,
@@ -105,6 +111,7 @@ public class AccountImporter {
         this.households = households;
         this.recipes = recipes;
         this.pictures = pictures;
+        this.collections = collections;
         this.ingredients = ingredients;
         this.mealPlans = mealPlans;
         this.shoppingLists = shoppingLists;
@@ -130,18 +137,20 @@ public class AccountImporter {
         }
         if (recipes.hasOwned(householdId)
                 || ingredients.hasOwned(householdId)
+                || collections.hasOwned(householdId)
                 || mealPlans.hasEntries(householdId)
                 || shoppingLists.hasItems(householdId)
                 || mealLogs.hasLogs(importer.id())
                 || fuel.hasData(importer.id())) {
             throw new AccountNotEmptyException("Import needs an empty account, and this one already has recipes,"
-                    + " ingredients, planned meals, shopping lists, logged meals, fuel settings, or training."
+                    + " recipe tabs, ingredients, planned meals, shopping lists, logged meals, fuel settings, or training."
                     + " Import into a fresh account instead.");
         }
 
         Run run = new Run(importer);
         run.importIngredients(present(document.getIngredients(), "ingredients"));
         run.importRecipes(present(document.getRecipes(), "recipes"));
+        run.importCollections(present(document.getRecipeCollections(), "recipeCollections"));
         run.importPlans(present(document.getMealPlans(), "mealPlans"));
         run.importShoppingLists(present(document.getShoppingLists(), "shoppingLists"));
         run.importLogs(present(document.getMealLogs(), "mealLogs"));
@@ -149,6 +158,7 @@ public class AccountImporter {
         return new ImportReport()
                 .sourceVersion(upgraded.sourceVersion())
                 .recipes(run.recipeIds.size())
+                .recipeCollections(run.tabs)
                 .plannedMeals(run.plannedMeals)
                 .shoppingLists(run.lists)
                 .mealLogs(run.logs)
@@ -189,7 +199,7 @@ public class AccountImporter {
         private final Map<UUID, UUID> recipeIds = new HashMap<>();
         /** Library slugs resolved so far; empty when the slug is not in this library. */
         private final Map<String, Optional<UUID>> librarySlugs = new HashMap<>();
-        /** Per missing library slug: planned meals skipped and logged meals unlinked. */
+        /** Per missing library slug: planned meals skipped, logged meals unlinked, and tabs without it. */
         private final Map<String, int[]> missingSlugs = new LinkedHashMap<>();
         /** The export's own ingredient slugs to the slugs they were imported as. */
         private final Map<String, String> ingredientSlugs = new HashMap<>();
@@ -198,6 +208,8 @@ public class AccountImporter {
         /** Ingredient slugs this instance lacks, and how many planned foods were skipped for each. */
         private final Map<String, Integer> missingFoodSlugs = new LinkedHashMap<>();
 
+        private int tabs;
+        private boolean defaultCollection;
         private int plannedMeals;
         private int lists;
         private int logs;
@@ -295,6 +307,36 @@ public class AccountImporter {
                     "pictures",
                     present(recipe.getPictures(), "pictures"),
                     picture -> pictures.add(household, restored.id(), present(picture.getData(), "data")));
+        }
+
+        /** Restores each tab with its picks, its picture through the upload's own checks, and the default. */
+        void importCollections(List<ExportedRecipeCollection> exported) {
+            eachAt("recipeCollections", exported, tab -> {
+                List<UUID> picks = new ArrayList<>();
+                present(tab.getRecipeIds(), "recipeIds").forEach(id -> picks.add(imported(present(id, "recipeId"))));
+                for (String slug : present(tab.getLibrarySlugs(), "librarySlugs")) {
+                    Optional<UUID> library = library(present(slug, "librarySlug"));
+                    library.ifPresentOrElse(picks::add, () -> missing(slug)[2]++);
+                }
+                RecipeCollection restored = collections.restore(
+                        household,
+                        profile,
+                        new RecipeCollectionDraft(
+                                present(tab.getName(), "name"), present(tab.getTags(), "tags"), picks),
+                        present(tab.getCreatedAt(), "createdAt").toInstant());
+                byte[] picture = tab.getPicture();
+                if (picture != null) {
+                    at("picture", () -> collections.setPicture(household, profile, restored.id(), picture));
+                }
+                if (Boolean.TRUE.equals(tab.getIsDefault())) {
+                    if (defaultCollection) {
+                        throw new IllegalArgumentException("isDefault: another tab is already the default");
+                    }
+                    defaultCollection = true;
+                    collections.setDefault(household, profile, restored.id());
+                }
+                tabs++;
+            });
         }
 
         void importPlans(List<ExportedMealPlan> exported) {
@@ -494,7 +536,7 @@ public class AccountImporter {
         }
 
         private int[] missing(String slug) {
-            return missingSlugs.computeIfAbsent(slug, key -> new int[2]);
+            return missingSlugs.computeIfAbsent(slug, key -> new int[3]);
         }
 
         List<String> warnings() {
@@ -506,6 +548,9 @@ public class AccountImporter {
                 }
                 if (counts[1] > 0) {
                     effects.add(count(counts[1], "logged meal") + " kept without the recipe link");
+                }
+                if (counts[2] > 0) {
+                    effects.add(count(counts[2], "recipe tab") + " kept without it");
                 }
                 warnings.add("Library recipe \"" + slug + "\" is not in this instance's library: "
                         + String.join(", ", effects) + ".");
