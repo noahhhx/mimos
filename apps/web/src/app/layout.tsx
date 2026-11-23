@@ -61,7 +61,11 @@ const THEME_SCRIPT = `(function () {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     // The theme script sets data-theme before hydration.
-    <html lang="en" className={`${newsreader.variable} ${publicSans.variable} ${twemojiFlags.variable}`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${newsreader.variable} ${publicSans.variable} ${twemojiFlags.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         {/* Public URLs from the container's env (ADR-0012), set before any app code runs. */}

@@ -30,7 +30,10 @@ test.use({
 
 const SUGAR = (
   JSON.parse(
-    readFileSync(new URL("../../../core/core-recipes/src/main/resources/library/ingredient-seed.json", import.meta.url), "utf8"),
+    readFileSync(
+      new URL("../../../core/core-recipes/src/main/resources/library/ingredient-seed.json", import.meta.url),
+      "utf8",
+    ),
   ) as { slug: string; calories: number }[]
 ).find((entry) => entry.slug === "sugar")!;
 const NUTELLA_KCAL_PER_100_G = (fixtures().get(NUTELLA)!.nutriments as Record<string, number>)["energy-kcal_100g"]!;
@@ -88,9 +91,7 @@ test("logs an ingredient by amount, then a product found by its typed barcode", 
 
   await test.step("an unknown barcode keeps the dialog open and says so", async () => {
     await lookUp(UNKNOWN_BARCODE);
-    await expect(lookupAlert).toHaveText(
-      "Open Food Facts doesn't know that barcode. Log it by hand instead.",
-    );
+    await expect(lookupAlert).toHaveText("Open Food Facts doesn't know that barcode. Log it by hand instead.");
     await expect(dialog).toBeVisible();
   });
 

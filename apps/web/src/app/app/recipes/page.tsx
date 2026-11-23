@@ -3,11 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import {
-  listLibraryRecipes,
-  listMyRecipes,
-  type RecipeSummary,
-} from "@mimos/api-client";
+import { listLibraryRecipes, listMyRecipes, type RecipeSummary } from "@mimos/api-client";
 
 import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";

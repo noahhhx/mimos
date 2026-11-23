@@ -67,7 +67,9 @@ test("invite someone, who joins, sees your recipe, and leaves", async ({ page, b
     await test.step("the join page says what joining does", async () => {
       await expect(guestPage.getByRole("heading", { name: `Join ${host}'s household?` })).toBeVisible();
       await expect(guestPage.getByText("Your recipes and your own ingredients come with you")).toBeVisible();
-      await expect(guestPage.getByText("Your meal plans, shopping lists and plugin settings are deleted.")).toBeVisible();
+      await expect(
+        guestPage.getByText("Your meal plans, shopping lists and plugin settings are deleted."),
+      ).toBeVisible();
       await expect(guestPage.getByText("Your food log, fuel settings and training stay yours.")).toBeVisible();
     });
 
@@ -95,7 +97,9 @@ test("invite someone, who joins, sees your recipe, and leaves", async ({ page, b
       await guestPage.goto("/app/household");
       await guestPage.getByRole("button", { name: "Leave household" }).click();
       const confirm = guestPage.getByRole("group", { name: "Leave this household?" });
-      await expect(confirm).toContainText("The household keeps its recipes, ingredients, meal plans and shopping lists");
+      await expect(confirm).toContainText(
+        "The household keeps its recipes, ingredients, meal plans and shopping lists",
+      );
       await expect(confirm).toContainText("You keep your food log");
       await confirm.getByRole("button", { name: "Leave household" }).click();
       await expect(guestPage.locator(".member-list li")).toHaveText([`${guest}You`]);

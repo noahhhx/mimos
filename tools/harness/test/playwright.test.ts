@@ -24,7 +24,10 @@ test("the browser folders a Playwright release expects, as nixpkgs names them", 
 });
 
 test("without devenv's browsers, harness ui says how to get them", () => {
-  assert.throws(() => checkBrowsers({}), (error: Error) => error instanceof HarnessError && /devenv shell/.test(error.message));
+  assert.throws(
+    () => checkBrowsers({}),
+    (error: Error) => error instanceof HarnessError && /devenv shell/.test(error.message),
+  );
 });
 
 /** Trimmed from a real report of the failing create-recipe scenario. */

@@ -97,9 +97,7 @@ export function removals(previous: Json, next: Json, path = "#"): string[] {
       }
     } else if (key === "type") {
       if (JSON.stringify(value) !== JSON.stringify(current.type)) {
-        found.push(
-          `changed type from ${JSON.stringify(value)} to ${JSON.stringify(current.type)} at ${path}`,
-        );
+        found.push(`changed type from ${JSON.stringify(value)} to ${JSON.stringify(current.type)} at ${path}`);
       }
     } else if (key === "responses" && isObject(value)) {
       const kept = isObject(current.responses) ? current.responses : {};

@@ -27,9 +27,7 @@ import {
  * one of `recipeId` and `food`; everything on the plan page that reads an
  * entry goes through this module so it handles both.
  */
-export type PlannedWhat =
-  | { kind: "recipe"; recipeId: string; title: string }
-  | { kind: "food"; food: PlannedFood };
+export type PlannedWhat = { kind: "recipe"; recipeId: string; title: string } | { kind: "food"; food: PlannedFood };
 
 type EntryItem = Pick<MealPlanEntry, "recipeId" | "recipeTitle" | "food">;
 
@@ -122,12 +120,18 @@ export function productIngredient(product: FoodProduct): IngredientInput | undef
 }
 
 /** The household's own ingredient that already is `input`, so scanning one product twice adds it once. */
-export function existingIngredient(input: IngredientInput, ingredients: CatalogIngredient[]): CatalogIngredient | undefined {
+export function existingIngredient(
+  input: IngredientInput,
+  ingredients: CatalogIngredient[],
+): CatalogIngredient | undefined {
   const same = (a: IngredientInput["nutrition"], b: IngredientInput["nutrition"]) =>
     a.calories === b.calories && a.proteinG === b.proteinG && a.carbsG === b.carbsG && a.fatG === b.fatG;
   return ingredients.find(
     (entry) =>
-      !entry.isShared && entry.name === input.name && entry.basis === input.basis && same(entry.nutrition, input.nutrition),
+      !entry.isShared &&
+      entry.name === input.name &&
+      entry.basis === input.basis &&
+      same(entry.nutrition, input.nutrition),
   );
 }
 
@@ -145,12 +149,8 @@ export function foodLogBody(
   if (!found || !entry.food) {
     return undefined;
   }
-  return logBody(
-    { kind: "ingredient", entry: found },
-    entry.date,
-    entry.mealType,
-    "1",
-    EMPTY_NUTRITION,
-    { quantity: String(amount), unit: unitOf(entry.food) },
-  );
+  return logBody({ kind: "ingredient", entry: found }, entry.date, entry.mealType, "1", EMPTY_NUTRITION, {
+    quantity: String(amount),
+    unit: unitOf(entry.food),
+  });
 }

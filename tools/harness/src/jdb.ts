@@ -29,7 +29,9 @@ export function parseLocation(raw: string): BreakLocation {
     if (!CLASS.test(className) || Number(line) < 1) throw new UsageError(`not a Class:line location: ${raw}`);
     return { kind: "line", className, line: Number(line) };
   }
-  const inMethod = new RegExp(String.raw`^(${IDENT}(?:\.${IDENT})*)\.(${IDENT}|<init>|<clinit>)(\([^()]*\))?$`).exec(raw);
+  const inMethod = new RegExp(String.raw`^(${IDENT}(?:\.${IDENT})*)\.(${IDENT}|<init>|<clinit>)(\([^()]*\))?$`).exec(
+    raw,
+  );
   if (!inMethod) throw new UsageError(`expected Class:line or Class.method[(argument types)], got: ${raw}`);
   const [, className = "", method = "", signature] = inMethod;
   return { kind: "method", className, method, signature };
@@ -93,7 +95,9 @@ export function resolveClassName(className: string, roots: readonly string[]): s
     ),
   ].map((name) => [name, ...nested].join("$"));
   if (candidates.length === 0) {
-    throw new UsageError(`no class ${className} in the API's sources — give a fully qualified name for library classes`);
+    throw new UsageError(
+      `no class ${className} in the API's sources — give a fully qualified name for library classes`,
+    );
   }
   if (candidates.length > 1) {
     throw new UsageError(`${className} is ambiguous — qualify it: ${candidates.sort().join(", ")}`);
@@ -112,10 +116,7 @@ export function endsWithPrompt(text: string): boolean {
   return /(?:^|[\s\]])(?:>|\S*\[\d+\]) $/.test(text);
 }
 
-export type StopResult =
-  | { kind: "set" }
-  | { kind: "deferred" }
-  | { kind: "failed"; reason: string };
+export type StopResult = { kind: "set" } | { kind: "deferred" } | { kind: "failed"; reason: string };
 
 /** The answer to `stop …`: set now, deferred until the class loads, or refused (with jdb's reason). */
 export function parseStopResult(text: string): StopResult | undefined {
@@ -246,13 +247,14 @@ export function parseEvaluation(text: string, expr: string): Evaluation {
   const start = evaluationStart(text, expr);
   const before = start ? text.slice(0, start.index) : text;
   const error = /(?:^|\n)(?:> |\S*\[\d+\] )*((?:[\w.$]+(?:Exception|Error)|Exception)[^\n]*)/.exec(before)?.[1];
-  if (error !== undefined) return { ok: false, error: error.replace(/^com\.sun\.tools\.example\.debug\.expr\./, "").trim() };
+  if (error !== undefined)
+    return { ok: false, error: error.replace(/^com\.sun\.tools\.example\.debug\.expr\./, "").trim() };
   if (!start) {
     const said = before.replace(/(?:^|\n)(?:> |\S*\[\d+\] )+/g, "\n").trim();
     return { ok: false, error: said || "no answer from jdb" };
   }
   let value = text.slice(start.index + start[0].length);
-  value = value.startsWith("{") ? value.slice(0, (value.search(/\n\}/) + 2) || undefined) : (value.split("\n")[0] ?? "");
+  value = value.startsWith("{") ? value.slice(0, value.search(/\n\}/) + 2 || undefined) : (value.split("\n")[0] ?? "");
   return { ok: true, value: value.trimEnd() };
 }
 
@@ -394,7 +396,11 @@ export class JdbSession {
   }
 
   print(command: "print" | "dump", expr: string): Promise<string> {
-    return this.send(`${command} ${expr}`, (text) => evaluationDone(text, expr) || /Exception|No current thread|No default thread/.test(text), 15_000);
+    return this.send(
+      `${command} ${expr}`,
+      (text) => evaluationDone(text, expr) || /Exception|No current thread|No default thread/.test(text),
+      15_000,
+    );
   }
 
   /** Detaches: jdb's quit disposes the connection, which drops our requests and resumes every thread. */

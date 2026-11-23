@@ -84,7 +84,9 @@ function failingStep(steps: readonly JSONReportTestStep[] | undefined): string[]
   return [];
 }
 
-function* specsOf(suites: readonly JSONReportSuite[]): Generator<{ suite: JSONReportSuite; spec: JSONReportSuite["specs"][number] }> {
+function* specsOf(
+  suites: readonly JSONReportSuite[],
+): Generator<{ suite: JSONReportSuite; spec: JSONReportSuite["specs"][number] }> {
   for (const suite of suites) {
     for (const spec of suite.specs) yield { suite, spec };
     yield* specsOf(suite.suites ?? []);
@@ -121,5 +123,7 @@ export function scenarioTests(report: JSONReport, testDir: string): ScenarioTest
 
 /** Errors outside any test (config errors, no tests found), colors stripped. */
 export function globalErrors(report: JSONReport): string[] {
-  return report.errors.map((error) => stripVTControlCharacters(error.message ?? String(error.value ?? "unknown error")));
+  return report.errors.map((error) =>
+    stripVTControlCharacters(error.message ?? String(error.value ?? "unknown error")),
+  );
 }

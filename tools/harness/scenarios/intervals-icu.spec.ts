@@ -82,10 +82,16 @@ test("a person connects intervals.icu and their planned workouts reach the plan"
     const day = await plan.openDay(index);
     const training = day.getByRole("group", { name: /^Training for / });
     await expect(training.locator(".training-parts")).toHaveText("Ride · 90 min · Hard · Planned · intervals.icu");
-    await expect(training.getByRole("button", { name: /^Remove / }), "synced sessions have no remove control").toHaveCount(0);
-    await expect(day.getByRole("row", { name: /^Fuel for the day/ }).getByRole("cell").first()).toHaveText(
-      `${synced.target!.calories}`,
-    );
+    await expect(
+      training.getByRole("button", { name: /^Remove / }),
+      "synced sessions have no remove control",
+    ).toHaveCount(0);
+    await expect(
+      day
+        .getByRole("row", { name: /^Fuel for the day/ })
+        .getByRole("cell")
+        .first(),
+    ).toHaveText(`${synced.target!.calories}`);
   });
 
   await test.step("disconnecting removes the synced training", async () => {
@@ -103,7 +109,10 @@ async function syncedDay(page: Page, api: Awaited<ReturnType<typeof apiAs>>): Pr
   const { monday } = await browserWeek(page);
   const sunday = new Date(`${monday}T00:00:00Z`);
   sunday.setUTCDate(sunday.getUTCDate() + 6);
-  const { days } = await api<{ days: Day[] }>("GET", `/api/v1/me/fuel?from=${monday}&to=${sunday.toISOString().slice(0, 10)}`);
+  const { days } = await api<{ days: Day[] }>(
+    "GET",
+    `/api/v1/me/fuel?from=${monday}&to=${sunday.toISOString().slice(0, 10)}`,
+  );
   const day = days.find((d) => d.sessions.some((s) => s.source === "INTERVALS_ICU" && s.durationMinutes === 90));
   expect(day, "the fake's ride today is in this week").toBeTruthy();
   return day!;

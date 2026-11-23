@@ -91,7 +91,13 @@ export function createFakeServer(): Server {
     const barcode = decodeURIComponent(match[1]!);
     const fields = url.searchParams.get("fields")?.split(",") ?? null;
     const answer = (status: number, body: unknown): void => {
-      requests.push({ at: new Date().toISOString(), barcode, fields, userAgent: req.headers["user-agent"] ?? null, status });
+      requests.push({
+        at: new Date().toISOString(),
+        barcode,
+        fields,
+        userAgent: req.headers["user-agent"] ?? null,
+        status,
+      });
       send(res, status, body);
     };
 
@@ -127,7 +133,11 @@ export function createFakeServer(): Server {
         return;
       case "PUT fault": {
         const { status, times } = await readJsonObject(req);
-        if (typeof status !== "number" || !FAULT_STATUSES.has(status) || !(times === undefined || (Number.isInteger(times) && (times as number) >= 1))) {
+        if (
+          typeof status !== "number" ||
+          !FAULT_STATUSES.has(status) ||
+          !(times === undefined || (Number.isInteger(times) && (times as number) >= 1))
+        ) {
           throw new HttpError(400, "a fault is {status: 429 | 500 | 503, times?: count}");
         }
         fault = { status, ...(times === undefined ? {} : { times }) } as Fault;

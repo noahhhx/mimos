@@ -74,8 +74,9 @@ export default function PluginsPage() {
       <section className="card" aria-labelledby="about-heading">
         <h2 id="about-heading">What plugins are</h2>
         <p>
-          Plugins are add-ons that whoever runs this Mimos chose to install, bringing features beyond what Mimos does
-          on its own. Country of the Week, for example, spins a wheel to pick a country for your week and suggests dishes from it.
+          Plugins are add-ons that whoever runs this Mimos chose to install, bringing features beyond what Mimos does on
+          its own. Country of the Week, for example, spins a wheel to pick a country for your week and suggests dishes
+          from it.
         </p>
         <p>
           Every plugin starts off. Turning one on lets it remember things about you, under a pseudonym rather than your

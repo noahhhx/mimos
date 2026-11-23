@@ -36,7 +36,10 @@ export function renderUpSection(report: UpReport): string {
   const lines = [
     `## \`${displayCommand(["mobile", ...report.argv])}\` — ${failed ? "failed" : "passed"} (${seconds(report.ms)})`,
     "",
-    ...report.steps.map((step) => `- ${step.ok ? "✓" : "✗"} **${step.name}** (${seconds(step.ms)})${step.detail ? `: ${step.detail}` : ""}`),
+    ...report.steps.map(
+      (step) =>
+        `- ${step.ok ? "✓" : "✗"} **${step.name}** (${seconds(step.ms)})${step.detail ? `: ${step.detail}` : ""}`,
+    ),
   ];
   if (report.probes.length > 0) {
     lines.push("", "Requests from the device, through `adb reverse`:", "", ...renderProbes(report.probes));
@@ -107,11 +110,22 @@ export interface FlowReport {
 
 export function renderFlowSection(report: FlowReport): string {
   const { failure } = report;
-  const lines = [`## \`${displayCommand(["mobile", ...report.argv])}\` — ${failure ? "failed" : "passed"} (${seconds(report.ms)})`, ""];
-  if (failure) lines.push(`**Failed at:** ${failure.at}`, "", ...(failure.message === failure.at ? [] : [fenced(failure.message), ""]));
+  const lines = [
+    `## \`${displayCommand(["mobile", ...report.argv])}\` — ${failure ? "failed" : "passed"} (${seconds(report.ms)})`,
+    "",
+  ];
+  if (failure)
+    lines.push(
+      `**Failed at:** ${failure.at}`,
+      "",
+      ...(failure.message === failure.at ? [] : [fenced(failure.message), ""]),
+    );
   lines.push(
     `- **Flow:** \`apps/mobile/flows/${report.flow}.yaml\`${report.account ? ` as \`${report.account}\`` : ""}`,
-    ...report.steps.map((step) => `- ${step.ok ? "✓" : "✗"} **${step.name}** (${seconds(step.ms)})${step.detail ? `: ${step.detail}` : ""}`),
+    ...report.steps.map(
+      (step) =>
+        `- ${step.ok ? "✓" : "✗"} **${step.name}** (${seconds(step.ms)})${step.detail ? `: ${step.detail}` : ""}`,
+    ),
   );
   if (report.requests.length > 0) {
     lines.push(

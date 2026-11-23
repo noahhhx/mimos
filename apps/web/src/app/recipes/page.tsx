@@ -8,11 +8,7 @@ import { publicApi } from "@/lib/server-api";
  * The public recipe library — server-rendered for SEO, no login required.
  * Browsing is cached and revalidated periodically; searches stay fresh.
  */
-export default async function LibraryPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string }>;
-}) {
+export default async function LibraryPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q } = await searchParams;
   const result = await listPublicRecipes({ client: publicApi, query: q ? { q } : {} });
   const recipes = result.data ?? [];

@@ -131,7 +131,11 @@ function pluralWord(word: string): string {
  * "Corns on the cob", "Rye bread (slices)". A name that already ends in s is
  * left as it is.
  */
-export function countedName(name: string, quantity: number | null | undefined, unit: string | null | undefined): string {
+export function countedName(
+  name: string,
+  quantity: number | null | undefined,
+  unit: string | null | undefined,
+): string {
   if (unit?.trim() || quantity == null || roundQuantity(quantity) === 1) {
     return name;
   }

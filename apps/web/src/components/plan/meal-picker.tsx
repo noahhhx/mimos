@@ -72,7 +72,8 @@ export function MealPicker({
 
   const foodResults = searchCatalog(query, ingredients);
 
-  const planRecipe = (recipeId: string) => onPlan({ recipeId, servings: defaultServings(slot.mealType, householdSize) });
+  const planRecipe = (recipeId: string) =>
+    onPlan({ recipeId, servings: defaultServings(slot.mealType, householdSize) });
 
   const planFood = (food: CatalogIngredient, servingSize?: number) =>
     onPlan(newFoodEntry({ slug: food.slug, basis: food.basis, servingSize }, slot.mealType, householdSize));

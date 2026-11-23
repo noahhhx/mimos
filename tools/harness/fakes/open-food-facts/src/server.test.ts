@@ -28,7 +28,9 @@ interface Answer {
 
 function lookUp(barcode: string, fields?: string): Promise<Response> {
   const query = fields === undefined ? "" : `?fields=${fields}`;
-  return fetch(`${base}/api/v2/product/${barcode}${query}`, { headers: { "User-Agent": "Mimos/test (https://github.com/noahhhx/mimos)" } });
+  return fetch(`${base}/api/v2/product/${barcode}${query}`, {
+    headers: { "User-Agent": "Mimos/test (https://github.com/noahhhx/mimos)" },
+  });
 }
 
 async function product(barcode: string, fields?: string): Promise<Record<string, unknown>> {
@@ -105,7 +107,12 @@ test("the request log names each lookup, its fields, and who asked", async () =>
   assert.deepEqual(
     log.map(({ barcode, fields, userAgent, status }) => ({ barcode, fields, userAgent, status })),
     [
-      { barcode: NUTELLA, fields: ["product_name", "nutriments"], userAgent: "Mimos/test (https://github.com/noahhhx/mimos)", status: 200 },
+      {
+        barcode: NUTELLA,
+        fields: ["product_name", "nutriments"],
+        userAgent: "Mimos/test (https://github.com/noahhhx/mimos)",
+        status: 200,
+      },
       { barcode: "20000000", fields: null, userAgent: "Mimos/test (https://github.com/noahhhx/mimos)", status: 404 },
     ],
   );

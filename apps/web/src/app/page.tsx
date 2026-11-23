@@ -21,9 +21,8 @@ export default function HomePage() {
             <h1>Mimos</h1>
           </header>
           <p className="lede">
-            A library of free recipes, a place to keep your own, and &ldquo;what am I cooking this
-            week?&rdquo; turned into plans, shopping lists, and a picture of what you&apos;re actually
-            eating.
+            A library of free recipes, a place to keep your own, and &ldquo;what am I cooking this week?&rdquo; turned
+            into plans, shopping lists, and a picture of what you&apos;re actually eating.
           </p>
         </>
       }
@@ -44,19 +43,18 @@ export default function HomePage() {
       <div className="card">
         <h2>On Android</h2>
         <p>
-          Mimos has an app for Android phones, with no app store and no Google services. Connect it to
-          this address and sign in with the same account. <a href={`${DOCS_URL}guide/android-app/`}>Get the app</a>.
+          Mimos has an app for Android phones, with no app store and no Google services. Connect it to this address and
+          sign in with the same account. <a href={`${DOCS_URL}guide/android-app/`}>Get the app</a>.
         </p>
       </div>
 
       <div className="card">
         <h2>Self-hosting</h2>
-        <p>
-          Mimos runs the same everywhere: our cloud or your own hardware. Bring the whole stack up
-          with Docker:
-        </p>
+        <p>Mimos runs the same everywhere: our cloud or your own hardware. Bring the whole stack up with Docker:</p>
         <pre>
-          <code>git clone https://github.com/noahhhx/mimos.git{"\n"}cd mimos/deploy/docker{"\n"}docker compose up -d --wait</code>
+          <code>
+            git clone https://github.com/noahhhx/mimos.git{"\n"}cd mimos/deploy/docker{"\n"}docker compose up -d --wait
+          </code>
         </pre>
         <p>
           To run it on a server, follow the <a href={`${DOCS_URL}self-hosting/`}>self-hosting guide</a>.

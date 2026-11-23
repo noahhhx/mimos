@@ -121,7 +121,8 @@ function weekPanel(store: Store, rng: Rng, request: WeekPanelRequest): WeekPanel
 }
 
 function planSuggestions(store: Store, context: SuggestionContext): PluginSuggestions {
-  const country = context.subject === undefined ? null : chosenFor(store.ledger(context.subject), context.weekStartDate);
+  const country =
+    context.subject === undefined ? null : chosenFor(store.ledger(context.subject), context.weekStartDate);
   return { suggestions: suggest(country, context) };
 }
 

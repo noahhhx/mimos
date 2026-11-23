@@ -157,8 +157,9 @@ test("a shared week: who eats what, Mine and Everyone, and logging your share", 
       await expect(potatoes).toBeChecked();
       type List = { items: { name: string; checked: boolean }[] };
       const checked = async (api: typeof hostApi) =>
-        (await api<List>("GET", `/api/v1/plans/${monday}/shopping-list`)).items.find((item) => /potatoes/i.test(item.name))
-          ?.checked;
+        (await api<List>("GET", `/api/v1/plans/${monday}/shopping-list`)).items.find((item) =>
+          /potatoes/i.test(item.name),
+        )?.checked;
       await expect.poll(() => checked(hostApi)).toBe(true);
       expect(await checked(guestApi)).toBe(true);
     });

@@ -29,7 +29,10 @@ export interface SourceChange {
   path: string;
 }
 
-export async function latestSourceChange(paths: readonly string[], probe: SourceProbe): Promise<SourceChange | undefined> {
+export async function latestSourceChange(
+  paths: readonly string[],
+  probe: SourceProbe,
+): Promise<SourceChange | undefined> {
   const [files, deleted] = await Promise.all([probe.files(paths), probe.deleted(paths)]);
   let latest: SourceChange | undefined;
   const consider = (path: string, time: Date | undefined): void => {
@@ -71,7 +74,8 @@ export function freshness(imageCreated: Date | undefined, change: SourceChange |
 export function gitProbe(root: string): SourceProbe {
   const lines = (text: string): string[] => text.split("\n").filter(Boolean);
   return {
-    files: async (paths) => lines(await execOk("git", ["ls-files", "-co", "--exclude-standard", "--", ...paths], { cwd: root })),
+    files: async (paths) =>
+      lines(await execOk("git", ["ls-files", "-co", "--exclude-standard", "--", ...paths], { cwd: root })),
     deleted: async (paths) => lines(await execOk("git", ["ls-files", "-d", "--", ...paths], { cwd: root })),
     mtime: (path) => statSync(join(root, path), { throwIfNoEntry: false })?.mtime,
   };

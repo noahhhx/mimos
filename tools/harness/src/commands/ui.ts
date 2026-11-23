@@ -131,7 +131,9 @@ type LinesFor = (exchange: Exchange) => string[];
 
 function linesFor(logs: readonly CapturedLog[] | Error): LinesFor {
   return (exchange) =>
-    logs instanceof Error || exchange.requestId === undefined ? [] : describeRequestLines(requestLines(logs, exchange.requestId));
+    logs instanceof Error || exchange.requestId === undefined
+      ? []
+      : describeRequestLines(requestLines(logs, exchange.requestId));
 }
 
 function testSection(test: ScenarioTest, evidence: TestEvidence, apiOrigin: string, logLines: LinesFor): string[] {
@@ -151,7 +153,9 @@ function testSection(test: ScenarioTest, evidence: TestEvidence, apiOrigin: stri
       `  - \`console.jsonl\` — ${count(evidence.console.length, "entry", "entries")}, ${count(errors.length, "error")}`,
       ...(screenshots.length ? [`  - screenshots: ${screenshots.map((file) => `\`${file}\``).join(", ")}`] : []),
       ...evidence.files.filter((file) => file.endsWith(".webm")).map((file) => `  - video: \`${file}\``),
-      ...(evidence.files.includes("error-context.md") ? ["  - `error-context.md` — the page's accessibility tree at the failure"] : []),
+      ...(evidence.files.includes("error-context.md")
+        ? ["  - `error-context.md` — the page's accessibility tree at the failure"]
+        : []),
     );
   }
   if (failed && test.error) {
@@ -169,7 +173,12 @@ function testSection(test: ScenarioTest, evidence: TestEvidence, apiOrigin: stri
         "",
         "Console errors:",
         "",
-        fenced(errors.slice(0, 10).map((entry) => `[${entry.type}] ${entry.text}${entry.source ? ` (${entry.source})` : ""}`).join("\n")),
+        fenced(
+          errors
+            .slice(0, 10)
+            .map((entry) => `[${entry.type}] ${entry.text}${entry.source ? ` (${entry.source})` : ""}`)
+            .join("\n"),
+        ),
       );
     }
   }
@@ -210,7 +219,12 @@ passed, 1 otherwise.`;
         {
           cwd: HARNESS_DIR,
           stream: true,
-          env: { ...process.env, HARNESS_OUTPUT_DIR: staging, HARNESS_SCENARIO: args.scenario, HARNESS_USER: args.user },
+          env: {
+            ...process.env,
+            HARNESS_OUTPUT_DIR: staging,
+            HARNESS_SCENARIO: args.scenario,
+            HARNESS_USER: args.user,
+          },
         },
       );
       // Playwright's output names staging paths — absolute, or relative to its cwd in the
@@ -223,7 +237,10 @@ passed, 1 otherwise.`;
 
       const report = readJson<JSONReport>(join(target, "report.json"));
       const tests = report ? scenarioTests(report, SCENARIOS_DIR) : [];
-      const passed = result.code === 0 && tests.length > 0 && tests.every((test) => test.status !== "failed" && test.status !== "timedOut");
+      const passed =
+        result.code === 0 &&
+        tests.length > 0 &&
+        tests.every((test) => test.status !== "failed" && test.status !== "timedOut");
 
       await new Promise((resolve) => setTimeout(resolve, 300));
       const since = new Date(runStartedAt(run, startedAt).getTime() - 1000).toISOString();
@@ -236,22 +253,33 @@ passed, 1 otherwise.`;
         `- **Scenario:** \`scenarios/${args.scenario}.spec.ts\` as ${args.user}, ${args.headed ? "headed" : "headless"} · ` +
           `${tests.length - failedCount} passed, ${failedCount} failed · ${seconds(Date.now() - startedAt.getTime())}`,
         `- **Runner:** \`${dir}/output.log\`, \`${dir}/report.json\` (Playwright exited ${result.code})`,
-        logs instanceof Error ? `- **Logs:** not captured — ${logs.message}` : `- **Logs (run window):** ${describeLogs(logs)}`,
+        logs instanceof Error
+          ? `- **Logs:** not captured — ${logs.message}`
+          : `- **Logs (run window):** ${describeLogs(logs)}`,
       ];
       const errors = report ? globalErrors(report) : [];
       if (!report || errors.length > 0 || tests.length === 0) {
         section.push(
           "",
-          report ? "**Playwright reported errors outside any test:**" : "**Playwright produced no report.** Last output:",
+          report
+            ? "**Playwright reported errors outside any test:**"
+            : "**Playwright produced no report.** Last output:",
           "",
-          fenced((errors.length > 0 ? errors.join("\n\n") : output.trimEnd().split("\n").slice(-30).join("\n")) || "(no output)"),
+          fenced(
+            (errors.length > 0 ? errors.join("\n\n") : output.trimEnd().split("\n").slice(-30).join("\n")) ||
+              "(no output)",
+          ),
         );
       }
       const evidence = tests.map((test) => testEvidence(run, test));
       const logLines = linesFor(logs);
-      tests.forEach((test, index) => section.push("", ...testSection(test, evidence[index]!, endpoints().api, logLines)));
+      tests.forEach((test, index) =>
+        section.push("", ...testSection(test, evidence[index]!, endpoints().api, logLines)),
+      );
       // Without per-request lines (no failed request, or an API that logs no IDs), fall back to the time window.
-      const correlated = evidence.some((each) => each.exchanges.filter(isFailure).some((failure) => logLines(failure).length > 0));
+      const correlated = evidence.some((each) =>
+        each.exchanges.filter(isFailure).some((failure) => logLines(failure).length > 0),
+      );
       const apiLog = logs instanceof Error ? undefined : logs.find((log) => log.service === "api");
       const apiLines = linesSince(apiLog?.text ?? "", startedAt).map(formatLogLine);
       if (!passed && !correlated && apiLines.length > 0) {
@@ -262,10 +290,14 @@ passed, 1 otherwise.`;
       await finishRun(run, ["ui", ...argv], startedAt, exitCode);
 
       tests.forEach((test, index) => {
-        process.stdout.write(`${MARK[test.status] ?? "✗"} ${test.title} — ${test.status}${test.failedStep ? ` at: ${test.failedStep}` : ""}\n`);
+        process.stdout.write(
+          `${MARK[test.status] ?? "✗"} ${test.title} — ${test.status}${test.failedStep ? ` at: ${test.failedStep}` : ""}\n`,
+        );
         for (const failure of evidence[index]!.exchanges.filter(isFailure)) {
           const id = failure.requestId ? ` (request ${failure.requestId})` : "";
-          process.stdout.write(`  ${failure.method} ${failure.url} → ${failure.status || "no response"} ${failure.statusText}${id}\n`);
+          process.stdout.write(
+            `  ${failure.method} ${failure.url} → ${failure.status || "no response"} ${failure.statusText}${id}\n`,
+          );
         }
       });
       process.stdout.write(`summary: ${relative(process.cwd(), join(run.dir, "summary.md"))}\n`);

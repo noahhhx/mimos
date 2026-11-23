@@ -14,7 +14,6 @@ import {
   productIngredient,
 } from "../src/lib/planned-item.ts";
 
-
 const stew = { recipeId: "r1", recipeTitle: "Lentil stew", servings: 4 };
 const banana = { food: { catalogSlug: "banana", name: "Banana", unit: undefined }, servings: 1 };
 const bagel = { food: { catalogSlug: "bagel-x", name: "Bagel", unit: "g" }, servings: 85 };

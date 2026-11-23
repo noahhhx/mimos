@@ -90,7 +90,9 @@ export function exchanges(har: Har): Exchange[] {
       responseType: header(entry.response.headers, "content-type") ?? (content?.mimeType || undefined),
       responseBody: body,
       failureText: entry.response._failureText,
-      requestId: header(entry.response.headers, REQUEST_ID_HEADER.toLowerCase()) ?? header(entry.request.headers, REQUEST_ID_HEADER.toLowerCase()),
+      requestId:
+        header(entry.response.headers, REQUEST_ID_HEADER.toLowerCase()) ??
+        header(entry.request.headers, REQUEST_ID_HEADER.toLowerCase()),
     };
   });
 }
@@ -117,11 +119,15 @@ function pretty(body: string, contentType: string | undefined): string {
 const BODY_LIMIT = 4000;
 
 function clip(text: string): string {
-  return text.length > BODY_LIMIT ? `${text.slice(0, BODY_LIMIT)}\n… (${text.length - BODY_LIMIT} more characters)` : text;
+  return text.length > BODY_LIMIT
+    ? `${text.slice(0, BODY_LIMIT)}\n… (${text.length - BODY_LIMIT} more characters)`
+    : text;
 }
 
 function statusOf(exchange: Exchange): string {
-  return exchange.status === 0 ? `no response${exchange.failureText ? ` (${exchange.failureText})` : ""}` : `${exchange.status} ${exchange.statusText}`.trim();
+  return exchange.status === 0
+    ? `no response${exchange.failureText ? ` (${exchange.failureText})` : ""}`
+    : `${exchange.status} ${exchange.statusText}`.trim();
 }
 
 /** `| # | Method | Path | Status | Sent | Received | Request ID |` for every call to the API, in order. */
@@ -134,7 +140,11 @@ export function apiCallTable(all: readonly Exchange[], apiOrigin: string): strin
     ...calls.map((call, index) => {
       const url = new URL(call.url);
       const sent =
-        call.requestBodySize === 0 ? "—" : call.requestType ? `\`${mediaType(call.requestType)}\`` : "**no Content-Type**";
+        call.requestBodySize === 0
+          ? "—"
+          : call.requestType
+            ? `\`${mediaType(call.requestType)}\``
+            : "**no Content-Type**";
       const received = call.responseType ? `\`${mediaType(call.responseType)}\`` : "—";
       const mark = isFailure(call) ? "**" : "";
       const id = call.requestId ? `\`${call.requestId}\`` : "—";
@@ -152,15 +162,25 @@ export function failureDetails(exchange: Exchange, logLines: readonly string[] =
   const lines = [
     `#### \`${exchange.method} ${exchange.url}\` → ${statusOf(exchange)}`,
     "",
-    ...(exchange.requestId ? [`Request ID: \`${exchange.requestId}\` — \`harness logs --request-id ${exchange.requestId}\``, ""] : []),
+    ...(exchange.requestId
+      ? [`Request ID: \`${exchange.requestId}\` — \`harness logs --request-id ${exchange.requestId}\``, ""]
+      : []),
     "Request headers:",
     "",
     fenced(exchange.requestHeaders.map(({ name, value }) => `${name}: ${value}`).join("\n") || "(none)"),
   ];
   if (exchange.requestBody !== undefined) {
-    lines.push("", "Request body:", "", fenced(clip(pretty(exchange.requestBody, exchange.requestType)), isJson(exchange.requestType) ? "json" : ""));
+    lines.push(
+      "",
+      "Request body:",
+      "",
+      fenced(clip(pretty(exchange.requestBody, exchange.requestType)), isJson(exchange.requestType) ? "json" : ""),
+    );
   } else if (exchange.requestBodySize > 0) {
-    lines.push("", `Request body: ${exchange.requestBodySize} bytes sent, but the browser did not expose them to the HAR.`);
+    lines.push(
+      "",
+      `Request body: ${exchange.requestBodySize} bytes sent, but the browser did not expose them to the HAR.`,
+    );
   }
   if (exchange.responseBody !== undefined && exchange.responseBody.trim() !== "") {
     const problem = mediaType(exchange.responseType) === "application/problem+json";

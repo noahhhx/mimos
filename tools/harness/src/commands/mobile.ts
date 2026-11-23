@@ -1,10 +1,31 @@
 import { spawn } from "node:child_process";
-import { closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  closeSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  openSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { stripVTControlCharacters } from "node:util";
 
-import { adb, closeAppButton, notRespondingApp, parseDevices, parseReverseList, probe, probeOk, probeTargets, type Adb, type ProbeResult } from "../adb.ts";
+import {
+  adb,
+  closeAppButton,
+  notRespondingApp,
+  parseDevices,
+  parseReverseList,
+  probe,
+  probeOk,
+  probeTargets,
+  type Adb,
+  type ProbeResult,
+} from "../adb.ts";
 import {
   APP_BUILDS,
   APP_ID,
@@ -28,7 +49,23 @@ import { endpoints, FRESH_PASSWORD, REALM, REPO_ROOT } from "../config.ts";
 import { copyRedacted } from "../evidence.ts";
 import { fetchToken } from "./token.ts";
 import { exec } from "../exec.ts";
-import { COUNTRY_WEEK_TAG, driverDied, flowFailure, flowNames, FLOWS_DIR, maestroArgs, flowTags, HOUSEHOLD_TAG, INVITEE_TAG, lastLines, parseAppRequests, REQUEST_TAG, type AppRequest, type FlowEnv, type FlowFailure } from "../maestro.ts";
+import {
+  COUNTRY_WEEK_TAG,
+  driverDied,
+  flowFailure,
+  flowNames,
+  FLOWS_DIR,
+  maestroArgs,
+  flowTags,
+  HOUSEHOLD_TAG,
+  INVITEE_TAG,
+  lastLines,
+  parseAppRequests,
+  REQUEST_TAG,
+  type AppRequest,
+  type FlowEnv,
+  type FlowFailure,
+} from "../maestro.ts";
 import {
   renderFlowSection,
   renderLogcatSection,
@@ -70,10 +107,18 @@ export function parseMobileArgs(argv: string[]): MobileArgs {
   }
   if (action === "flow" && name === undefined) throw new UsageError("flow needs a flow name");
   if (extra.length > 0 || (name !== undefined && action !== "shot" && action !== "flow")) {
-    throw new UsageError(action === "shot" ? "expected at most one screenshot name" : action === "flow" ? "expected one flow name" : `${action} takes no arguments`);
+    throw new UsageError(
+      action === "shot"
+        ? "expected at most one screenshot name"
+        : action === "flow"
+          ? "expected one flow name"
+          : `${action} takes no arguments`,
+    );
   }
   if (name !== undefined && !/^[\w.-]+$/.test(name)) {
-    throw new UsageError(`${action === "flow" ? "flow" : "screenshot"} name ${name} must be letters, digits, dots, dashes, and underscores`);
+    throw new UsageError(
+      `${action === "flow" ? "flow" : "screenshot"} name ${name} must be letters, digits, dots, dashes, and underscores`,
+    );
   }
   if (values["no-build"] && action !== "up") throw new UsageError("--no-build only applies to up");
   if (values.minified && action !== "up") throw new UsageError("--minified only applies to up");
@@ -143,12 +188,17 @@ async function bootEmulator(): Promise<string> {
       // "isn't responding" dialog then covers every screen a flow looks at. Without dialogs, the
       // system restarts System UI instead, as Close app would.
       await device().ok(["shell", "settings", "put", "global", "hide_error_dialogs", "1"]);
-      const how = state === "device" ? "already running" : `booted (${((Date.now() - startedAt) / 1000).toFixed(0)} s to boot_completed)`;
+      const how =
+        state === "device"
+          ? "already running"
+          : `booted (${((Date.now() - startedAt) / 1000).toFixed(0)} s to boot_completed)`;
       return `${how}; error dialogs hidden`;
     }
     await sleep(1000);
   }
-  throw new HarnessError(`${AVD_SERIAL} did not finish booting in ${BOOT_TIMEOUT_MS / 1000} s:\n${tail(paths.emulatorLog)}`);
+  throw new HarnessError(
+    `${AVD_SERIAL} did not finish booting in ${BOOT_TIMEOUT_MS / 1000} s:\n${tail(paths.emulatorLog)}`,
+  );
 }
 
 const NOT_RESPONDING_DUMP = "/data/local/tmp/harness-not-responding.xml";
@@ -166,8 +216,10 @@ async function closeNotResponding(): Promise<string> {
   if (button === undefined) throw new HarnessError(`${app} is not responding, and its dialog has no Close app button`);
   await device().ok(["shell", "input", "tap", String(button.x), String(button.y)]);
   const deadline = Date.now() + 10_000;
-  while (Date.now() < deadline && notRespondingApp(await device().shell("dumpsys window")) !== undefined) await sleep(500);
-  if (notRespondingApp(await device().shell("dumpsys window")) !== undefined) throw new HarnessError(`${app}'s not-responding dialog stayed after Close app`);
+  while (Date.now() < deadline && notRespondingApp(await device().shell("dumpsys window")) !== undefined)
+    await sleep(500);
+  if (notRespondingApp(await device().shell("dumpsys window")) !== undefined)
+    throw new HarnessError(`${app}'s not-responding dialog stayed after Close app`);
   return `closed ${app}, which was not responding`;
 }
 
@@ -182,7 +234,9 @@ async function ensureBrowser(): Promise<string> {
     await device().ok(["install", "-r", apk]);
     detail = `installed ${BROWSER_ID} from the pinned APK`;
   }
-  await device().shell(`echo '${BROWSER_COMMAND_LINE}' > ${BROWSER_COMMAND_LINE_FILE} && chmod 644 ${BROWSER_COMMAND_LINE_FILE}`);
+  await device().shell(
+    `echo '${BROWSER_COMMAND_LINE}' > ${BROWSER_COMMAND_LINE_FILE} && chmod 644 ${BROWSER_COMMAND_LINE_FILE}`,
+  );
   return `${detail}; first-run screens off, external intents allowed, no restart prompt`;
 }
 
@@ -197,7 +251,8 @@ async function reversePorts(ports: readonly number[]): Promise<string> {
   for (const port of ports) await device().ok(["reverse", `tcp:${port}`, `tcp:${port}`]);
   const listed = parseReverseList(await device().ok(["reverse", "--list"]));
   const missing = ports.filter((port) => !listed.includes(port));
-  if (missing.length > 0) throw new HarnessError(`adb reverse lists ${listed.join(", ") || "nothing"}; missing ${missing.join(", ")}`);
+  if (missing.length > 0)
+    throw new HarnessError(`adb reverse lists ${listed.join(", ") || "nothing"}; missing ${missing.join(", ")}`);
   return ports.map((port) => `tcp:${port}`).join(", ");
 }
 
@@ -207,7 +262,11 @@ async function diagnostics(): Promise<string> {
     device().run(["reverse", "--list"]),
     exec("adb", ["version"], { env: toolEnv }),
   ]);
-  return [`$ adb version\n${version.stdout.trim()}`, `$ adb devices -l\n${devices.stdout.trim()}`, `$ adb reverse --list\n${reverse.stdout.trim() || "(none)"}`].join("\n\n");
+  return [
+    `$ adb version\n${version.stdout.trim()}`,
+    `$ adb devices -l\n${devices.stdout.trim()}`,
+    `$ adb reverse --list\n${reverse.stdout.trim() || "(none)"}`,
+  ].join("\n\n");
 }
 
 async function probeStack(run: Run, file: string): Promise<ProbeResult[]> {
@@ -232,10 +291,15 @@ async function unreachable(run: Run, failed: readonly ProbeResult[], adbFile: st
 async function buildApk(run: Run, build: AppBuild): Promise<string> {
   const { task, apk: path } = APP_BUILDS[build];
   const apk = join(REPO_ROOT, path);
-  const result = await exec("./gradlew", [task, "--console=plain"], { cwd: join(REPO_ROOT, "apps/mobile"), stream: true });
+  const result = await exec("./gradlew", [task, "--console=plain"], {
+    cwd: join(REPO_ROOT, "apps/mobile"),
+    stream: true,
+  });
   writeRunFile(run, "mobile/build.log", redactText(result.stdout + result.stderr));
   if (result.code !== 0) {
-    throw new HarnessError(`./gradlew ${task} failed (exit ${result.code}); see mobile/build.log\n${(result.stdout + result.stderr).trimEnd().split("\n").slice(-20).join("\n")}`);
+    throw new HarnessError(
+      `./gradlew ${task} failed (exit ${result.code}); see mobile/build.log\n${(result.stdout + result.stderr).trimEnd().split("\n").slice(-20).join("\n")}`,
+    );
   }
   if (!existsSync(apk)) throw new HarnessError(`the build left no APK at ${path}`);
   return `${path} (${(statSync(apk).size / 1024 / 1024).toFixed(1)} MB)`;
@@ -334,7 +398,9 @@ async function up(args: MobileArgs, argv: string[]): Promise<number> {
   appendSummary(run, renderUpSection({ argv, steps, probes, files, failure, ms }));
   const exitCode = failure === undefined ? 0 : 1;
   await finishRun(run, ["mobile", ...argv], startedAt, exitCode);
-  process.stdout.write(failure === undefined ? `up: ${AVD_SERIAL} running ${APP_ID}\n` : `up failed: ${failure.split("\n")[0]}\n`);
+  process.stdout.write(
+    failure === undefined ? `up: ${AVD_SERIAL} running ${APP_ID}\n` : `up failed: ${failure.split("\n")[0]}\n`,
+  );
   process.stdout.write(`summary: ${relative(process.cwd(), join(run.dir, "summary.md"))}\n`);
   return exitCode;
 }
@@ -445,12 +511,19 @@ async function flowAttempt(
         ...(invitee === undefined ? {} : { MIMOS_INVITEE: invitee }),
       };
       const began = Date.now();
-      const result = await exec("maestro", maestroArgs({ serial: AVD_SERIAL, flowFile, env, staging }), { env: toolEnv }).catch((error: unknown) => {
+      const result = await exec("maestro", maestroArgs({ serial: AVD_SERIAL, flowFile, env, staging }), {
+        env: toolEnv,
+      }).catch((error: unknown) => {
         steps.push({ name: "Maestro", ok: false, detail: "", ms: Date.now() - began });
         throw error;
       });
       maestro = { code: result.code, output: result.stdout + result.stderr };
-      steps.push({ name: "Maestro", ok: result.code === 0, detail: `${relative(REPO_ROOT, flowFile)}, exit ${result.code}`, ms: Date.now() - began });
+      steps.push({
+        name: "Maestro",
+        ok: result.code === 0,
+        detail: `${relative(REPO_ROOT, flowFile)}, exit ${result.code}`,
+        ms: Date.now() - began,
+      });
     } catch (error) {
       failure = { at: steps.findLast((each) => !each.ok)?.name ?? "Setup", message: clean(errorText(error)) };
       if (existsSync(join(run.dir, dir, "adb.txt"))) files.push(`${dir}/adb.txt`);
@@ -477,7 +550,9 @@ async function flowAttempt(
         requests: parsed.requests,
         unreadable: parsed.unreadable,
         requestLog: `${dir}/app-requests.log`,
-        log: existsSync(join(staging, "debug", "maestro.log")) ? readFileSync(join(staging, "debug", "maestro.log"), "utf8") : "",
+        log: existsSync(join(staging, "debug", "maestro.log"))
+          ? readFileSync(join(staging, "debug", "maestro.log"), "utf8")
+          : "",
       });
       if (driverDied(failure)) {
         writeRunFile(run, `${dir}/device-lost.txt`, clean(await deviceLostEvidence()));
@@ -489,10 +564,17 @@ async function flowAttempt(
   }
 
   const ms = Date.now() - startedAt.getTime();
-  appendSummary(run, clean(renderFlowSection({ argv, flow: name, account: account || undefined, steps, requests, files, failure, ms })));
+  appendSummary(
+    run,
+    clean(renderFlowSection({ argv, flow: name, account: account || undefined, steps, requests, files, failure, ms })),
+  );
   const exitCode = failure === undefined ? 0 : 1;
   await finishRun(run, ["mobile", ...argv], startedAt, exitCode);
-  process.stdout.write(failure === undefined ? `flow ${name}: passed (${requests.length} requests)\n` : `flow ${name} failed at ${failure.at}\n`);
+  process.stdout.write(
+    failure === undefined
+      ? `flow ${name}: passed (${requests.length} requests)\n`
+      : `flow ${name} failed at ${failure.at}\n`,
+  );
   process.stdout.write(`summary: ${relative(process.cwd(), join(run.dir, "summary.md"))}\n`);
   return { exitCode, failure, run: run.dir };
 }
@@ -518,7 +600,8 @@ async function deviceLostEvidence(): Promise<string> {
   const deadline = Date.now() + DEVICE_RETURN_MS;
   while (Date.now() < deadline && (await deviceState()) !== "device") await sleep(1000);
   const returned = (await deviceState()) === "device";
-  const ofDevice = (args: string[]) => async () => (returned ? (await device().ok(args)).replaceAll("\r", "") : "(device did not return)");
+  const ofDevice = (args: string[]) => async () =>
+    returned ? (await device().ok(args)).replaceAll("\r", "") : "(device did not return)";
   return [
     `# Device lost\n\nadb state when the flow ended: ${stateAtLoss}; ${returned ? `back within ${DEVICE_RETURN_MS / 1000} s` : `not back after ${DEVICE_RETURN_MS / 1000} s`}.\n`,
     await section("Host load (/proc/loadavg)", () => readFileSync("/proc/loadavg", "utf8")),
@@ -529,12 +612,19 @@ async function deviceLostEvidence(): Promise<string> {
         .join("\n"),
     ),
     await section("Emulator process", host("pgrep", ["-a", "-f", "qemu-system"])),
-    await section("Host top, busiest 20", async () => (await host("top", ["-b", "-n", "1", "-o", "%CPU", "-w", "160"])()).split("\n").slice(0, 27).join("\n")),
+    await section("Host top, busiest 20", async () =>
+      (await host("top", ["-b", "-n", "1", "-o", "%CPU", "-w", "160"])()).split("\n").slice(0, 27).join("\n"),
+    ),
     await section("adb devices -l", host("adb", ["devices", "-l"])),
     await section("Guest uptime", ofDevice(["shell", "uptime"])),
     await section("Guest crash log", ofDevice(["logcat", "-d", "-b", "crash"])),
-    await section("Guest log, last 400 lines since the flow began", ofDevice(["logcat", "-d", "-b", "main,system", "-v", "threadtime", "-t", "400"])),
-    await section("Emulator log, last 60 lines", () => (existsSync(paths.emulatorLog) ? lastLines(readFileSync(paths.emulatorLog, "utf8"), 60) : "(no emulator log)")),
+    await section(
+      "Guest log, last 400 lines since the flow began",
+      ofDevice(["logcat", "-d", "-b", "main,system", "-v", "threadtime", "-t", "400"]),
+    ),
+    await section("Emulator log, last 60 lines", () =>
+      existsSync(paths.emulatorLog) ? lastLines(readFileSync(paths.emulatorLog, "utf8"), 60) : "(no emulator log)",
+    ),
   ].join("\n");
 }
 
@@ -559,8 +649,17 @@ async function logs(args: MobileArgs, argv: string[]): Promise<number> {
   await requireBooted();
   const run = startRun("mobile-logs", startedAt, args.run);
   const pid = (await device().run(["shell", "pidof", APP_ID])).stdout.trim().split(/\s+/)[0] || undefined;
-  const dump = await device().ok(pid === undefined ? ["logcat", "-d", "-v", "threadtime"] : ["logcat", "-d", "-v", "threadtime", `--pid=${pid}`]);
-  const text = redactText(pid === undefined ? dump.split("\n").filter((line) => line.includes(APP_ID)).join("\n") : dump);
+  const dump = await device().ok(
+    pid === undefined ? ["logcat", "-d", "-v", "threadtime"] : ["logcat", "-d", "-v", "threadtime", `--pid=${pid}`],
+  );
+  const text = redactText(
+    pid === undefined
+      ? dump
+          .split("\n")
+          .filter((line) => line.includes(APP_ID))
+          .join("\n")
+      : dump,
+  );
   const file = nextFile(run, "mobile/logcat", ".txt");
   writeRunFile(run, file, text.endsWith("\n") || text === "" ? text : `${text}\n`);
   appendSummary(run, renderLogcatSection({ argv, file, pid, appId: APP_ID, summary: summarizeLogcat(text) }));

@@ -42,14 +42,18 @@ function jsonBody(value: unknown): { body: Buffer; headers: Record<string, strin
 async function adminToken(): Promise<string> {
   const { keycloak } = endpoints();
   const { username, password } = keycloakAdmin();
-  const body = Buffer.from(new URLSearchParams({ grant_type: "password", client_id: "admin-cli", username, password }).toString());
+  const body = Buffer.from(
+    new URLSearchParams({ grant_type: "password", client_id: "admin-cli", username, password }).toString(),
+  );
   const response = await send(
     "POST",
     new URL(`${keycloak}/realms/master/protocol/openid-connect/token`),
     { "Content-Type": "application/x-www-form-urlencoded", "Content-Length": String(body.length) },
     body,
   );
-  const parsed = isJson(response.headers["content-type"]) ? (JSON.parse(response.body) as { access_token?: string }) : {};
+  const parsed = isJson(response.headers["content-type"])
+    ? (JSON.parse(response.body) as { access_token?: string })
+    : {};
   if (response.status !== 200 || !parsed.access_token) {
     throw new HarnessError(
       `Keycloak admin token request failed: ${response.status} (KEYCLOAK_ADMIN_USERNAME and KEYCLOAK_ADMIN_PASSWORD must match the stack's)`,
@@ -77,7 +81,12 @@ export async function createUser(): Promise<string> {
 
 async function apiCall(token: string, method: string, path: string, value?: unknown): Promise<unknown> {
   const { body, headers } = value === undefined ? { body: undefined, headers: {} } : jsonBody(value);
-  const response = await send(method, new URL(path, endpoints().api), { ...headers, Authorization: `Bearer ${token}` }, body);
+  const response = await send(
+    method,
+    new URL(path, endpoints().api),
+    { ...headers, Authorization: `Bearer ${token}` },
+    body,
+  );
   if (response.status >= 400) {
     throw new HarnessError(`${method} ${path} failed: ${response.status} ${response.body.slice(0, 300)}`);
   }

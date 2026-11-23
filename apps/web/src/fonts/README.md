@@ -6,10 +6,10 @@ run time. `src/app/layout.tsx` loads them with `next/font/local`; the
 Keycloak theme copies them in (`deploy/keycloak/Dockerfile`) and the docs
 site links to them (`docs/assets/fonts/`).
 
-| File | Family | Axes kept |
-| ---- | ------ | --------- |
-| `newsreader/Newsreader.woff2` | Newsreader, upright | `opsz` 6–72, `wght` 400–500 |
-| `public-sans/PublicSans.woff2` | Public Sans, upright | `wght` 400–600 |
+| File                           | Family               | Axes kept                   |
+| ------------------------------ | -------------------- | --------------------------- |
+| `newsreader/Newsreader.woff2`  | Newsreader, upright  | `opsz` 6–72, `wght` 400–500 |
+| `public-sans/PublicSans.woff2` | Public Sans, upright | `wght` 400–600              |
 
 Both are SIL Open Font License 1.1; each family's `OFL.txt` sits next to
 its file. A third font, for flags only, is described under "Flags" below,

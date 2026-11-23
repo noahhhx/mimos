@@ -42,7 +42,10 @@ export const RUN_NAME = /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z(-[a-z0-9-]+)?$/;
 
 /** `2026-10-01T15-04-12Z-create-recipe` — sortable, filesystem-safe on every OS. */
 export function runName(now: Date, label: string): string {
-  const stamp = now.toISOString().replace(/\.\d{3}Z$/, "Z").replaceAll(":", "-");
+  const stamp = now
+    .toISOString()
+    .replace(/\.\d{3}Z$/, "Z")
+    .replaceAll(":", "-");
   const slug = label
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")

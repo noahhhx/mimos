@@ -8,7 +8,10 @@ const FAKE = `http://127.0.0.1:${process.env.OPEN_FOOD_FACTS_FAKE_PORT ?? "8091"
 
 const BANANA = (
   JSON.parse(
-    readFileSync(new URL("../../../core/core-recipes/src/main/resources/library/ingredient-seed.json", import.meta.url), "utf8"),
+    readFileSync(
+      new URL("../../../core/core-recipes/src/main/resources/library/ingredient-seed.json", import.meta.url),
+      "utf8",
+    ),
   ) as { slug: string; calories: number }[]
 ).find((entry) => entry.slug === "banana")!;
 
@@ -32,7 +35,11 @@ test("plans a banana and a scanned product as foods, not recipes", async ({ page
   const kcal = (pieces: number) => `${Math.round(BANANA.calories * pieces)} kcal`;
   const plan = planLedger(page);
   const planned = plan.planned(0);
-  const addSnack = () => plan.table.getByRole("button", { name: /^Add Snack for / }).first().click();
+  const addSnack = () =>
+    plan.table
+      .getByRole("button", { name: /^Add Snack for / })
+      .first()
+      .click();
 
   await test.step("plan a banana as Monday's snack: one piece, its calories from the seed", async () => {
     await page.goto("/app/plan");
@@ -115,4 +122,3 @@ test("plans a banana and a scanned product as foods, not recipes", async ({ page
     await expect(picker.getByRole("button", { name: /^Yeast Extract \(Marmite\)/ })).toContainText("Your ingredient");
   });
 });
-

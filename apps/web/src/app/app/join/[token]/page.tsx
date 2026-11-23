@@ -13,7 +13,10 @@ import { apiClient } from "@/lib/api";
 import { appBaseUrl } from "@/lib/config";
 import { appJoinLink, householdName, listNames } from "@/lib/household";
 
-type Preview = { state: "loading" } | { state: "invalid"; message: string } | { state: "ok"; data: HouseholdInvitePreview };
+type Preview =
+  | { state: "loading" }
+  | { state: "invalid"; message: string }
+  | { state: "ok"; data: HouseholdInvitePreview };
 
 const INVALID = "This invite link is not valid. Ask for a new one.";
 
@@ -127,8 +130,8 @@ export default function JoinPage() {
         {currentHouseholdShared ? (
           <ul className="consequences">
             <li>
-              You leave the household you are in now. Its recipes, ingredients, meal plans and shopping lists stay
-              with it, including the ones you added.
+              You leave the household you are in now. Its recipes, ingredients, meal plans and shopping lists stay with
+              it, including the ones you added.
             </li>
             <li>You stop eating the meals planned there, and your logged meals no longer link to its recipes.</li>
             <li>Your food log, fuel settings and training stay yours. Nobody else sees them.</li>
@@ -136,7 +139,9 @@ export default function JoinPage() {
         ) : (
           <ul className="consequences">
             <li>Your recipes and your own ingredients come with you, and everyone in the household can change them.</li>
-            <li>Your meal plans, shopping lists and plugin settings are deleted. You use the household&apos;s instead.</li>
+            <li>
+              Your meal plans, shopping lists and plugin settings are deleted. You use the household&apos;s instead.
+            </li>
             <li>Your food log, fuel settings and training stay yours. Nobody else sees them.</li>
           </ul>
         )}

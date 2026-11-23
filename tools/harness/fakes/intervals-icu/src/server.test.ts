@@ -112,7 +112,12 @@ test("a scenario changes a workout, removes one, and adds an activity", async ()
     [[41870232, "2026-10-15T00:00:00", 900000]],
   );
 
-  const added = await control("PUT", "activities/i555", { start_date_local: "2026-10-12T17:05:00", type: "Run", moving_time: 2700, calories: 610 });
+  const added = await control("PUT", "activities/i555", {
+    start_date_local: "2026-10-12T17:05:00",
+    type: "Run",
+    moving_time: 2700,
+    calories: 610,
+  });
   assert.equal(added.status, 200);
   assert.deepEqual(
     (await readJson(`${ATHLETE_ID}/activities?${WEEK}`)).map((activity) => [activity.id, activity.calories]),
@@ -131,7 +136,11 @@ test("setting body fat keeps the day's weight", async () => {
   assert.equal((await control("PUT", "wellness/2026-10-11", { bodyFat: 12.5 })).status, 200);
   assert.equal((await control("PUT", "wellness/2026-10-12", { bodyFat: 12.2 })).status, 200);
   assert.deepEqual(
-    (await readJson(`${ATHLETE_ID}/wellness?oldest=2026-10-11&newest=2026-10-12`)).map((record) => [record.id, record.weight, record.bodyFat]),
+    (await readJson(`${ATHLETE_ID}/wellness?oldest=2026-10-11&newest=2026-10-12`)).map((record) => [
+      record.id,
+      record.weight,
+      record.bodyFat,
+    ]),
     [
       ["2026-10-11", 70.8, 12.5],
       ["2026-10-12", undefined, 12.2],
@@ -168,7 +177,12 @@ test("the request log names each read and how its key fared, never the key", asy
   assert.deepEqual(
     log.map(({ path, query, key, status }) => ({ path, query, key, status })),
     [
-      { path: `/api/v1/athlete/${ATHLETE_ID}/events`, query: { oldest: TODAY, newest: "2026-10-18", category: "WORKOUT" }, key: "good", status: 200 },
+      {
+        path: `/api/v1/athlete/${ATHLETE_ID}/events`,
+        query: { oldest: TODAY, newest: "2026-10-18", category: "WORKOUT" },
+        key: "good",
+        status: 200,
+      },
       { path: `/api/v1/athlete/${ATHLETE_ID}`, query: {}, key: "wrong", status: 401 },
     ],
   );

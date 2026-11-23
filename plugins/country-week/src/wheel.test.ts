@@ -108,7 +108,15 @@ test("a fresh wheel offers every country, with no continent sitting out", () => 
 });
 
 test("a country chosen for any week, or removed, never comes up again", () => {
-  const pool = poolOf(ledger([[LAST_WEEK, "IT"], [NEXT_WEEK, "PE"]], ["KE"]));
+  const pool = poolOf(
+    ledger(
+      [
+        [LAST_WEEK, "IT"],
+        [NEXT_WEEK, "PE"],
+      ],
+      ["KE"],
+    ),
+  );
   const codes = new Set(pool.available.map((c) => c.code));
   assert.ok(!codes.has("IT") && !codes.has("PE") && !codes.has("KE"));
   assert.equal(pool.available.length, 194);
@@ -116,7 +124,12 @@ test("a country chosen for any week, or removed, never comes up again", () => {
 
 test("the most recently chosen country's continent sits out, by choice order rather than week order", () => {
   // Peru was chosen first for a later week, Italy afterwards for an earlier one: Italy is the last pick.
-  const pool = poolOf(ledger([[NEXT_WEEK, "PE"], [LAST_WEEK, "IT"]]));
+  const pool = poolOf(
+    ledger([
+      [NEXT_WEEK, "PE"],
+      [LAST_WEEK, "IT"],
+    ]),
+  );
   assert.deepEqual(pool.rule, { kind: "sits-out", continent: "Europe", last: country("IT") });
   assert.ok(pool.eligible.every((c) => c.continent !== "Europe"));
   assert.ok(pool.eligible.some((c) => c.continent === "South America"));
@@ -125,7 +138,15 @@ test("the most recently chosen country's continent sits out, by choice order rat
 
 test("when only the last pick's continent is left, it stays in", () => {
   const notEurope = COUNTRIES.filter((c) => c.continent !== "Europe" && c.code !== "PE").map((c) => c.code);
-  const pool = poolOf(ledger([[LAST_WEEK, "PE"], [NEXT_WEEK, "IT"]], notEurope));
+  const pool = poolOf(
+    ledger(
+      [
+        [LAST_WEEK, "PE"],
+        [NEXT_WEEK, "IT"],
+      ],
+      notEurope,
+    ),
+  );
   assert.deepEqual(pool.rule, { kind: "all-left", continent: "Europe", last: country("IT") });
   assert.equal(pool.eligible.length, 44);
   assert.ok(pool.eligible.every((c) => c.continent === "Europe"));
@@ -162,7 +183,10 @@ test("every country in the pool can come up, not just the first 24", () => {
 
 test("rendering without an action writes nothing, in every state", () => {
   const locked = ledger([[WEEK, "IT"]]);
-  const exhausted = ledger([], COUNTRIES.map((c) => c.code));
+  const exhausted = ledger(
+    [],
+    COUNTRIES.map((c) => c.code),
+  );
   for (const [l, kind] of [
     [EMPTY_LEDGER, "ready"],
     [locked, "locked"],
@@ -193,7 +217,13 @@ test("choose locks the week to the country", () => {
 });
 
 test("a forged or stale choose writes nothing", () => {
-  const l = ledger([[LAST_WEEK, "IT"], [NEXT_WEEK, "JP"]], ["KE"]);
+  const l = ledger(
+    [
+      [LAST_WEEK, "IT"],
+      [NEXT_WEEK, "JP"],
+    ],
+    ["KE"],
+  );
   const forged: PanelAction[] = [
     { id: "choose" },
     { id: "choose", value: "ZZ" },
@@ -212,11 +242,17 @@ test("a forged or stale choose writes nothing", () => {
 });
 
 test("skip spins again and avoids the skipped country while anything else can come up", () => {
-  const peruOrKenya = ledger([], COUNTRIES.filter((c) => c.code !== "PE" && c.code !== "KE").map((c) => c.code));
+  const peruOrKenya = ledger(
+    [],
+    COUNTRIES.filter((c) => c.code !== "PE" && c.code !== "KE").map((c) => c.code),
+  );
   for (let seed = 0; seed < 20; seed++) {
     assert.equal(landed(act(peruOrKenya, { id: "skip", value: "PE" }, WEEK, seed).state).code, "KE");
   }
-  const onlyPeru = ledger([], COUNTRIES.filter((c) => c.code !== "PE").map((c) => c.code));
+  const onlyPeru = ledger(
+    [],
+    COUNTRIES.filter((c) => c.code !== "PE").map((c) => c.code),
+  );
   const result = act(onlyPeru, { id: "skip", value: "PE" });
   assert.equal(result.effect, null);
   assert.equal(landed(result.state).code, "PE");
@@ -244,7 +280,10 @@ test("a forged remove writes nothing", () => {
 });
 
 test("change unlocks the week and puts the country back on the wheel", () => {
-  const l = ledger([[LAST_WEEK, "PE"], [WEEK, "IT"]]);
+  const l = ledger([
+    [LAST_WEEK, "PE"],
+    [WEEK, "IT"],
+  ]);
   const result = act(l, { id: "change" });
   assert.deepEqual(result.effect, { kind: "unchoose" });
   assert.equal(result.state.kind, "ready");
@@ -328,7 +367,10 @@ test("every panel the plugin can render fits the contract", () => {
   assertWithinContract(panel(act(EMPTY_LEDGER).state));
   assertWithinContract(panel({ kind: "exhausted", removed: 0 }));
   assertWithinContract(panel({ kind: "exhausted", removed: 197 }));
-  const oneLeft = ledger([], COUNTRIES.filter((c) => c.code !== "PE").map((c) => c.code));
+  const oneLeft = ledger(
+    [],
+    COUNTRIES.filter((c) => c.code !== "PE").map((c) => c.code),
+  );
   assertWithinContract(panel(act(oneLeft).state));
   assertWithinContract(panel(act(oneLeft, { id: "spin" }).state));
 });

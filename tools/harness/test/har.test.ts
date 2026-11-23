@@ -102,7 +102,9 @@ test("exchanges read what was sent, not Playwright's defaults", () => {
 
 test("failures are error statuses and requests with no response — not redirects or aborted prefetches", () => {
   assert.deepEqual(
-    exchanges(HAR).filter(isFailure).map((exchange) => exchange.url),
+    exchanges(HAR)
+      .filter(isFailure)
+      .map((exchange) => exchange.url),
     [`${API}/api/v1/recipes`, `${API}/api/v1/recipes/1`, `${API}/api/v1/plans/x`],
   );
   assert.equal(isFailure({ ...exchanges(HAR)[0]!, status: 302 }), false);
@@ -130,7 +132,10 @@ test("failure details carry headers, bodies, and say when the browser hid the bo
   assert.match(created, /^#### `POST http:\/\/localhost:8080\/api\/v1\/recipes` → 415 Unsupported Media Type/);
   assert.match(created, /Request ID: `browser-415` — `harness logs --request-id browser-415`/);
   assert.match(created, /authorization: Bearer \[REDACTED\]\nx-request-id: browser-415\nContent-Length: 315/);
-  assert.match(created, /Log lines for this request:\n\n```\napi \| WARN RequestLoggingFilter: POST \/api\/v1\/recipes -> 415\n```$/);
+  assert.match(
+    created,
+    /Log lines for this request:\n\n```\napi \| WARN RequestLoggingFilter: POST \/api\/v1\/recipes -> 415\n```$/,
+  );
   assert.match(created, /Request body: 315 bytes sent, but the browser did not expose them to the HAR\./);
   assert.match(created, /Response body \(`application\/json`\):\n\n```json\n\{\n {2}"status": 415/);
 

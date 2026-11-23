@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import {
-  eatsIt,
-  parsePlanView,
-  visibleEntries,
-} from "../src/lib/diners.ts";
+import { eatsIt, parsePlanView, visibleEntries } from "../src/lib/diners.ts";
 
 const me = { id: "me", displayName: "Sam", you: true };
 const partner = { id: "partner", displayName: "Alex", you: false };

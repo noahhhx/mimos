@@ -158,11 +158,7 @@ export default function KitchenPage() {
                       {shortDayLabel(date)}
                       {date === today && <span className="visually-hidden"> (today)</span>}
                     </span>
-                    {dinner ? (
-                      <DinnerName entry={dinner} />
-                    ) : (
-                      <span className="open">Nothing yet</span>
-                    )}
+                    {dinner ? <DinnerName entry={dinner} /> : <span className="open">Nothing yet</span>}
                   </li>
                 ))}
               </ul>
@@ -325,7 +321,8 @@ function ShoppingBlock({ shopping, weekStart }: { shopping: Load<ShoppingList | 
               <span className="box" aria-hidden="true" />
               <span>
                 {item.checked && <span className="visually-hidden">Got: </span>}
-                <Quantity quantity={item.quantity} unit={item.unit} /> {countedName(item.name, item.quantity, item.unit)}
+                <Quantity quantity={item.quantity} unit={item.unit} />{" "}
+                {countedName(item.name, item.quantity, item.unit)}
               </span>
             </li>
           ))}

@@ -111,11 +111,7 @@ export function RecipeView({
           {recipe.ingredients.map((ingredient, index) => (
             <li key={index}>
               <label className={doneIngredients.has(index) ? "done" : undefined}>
-                <input
-                  type="checkbox"
-                  checked={doneIngredients.has(index)}
-                  onChange={() => toggleIngredient(index)}
-                />{" "}
+                <input type="checkbox" checked={doneIngredients.has(index)} onChange={() => toggleIngredient(index)} />{" "}
                 <Quantity quantity={ingredient.quantity} unit={ingredient.unit} />{" "}
                 {ingredient.recipeId ? (
                   <Link href={recipeHref(ingredient.recipeId, [...via, recipe.id])}>{ingredient.name}</Link>

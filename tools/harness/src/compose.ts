@@ -153,7 +153,9 @@ export async function captureLogs(
 
 /** `lines` captured, `empty` — compact enough for one summary.md bullet. */
 export function describeLogs(logs: readonly CapturedLog[]): string {
-  const written = logs.filter((log) => log.lines > 0).map((log) => `\`${log.file}\` (${log.lines} ${log.lines === 1 ? "line" : "lines"})`);
+  const written = logs
+    .filter((log) => log.lines > 0)
+    .map((log) => `\`${log.file}\` (${log.lines} ${log.lines === 1 ? "line" : "lines"})`);
   const empty = logs.filter((log) => log.lines === 0).map((log) => log.service);
   return [written.join(", "), empty.length ? `no output from ${empty.join(", ")}` : ""].filter(Boolean).join("; ");
 }

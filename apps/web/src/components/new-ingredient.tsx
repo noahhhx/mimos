@@ -87,9 +87,7 @@ export function NewIngredient({
         }
       }}
     >
-      <p className="muted">
-        A new ingredient of your own. Copy its nutrition from the label; only you will see it.
-      </p>
+      <p className="muted">A new ingredient of your own. Copy its nutrition from the label; only you will see it.</p>
       {error && (
         <p className="error-text" role="alert">
           {error}

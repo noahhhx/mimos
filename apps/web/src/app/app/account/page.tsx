@@ -98,9 +98,9 @@ export default function AccountPage() {
       <section className="card" aria-labelledby="import-heading">
         <h2 id="import-heading">Import</h2>
         <p>
-          Restore an export into this account. Import only works into an empty account, one with no recipes,
-          ingredients of your own, plans, shopping lists, logged meals, fuel settings or training yet, so nothing here
-          is ever overwritten or doubled up.
+          Restore an export into this account. Import only works into an empty account, one with no recipes, ingredients
+          of your own, plans, shopping lists, logged meals, fuel settings or training yet, so nothing here is ever
+          overwritten or doubled up.
         </p>
         <form onSubmit={(event) => void restore(event)}>
           <label>

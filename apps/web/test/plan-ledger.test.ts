@@ -33,7 +33,10 @@ describe("toggleSelection", () => {
       kind: "day",
       date: "2026-11-09",
     });
-    assert.deepEqual(toggleSelection({ kind: "entry", id: "a" }, { kind: "entry", id: "b" }), { kind: "entry", id: "b" });
+    assert.deepEqual(toggleSelection({ kind: "entry", id: "a" }, { kind: "entry", id: "b" }), {
+      kind: "entry",
+      id: "b",
+    });
   });
 
   it("closes the inspector when the selected one is chosen again", () => {
@@ -64,7 +67,10 @@ describe("dayHead", () => {
   it("splits a date into its weekday and day of the month", () => {
     const head = dayHead("2026-11-09");
     assert.equal(head.date, 9);
-    assert.equal(head.weekday, new Date("2026-11-09T00:00:00Z").toLocaleDateString(undefined, { weekday: "short", timeZone: "UTC" }));
+    assert.equal(
+      head.weekday,
+      new Date("2026-11-09T00:00:00Z").toLocaleDateString(undefined, { weekday: "short", timeZone: "UTC" }),
+    );
   });
 });
 
@@ -86,8 +92,14 @@ describe("ledgerFuel", () => {
 
 describe("ledgerFuelLabel", () => {
   it("names the day and the figures", () => {
-    assert.match(ledgerFuelLabel("2026-11-09", ledgerFuel({ calories: 3120 }, { meals: 1, total: { calories: 1697 } })), /^Planned for .+: 1697 of 3120 kcal$/);
-    assert.match(ledgerFuelLabel("2026-11-09", ledgerFuel({ calories: 3120 }, undefined)), /: nothing yet of 3120 kcal$/);
+    assert.match(
+      ledgerFuelLabel("2026-11-09", ledgerFuel({ calories: 3120 }, { meals: 1, total: { calories: 1697 } })),
+      /^Planned for .+: 1697 of 3120 kcal$/,
+    );
+    assert.match(
+      ledgerFuelLabel("2026-11-09", ledgerFuel({ calories: 3120 }, undefined)),
+      /: nothing yet of 3120 kcal$/,
+    );
     assert.match(ledgerFuelLabel("2026-11-09", ledgerFuel(undefined, undefined)), /: nothing yet$/);
   });
 });

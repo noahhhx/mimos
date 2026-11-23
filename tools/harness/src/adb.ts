@@ -18,7 +18,9 @@ export function adb(serial = AVD_SERIAL, env: NodeJS.ProcessEnv = process.env): 
   const ok = async (args: readonly string[]): Promise<string> => {
     const result = await run(args);
     if (result.code !== 0) {
-      throw new HarnessError(`adb ${args.join(" ")} failed (exit ${result.code}):\n${(result.stderr || result.stdout).trim()}`);
+      throw new HarnessError(
+        `adb ${args.join(" ")} failed (exit ${result.code}):\n${(result.stderr || result.stdout).trim()}`,
+      );
     }
     return result.stdout;
   };
@@ -85,7 +87,8 @@ export interface ProbeResult extends ProbeTarget {
   status: number | undefined;
 }
 
-export const probeOk = (result: ProbeResult): boolean => result.status !== undefined && result.status >= 200 && result.status < 400;
+export const probeOk = (result: ProbeResult): boolean =>
+  result.status !== undefined && result.status >= 200 && result.status < 400;
 
 export async function probe(device: Adb, target: ProbeTarget): Promise<ProbeResult> {
   return { ...target, status: parseProbeStatus(await device.shell(probeCommand(target))) };

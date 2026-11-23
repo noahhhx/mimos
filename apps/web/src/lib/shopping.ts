@@ -30,9 +30,7 @@ export function aislesToShop(items: ShoppingListItem[]): Aisle[] {
     items: [...aisleItems.filter((item) => !item.checked), ...aisleItems.filter((item) => item.checked)],
   }));
   const done = (aisle: Aisle) => aisle.items.every((item) => item.checked);
-  return aisles.sort(
-    (a, b) => Number(done(a)) - Number(done(b)) || rank(a.category) - rank(b.category),
-  );
+  return aisles.sort((a, b) => Number(done(a)) - Number(done(b)) || rank(a.category) - rank(b.category));
 }
 
 /** The units the add-an-item form offers: a recipe's metric units, with "" for pieces. */

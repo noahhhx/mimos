@@ -38,7 +38,11 @@ describe("publicConfigFromEnv", () => {
 
   it("offers sign-up when MIMOS_SIGNUP is unset, blank, or open in any case", () => {
     for (const value of [undefined, "", "  ", "open", " OPEN ", "Open"]) {
-      assert.equal(publicConfigFromEnv({ MIMOS_SIGNUP: value }).signup, "open", `MIMOS_SIGNUP=${JSON.stringify(value)}`);
+      assert.equal(
+        publicConfigFromEnv({ MIMOS_SIGNUP: value }).signup,
+        "open",
+        `MIMOS_SIGNUP=${JSON.stringify(value)}`,
+      );
     }
   });
 

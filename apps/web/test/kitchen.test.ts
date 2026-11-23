@@ -19,7 +19,12 @@ const cases = JSON.parse(
     entries: SketchedEntry[];
     expected: { title: string; label: string } | null;
   }[];
-  weekCases: { about: string; monday: string; entries: SketchedEntry[]; expected: { date: string; title: string | null }[] }[];
+  weekCases: {
+    about: string;
+    monday: string;
+    entries: SketchedEntry[];
+    expected: { date: string; title: string | null }[];
+  }[];
   thoughtCases: {
     about: string;
     today: string;
@@ -54,13 +59,23 @@ const card = (sketch: { title: string; dates: string[] }): PlanSuggestion => ({
   pluginId: "country-week",
   pluginName: "Country of the Week",
   title: sketch.title,
-  entries: sketch.dates.map((date) => ({ date, mealType: "DINNER", recipeId: "mujadara", recipeTitle: "Mujadara", servings: 2 })),
+  entries: sketch.dates.map((date) => ({
+    date,
+    mealType: "DINNER",
+    recipeId: "mujadara",
+    recipeTitle: "Mujadara",
+    servings: 2,
+  })),
 });
 
 describe("greeting", () => {
   it("follows the local hour, with morning from 05:00, afternoon from 12:00, evening from 18:00", () => {
     for (const each of cases.greetingCases) {
-      assert.equal(greeting(new Date(2026, 9, 2, each.hour, each.minute)), each.greeting, `${each.hour}:${each.minute}`);
+      assert.equal(
+        greeting(new Date(2026, 9, 2, each.hour, each.minute)),
+        each.greeting,
+        `${each.hour}:${each.minute}`,
+      );
     }
   });
 });

@@ -6,11 +6,14 @@ import { check } from "../src/repo-rules.ts";
 const rulesBroken = (path: string, text: string) => check(path, text).map((v) => `${v.rule} at ${v.line}`);
 
 test("an em-dash in a web string, an app string, a seed recipe, or an API message fails", () => {
-  assert.deepEqual(rulesBroken("apps/web/src/app/page.tsx", 'const a = 1;\n<p>Plan — then cook</p>'), [
+  assert.deepEqual(rulesBroken("apps/web/src/app/page.tsx", "const a = 1;\n<p>Plan — then cook</p>"), [
     "no em-dash in user-facing copy at 2",
   ]);
   assert.equal(rulesBroken("apps/mobile/shared/src/commonMain/kotlin/A.kt", 'Text("a — b")').length, 1);
-  assert.equal(rulesBroken("core/core-recipes/src/main/resources/library/library-seed.json", '{"t":"a — b"}').length, 1);
+  assert.equal(
+    rulesBroken("core/core-recipes/src/main/resources/library/library-seed.json", '{"t":"a — b"}').length,
+    1,
+  );
   assert.equal(rulesBroken("apps/api/src/main/java/X.java", 'throw new IllegalArgumentException("a — b");').length, 1);
   assert.equal(rulesBroken("deploy/keycloak/themes/mimos/login/resources/js/theme.js", 'label = "a — b";').length, 1);
 });

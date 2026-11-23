@@ -8,15 +8,30 @@ import { appendSummary, writeRunFile } from "../run.ts";
 
 /** Stack lifecycle: up (always on freshly built images), down, reset. */
 
-export function parseUpArgs(argv: string[]): { build: boolean; debug: boolean; sqlLog: boolean; run: string | undefined } {
+export function parseUpArgs(argv: string[]): {
+  build: boolean;
+  debug: boolean;
+  sqlLog: boolean;
+  run: string | undefined;
+} {
   const { values } = parseCommandArgs({
     args: argv,
-    options: { "no-build": { type: "boolean" }, debug: { type: "boolean" }, "sql-log": { type: "boolean" }, ...RUN_OPTION },
+    options: {
+      "no-build": { type: "boolean" },
+      debug: { type: "boolean" },
+      "sql-log": { type: "boolean" },
+      ...RUN_OPTION,
+    },
   });
   if (values["sql-log"] && !values.debug) {
     throw new UsageError("--sql-log needs --debug (the overlay sets Postgres's statement logging)");
   }
-  return { build: !values["no-build"], debug: values.debug ?? false, sqlLog: values["sql-log"] ?? false, run: values.run };
+  return {
+    build: !values["no-build"],
+    debug: values.debug ?? false,
+    sqlLog: values["sql-log"] ?? false,
+    run: values.run,
+  };
 }
 
 /** compose.debug.yml reads this; anything but 0 (unset: -1) leaves statement logging off. */

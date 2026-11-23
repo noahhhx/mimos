@@ -125,12 +125,6 @@ export function BarcodeCamera({
     );
   }
   return (
-    <video
-      ref={videoRef}
-      className="barcode-camera"
-      aria-label="Camera, looking for a barcode"
-      muted
-      playsInline
-    />
+    <video ref={videoRef} className="barcode-camera" aria-label="Camera, looking for a barcode" muted playsInline />
   );
 }

@@ -52,8 +52,10 @@ type TextField = Exclude<keyof RecipeFormValues, "ingredients" | "steps" | "nutr
 /** The calculated nutrition for the form as it stands, with a status per form row that was sent. */
 type Estimate = { nutrition: Nutrition; statuses: Map<number, IngredientLineStatus> } | "failed";
 
-
-function problemDetail(result: { error?: { detail?: string } | unknown }, fallback = "The API rejected the recipe."): string {
+function problemDetail(
+  result: { error?: { detail?: string } | unknown },
+  fallback = "The API rejected the recipe.",
+): string {
   const error = result.error as { detail?: string } | undefined;
   return error?.detail ?? fallback;
 }
@@ -257,8 +259,8 @@ export function RecipeForm({
 
       <h2>Ingredients</h2>
       <p className="muted">
-        Search for each ingredient or one of your recipes, or add your own ingredient when it isn&apos;t there.
-        Measure it in grams, millilitres, spoons, or pieces (a recipe in servings or whole) to count it toward nutrition, and
+        Search for each ingredient or one of your recipes, or add your own ingredient when it isn&apos;t there. Measure
+        it in grams, millilitres, spoons, or pieces (a recipe in servings or whole) to count it toward nutrition, and
         leave the amount blank for things like salt to taste.
       </p>
       {values.ingredients.map((row, index) => (

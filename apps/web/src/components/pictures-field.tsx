@@ -57,8 +57,8 @@ export function PicturesField({
     <>
       <h2>Pictures</h2>
       <p className="muted">
-        Up to {MAX_PICTURES}, shown above the method in this order. They are shrunk before they are sent, and saved
-        with the recipe.
+        Up to {MAX_PICTURES}, shown above the method in this order. They are shrunk before they are sent, and saved with
+        the recipe.
       </p>
       {draft.slots.length > 0 && (
         <ul className="picture-row compact" aria-label="Pictures">

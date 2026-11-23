@@ -25,7 +25,19 @@ test("--then is split like a shell would: quotes and backslashes, no expansion",
 });
 
 test("break: location resolved, defaults, trigger, prints", () => {
-  const args = parseBreakArgs(["break", "MeController.getMe", "--then", "harness api GET /api/v1/me", "--print", "profile", "--print", "this.currentUser"], roots);
+  const args = parseBreakArgs(
+    [
+      "break",
+      "MeController.getMe",
+      "--then",
+      "harness api GET /api/v1/me",
+      "--print",
+      "profile",
+      "--print",
+      "this.currentUser",
+    ],
+    roots,
+  );
   assert.deepEqual(args.location, { kind: "method", className: ME, method: "getMe", signature: undefined });
   assert.deepEqual(args.then, ["api", "GET", "/api/v1/me"], "a leading `harness` is dropped");
   assert.deepEqual(args.prints, ["profile", "this.currentUser"]);
@@ -70,7 +82,11 @@ test("a hit renders source, locals, this, expressions, own frames, and a trimmed
     stack: [
       { index: 1, method: `${ME}.getMe`, location: "MeController.java:27" },
       ...Array.from({ length: 40 }, (_, i) => ({ index: i + 2, method: `org.lib.Frame${i}.run`, location: null })),
-      { index: 42, method: "io.github.noahhhx.mimos.api.support.RequestLoggingFilter.doFilterInternal", location: "RequestLoggingFilter.java:74" },
+      {
+        index: 42,
+        method: "io.github.noahhhx.mimos.api.support.RequestLoggingFilter.doFilterInternal",
+        location: "RequestLoggingFilter.java:74",
+      },
     ],
     locals: {
       arguments: [{ name: "id", value: "42" }],
@@ -88,11 +104,19 @@ test("a hit renders source, locals, this, expressions, own frames, and a trimmed
   assert.match(text, /```java\n27 {12}return ResponseEntity/);
   assert.match(text, /id = 42 {4}\(argument\)\nprofile = instance of x\.UserProfileRecord\(id=12404\)/);
   assert.match(text, /profile\.displayName\(\) = "test"\nnope = error: ParseException: Name unknown: nope/);
-  assert.match(text, /### Mimos frames\n\n```\n\[1\] api\.identity\.MeController\.getMe \(MeController\.java:27\)\n\[42\] api\.support\.RequestLoggingFilter/);
+  assert.match(
+    text,
+    /### Mimos frames\n\n```\n\[1\] api\.identity\.MeController\.getMe \(MeController\.java:27\)\n\[42\] api\.support\.RequestLoggingFilter/,
+  );
   assert.match(text, /### Stack \(25 of 42 frames\)/);
   assert.match(text, /… 17 more in jdb\.log/);
 
-  const bare = formatHit({ ...hit, prints: [], locals: { arguments: [], locals: [], unavailable: undefined }, stack: [] });
+  const bare = formatHit({
+    ...hit,
+    prints: [],
+    locals: { arguments: [], locals: [], unavailable: undefined },
+    stack: [],
+  });
   assert.match(bare, /\(none in scope\)/);
   assert.doesNotMatch(bare, /### Expressions|### Mimos frames/);
 });

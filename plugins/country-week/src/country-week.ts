@@ -44,14 +44,12 @@ export function buildCard(
       dinnerDates.push(date);
     }
   }
-  const entries = matched
-    .slice(0, dinnerDates.length)
-    .map((recipe, index) => ({
-      date: dinnerDates[index] as string,
-      mealType: "DINNER" as const,
-      recipeId: recipe.id,
-      servings: 2,
-    }));
+  const entries = matched.slice(0, dinnerDates.length).map((recipe, index) => ({
+    date: dinnerDates[index] as string,
+    mealType: "DINNER" as const,
+    recipeId: recipe.id,
+    servings: 2,
+  }));
   if (entries.length === 0) {
     return null;
   }

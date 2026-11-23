@@ -26,7 +26,10 @@ async function daemonPlatform(): Promise<string | undefined> {
  * `--platform` is unsupported, the plain ID — the classic store's, which
  * compose uses there.
  */
-async function imageInfo(image: string, platform: string | undefined): Promise<{ id: string; created: Date } | undefined> {
+async function imageInfo(
+  image: string,
+  platform: string | undefined,
+): Promise<{ id: string; created: Date } | undefined> {
   let result = await exec("docker", ["image", "inspect", ...(platform ? ["--platform", platform] : []), image]);
   if (result.code !== 0 && platform) result = await exec("docker", ["image", "inspect", image]);
   if (result.code !== 0) return undefined;
@@ -45,7 +48,14 @@ export function age(from: Date, to: Date): string {
 
 function table(rows: string[][]): string {
   const widths = rows[0]!.map((_, column) => Math.max(...rows.map((row) => row[column]!.length)));
-  return rows.map((row) => row.map((cell, column) => cell.padEnd(widths[column]!)).join("  ").trimEnd()).join("\n");
+  return rows
+    .map((row) =>
+      row
+        .map((cell, column) => cell.padEnd(widths[column]!))
+        .join("  ")
+        .trimEnd(),
+    )
+    .join("\n");
 }
 
 export interface ServiceReport {
@@ -84,7 +94,9 @@ export async function serviceReports(now: Date): Promise<{ reports: ServiceRepor
         notes.push(`${service}: the image was built with SOURCE_DATE_EPOCH set, so its build time is unknown`);
       }
       if (result.kind === "stale") {
-        notes.push(`${service}: ${result.change.path} changed ${age(result.change.time, now)}, after the image was built`);
+        notes.push(
+          `${service}: ${result.change.path} changed ${age(result.change.time, now)}, after the image was built`,
+        );
       }
       const inUse = labels.get(service);
       if (image && inUse && inUse !== image.id) {
@@ -110,7 +122,13 @@ image was built; run harness up (it always rebuilds) to refresh.`,
     const { reports, notes } = await serviceReports(now);
     const rows = [["SERVICE", "STATE", "HEALTH", "IMAGE BUILT", "IMAGE"]];
     for (const report of reports) {
-      const built = report.built ? age(report.built, now) : report.verdict === "pulled" ? "—" : report.verdict.startsWith("undated") ? "unknown" : "never";
+      const built = report.built
+        ? age(report.built, now)
+        : report.verdict === "pulled"
+          ? "—"
+          : report.verdict.startsWith("undated")
+            ? "unknown"
+            : "never";
       rows.push([report.service, report.state, report.health || "—", built, report.verdict]);
     }
 

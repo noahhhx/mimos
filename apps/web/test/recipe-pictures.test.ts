@@ -68,7 +68,12 @@ describe("fitWithin", () => {
 describe("the limits", () => {
   it("are the ones the app shrinks to", () => {
     assert.deepEqual(
-      { maxPictures: MAX_PICTURES, maxPictureBytes: MAX_PICTURE_BYTES, longEdge: LONG_EDGE, qualitySteps: QUALITY_STEPS },
+      {
+        maxPictures: MAX_PICTURES,
+        maxPictureBytes: MAX_PICTURE_BYTES,
+        longEdge: LONG_EDGE,
+        qualitySteps: QUALITY_STEPS,
+      },
       cases.limits,
     );
   });

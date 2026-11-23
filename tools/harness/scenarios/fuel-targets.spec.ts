@@ -3,7 +3,15 @@ import type { Locator, Page } from "@playwright/test";
 import { endpoints } from "../src/config.ts";
 import { apiAs, browserWeek, expect, planLedger, register, test } from "./fixtures.ts";
 
-const golden = { enabled: true, weightKg: 70, sex: "MALE", bodyFatPercent: 15, ftpWatts: 280, goal: "FUEL", proteinGPerKg: 1.6 };
+const golden = {
+  enabled: true,
+  weightKg: 70,
+  sex: "MALE",
+  bodyFatPercent: 15,
+  ftpWatts: 280,
+  goal: "FUEL",
+  proteinGPerKg: 1.6,
+};
 
 test("the plan shows each day's fuel once targets are on", async ({ page }) => {
   await register(page, `fuel-plan-${Date.now().toString(36)}`);
@@ -79,7 +87,9 @@ test("the plan shows each day's fuel once targets are on", async ({ page }) => {
     await form.getByRole("combobox", { name: "Intensity" }).selectOption({ label: "Endurance" });
     await form.getByRole("button", { name: "Add", exact: true }).click();
     await expect(form).toHaveCount(0);
-    await expect(tuesdayTraining.locator(".training-parts")).toHaveText("Ride · 90 min · Endurance · Planned · By hand");
+    await expect(tuesdayTraining.locator(".training-parts")).toHaveText(
+      "Ride · 90 min · Endurance · Planned · By hand",
+    );
     await expect(plan.training(1)).toHaveText("Ride 90 min");
 
     const ridden = await tuesdayDay(page, api);

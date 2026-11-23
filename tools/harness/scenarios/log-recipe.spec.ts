@@ -50,10 +50,16 @@ test("logs a recipe in servings, and a custom meal", async ({ loggedInPage: page
 
   await test.step("picking a recipe again starts at 1 serving", async () => {
     await page.getByLabel("What").fill("shaksh");
-    await page.getByRole("option", { name: /^Shakshuka/ }).filter({ hasText: "Library ·" }).click();
+    await page
+      .getByRole("option", { name: /^Shakshuka/ })
+      .filter({ hasText: "Library ·" })
+      .click();
     await page.getByLabel("Servings").fill("2");
     await page.getByLabel("What").fill("shaksh");
-    await page.getByRole("option", { name: /^Shakshuka/ }).filter({ hasText: "Library ·" }).click();
+    await page
+      .getByRole("option", { name: /^Shakshuka/ })
+      .filter({ hasText: "Library ·" })
+      .click();
     await expect(page.getByLabel("Servings")).toHaveValue("1");
   });
 

@@ -15,27 +15,38 @@ import {
   probeTargets,
 } from "../src/adb.ts";
 import { UsageError } from "../src/args.ts";
-import {
-  AVD_NAME,
-  avdEnv,
-  avdPaths,
-  emulatorArgs,
-  renderAvdConfig,
-  renderAvdIni,
-  SYSTEM_IMAGE,
-} from "../src/avd.ts";
+import { AVD_NAME, avdEnv, avdPaths, emulatorArgs, renderAvdConfig, renderAvdIni, SYSTEM_IMAGE } from "../src/avd.ts";
 import { parseMobileArgs } from "../src/commands/mobile.ts";
 import { copyRedacted } from "../src/evidence.ts";
-import { driverDied, flowFailure, flowNames, maestroArgs, maestroFailure, parseAppRequests, flowTags } from "../src/maestro.ts";
+import {
+  driverDied,
+  flowFailure,
+  flowNames,
+  maestroArgs,
+  maestroFailure,
+  parseAppRequests,
+  flowTags,
+} from "../src/maestro.ts";
 import { redactLiterals, redactText } from "../src/redact.ts";
 import { renderFlowSection, renderLogcatSection, renderUpSection, summarizeLogcat } from "../src/mobile-report.ts";
 
 function ini(text: string): Map<string, string> {
-  return new Map(text.trim().split("\n").map((line) => [line.slice(0, line.indexOf("=")), line.slice(line.indexOf("=") + 1)]));
+  return new Map(
+    text
+      .trim()
+      .split("\n")
+      .map((line) => [line.slice(0, line.indexOf("=")), line.slice(line.indexOf("=") + 1)]),
+  );
 }
 
 test("mobile: an action, with an optional screenshot name only for shot", () => {
-  assert.deepEqual(parseMobileArgs(["up"]), { action: "up", noBuild: false, build: "debug", name: undefined, run: undefined });
+  assert.deepEqual(parseMobileArgs(["up"]), {
+    action: "up",
+    noBuild: false,
+    build: "debug",
+    name: undefined,
+    run: undefined,
+  });
   assert.deepEqual(parseMobileArgs(["up", "--no-build", "--run", "latest"]), {
     action: "up",
     noBuild: true,
@@ -50,7 +61,16 @@ test("mobile: an action, with an optional screenshot name only for shot", () => 
 });
 
 test("mobile: bad invocations are usage errors", () => {
-  for (const argv of [[], ["reboot"], ["logs", "x"], ["shot", "a", "b"], ["shot", "../x"], ["logs", "--no-build"], ["flow", "a", "--minified"], ["down", "--run", "latest"]]) {
+  for (const argv of [
+    [],
+    ["reboot"],
+    ["logs", "x"],
+    ["shot", "a", "b"],
+    ["shot", "../x"],
+    ["logs", "--no-build"],
+    ["flow", "a", "--minified"],
+    ["down", "--run", "latest"],
+  ]) {
     assert.throws(() => parseMobileArgs(argv), UsageError, argv.join(" "));
   }
 });
@@ -89,7 +109,10 @@ test("adb output: devices by state, and reverse rules by device port", () => {
   assert.equal(devices.get("emulator-5556"), "offline");
   assert.equal(parseDevices("List of devices attached\n\n").size, 0);
 
-  assert.deepEqual(parseReverseList("host-17 tcp:8080 tcp:8080\nhost-17 tcp:3000 tcp:3000\nhost-17 tcp:8081 tcp:8081\n"), [3000, 8080, 8081]);
+  assert.deepEqual(
+    parseReverseList("host-17 tcp:8080 tcp:8080\nhost-17 tcp:3000 tcp:3000\nhost-17 tcp:8081 tcp:8081\n"),
+    [3000, 8080, 8081],
+  );
   assert.deepEqual(parseReverseList("\n"), []);
 });
 
@@ -151,7 +174,14 @@ test("up's summary lists each step, what the device reached, and the failure whe
   assert.match(text, /the device cannot reach localhost:8080/);
   assert.match(text, /- `mobile\/probe\.txt`/);
 
-  const passed = renderUpSection({ argv: ["up"], steps: [steps[0]!], probes: [], files: [], failure: undefined, ms: 100 });
+  const passed = renderUpSection({
+    argv: ["up"],
+    steps: [steps[0]!],
+    probes: [],
+    files: [],
+    failure: undefined,
+    ms: 100,
+  });
   assert.match(passed, /— passed/);
   assert.doesNotMatch(passed, /Failure:/);
 });
@@ -176,10 +206,22 @@ test("logcat: counts lines and picks out error and fatal levels only", () => {
 
 test("logcat summary says which process it covers", () => {
   const summary = summarizeLogcat(LOGCAT);
-  const running = renderLogcatSection({ argv: ["logs"], file: "mobile/logcat.txt", pid: "2638", appId: "app.id", summary });
+  const running = renderLogcatSection({
+    argv: ["logs"],
+    file: "mobile/logcat.txt",
+    pid: "2638",
+    appId: "app.id",
+    summary,
+  });
   assert.match(running, /`app\.id`, pid 2638/);
   assert.match(running, /4 lines, 2 at error or fatal/);
-  const stopped = renderLogcatSection({ argv: ["logs"], file: "mobile/logcat.txt", pid: undefined, appId: "app.id", summary });
+  const stopped = renderLogcatSection({
+    argv: ["logs"],
+    file: "mobile/logcat.txt",
+    pid: undefined,
+    appId: "app.id",
+    summary,
+  });
   assert.match(stopped, /`app\.id` is not running/);
 });
 
@@ -215,13 +257,27 @@ const JUNIT_FAIL = `<?xml version='1.0' encoding='UTF-8'?>
 test("maestro: a JUnit failure is the assertion Maestro reported, and a pass has none", () => {
   assert.equal(maestroFailure(JUNIT_PASS), undefined);
   assert.equal(maestroFailure(JUNIT_FAIL), 'Assertion is false: "Coming to the app" is visible & more');
-  assert.equal(maestroFailure('<testcase status="ERROR"><failure message="Element not found: &apos;Sign in&apos;"/></testcase>'), "Element not found: 'Sign in'");
+  assert.equal(
+    maestroFailure('<testcase status="ERROR"><failure message="Element not found: &apos;Sign in&apos;"/></testcase>'),
+    "Element not found: 'Sign in'",
+  );
   assert.match(maestroFailure("<testcase><failure></failure></testcase>") ?? "", /no message/);
 });
 
 test("maestro: the command runs one flow on the emulator, with the flow's values and every output under staging", () => {
-  const env = { MIMOS_USER: "user-1", MIMOS_PASSWORD: "pw", MIMOS_WEB_ADDRESS: "http://localhost:3000", MIMOS_REFRESH_TOKEN: "rt", MIMOS_ID_TOKEN: "it" };
-  const args = maestroArgs({ serial: "emulator-5554", flowFile: "/repo/apps/mobile/flows/a.yaml", env, staging: "/tmp/s" });
+  const env = {
+    MIMOS_USER: "user-1",
+    MIMOS_PASSWORD: "pw",
+    MIMOS_WEB_ADDRESS: "http://localhost:3000",
+    MIMOS_REFRESH_TOKEN: "rt",
+    MIMOS_ID_TOKEN: "it",
+  };
+  const args = maestroArgs({
+    serial: "emulator-5554",
+    flowFile: "/repo/apps/mobile/flows/a.yaml",
+    env,
+    staging: "/tmp/s",
+  });
   assert.deepEqual(args.slice(0, 3), ["test", "--udid", "emulator-5554"]);
   assert.equal(args.at(-1), "/repo/apps/mobile/flows/a.yaml");
   assert.equal(args[args.indexOf("--format") + 1], "JUNIT");
@@ -229,7 +285,13 @@ test("maestro: the command runs one flow on the emulator, with the flow's values
   assert.equal(args[args.indexOf("--debug-output") + 1], "/tmp/s/debug");
   assert.ok(args.includes("--flatten-debug-output"));
   const passed = args.flatMap((arg, index) => (args[index - 1] === "-e" ? [arg] : []));
-  assert.deepEqual(passed, ["MIMOS_USER=user-1", "MIMOS_PASSWORD=pw", "MIMOS_WEB_ADDRESS=http://localhost:3000", "MIMOS_REFRESH_TOKEN=rt", "MIMOS_ID_TOKEN=it"]);
+  assert.deepEqual(passed, [
+    "MIMOS_USER=user-1",
+    "MIMOS_PASSWORD=pw",
+    "MIMOS_WEB_ADDRESS=http://localhost:3000",
+    "MIMOS_REFRESH_TOKEN=rt",
+    "MIMOS_ID_TOKEN=it",
+  ]);
 });
 
 test("maestro: a flow's tags are those of its config, not of its steps", () => {
@@ -243,7 +305,8 @@ test("maestro: a flow's tags are those of its config, not of its steps", () => {
 test("maestro: flows are the yaml files of the directory, sorted by name", () => {
   const dir = mkdtempSync(join(tmpdir(), "flows-"));
   try {
-    for (const file of ["stay-signed-in.yaml", "connect-and-sign-in.yaml", "notes.md"]) writeFileSync(join(dir, file), "");
+    for (const file of ["stay-signed-in.yaml", "connect-and-sign-in.yaml", "notes.md"])
+      writeFileSync(join(dir, file), "");
     assert.deepEqual(flowNames(dir), ["connect-and-sign-in", "stay-signed-in"]);
     assert.deepEqual(flowNames(join(dir, "missing")), []);
   } finally {
@@ -286,7 +349,10 @@ test("flow summary: the failed assertion leads, then steps, request IDs, and evi
     steps: FLOW_STEPS,
     requests: FLOW_REQUESTS,
     files: ["mobile/flows/connect-and-sign-in/report.xml"],
-    failure: { at: 'Assertion is false: "Coming to the app" is visible', message: 'Assertion is false: "Coming to the app" is visible' },
+    failure: {
+      at: 'Assertion is false: "Coming to the app" is visible',
+      message: 'Assertion is false: "Coming to the app" is visible',
+    },
     ms: 20000,
   });
   const lines = text.split("\n");
@@ -311,17 +377,38 @@ test("flow summary: a prerequisite failure names it with its message, and a pass
     failure: { at: "Reach the stack from the device", message: "the device cannot reach localhost:8080" },
     ms: 3000,
   });
-  assert.match(failed, /\*\*Failed at:\*\* Reach the stack from the device\n\n```\nthe device cannot reach localhost:8080\n```/);
+  assert.match(
+    failed,
+    /\*\*Failed at:\*\* Reach the stack from the device\n\n```\nthe device cannot reach localhost:8080\n```/,
+  );
   assert.doesNotMatch(failed, /Requests the app sent/);
 
-  const passed = renderFlowSection({ argv: ["flow", "a"], flow: "a", account: "u", steps: [FLOW_STEPS[0]!], requests: FLOW_REQUESTS, files: [], failure: undefined, ms: 1000 });
+  const passed = renderFlowSection({
+    argv: ["flow", "a"],
+    flow: "a",
+    account: "u",
+    steps: [FLOW_STEPS[0]!],
+    requests: FLOW_REQUESTS,
+    files: [],
+    failure: undefined,
+    ms: 1000,
+  });
   assert.match(passed, /— passed/);
   assert.doesNotMatch(passed, /Failed at/);
 });
 
 const SENT = [{ requestId: "8c0ba77d-1d05-4184-a608-c0b95df648ae", method: "GET", path: "/api/v1/public/instance" }];
 const outcome = (input: Partial<Parameters<typeof flowFailure>[0]>) =>
-  flowFailure({ junit: JUNIT_PASS, code: 0, output: "", requests: SENT, unreadable: [], requestLog: "mobile/flows/x/app-requests.log", log: "", ...input });
+  flowFailure({
+    junit: JUNIT_PASS,
+    code: 0,
+    output: "",
+    requests: SENT,
+    unreadable: [],
+    requestLog: "mobile/flows/x/app-requests.log",
+    log: "",
+    ...input,
+  });
 
 test("flow outcome: a passing report with the app's requests passes", () => {
   assert.equal(outcome({}), undefined);
@@ -374,13 +461,16 @@ test("flow outcome: an unknown error names the command that failed, from Maestro
   const failure = outcome({ junit: JUNIT_UNKNOWN, code: 1, log: DEVICE_OFFLINE_LOG });
   assert.equal(failure?.at, "Command failed (host:transport:emulator-5554): device offline");
   assert.equal(driverDied(failure), true);
-  assert.deepEqual(outcome({ junit: JUNIT_UNKNOWN, code: 1, log: "" }), { at: "Unknown error", message: "Unknown error" });
+  assert.deepEqual(outcome({ junit: JUNIT_UNKNOWN, code: 1, log: "" }), {
+    at: "Unknown error",
+    message: "Unknown error",
+  });
 });
 
 test("flow outcome: an unknown error that is not the driver dying runs once", () => {
   const thrown = [
-    "15:26:54.943 [ERROR] maestro.orchestra.Orchestra.executeCommands: [Command execution] CommandFailed: Assertion is false: \"Not sent\" is visible",
-    "maestro.MaestroException$AssertionFailure: Assertion is false: \"Not sent\" is visible",
+    '15:26:54.943 [ERROR] maestro.orchestra.Orchestra.executeCommands: [Command execution] CommandFailed: Assertion is false: "Not sent" is visible',
+    'maestro.MaestroException$AssertionFailure: Assertion is false: "Not sent" is visible',
     "15:26:55.000 [ WARN] maestro.orchestra.debug.ArtifactsGenerator.captureStepHierarchy: Failed to capture step hierarchy",
     "maestro.android.DeviceServerDiedException: Device server died during 'viewHierarchy' on emulator-5554",
   ].join("\n");
@@ -395,7 +485,10 @@ test("flow evidence: the account's password is gone from every copied Maestro fi
   try {
     const from = join(root, "staging");
     mkdirSync(join(from, "debug", "connect-and-sign-in", "logs"), { recursive: true });
-    writeFileSync(join(from, "debug", "connect-and-sign-in", "commands.json"), '{"env":{"MIMOS_PASSWORD":"mimos-test"},"text":"mimos-test"}');
+    writeFileSync(
+      join(from, "debug", "connect-and-sign-in", "commands.json"),
+      '{"env":{"MIMOS_PASSWORD":"mimos-test"},"text":"mimos-test"}',
+    );
     writeFileSync(join(from, "debug", "connect-and-sign-in", "logs", "maestro.log"), "Inputting text: mimos-test\n");
     const to = join(root, "run");
     const copied = copyRedacted(from, to, (text) => redactLiterals(redactText(text), ["mimos-test"]));
@@ -407,8 +500,16 @@ test("flow evidence: the account's password is gone from every copied Maestro fi
 });
 
 test("adb: a not-responding dialog with the focus names its app", () => {
-  assert.equal(notRespondingApp("  mCurrentFocus=Window{300ffe2 u0 Application Not Responding: com.android.systemui}\n"), "com.android.systemui");
-  assert.equal(notRespondingApp("  mCurrentFocus=Window{6c88baf u0 com.android.launcher3/com.android.launcher3.uioverrides.QuickstepLauncher}\n"), undefined);
+  assert.equal(
+    notRespondingApp("  mCurrentFocus=Window{300ffe2 u0 Application Not Responding: com.android.systemui}\n"),
+    "com.android.systemui",
+  );
+  assert.equal(
+    notRespondingApp(
+      "  mCurrentFocus=Window{6c88baf u0 com.android.launcher3/com.android.launcher3.uioverrides.QuickstepLauncher}\n",
+    ),
+    undefined,
+  );
 });
 
 test("adb: the dialog's Close app button is found by its id and tapped at its centre", () => {

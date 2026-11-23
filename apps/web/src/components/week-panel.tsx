@@ -73,12 +73,7 @@ export function WeekPanelSection({
         );
       case "wheel":
         return (
-          <Wheel
-            segments={block.segments}
-            landing={block.landing}
-            spin={spinning}
-            onStop={() => setSpinning(false)}
-          />
+          <Wheel segments={block.segments} landing={block.landing} spin={spinning} onStop={() => setSpinning(false)} />
         );
       case "actions":
         return (

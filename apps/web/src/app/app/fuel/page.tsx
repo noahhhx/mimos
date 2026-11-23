@@ -215,8 +215,8 @@ export default function FuelPage() {
         <h2 id="about-heading">Fuel for the day</h2>
         <p>
           Turn this on to see a calorie, carb, protein, and fat target for each day beside what you planned and logged.
-          The targets rise with your training and come from your weight, your goal, and the training you add or bring
-          in from intervals.icu.
+          The targets rise with your training and come from your weight, your goal, and the training you add or bring in
+          from intervals.icu.
         </p>
         <p>They are yours alone: everyone in a household has their own settings, and plugins never see them.</p>
       </section>
@@ -247,7 +247,12 @@ export default function FuelPage() {
         <div className="choices" role="radiogroup" aria-label="Sex">
           {SEXES.map((sex) => (
             <label key={sex.value}>
-              <input type="radio" name="sex" checked={form.sex === sex.value} onChange={() => set({ sex: sex.value })} />
+              <input
+                type="radio"
+                name="sex"
+                checked={form.sex === sex.value}
+                onChange={() => set({ sex: sex.value })}
+              />
               {sex.label}
             </label>
           ))}
@@ -291,10 +296,7 @@ export default function FuelPage() {
       </form>
 
       {connection.state === "ok" && (
-        <IntervalsIcuSection
-          connection={connection.data}
-          onChange={(data) => setConnection({ state: "ok", data })}
-        />
+        <IntervalsIcuSection connection={connection.data} onChange={(data) => setConnection({ state: "ok", data })} />
       )}
       {connection.state === "error" && (
         <p className="card error" role="alert">

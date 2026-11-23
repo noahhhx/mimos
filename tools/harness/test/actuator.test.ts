@@ -18,9 +18,13 @@ const MAPPINGS = {
           dispatcherServlet: [
             {
               handler: "io.github.noahhhx.mimos.api.recipes.RecipesController#createRecipe(RecipeInput)",
-              predicate: "{POST [/api/v1/recipes], consumes [application/json], produces [application/json || application/problem+json]}",
+              predicate:
+                "{POST [/api/v1/recipes], consumes [application/json], produces [application/json || application/problem+json]}",
               details: {
-                handlerMethod: { className: "io.github.noahhhx.mimos.api.recipes.RecipesController", name: "createRecipe" },
+                handlerMethod: {
+                  className: "io.github.noahhhx.mimos.api.recipes.RecipesController",
+                  name: "createRecipe",
+                },
                 requestMappingConditions: {
                   consumes: [{ mediaType: "application/json", negated: false }],
                   headers: [],
@@ -46,7 +50,8 @@ const MAPPINGS = {
               },
             },
             {
-              handler: "org.springframework.boot.webmvc.autoconfigure.error.BasicErrorController#error(HttpServletRequest)",
+              handler:
+                "org.springframework.boot.webmvc.autoconfigure.error.BasicErrorController#error(HttpServletRequest)",
               predicate: "{ [/error]}",
               details: {
                 requestMappingConditions: {
@@ -59,7 +64,11 @@ const MAPPINGS = {
                 },
               },
             },
-            { handler: "ResourceHttpRequestHandler [classpath [META-INF/resources/webjars/]]", predicate: "/webjars/**", details: null },
+            {
+              handler: "ResourceHttpRequestHandler [classpath [META-INF/resources/webjars/]]",
+              predicate: "/webjars/**",
+              details: null,
+            },
           ],
         },
       },
@@ -83,9 +92,27 @@ test("routes: one per pattern, with media types, conditions, and short handler n
       produces: "application/json, application/problem+json",
       handler: "RecipesController#listMyRecipes(String)",
     },
-    { methods: "*", path: "/error", consumes: "!text/plain", produces: "*", handler: "BasicErrorController#error(HttpServletRequest)" },
-    { methods: "*", path: "/error/", consumes: "!text/plain", produces: "*", handler: "BasicErrorController#error(HttpServletRequest)" },
-    { methods: "*", path: "/webjars/**", consumes: "*", produces: "*", handler: "ResourceHttpRequestHandler [classpath [META-INF/resources/webjars/]]" },
+    {
+      methods: "*",
+      path: "/error",
+      consumes: "!text/plain",
+      produces: "*",
+      handler: "BasicErrorController#error(HttpServletRequest)",
+    },
+    {
+      methods: "*",
+      path: "/error/",
+      consumes: "!text/plain",
+      produces: "*",
+      handler: "BasicErrorController#error(HttpServletRequest)",
+    },
+    {
+      methods: "*",
+      path: "/webjars/**",
+      consumes: "*",
+      produces: "*",
+      handler: "ResourceHttpRequestHandler [classpath [META-INF/resources/webjars/]]",
+    },
   ]);
   assert.deepEqual(routes({}), []);
 });
@@ -96,7 +123,10 @@ test("route table: method and path aligned, wildcard media types left out", () =
     lines[0],
     "POST  /api/v1/recipes                                consumes=application/json  produces=application/json,application/problem+json  → RecipesController#createRecipe(RecipeInput)",
   );
-  assert.equal(lines[2], "*     /error                                         consumes=!text/plain  → BasicErrorController#error(HttpServletRequest)");
+  assert.equal(
+    lines[2],
+    "*     /error                                         consumes=!text/plain  → BasicErrorController#error(HttpServletRequest)",
+  );
   assert.equal(lines.at(-1), "", "ends with a newline");
 });
 

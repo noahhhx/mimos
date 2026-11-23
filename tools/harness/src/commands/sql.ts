@@ -72,7 +72,12 @@ not a security boundary. Exit code: 0 when the query succeeded, 1 otherwise.`,
       fenced(args.query, "sql"),
     ];
     if (output.trim() !== "") {
-      section.push("", fenced(lines.slice(0, 60).join("\n") + (lines.length > 60 ? `\n… ${lines.length - 60} more lines in ${file}` : "")));
+      section.push(
+        "",
+        fenced(
+          lines.slice(0, 60).join("\n") + (lines.length > 60 ? `\n… ${lines.length - 60} more lines in ${file}` : ""),
+        ),
+      );
     }
     if (errors !== "") section.push("", "psql reported:", "", fenced(errors));
     appendSummary(run, section.join("\n"));

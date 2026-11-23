@@ -203,7 +203,12 @@ Exit code: 0 for a status below 400, 1 otherwise.`,
       if (matched.length > 0) {
         section.push("", "Log lines for this request:", "", fenced(matched.slice(-20).join("\n")));
       } else if (window.length > 0) {
-        section.push("", "No log line carries this request's ID; API log lines since it was sent:", "", fenced(window.slice(-20).join("\n")));
+        section.push(
+          "",
+          "No log line carries this request's ID; API log lines since it was sent:",
+          "",
+          fenced(window.slice(-20).join("\n")),
+        );
       }
     }
     appendSummary(run, section.join("\n"));

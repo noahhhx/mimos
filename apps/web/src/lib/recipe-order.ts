@@ -52,15 +52,16 @@ export function orderRecipes(
   sort: RecipeSort,
   selectedTags: ReadonlySet<string>,
 ): RecipeSummary[] {
-  const filtered = selectedTags.size === 0
-    ? recipes.slice()
-    : recipes.filter((recipe) => {
-        for (const tag of selectedTags) {
-          if (!recipe.tags.includes(tag)) {
-            return false;
+  const filtered =
+    selectedTags.size === 0
+      ? recipes.slice()
+      : recipes.filter((recipe) => {
+          for (const tag of selectedTags) {
+            if (!recipe.tags.includes(tag)) {
+              return false;
+            }
           }
-        }
-        return true;
-      });
+          return true;
+        });
   return filtered.sort(comparators[sort]);
 }

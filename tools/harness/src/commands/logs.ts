@@ -49,14 +49,24 @@ writes logs/request-<id>.log, prints the matching lines, and exits 1 when none m
     const run = startRun("logs", startedAt, args.run);
     const logs = await captureLogs(run, { services: args.services, since: args.since });
     const listing = logs.map((log) => `- \`${log.file}\` — ${log.lines} lines`);
-    const section = [`## \`${displayCommand(["logs", ...argv])}\``, "", args.since ? `Since ${args.since}.` : "Full history.", "", ...listing];
+    const section = [
+      `## \`${displayCommand(["logs", ...argv])}\``,
+      "",
+      args.since ? `Since ${args.since}.` : "Full history.",
+      "",
+      ...listing,
+    ];
     let exitCode = 0;
     let output = listing;
 
     if (args.requestId !== undefined) {
       const matches = requestLines(logs, args.requestId);
       const file = `logs/request-${args.requestId}.log`;
-      writeRunFile(run, file, matches.flatMap((match) => match.lines.map((line) => `${match.service} | ${line}`)).join("\n") + "\n");
+      writeRunFile(
+        run,
+        file,
+        matches.flatMap((match) => match.lines.map((line) => `${match.service} | ${line}`)).join("\n") + "\n",
+      );
       const lines = describeRequestLines(matches);
       section.push(
         "",

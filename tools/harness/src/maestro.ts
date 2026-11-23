@@ -125,7 +125,9 @@ export interface FlowFailure {
  */
 export const driverDied = (failure: FlowFailure | undefined): boolean =>
   failure !== undefined &&
-  /DeviceServerDiedException|^Command failed \(host:transport:[^)]*\): device offline$/m.test(`${failure.at}\n${failure.message}`);
+  /DeviceServerDiedException|^Command failed \(host:transport:[^)]*\): device offline$/m.test(
+    `${failure.at}\n${failure.message}`,
+  );
 
 const UNKNOWN_ERROR = "Unknown error";
 
@@ -149,9 +151,11 @@ export function flowFailure(input: {
   const assertion = input.junit === undefined ? undefined : maestroFailure(input.junit);
   if (assertion === UNKNOWN_ERROR) return unknownError(input.log) ?? { at: assertion, message: assertion };
   if (assertion !== undefined) return { at: assertion.split("\n")[0] ?? assertion, message: assertion };
-  if (input.code !== 0) return { at: "Maestro", message: lastLines(input.output, 30) || `maestro exited ${input.code} with no output` };
+  if (input.code !== 0)
+    return { at: "Maestro", message: lastLines(input.output, 30) || `maestro exited ${input.code} with no output` };
   if (input.requests.length > 0) return undefined;
-  const unexpected = input.unreadable.length > 0 ? `\nLines in an unexpected format:\n${lastLines(input.unreadable.join("\n"), 5)}` : "";
+  const unexpected =
+    input.unreadable.length > 0 ? `\nLines in an unexpected format:\n${lastLines(input.unreadable.join("\n"), 5)}` : "";
   return {
     at: "Request evidence",
     message:

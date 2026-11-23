@@ -9,7 +9,15 @@ import { composeEnv } from "../compose.ts";
 import { endpoints, FAKES_OVERLAY, keycloakAdmin, REPO_ROOT } from "../config.ts";
 import { exec, type ExecResult } from "../exec.ts";
 import { redactText } from "../redact.ts";
-import { fileAt, hasMobileClient, lastReleaseTag, REALM_EXPORT, releaseOf, SELFHOST_COMPOSE, type Release } from "../release.ts";
+import {
+  fileAt,
+  hasMobileClient,
+  lastReleaseTag,
+  REALM_EXPORT,
+  releaseOf,
+  SELFHOST_COMPOSE,
+  type Release,
+} from "../release.ts";
 import { appendSummary, writeRunFile } from "../run.ts";
 
 /**
@@ -44,7 +52,11 @@ export function parseReleaseArgs(argv: string[]): ReleaseArgs {
  * admin login `harness user create` uses. The secret key is fresh each time,
  * so intervals.icu is on, as on a server that set one.
  */
-export function releaseEnv(release: Release, secretKey: string, env: NodeJS.ProcessEnv = process.env): Record<string, string> {
+export function releaseEnv(
+  release: Release,
+  secretKey: string,
+  env: NodeJS.ProcessEnv = process.env,
+): Record<string, string> {
   const urls = endpoints(env);
   const admin = keycloakAdmin(env);
   return {
@@ -87,7 +99,8 @@ function releaseCompose(dir: string, args: readonly string[], stream = false): P
 
 async function up(args: ReleaseArgs, argv: string[]): Promise<number> {
   const tag = args.tag ?? (await lastReleaseTag());
-  if (tag === undefined) throw new HarnessError("no v* tag is reachable from HEAD; name one: harness release up v1.2.3");
+  if (tag === undefined)
+    throw new HarnessError("no v* tag is reachable from HEAD; name one: harness release up v1.2.3");
   const release = releaseOf(tag);
   const [compose, realm] = await Promise.all([fileAt(tag, SELFHOST_COMPOSE), fileAt(tag, REALM_EXPORT)]);
   if (compose === undefined) throw new HarnessError(`${tag} has no ${SELFHOST_COMPOSE}`);
@@ -108,14 +121,23 @@ async function up(args: ReleaseArgs, argv: string[]): Promise<number> {
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "compose.yml"), compose);
-  writeFileSync(join(dir, ".env"), `${envLines(releaseEnv(release, randomBytes(32).toString("base64")))}\n`, { mode: 0o600 });
+  writeFileSync(join(dir, ".env"), `${envLines(releaseEnv(release, randomBytes(32).toString("base64")))}\n`, {
+    mode: 0o600,
+  });
   writeFileSync(join(dir, "tag"), `${tag}\n`);
   writeRunFile(run, "release/compose.yml", compose);
-  section.push(`- ${tag}'s \`${SELFHOST_COMPOSE}\` with \`${FAKES_OVERLAY}\`, project \`${RELEASE_PROJECT}\` (\`release/compose.yml\`).`);
+  section.push(
+    `- ${tag}'s \`${SELFHOST_COMPOSE}\` with \`${FAKES_OVERLAY}\`, project \`${RELEASE_PROJECT}\` (\`release/compose.yml\`).`,
+  );
 
   const result = await releaseCompose(dir, ["up", "-d", "--wait", "--build"], true);
   writeRunFile(run, "release/up.log", redactText(result.stdout + result.stderr));
-  const ps = await releaseCompose(dir, ["ps", "--all", "--format", "{{.Service}}\t{{.Image}}\t{{.State}}\t{{.Health}}"]);
+  const ps = await releaseCompose(dir, [
+    "ps",
+    "--all",
+    "--format",
+    "{{.Service}}\t{{.Image}}\t{{.State}}\t{{.Health}}",
+  ]);
   section.push(`- \`compose up --wait\` exited ${result.code} (\`release/up.log\`).`, "", fenced(ps.stdout));
   if (result.code === 0) {
     process.stderr.write(`harness: ${tag} is up and healthy\n`);

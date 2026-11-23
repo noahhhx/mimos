@@ -61,7 +61,8 @@ export function stripNonCode(source: string): string {
       i = stop;
     } else if (char === '"' || char === "'" || char === "`") {
       let j = i + 1;
-      while (j < source.length && source[j] !== char && (char === "`" || source[j] !== "\n")) j += source[j] === "\\" ? 2 : 1;
+      while (j < source.length && source[j] !== char && (char === "`" || source[j] !== "\n"))
+        j += source[j] === "\\" ? 2 : 1;
       const closed = source[j] === char;
       out += char + source.slice(i + 1, j).replace(/[^\n]/g, " ") + (closed ? char : "");
       i = closed ? j + 1 : j;
@@ -115,7 +116,8 @@ export function classify(operations: readonly string[], web: Iterable<string>, a
   };
 }
 
-const EXCLUDED = /(^|\/)(node_modules|build|generated|test|tests|commonTest|androidTest|androidUnitTest|\.next|\.gradle)(\/|$)|\.(test|spec)\.tsx?$|Test\.kt$/;
+const EXCLUDED =
+  /(^|\/)(node_modules|build|generated|test|tests|commonTest|androidTest|androidUnitTest|\.next|\.gradle)(\/|$)|\.(test|spec)\.tsx?$|Test\.kt$/;
 
 function sources(root: string, directory: string, extensions: readonly string[]): string[] {
   const base = join(root, directory);
@@ -128,7 +130,11 @@ function sources(root: string, directory: string, extensions: readonly string[])
 }
 
 const WEB_SOURCES = ["apps/web/src"];
-const APP_SOURCES = ["apps/mobile/shared/src/commonMain", "apps/mobile/shared/src/androidMain", "apps/mobile/androidApp/src/main"];
+const APP_SOURCES = [
+  "apps/mobile/shared/src/commonMain",
+  "apps/mobile/shared/src/androidMain",
+  "apps/mobile/androidApp/src/main",
+];
 
 export function scan(root: string): Parity {
   const operations = operationIds(readFileSync(join(root, "contracts/api/openapi.yaml"), "utf8"));

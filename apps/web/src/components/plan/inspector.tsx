@@ -61,7 +61,11 @@ export function EntryInspector({
     if (next < 0.5 || next > 100) {
       return;
     }
-    await updateMealPlanEntry({ client: apiClient, path: { startDate: weekStart, entryId: entry.id }, body: { servings: next } });
+    await updateMealPlanEntry({
+      client: apiClient,
+      path: { startDate: weekStart, entryId: entry.id },
+      body: { servings: next },
+    });
     await onChanged();
   };
 
@@ -78,7 +82,10 @@ export function EntryInspector({
   };
 
   const changeDiners = async (memberId: string) => {
-    const diners = toggleDiner(entry.diners.map((diner) => diner.id), memberId);
+    const diners = toggleDiner(
+      entry.diners.map((diner) => diner.id),
+      memberId,
+    );
     if (diners === null) {
       return;
     }

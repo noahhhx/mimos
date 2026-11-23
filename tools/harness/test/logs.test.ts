@@ -65,9 +65,19 @@ test("ECS lines are formatted for reading; text lines pass through", () => {
 
 test("a request's lines are gathered across services", () => {
   const logs: CapturedLog[] = [
-    { service: "api", file: "logs/api.log", lines: 3, text: [TEXT, "2026-10-01T15:56:10Z unrelated", ECS, ""].join("\n") },
+    {
+      service: "api",
+      file: "logs/api.log",
+      lines: 3,
+      text: [TEXT, "2026-10-01T15:56:10Z unrelated", ECS, ""].join("\n"),
+    },
     { service: "postgres", file: "logs/postgres.log", lines: 1, text: "2026-10-01T15:56:10Z checkpoint\n" },
-    { service: "web", file: "logs/web.log", lines: 1, text: `2026-10-01T15:56:12Z [mimos-api] GET /x -> 404 request-id=${ID}\n` },
+    {
+      service: "web",
+      file: "logs/web.log",
+      lines: 1,
+      text: `2026-10-01T15:56:12Z [mimos-api] GET /x -> 404 request-id=${ID}\n`,
+    },
   ];
   const matches = requestLines(logs, ID);
   assert.deepEqual(

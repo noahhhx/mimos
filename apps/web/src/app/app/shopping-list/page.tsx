@@ -243,7 +243,8 @@ export default function ShoppingListPage() {
                     checked={item.checked}
                     onChange={(e) => void toggle(item.id, e.target.checked)}
                   />{" "}
-                  <Quantity quantity={item.quantity} unit={item.unit} /> {countedName(item.name, item.quantity, item.unit)}
+                  <Quantity quantity={item.quantity} unit={item.unit} />{" "}
+                  {countedName(item.name, item.quantity, item.unit)}
                 </label>
                 {item.added && (
                   <>

@@ -30,7 +30,9 @@ export function Suggestions({
     const added = await applySuggestionEntries(weekStart, suggestion.entries);
     setApplying(false);
     setNotice(
-      added > 0 ? `Added ${added} meal${added === 1 ? "" : "s"} from "${suggestion.title}".` : "Could not add that suggestion.",
+      added > 0
+        ? `Added ${added} meal${added === 1 ? "" : "s"} from "${suggestion.title}".`
+        : "Could not add that suggestion.",
     );
     await onApplied();
   };

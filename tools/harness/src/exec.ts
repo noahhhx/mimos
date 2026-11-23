@@ -60,7 +60,11 @@ export function execInteractive(command: string, args: readonly string[], option
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { cwd: options.cwd, env: options.env, stdio: "inherit" });
     child.on("error", (error: NodeJS.ErrnoException) => {
-      reject(error.code === "ENOENT" ? new HarnessError(`${command} not found on PATH — run the harness as \`devenv shell -- harness …\``) : error);
+      reject(
+        error.code === "ENOENT"
+          ? new HarnessError(`${command} not found on PATH — run the harness as \`devenv shell -- harness …\``)
+          : error,
+      );
     });
     child.on("close", (code) => resolve(code ?? 1));
   });

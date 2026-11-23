@@ -111,7 +111,10 @@ ${LOGLEVEL_STATE} until --reset. Changes are recorded in summary.md.`,
       if (lines.length === 0) lines.push("nothing to reset — no logger was changed since the last reset");
     }
 
-    appendSummary(run, [`## \`${displayCommand(["loglevel", ...argv])}\``, "", ...lines.map((line) => `- ${line}`)].join("\n"));
+    appendSummary(
+      run,
+      [`## \`${displayCommand(["loglevel", ...argv])}\``, "", ...lines.map((line) => `- ${line}`)].join("\n"),
+    );
     await finishRun(run, ["loglevel", ...argv], startedAt, 0);
     process.stdout.write(`${lines.join("\n")}\n`);
     return 0;

@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { REDACTED, redactBody, redactConfig, redactHar, redactHeaders, redactJson, redactLiterals, redactText } from "../src/redact.ts";
+import {
+  REDACTED,
+  redactBody,
+  redactConfig,
+  redactHar,
+  redactHeaders,
+  redactJson,
+  redactLiterals,
+  redactText,
+} from "../src/redact.ts";
 
 const JWT = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxMjMifQ.c2lnbmF0dXJl";
 
@@ -104,7 +113,10 @@ test("actuator config: secret-named keys lose string values, keeping origins, nu
       {
         name: "systemEnvironment",
         properties: {
-          SPRING_DATASOURCE_PASSWORD: { value: "mimos", origin: 'System Environment Property "SPRING_DATASOURCE_PASSWORD"' },
+          SPRING_DATASOURCE_PASSWORD: {
+            value: "mimos",
+            origin: 'System Environment Property "SPRING_DATASOURCE_PASSWORD"',
+          },
           SPRING_DATASOURCE_URL: { value: "jdbc:postgresql://postgres:5432/mimos", origin: "env" },
           "spring.security.oauth2.client.registration.x.client-secret": { value: "s3cret", origin: "yml" },
           MIMOS_API_KEY: { value: "k", origin: "env" },
@@ -119,7 +131,10 @@ test("actuator config: secret-named keys lose string values, keeping origins, nu
       {
         name: "systemEnvironment",
         properties: {
-          SPRING_DATASOURCE_PASSWORD: { value: REDACTED, origin: 'System Environment Property "SPRING_DATASOURCE_PASSWORD"' },
+          SPRING_DATASOURCE_PASSWORD: {
+            value: REDACTED,
+            origin: 'System Environment Property "SPRING_DATASOURCE_PASSWORD"',
+          },
           SPRING_DATASOURCE_URL: { value: "jdbc:postgresql://postgres:5432/mimos", origin: "env" },
           "spring.security.oauth2.client.registration.x.client-secret": { value: REDACTED, origin: "yml" },
           MIMOS_API_KEY: { value: REDACTED, origin: "env" },
@@ -129,11 +144,21 @@ test("actuator config: secret-named keys lose string values, keeping origins, nu
     ],
   });
   const configprops = {
-    properties: { password: "mimos", username: "mimos", maxTokenCount: 100, opaquetoken: { clientId: "api", clientSecret: "s" } },
+    properties: {
+      password: "mimos",
+      username: "mimos",
+      maxTokenCount: 100,
+      opaquetoken: { clientId: "api", clientSecret: "s" },
+    },
     inputs: { password: { value: "mimos", origin: "env" }, tokens: ["a", "b"] },
   };
   assert.deepEqual(redactConfig(configprops), {
-    properties: { password: REDACTED, username: "mimos", maxTokenCount: 100, opaquetoken: { clientId: "api", clientSecret: REDACTED } },
+    properties: {
+      password: REDACTED,
+      username: "mimos",
+      maxTokenCount: 100,
+      opaquetoken: { clientId: "api", clientSecret: REDACTED },
+    },
     inputs: { password: { value: REDACTED, origin: "env" }, tokens: [REDACTED, REDACTED] },
   });
 });

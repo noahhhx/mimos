@@ -49,7 +49,10 @@ test("adds an unplanned item that survives regeneration, then removes it", async
 
   await test.step("only the added item can be removed", async () => {
     await expect(
-      page.locator(".shopping-items li").filter({ hasText: "Banana" }).getByRole("button", { name: /^Remove/ }),
+      page
+        .locator(".shopping-items li")
+        .filter({ hasText: "Banana" })
+        .getByRole("button", { name: /^Remove/ }),
     ).toHaveCount(0);
     // The page drops the item at once; wait for the API to have removed it too.
     const removed = page.waitForResponse(

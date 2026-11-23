@@ -25,8 +25,14 @@ export const APP_ID = "io.github.noahhhx.mimos.debug";
  * local stack (docs/harness/releasing.md).
  */
 export const APP_BUILDS = {
-  debug: { task: ":androidApp:assembleDebug", apk: "apps/mobile/androidApp/build/outputs/apk/debug/androidApp-debug.apk" },
-  minified: { task: ":androidApp:assembleMinified", apk: "apps/mobile/androidApp/build/outputs/apk/minified/androidApp-minified.apk" },
+  debug: {
+    task: ":androidApp:assembleDebug",
+    apk: "apps/mobile/androidApp/build/outputs/apk/debug/androidApp-debug.apk",
+  },
+  minified: {
+    task: ":androidApp:assembleMinified",
+    apk: "apps/mobile/androidApp/build/outputs/apk/minified/androidApp-minified.apk",
+  },
 } as const;
 export type AppBuild = keyof typeof APP_BUILDS;
 
@@ -87,7 +93,7 @@ export function renderAvdIni(avdDir: string): string {
 /** `<name>.avd/config.ini`: the hardware profile. Headless, so the GPU is software-rendered. */
 export function renderAvdConfig(name = AVD_NAME): string {
   return iniLines({
-    "AvdId": name,
+    AvdId: name,
     "avd.ini.displayname": name,
     "PlayStore.enabled": "false",
     "abi.type": SYSTEM_IMAGE.abi,

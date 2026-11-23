@@ -50,9 +50,7 @@ export function flowNamesIn(paths: readonly string[]): string[] {
     .sort();
 }
 
-export type Pick =
-  | { kind: "run"; release: Release; flows: string[] }
-  | { kind: "skip"; reason: string };
+export type Pick = { kind: "run"; release: Release; flows: string[] } | { kind: "skip"; reason: string };
 
 export interface PickInput {
   /** The last `v*` tag reachable from HEAD, as the contract check finds it; undefined when there is none. */
@@ -70,10 +68,14 @@ export interface PickInput {
  * release.
  */
 export function decide(input: PickInput): Pick {
-  if (input.tag === undefined) return { kind: "skip", reason: "No v* release yet; nothing to run the app's flows against." };
+  if (input.tag === undefined)
+    return { kind: "skip", reason: "No v* release yet; nothing to run the app's flows against." };
   const release = releaseOf(input.tag);
   if (input.realmAtTag === undefined || !hasMobileClient(input.realmAtTag)) {
-    return { kind: "skip", reason: `${release.tag} predates the ${MOBILE_CLIENT} Keycloak client, so the app cannot sign in to it.` };
+    return {
+      kind: "skip",
+      reason: `${release.tag} predates the ${MOBILE_CLIENT} Keycloak client, so the app cannot sign in to it.`,
+    };
   }
   if (input.missingImages.length > 0) {
     return { kind: "skip", reason: `${release.tag}'s images are not published (${input.missingImages.join(", ")}).` };

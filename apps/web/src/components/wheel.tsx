@@ -4,7 +4,16 @@ import { useEffect, useRef, useState } from "react";
 
 import type { PanelWheelSegment } from "@mimos/api-client";
 
-import { iconSize, polar, restingAngle, samePosition, segmentCenter, segmentPath, segmentTone, spinTarget } from "@/lib/wheel";
+import {
+  iconSize,
+  polar,
+  restingAngle,
+  samePosition,
+  segmentCenter,
+  segmentPath,
+  segmentTone,
+  spinTarget,
+} from "@/lib/wheel";
 
 const RADIUS = 100;
 const ICON_MAX = 22;

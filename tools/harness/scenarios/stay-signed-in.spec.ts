@@ -48,6 +48,9 @@ test("the session outlasts a month away", async ({ loggedInPage: page }) => {
     return key ? (JSON.parse(localStorage.getItem(key)!) as { refresh_token?: string }).refresh_token : undefined;
   });
   expect(refreshToken, "the app keeps a refresh token in localStorage").toBeTruthy();
-  const claims = JSON.parse(Buffer.from(refreshToken!.split(".")[1] ?? "", "base64url").toString()) as { iat: number; exp: number };
+  const claims = JSON.parse(Buffer.from(refreshToken!.split(".")[1] ?? "", "base64url").toString()) as {
+    iat: number;
+    exp: number;
+  };
   expect(claims.exp - claims.iat, "seconds the refresh token lives unused").toBeGreaterThanOrEqual(30 * 24 * 3600);
 });

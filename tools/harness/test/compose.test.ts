@@ -4,7 +4,15 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import { COMPOSE_FILE, DEBUG_OVERLAY, FAKES_OVERLAY, REPO_ROOT } from "../src/config.ts";
-import { composeEnv, composeFiles, describeLogs, isHealthy, linesSince, parseImageLabels, parseJsonOutput } from "../src/compose.ts";
+import {
+  composeEnv,
+  composeFiles,
+  describeLogs,
+  isHealthy,
+  linesSince,
+  parseImageLabels,
+  parseJsonOutput,
+} from "../src/compose.ts";
 
 test("the harness always runs the fakes, and adds the debug overlay when asked", () => {
   const base = [COMPOSE_FILE, FAKES_OVERLAY].map((file) => join(REPO_ROOT, file));
@@ -14,12 +22,20 @@ test("the harness always runs the fakes, and adds the debug overlay when asked",
 
 test("fakes of third-party services stay out of the product stack", () => {
   const product = readFileSync(join(REPO_ROOT, COMPOSE_FILE), "utf8");
-  assert.ok(!product.includes("tools/harness/fakes"), `${COMPOSE_FILE} must not build a fake; they belong in ${FAKES_OVERLAY}`);
-  assert.ok(readFileSync(join(REPO_ROOT, FAKES_OVERLAY), "utf8").includes("tools/harness/fakes/intervals-icu/Dockerfile"));
+  assert.ok(
+    !product.includes("tools/harness/fakes"),
+    `${COMPOSE_FILE} must not build a fake; they belong in ${FAKES_OVERLAY}`,
+  );
+  assert.ok(
+    readFileSync(join(REPO_ROOT, FAKES_OVERLAY), "utf8").includes("tools/harness/fakes/intervals-icu/Dockerfile"),
+  );
 });
 
 test("compose JSON output: a single array or one object per line", () => {
-  assert.deepEqual(parseJsonOutput('[{"Service":"api"},{"Service":"web"}]\n'), [{ Service: "api" }, { Service: "web" }]);
+  assert.deepEqual(parseJsonOutput('[{"Service":"api"},{"Service":"web"}]\n'), [
+    { Service: "api" },
+    { Service: "web" },
+  ]);
   assert.deepEqual(parseJsonOutput('{"Service":"api"}\n{"Service":"web"}\n'), [{ Service: "api" }, { Service: "web" }]);
   assert.deepEqual(parseJsonOutput("\n"), []);
 });

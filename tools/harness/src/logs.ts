@@ -30,7 +30,8 @@ export function parseLogLine(line: string): LogLine {
   if (body.startsWith("{")) {
     try {
       const parsed: unknown = JSON.parse(body);
-      if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) json = parsed as Record<string, unknown>;
+      if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed))
+        json = parsed as Record<string, unknown>;
     } catch {
       // Not JSON after all — treat it as text.
     }
@@ -61,10 +62,15 @@ export function formatLogLine(line: string): string {
   if (json === undefined || typeof field(json, "message") !== "string") return line;
   const time = stamp ?? String(field(json, "@timestamp") ?? "");
   const level = String(field(json, "log.level") ?? "").padEnd(5);
-  const logger = String(field(json, "log.logger") ?? "").split(".").pop();
+  const logger = String(field(json, "log.logger") ?? "")
+    .split(".")
+    .pop();
   const errorType = field(json, "error.type");
   const errorMessage = field(json, "error.message");
-  const error = typeof errorType === "string" ? ` [${errorType}${typeof errorMessage === "string" ? `: ${errorMessage}` : ""}]` : "";
+  const error =
+    typeof errorType === "string"
+      ? ` [${errorType}${typeof errorMessage === "string" ? `: ${errorMessage}` : ""}]`
+      : "";
   return `${time} ${level} ${logger}: ${String(field(json, "message"))}${error}`.trim();
 }
 
@@ -77,12 +83,17 @@ export interface RequestLines {
 /** Every captured line mentioning the request, grouped by service (services without any are left out). */
 export function requestLines(logs: readonly CapturedLog[], id: string): RequestLines[] {
   return logs
-    .map((log) => ({ service: log.service, lines: log.text.split("\n").filter((line) => line !== "" && matchesRequestId(line, id)) }))
+    .map((log) => ({
+      service: log.service,
+      lines: log.text.split("\n").filter((line) => line !== "" && matchesRequestId(line, id)),
+    }))
     .filter((match) => match.lines.length > 0);
 }
 
 /** `<service> | <formatted line>` — one block across services, for summaries and stdout. */
 export function describeRequestLines(matches: readonly RequestLines[]): string[] {
   const width = Math.max(0, ...matches.map((match) => match.service.length));
-  return matches.flatMap((match) => match.lines.map((line) => `${match.service.padEnd(width)} | ${formatLogLine(line)}`));
+  return matches.flatMap((match) =>
+    match.lines.map((line) => `${match.service.padEnd(width)} | ${formatLogLine(line)}`),
+  );
 }

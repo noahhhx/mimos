@@ -123,7 +123,13 @@ test("in a shared household, Tonight and the week are the meals you eat", async 
           ingredients: [{ quantity: 400, unit: "g", name: "Potatoes" }],
           steps: [{ instruction: "Cook it." }],
         });
-        await hostApi("POST", `/api/v1/plans/${monday}/entries`, { date, mealType, recipeId: recipe.id, servings: diners.length, diners });
+        await hostApi("POST", `/api/v1/plans/${monday}/entries`, {
+          date,
+          mealType,
+          recipeId: recipe.id,
+          servings: diners.length,
+          diners,
+        });
       }
     });
 

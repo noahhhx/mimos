@@ -7,7 +7,18 @@ import { HarnessError } from "./args.ts";
  */
 
 /** The L-code of each digit; R-codes are its complement and G-codes the R-code reversed. */
-const L_CODES = ["0001101", "0011001", "0010011", "0111101", "0100011", "0110001", "0101111", "0111011", "0110111", "0001011"];
+const L_CODES = [
+  "0001101",
+  "0011001",
+  "0010011",
+  "0111101",
+  "0100011",
+  "0110001",
+  "0101111",
+  "0111011",
+  "0110111",
+  "0001011",
+];
 /** Which of L or G encodes each of the six left digits, chosen by the first digit. */
 const PARITY = ["LLLLLL", "LLGLGG", "LLGGLG", "LLGGGL", "LGLLGG", "LGGLLG", "LGGGLL", "LGLGLG", "LGLGGL", "LGGLGL"];
 
@@ -42,7 +53,8 @@ export function barcodeVideo(barcode: string): Buffer {
   const left = Math.floor((width - modules.length * moduleWidth) / 2);
   for (let y = 90; y < height - 90; y++) {
     for (let m = 0; m < modules.length; m++) {
-      if (modules[m] === "1") luma.fill(16, y * width + left + m * moduleWidth, y * width + left + (m + 1) * moduleWidth);
+      if (modules[m] === "1")
+        luma.fill(16, y * width + left + m * moduleWidth, y * width + left + (m + 1) * moduleWidth);
     }
   }
   const chroma = Buffer.alloc((width / 2) * (height / 2) * 2, 128);

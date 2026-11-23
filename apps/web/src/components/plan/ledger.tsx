@@ -46,7 +46,9 @@ export function Ledger({
   const memberLabels = chipLabels(members.map((member) => member.displayName));
   const dinerLabels = (entry: Entry) =>
     members.flatMap((member, index) =>
-      entry.diners.some((diner) => diner.id === member.id) ? [{ id: member.id, label: memberLabels[index], name: member.displayName }] : [],
+      entry.diners.some((diner) => diner.id === member.id)
+        ? [{ id: member.id, label: memberLabels[index], name: member.displayName }]
+        : [],
     );
 
   return (

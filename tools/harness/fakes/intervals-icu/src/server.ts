@@ -90,7 +90,11 @@ function range(query: URLSearchParams): { oldest: string; newest: string } {
   return { oldest, newest };
 }
 
-function inRange(records: Iterable<IcuRecord>, dateOf: (record: IcuRecord) => string, query: URLSearchParams): IcuRecord[] {
+function inRange(
+  records: Iterable<IcuRecord>,
+  dateOf: (record: IcuRecord) => string,
+  query: URLSearchParams,
+): IcuRecord[] {
   const { oldest, newest } = range(query);
   return [...records]
     .filter((record) => {
@@ -125,7 +129,11 @@ export function createFakeServer(today: () => string = () => new Date().toISOStr
     if (fault !== null) {
       const { status, retryAfter } = fault;
       if (fault.times !== undefined && --fault.times <= 0) fault = null;
-      answer(status, { error: "forced by /_fake/fault" }, status === 429 && retryAfter !== undefined ? { "Retry-After": String(retryAfter) } : {});
+      answer(
+        status,
+        { error: "forced by /_fake/fault" },
+        status === 429 && retryAfter !== undefined ? { "Retry-After": String(retryAfter) } : {},
+      );
       return;
     }
     if (key !== "good") {
@@ -188,7 +196,11 @@ export function createFakeServer(today: () => string = () => new Date().toISOStr
         if ((status !== 401 && status !== 429) || !optionalCount(retryAfter, 0) || !optionalCount(times, 1)) {
           throw new HttpError(400, "a fault is {status: 401 | 429, retryAfter?: seconds, times?: count}");
         }
-        fault = { status, ...(retryAfter === undefined ? {} : { retryAfter }), ...(times === undefined ? {} : { times }) } as Fault;
+        fault = {
+          status,
+          ...(retryAfter === undefined ? {} : { retryAfter }),
+          ...(times === undefined ? {} : { times }),
+        } as Fault;
         send(res, 200, fault);
         return;
       }

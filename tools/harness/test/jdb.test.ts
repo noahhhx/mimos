@@ -72,7 +72,12 @@ test("locations: Class:line, Class.method, signatures, nested classes", () => {
     signature: undefined,
   });
   const overloaded = parseLocation("a.b.Outer$Inner.run(int, java.lang.String)");
-  assert.deepEqual(overloaded, { kind: "method", className: "a.b.Outer$Inner", method: "run", signature: "(int, java.lang.String)" });
+  assert.deepEqual(overloaded, {
+    kind: "method",
+    className: "a.b.Outer$Inner",
+    method: "run",
+    signature: "(int, java.lang.String)",
+  });
   assert.equal(jdbLocation(overloaded), "a.b.Outer$Inner.run(int, java.lang.String)");
   assert.equal(parseLocation("Foo.<init>").kind, "method");
   for (const bad of ["MeController", "MeController:0", "MeController:x", "Me Controller.get", ":27", "a..b.c"]) {
@@ -151,9 +156,14 @@ test("hit events, with the source line when jdb found it", () => {
     bci: 8,
     source: "27            return ResponseEntity.ok(new UserProfile()",
   });
-  assert.deepEqual(hits.map((hit) => hit.thread), ["http-nio-8080-exec-7", "http-nio-8080-exec-3", "http-nio-8080-exec-4"]);
+  assert.deepEqual(
+    hits.map((hit) => hit.thread),
+    ["http-nio-8080-exec-7", "http-nio-8080-exec-3", "http-nio-8080-exec-4"],
+  );
   const noSource = parseHits('Breakpoint hit: "thread=main", org.lib.Thing.run(), line=1,204 bci=0\n> ');
-  assert.deepEqual(noSource, [{ thread: "main", method: "org.lib.Thing.run()", line: 1204, bci: 0, source: undefined }]);
+  assert.deepEqual(noSource, [
+    { thread: "main", method: "org.lib.Thing.run()", line: 1204, bci: 0, source: undefined },
+  ]);
 });
 
 test("threads: IDs by name, names with spaces, the one at the breakpoint", () => {
@@ -170,7 +180,11 @@ test("where: frames, missing line info, grouped digits", () => {
   const frames = parseWhere(WHERE);
   assert.equal(frames.length, 5);
   assert.deepEqual(frames[0], { index: 1, method: `${ME}.getMe`, location: "MeController.java:27" });
-  assert.deepEqual(frames[1], { index: 2, method: "java.lang.invoke.DirectMethodHandle$Holder.invokeVirtual", location: null });
+  assert.deepEqual(frames[1], {
+    index: 2,
+    method: "java.lang.invoke.DirectMethodHandle$Holder.invokeVirtual",
+    location: null,
+  });
   assert.equal(frames[3]?.location, "FrameworkServlet.java:1000");
   assert.equal(frames[4]?.location, "AbstractProtocol.java:1307");
 });
@@ -183,7 +197,9 @@ profile = instance of io.github.noahhhx.mimos.api.identity.UserProfileRecord(id=
 http-nio-8080-exec-7[1] `),
     {
       arguments: [],
-      locals: [{ name: "profile", value: "instance of io.github.noahhhx.mimos.api.identity.UserProfileRecord(id=12404)" }],
+      locals: [
+        { name: "profile", value: "instance of io.github.noahhhx.mimos.api.identity.UserProfileRecord(id=12404)" },
+      ],
       unavailable: undefined,
     },
   );
@@ -203,8 +219,9 @@ exec-5[1] `),
     },
   );
   assert.equal(
-    parseLocals("main[1] Local variable information not available.  Compile with -g to generate variable information\nmain[1] ")
-      .unavailable,
+    parseLocals(
+      "main[1] Local variable information not available.  Compile with -g to generate variable information\nmain[1] ",
+    ).unavailable,
     "Local variable information not available.  Compile with -g to generate variable information",
   );
 });
@@ -212,7 +229,10 @@ exec-5[1] `),
 test("print and dump: values, multi-line objects, failures", () => {
   const printed = `http-nio-8080-exec-2[1]  profile.subjectId() = "b5da2810-2e6e-4a8d-8c04-be8f19a0f5d9"\nhttp-nio-8080-exec-2[1] `;
   assert.ok(evaluationDone(printed, "profile.subjectId()"));
-  assert.deepEqual(parseEvaluation(printed, "profile.subjectId()"), { ok: true, value: '"b5da2810-2e6e-4a8d-8c04-be8f19a0f5d9"' });
+  assert.deepEqual(parseEvaluation(printed, "profile.subjectId()"), {
+    ok: true,
+    value: '"b5da2810-2e6e-4a8d-8c04-be8f19a0f5d9"',
+  });
 
   const dumped = `exec-7[1]  this = {
     currentUser: instance of io.github.noahhhx.mimos.api.identity.CurrentUserService(id=12406)

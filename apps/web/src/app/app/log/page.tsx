@@ -278,8 +278,7 @@ export default function LogPage() {
               <ul className="log-entries">
                 {dayLogs.map((log) => (
                   <li key={log.id}>
-                    <span className="muted">{mealLabel(log.mealType)}</span>{" "}
-                    <strong>{log.description}</strong>{" "}
+                    <span className="muted">{mealLabel(log.mealType)}</span> <strong>{log.description}</strong>{" "}
                     <span className="muted">
                       {log.recipeId ? `(${formatServings(log.servings)}) ` : ""}
                       {formatKcal(log.nutrition?.calories)}

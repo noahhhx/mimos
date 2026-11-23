@@ -101,14 +101,22 @@ test("token, up, and logs options", () => {
   assert.deepEqual(parseTokenArgs(["--as", "test2", "--decode"]), { user: "test2", decode: true });
   assert.throws(() => parseTokenArgs(["--as", "root"]), UsageError);
   assert.deepEqual(parseUpArgs([]), { build: true, debug: false, sqlLog: false, run: undefined });
-  assert.deepEqual(parseUpArgs(["--no-build", "--debug"]), { build: false, debug: true, sqlLog: false, run: undefined });
+  assert.deepEqual(parseUpArgs(["--no-build", "--debug"]), {
+    build: false,
+    debug: true,
+    sqlLog: false,
+    run: undefined,
+  });
   assert.deepEqual(parseLogsArgs(["--service", "api", "--service", "web", "--since", "10m"]), {
     services: ["api", "web"],
     since: "10m",
     requestId: undefined,
     run: undefined,
   });
-  assert.equal(parseLogsArgs(["--request-id", "3f2b9c1e-0d4a-4b7e-9a51-6c2f8e7d1a90"]).requestId, "3f2b9c1e-0d4a-4b7e-9a51-6c2f8e7d1a90");
+  assert.equal(
+    parseLogsArgs(["--request-id", "3f2b9c1e-0d4a-4b7e-9a51-6c2f8e7d1a90"]).requestId,
+    "3f2b9c1e-0d4a-4b7e-9a51-6c2f8e7d1a90",
+  );
   assert.throws(() => parseLogsArgs(["--request-id", "not an id"]), UsageError);
   assert.throws(() => parseUpArgs(["extra"]), UsageError);
 });
@@ -129,7 +137,36 @@ test("ui: one known scenario, headless as the test user by default", () => {
 });
 
 test("ui: scenarios are the spec files in tools/harness/scenarios", () => {
-  assert.deepEqual(scenarioNames(), ["account-data", "app-nav", "app-pages", "calculated-nutrition", "counted-ingredients", "country-wheel", "create-recipe", "edit-recipe", "fuel-profile", "fuel-targets", "household", "intervals-icu", "keycloak-theme", "kitchen-home", "log-barcode", "log-recipe", "login", "plan-food", "planned-totals", "plugin-opt-in", "recipe-as-ingredient", "recipe-form-errors", "recipe-pictures", "recipe-sort-filter", "session-expiry", "shared-week", "shopping-added-items", "stay-signed-in"]);
+  assert.deepEqual(scenarioNames(), [
+    "account-data",
+    "app-nav",
+    "app-pages",
+    "calculated-nutrition",
+    "counted-ingredients",
+    "country-wheel",
+    "create-recipe",
+    "edit-recipe",
+    "fuel-profile",
+    "fuel-targets",
+    "household",
+    "intervals-icu",
+    "keycloak-theme",
+    "kitchen-home",
+    "log-barcode",
+    "log-recipe",
+    "login",
+    "plan-food",
+    "planned-totals",
+    "plugin-opt-in",
+    "recipe-as-ingredient",
+    "recipe-form-errors",
+    "recipe-pictures",
+    "recipe-sort-filter",
+    "session-expiry",
+    "shared-week",
+    "shopping-added-items",
+    "stay-signed-in",
+  ]);
 });
 
 test("displayCommand quotes only what needs quoting", () => {
@@ -146,7 +183,11 @@ test("up: --sql-log needs the debug overlay, and is the only way to turn stateme
   const saved = process.env.POSTGRES_LOG_MIN_DURATION_STATEMENT;
   process.env.POSTGRES_LOG_MIN_DURATION_STATEMENT = "0";
   try {
-    assert.equal(upEnv(false).POSTGRES_LOG_MIN_DURATION_STATEMENT, undefined, "an exported value does not leak into a plain --debug");
+    assert.equal(
+      upEnv(false).POSTGRES_LOG_MIN_DURATION_STATEMENT,
+      undefined,
+      "an exported value does not leak into a plain --debug",
+    );
     assert.equal(upEnv(true).POSTGRES_LOG_MIN_DURATION_STATEMENT, "0");
   } finally {
     if (saved === undefined) delete process.env.POSTGRES_LOG_MIN_DURATION_STATEMENT;
@@ -161,7 +202,11 @@ test("diag: recent logs default to 15 minutes", () => {
 });
 
 test("loglevel: show, set (level case-insensitive), or reset", () => {
-  assert.deepEqual(parseLoglevelArgs(["org.springframework.web"]), { kind: "show", logger: "org.springframework.web", run: undefined });
+  assert.deepEqual(parseLoglevelArgs(["org.springframework.web"]), {
+    kind: "show",
+    logger: "org.springframework.web",
+    run: undefined,
+  });
   assert.deepEqual(parseLoglevelArgs(["org.springframework.web", "debug"]), {
     kind: "set",
     logger: "org.springframework.web",
@@ -173,13 +218,22 @@ test("loglevel: show, set (level case-insensitive), or reset", () => {
   assert.throws(() => parseLoglevelArgs([]), UsageError);
   assert.throws(() => parseLoglevelArgs(["org.springframework.web", "VERBOSE"]), UsageError);
   assert.throws(() => parseLoglevelArgs(["--reset", "ROOT"]), UsageError);
-  assert.throws(() => parseLoglevelArgs(["../env", "DEBUG"]), UsageError, "a logger name never reaches the URL unchecked");
+  assert.throws(
+    () => parseLoglevelArgs(["../env", "DEBUG"]),
+    UsageError,
+    "a logger name never reaches the URL unchecked",
+  );
   assert.throws(() => parseLoglevelArgs(["a", "DEBUG", "extra"]), UsageError);
 });
 
 test("sql: one quoted query, read-only unless --write", () => {
   assert.deepEqual(parseSqlArgs(["select 1"]), { query: "select 1", write: false, csv: false, run: undefined });
-  assert.deepEqual(parseSqlArgs(["delete from t", "--write", "--csv"]), { query: "delete from t", write: true, csv: true, run: undefined });
+  assert.deepEqual(parseSqlArgs(["delete from t", "--write", "--csv"]), {
+    query: "delete from t",
+    write: true,
+    csv: true,
+    run: undefined,
+  });
   assert.throws(() => parseSqlArgs([]), UsageError);
   assert.throws(() => parseSqlArgs(["  "]), UsageError);
   assert.throws(() => parseSqlArgs(["select", "1"]), UsageError, "an unquoted query is two arguments");

@@ -25,7 +25,8 @@ export function weighFlows(names: readonly string[], durations: Readonly<Record<
 
 /** Longest first, each to the shard with least so far; ties go by name, so every shard computes the same split. */
 export function assignShards(flows: readonly WeightedFlow[], count: number): string[][] {
-  if (!Number.isInteger(count) || count < 1) throw new RangeError(`shard count must be a positive integer, got ${count}`);
+  if (!Number.isInteger(count) || count < 1)
+    throw new RangeError(`shard count must be a positive integer, got ${count}`);
   const shards = Array.from({ length: count }, () => ({ load: 0, names: [] as string[] }));
   const ordered = [...flows].sort((a, b) => b.seconds - a.seconds || a.name.localeCompare(b.name));
   for (const flow of ordered) {
@@ -37,7 +38,8 @@ export function assignShards(flows: readonly WeightedFlow[], count: number): str
 }
 
 export function flowsOfShard(shard: number, count: number, dir = FLOWS_DIR): string[] {
-  if (!Number.isInteger(shard) || shard < 1 || shard > count) throw new RangeError(`shard must be 1 to ${count}, got ${shard}`);
+  if (!Number.isInteger(shard) || shard < 1 || shard > count)
+    throw new RangeError(`shard must be 1 to ${count}, got ${shard}`);
   const file = join(dir, DURATIONS_FILE);
   const durations = existsSync(file) ? (JSON.parse(readFileSync(file, "utf8")) as Record<string, number>) : {};
   return assignShards(weighFlows(flowNames(dir), durations), count)[shard - 1] ?? [];

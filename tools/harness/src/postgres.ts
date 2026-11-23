@@ -70,7 +70,9 @@ export function parseCsv(text: string): Record<string, string>[] {
   }
   if (value !== "" || record.length > 0) records.push([...record, value]);
   const [header, ...rows] = records;
-  return (rows ?? []).map((row) => Object.fromEntries((header ?? []).map((column, index) => [column, row[index] ?? ""])));
+  return (rows ?? []).map((row) =>
+    Object.fromEntries((header ?? []).map((column, index) => [column, row[index] ?? ""])),
+  );
 }
 
 export const MIGRATION_HISTORY =
@@ -85,7 +87,10 @@ export interface MigrationReport {
 }
 
 /** Compares flyway_schema_history (psql --csv of MIGRATION_HISTORY) with the repo's migration scripts. */
-export function migrationReport(history: readonly Record<string, string>[], scripts: readonly string[]): MigrationReport {
+export function migrationReport(
+  history: readonly Record<string, string>[],
+  scripts: readonly string[],
+): MigrationReport {
   const succeeded = new Set(history.filter((row) => row.success === "t").map((row) => row.script));
   return {
     applied: succeeded.size,

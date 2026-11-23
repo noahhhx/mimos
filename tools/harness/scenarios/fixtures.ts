@@ -38,11 +38,21 @@ export const test = base.extend<HarnessFixtures>({
       };
       context.on("console", (message) => {
         const { url, lineNumber } = message.location();
-        write({ type: message.type(), text: message.text(), source: url ? `${url}:${lineNumber}` : null, page: message.page()?.url() ?? null });
+        write({
+          type: message.type(),
+          text: message.text(),
+          source: url ? `${url}:${lineNumber}` : null,
+          page: message.page()?.url() ?? null,
+        });
       });
       context.on("weberror", (webError) => {
         const error = webError.error();
-        write({ type: "pageerror", text: error.message, stack: error.stack ?? null, page: webError.page()?.url() ?? null });
+        write({
+          type: "pageerror",
+          text: error.message,
+          stack: error.stack ?? null,
+          page: webError.page()?.url() ?? null,
+        });
       });
       await use();
     },
@@ -165,7 +175,10 @@ export function planLedger(page: Page) {
     training: (day: number): Locator => table.getByRole("button", { name: /^Training for / }).nth(day),
     /** Plans a recipe or food in a day's slot through the picker. */
     async plan(day: number, slot: string, title: string): Promise<void> {
-      await table.getByRole("button", { name: new RegExp(`^Add ${slot} for `) }).nth(day).click();
+      await table
+        .getByRole("button", { name: new RegExp(`^Add ${slot} for `) })
+        .nth(day)
+        .click();
       const picker = page.getByRole("dialog", { name: "Pick a meal" });
       await picker.getByRole("searchbox").fill(title);
       await picker.getByRole("button", { name: new RegExp(`^${escaped(title)}`) }).click();

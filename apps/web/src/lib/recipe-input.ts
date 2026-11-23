@@ -172,7 +172,9 @@ export function toRecipeInput(values: RecipeFormValues): { input: RecipeInput } 
  * Rows without a name and amounts that are not positive numbers are left
  * out, so a half-typed row never makes the estimate fail.
  */
-export function toEstimateInput(values: RecipeFormValues): { input: NutritionEstimateInput; rows: number[] } | undefined {
+export function toEstimateInput(
+  values: RecipeFormValues,
+): { input: NutritionEstimateInput; rows: number[] } | undefined {
   const servings = Number(values.servings);
   if (!Number.isInteger(servings) || servings < 1 || servings > 50) {
     return undefined;
@@ -198,7 +200,9 @@ export function toEstimateInput(values: RecipeFormValues): { input: NutritionEst
 }
 
 /** A line's one link, if any: a recipe link wins, though a row never holds both. */
-function linkFieldsOf(line: Pick<IngredientRow, "catalogSlug" | "recipeId">): Pick<IngredientRow, "catalogSlug" | "recipeId"> {
+function linkFieldsOf(
+  line: Pick<IngredientRow, "catalogSlug" | "recipeId">,
+): Pick<IngredientRow, "catalogSlug" | "recipeId"> {
   if (line.recipeId) {
     return { recipeId: line.recipeId };
   }

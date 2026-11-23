@@ -4,7 +4,11 @@ import { test } from "node:test";
 import { freshness, latestSourceChange, type SourceProbe } from "../src/stale.ts";
 
 /** An in-memory working tree: file → mtime, plus directory mtimes (git lists files only). */
-function probe(files: Record<string, string>, deleted: string[] = [], dirs: Record<string, string> = DIRS): SourceProbe {
+function probe(
+  files: Record<string, string>,
+  deleted: string[] = [],
+  dirs: Record<string, string> = DIRS,
+): SourceProbe {
   const mtimes: Record<string, string> = { ...dirs, ...files };
   return {
     files: async (paths) =>

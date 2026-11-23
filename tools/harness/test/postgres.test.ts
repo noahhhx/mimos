@@ -50,5 +50,8 @@ test("migration scripts are the repo's versioned migrations, in version order", 
   assert.equal(scripts[0], "V1__baseline.sql");
   assert.ok(scripts.every((script) => /^V\d+__.+\.sql$/.test(script)));
   const versions = scripts.map((script) => Number(/^V(\d+)/.exec(script)?.[1]));
-  assert.deepEqual(versions, [...versions].sort((a, b) => a - b));
+  assert.deepEqual(
+    versions,
+    [...versions].sort((a, b) => a - b),
+  );
 });

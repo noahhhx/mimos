@@ -11,9 +11,7 @@ import { withoutNutritionNote } from "../src/lib/planned-totals.ts";
 type Sized = { mealType: MealType; members: number; expected: number };
 
 // The app's commonTest reads the same file (libraries/test-cases/README.md).
-const cases = JSON.parse(
-  readFileSync(new URL("../../../libraries/test-cases/plan.json", import.meta.url), "utf8"),
-) as {
+const cases = JSON.parse(readFileSync(new URL("../../../libraries/test-cases/plan.json", import.meta.url), "utf8")) as {
   defaultServingsCases: Sized[];
   defaultDinerCountCases: Sized[];
   toggleDinerCases: { diners: string[]; member: string; expected: string[] | null }[];

@@ -150,9 +150,7 @@ function ScanDialog({ onClose, onFound }: { onClose: () => void; onFound: (produ
         </button>
       </form>
 
-      {typed.trim() !== "" && barcode === undefined && (
-        <p className="muted">A barcode number is 8 to 14 digits.</p>
-      )}
+      {typed.trim() !== "" && barcode === undefined && <p className="muted">A barcode number is 8 to 14 digits.</p>}
       {lookup.state === "failed" && (
         <p className="error-text" role="alert">
           {lookup.message}

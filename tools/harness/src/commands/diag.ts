@@ -68,7 +68,10 @@ async function apiPart(run: Run): Promise<Part> {
   const health = await send("GET", new URL("/actuator/health", endpoints().api), { Accept: "application/json" });
   writeRunFile(run, "diag/actuator/health.json", json(redactJson(JSON.parse(health.body))));
   const status = (JSON.parse(health.body) as { status?: string }).status ?? `HTTP ${health.status}`;
-  if (status !== "UP") problems.push(`API health is ${status}: ${unhealthyComponents(JSON.parse(health.body)).join(", ") || "no component details"}`);
+  if (status !== "UP")
+    problems.push(
+      `API health is ${status}: ${unhealthyComponents(JSON.parse(health.body)).join(", ") || "no component details"}`,
+    );
 
   const token = await fetchToken(DEFAULT_USER).catch((error: Error) => error);
   if (token instanceof Error) {
@@ -86,7 +89,11 @@ async function apiPart(run: Run): Promise<Part> {
       continue;
     }
     const body: unknown = JSON.parse(response.body);
-    writeRunFile(run, `diag/actuator/${name}.json`, json(CONFIG_ENDPOINTS.has(name) ? redactConfig(body) : redactJson(body)));
+    writeRunFile(
+      run,
+      `diag/actuator/${name}.json`,
+      json(CONFIG_ENDPOINTS.has(name) ? redactConfig(body) : redactJson(body)),
+    );
     captured.push(name);
     if (name === "mappings") {
       const list = routes(body);
@@ -119,13 +126,20 @@ async function apiPart(run: Run): Promise<Part> {
 async function migrationsPart(run: Run): Promise<Part> {
   const result = await sql(MIGRATION_HISTORY, { csv: true });
   if (result.code !== 0) {
-    return { bullet: "- **Migrations:** not read", problems: [], skipped: [`migrations — psql failed: ${result.stderr.trim()}`] };
+    return {
+      bullet: "- **Migrations:** not read",
+      problems: [],
+      skipped: [`migrations — psql failed: ${result.stderr.trim()}`],
+    };
   }
   writeRunFile(run, "diag/migrations.csv", result.stdout);
   const report = migrationReport(parseCsv(result.stdout), migrationScripts());
   const problems = [
     ...report.failed.map((script) => `migration ${script} failed (flyway_schema_history.success = false)`),
-    ...report.pending.map((script) => `migration ${script} is in ${MIGRATIONS_DIR} but not applied — rebuild and restart the API (harness up)`),
+    ...report.pending.map(
+      (script) =>
+        `migration ${script} is in ${MIGRATIONS_DIR} but not applied — rebuild and restart the API (harness up)`,
+    ),
   ];
   return {
     bullet: `- **Migrations:** ${report.applied} applied, ${report.failed.length} failed, ${report.pending.length} pending vs. the repo (\`diag/migrations.csv\`)`,
@@ -156,7 +170,11 @@ async function pluginsPart(run: Run): Promise<Part> {
     writeRunFile(run, file, json(redactJson(JSON.parse(result.stdout))));
     files.push(`\`${file}\``);
   }
-  return { bullet: `- **Plugins:** ${files.length ? `manifests ${files.join(", ")}` : "no manifest captured"}`, problems: [], skipped };
+  return {
+    bullet: `- **Plugins:** ${files.length ? `manifests ${files.join(", ")}` : "no manifest captured"}`,
+    problems: [],
+    skipped,
+  };
 }
 
 async function keycloakPart(run: Run): Promise<Part> {
@@ -175,11 +193,19 @@ async function keycloakPart(run: Run): Promise<Part> {
     writeRunFile(run, file, json(redactJson(JSON.parse(response.body))));
     files.push(`\`${file}\``);
   }
-  return { bullet: `- **Keycloak:** realm ${REALM}${files.length ? ` — ${files.join(", ")}` : " not reachable"}`, problems: [], skipped };
+  return {
+    bullet: `- **Keycloak:** realm ${REALM}${files.length ? ` — ${files.join(", ")}` : " not reachable"}`,
+    problems: [],
+    skipped,
+  };
 }
 
 async function logsPart(run: Run, since: string): Promise<Part> {
-  return { bullet: `- **Logs (last ${since}):** ${describeLogs(await captureLogs(run, { since }))}`, problems: [], skipped: [] };
+  return {
+    bullet: `- **Logs (last ${since}):** ${describeLogs(await captureLogs(run, { since }))}`,
+    problems: [],
+    skipped: [],
+  };
 }
 
 /** A part that threw (say, the API is down) becomes a skipped entry instead of failing the snapshot. */

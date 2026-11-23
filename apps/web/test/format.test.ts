@@ -2,7 +2,14 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
-import { countedName, formatQuantity, formatServings, hasNutrition, nutritionCells, todayIso } from "../src/lib/format.ts";
+import {
+  countedName,
+  formatQuantity,
+  formatServings,
+  hasNutrition,
+  nutritionCells,
+  todayIso,
+} from "../src/lib/format.ts";
 
 // The app's commonTest reads the same file (libraries/test-cases/README.md).
 const text = JSON.parse(

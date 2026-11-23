@@ -10,7 +10,10 @@ import { passwordFor, parseTokenArgs } from "../src/commands/token.ts";
 
 test("fresh usernames match what the harness accepts for them", () => {
   assert.match(freshUsername(), FRESH_USER);
-  assert.equal(freshUsername(() => "0a1b2c3d"), "user-0a1b2c3d");
+  assert.equal(
+    freshUsername(() => "0a1b2c3d"),
+    "user-0a1b2c3d",
+  );
 });
 
 test("next week starts on the Monday after today's week, across months and years", () => {
@@ -70,7 +73,15 @@ test("household join: an owner and a different member, each a known user", () =>
       "MIMOS_MEMBER_PASSWORD=mimos-test",
     ].join("\n"),
   );
-  for (const argv of [[], ["join"], ["join", "test"], ["join", "test", "test"], ["join", "test", "nobody"], ["leave", "test", "test2"], ["join", "test", "test2", "x"]]) {
+  for (const argv of [
+    [],
+    ["join"],
+    ["join", "test"],
+    ["join", "test", "test"],
+    ["join", "test", "nobody"],
+    ["leave", "test", "test2"],
+    ["join", "test", "test2", "x"],
+  ]) {
     assert.throws(() => parseHouseholdArgs(argv), UsageError, argv.join(" "));
   }
 });

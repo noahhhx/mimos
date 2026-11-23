@@ -57,7 +57,8 @@ test("the plan shows each day's planned total", async ({ page }) => {
 
   await test.step("a recipe without calories adds its other values and is noted", async () => {
     const mondayTotal = async () =>
-      (await api<PlannedTotals>("GET", `/api/v1/plans/${monday}/my-totals`)).days.find((day) => day.date === monday)!.total;
+      (await api<PlannedTotals>("GET", `/api/v1/plans/${monday}/my-totals`)).days.find((day) => day.date === monday)!
+        .total;
     const before = await mondayTotal();
     await createRecipe(api, mystery, { proteinG: 5, carbsG: 12, fatG: 3 });
     await plan.plan(0, "Lunch", mystery);
@@ -126,12 +127,22 @@ test("Everyone hides the planned total in a shared household", async ({ page, br
 
   await test.step("the host plans a dinner both eat: Mine shows the host's half", async () => {
     const { id } = await createRecipe(hostApi, stew, { calories: 400, proteinG: 20, carbsG: 40, fatG: 10 });
-    await hostApi("POST", `/api/v1/plans/${monday}/entries`, { date: monday, mealType: "DINNER", recipeId: id, servings: 2 });
+    await hostApi("POST", `/api/v1/plans/${monday}/entries`, {
+      date: monday,
+      mealType: "DINNER",
+      recipeId: id,
+      servings: 2,
+    });
     await page.goto("/app/plan");
     await expect(page.getByRole("tab", { name: "Mine" })).toHaveAttribute("aria-selected", "true");
     await expect(plan.planned(0)).toHaveAccessibleName(/: 400 kcal$/);
     const mondayDay = await plan.openDay(0);
-    await expect(mondayDay.getByRole("row", { name: /^Planned/ }).getByRole("cell")).toHaveText(["400", "20 g", "40 g", "10 g"]);
+    await expect(mondayDay.getByRole("row", { name: /^Planned/ }).getByRole("cell")).toHaveText([
+      "400",
+      "20 g",
+      "40 g",
+      "10 g",
+    ]);
   });
 
   await test.step("Everyone shows the meal but no planned total", async () => {

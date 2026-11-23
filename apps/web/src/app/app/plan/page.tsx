@@ -63,8 +63,19 @@ export default function PlanPage() {
     }
   }, []);
 
-  const { plan, fuel, suggestions, panels, members, ingredients, addIngredient, error, setError, reload, replacePanel } =
-    usePlanWeek(weekStart, user?.profile.sub);
+  const {
+    plan,
+    fuel,
+    suggestions,
+    panels,
+    members,
+    ingredients,
+    addIngredient,
+    error,
+    setError,
+    reload,
+    replacePanel,
+  } = usePlanWeek(weekStart, user?.profile.sub);
 
   // A new selection moves focus to the inspector's title, so a keyboard or
   // screen reader user lands on what they opened (and a phone shows the sheet).
@@ -268,7 +279,10 @@ export default function PlanPage() {
           ) : (
             <WeekHint
               mine={shown.filter(eatsIt).length}
-              sessions={[...fuelByDay.values()].reduce((count, day) => count + (day.target ? day.sessions.length : 0), 0)}
+              sessions={[...fuelByDay.values()].reduce(
+                (count, day) => count + (day.target ? day.sessions.length : 0),
+                0,
+              )}
               targetsOn={targetsOn}
             />
           )}

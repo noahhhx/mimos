@@ -8,9 +8,16 @@ import { send, type HttpResponse } from "./http.ts";
  * endpoints, each behind any valid bearer token.
  */
 
-export function actuator(path: string, token: string, init: { method?: string; body?: unknown; accept?: string } = {}): Promise<HttpResponse> {
+export function actuator(
+  path: string,
+  token: string,
+  init: { method?: string; body?: unknown; accept?: string } = {},
+): Promise<HttpResponse> {
   const body = init.body === undefined ? undefined : Buffer.from(JSON.stringify(init.body));
-  const headers: Record<string, string> = { Authorization: `Bearer ${token}`, Accept: init.accept ?? "application/json" };
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    Accept: init.accept ?? "application/json",
+  };
   if (body !== undefined) {
     headers["Content-Type"] = "application/json";
     headers["Content-Length"] = String(body.length);
@@ -37,7 +44,8 @@ export async function discover(token: string): Promise<string[]> {
 
 /** Health components (dotted paths for nested groups) whose status is not UP. */
 export function unhealthyComponents(health: unknown, prefix = ""): string[] {
-  const components = (health as { components?: Record<string, { status?: string; components?: unknown }> } | null)?.components ?? {};
+  const components =
+    (health as { components?: Record<string, { status?: string; components?: unknown }> } | null)?.components ?? {};
   return Object.entries(components).flatMap(([name, component]) => {
     const path = prefix ? `${prefix}.${name}` : name;
     if (component.components !== undefined) return unhealthyComponents(component, path);
@@ -79,19 +87,33 @@ function mediaTypes(conditions: readonly MediaTypeCondition[]): string {
 }
 
 function nameValue(conditions: readonly { name: string; value: string | null; negated: boolean }[]): string[] {
-  return conditions.map((condition) => `${condition.name}${condition.value === null ? "" : `${condition.negated ? "!=" : "="}${condition.value}`}`);
+  return conditions.map(
+    (condition) =>
+      `${condition.name}${condition.value === null ? "" : `${condition.negated ? "!=" : "="}${condition.value}`}`,
+  );
 }
 
 /** Every DispatcherServlet mapping as a route, sorted by path then method. */
 export function routes(mappings: unknown): Route[] {
-  const contexts = (mappings as { contexts?: Record<string, { mappings?: { dispatcherServlets?: Record<string, Mapping[]> } }> } | null)?.contexts ?? {};
+  const contexts =
+    (
+      mappings as {
+        contexts?: Record<string, { mappings?: { dispatcherServlets?: Record<string, Mapping[]> } }>;
+      } | null
+    )?.contexts ?? {};
   const result: Route[] = [];
   for (const context of Object.values(contexts)) {
     for (const servlet of Object.values(context.mappings?.dispatcherServlets ?? {})) {
       for (const mapping of servlet) {
         const conditions = mapping.details?.requestMappingConditions;
         if (conditions === undefined) {
-          result.push({ methods: "*", path: mapping.predicate, consumes: "*", produces: "*", handler: mapping.handler });
+          result.push({
+            methods: "*",
+            path: mapping.predicate,
+            consumes: "*",
+            produces: "*",
+            handler: mapping.handler,
+          });
           continue;
         }
         const extra = [
@@ -163,6 +185,8 @@ export async function setLoggerLevel(token: string, logger: string, level: strin
     body: { configuredLevel: level },
   });
   if (response.status !== 204 && response.status !== 200) {
-    throw new HarnessError(`POST /actuator/loggers/${logger} → ${response.status} ${response.statusText} ${response.body.slice(0, 200)}`);
+    throw new HarnessError(
+      `POST /actuator/loggers/${logger} → ${response.status} ${response.statusText} ${response.body.slice(0, 200)}`,
+    );
   }
 }

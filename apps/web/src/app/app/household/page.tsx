@@ -138,8 +138,8 @@ export default function HouseholdPage() {
       <section className="household-section" aria-labelledby="invite-heading">
         <h2 id="invite-heading">Invite someone</h2>
         <p>
-          Create a link and send it to the person you want to share with. It works once, for seven days, and they
-          choose whether to join.
+          Create a link and send it to the person you want to share with. It works once, for seven days, and they choose
+          whether to join.
         </p>
         <button className="button" onClick={() => void createInvite()} disabled={inviting}>
           {inviting ? "Creating…" : invite ? "Create another link" : "Create invite link"}
@@ -165,7 +165,8 @@ export default function HouseholdPage() {
               </span>
             </div>
             <p className="muted">
-              Works once, until {new Date(invite.expiresAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}.
+              Works once, until{" "}
+              {new Date(invite.expiresAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}.
             </p>
           </div>
         )}

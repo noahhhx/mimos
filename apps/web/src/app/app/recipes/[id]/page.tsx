@@ -115,7 +115,14 @@ export default function RecipeDetailPage() {
             </li>
             {shownTrail.map((crumb, index) => (
               <li key={crumb.id}>
-                <Link href={recipeHref(crumb.id, shownTrail.slice(0, index).map((c) => c.id))}>{crumb.title}</Link>
+                <Link
+                  href={recipeHref(
+                    crumb.id,
+                    shownTrail.slice(0, index).map((c) => c.id),
+                  )}
+                >
+                  {crumb.title}
+                </Link>
               </li>
             ))}
             <li aria-current="page">{recipe.title}</li>

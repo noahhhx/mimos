@@ -38,7 +38,8 @@ export function codeFromRedirect(location: string | null, state: string): string
   const query = new URLSearchParams(location.slice(location.indexOf("?") + 1));
   if (query.get("state") !== state) throw new HarnessError("Keycloak's redirect to the app carried another state");
   const code = query.get("code");
-  if (code === null) throw new HarnessError(`Keycloak's redirect to the app had no code: ${query.get("error") ?? location}`);
+  if (code === null)
+    throw new HarnessError(`Keycloak's redirect to the app had no code: ${query.get("error") ?? location}`);
   return code;
 }
 
@@ -72,7 +73,8 @@ export async function signInAsApp(username: string, password: string): Promise<A
   const page = await fetch(authorize, { redirect: "manual" });
   const cookies = cookieHeader(page, jar);
   const action = loginFormAction(await page.text());
-  if (page.status !== 200 || action === undefined) throw new HarnessError(`Keycloak's sign-in page for ${APP_CLIENT_ID} answered ${page.status} with no login form`);
+  if (page.status !== 200 || action === undefined)
+    throw new HarnessError(`Keycloak's sign-in page for ${APP_CLIENT_ID} answered ${page.status} with no login form`);
 
   const login = await fetch(action, {
     method: "POST",
@@ -85,11 +87,24 @@ export async function signInAsApp(username: string, password: string): Promise<A
   const token = await fetch(`${realm}/token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "authorization_code", client_id: APP_CLIENT_ID, redirect_uri: APP_REDIRECT_URI, code, code_verifier: verifier }),
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      client_id: APP_CLIENT_ID,
+      redirect_uri: APP_REDIRECT_URI,
+      code,
+      code_verifier: verifier,
+    }),
   });
-  const body = (await token.json().catch(() => ({}))) as { refresh_token?: string; id_token?: string; error_description?: string; error?: string };
+  const body = (await token.json().catch(() => ({}))) as {
+    refresh_token?: string;
+    id_token?: string;
+    error_description?: string;
+    error?: string;
+  };
   if (!token.ok || body.refresh_token === undefined || body.id_token === undefined) {
-    throw new HarnessError(`code exchange as ${APP_CLIENT_ID} failed: ${token.status} ${body.error_description ?? body.error ?? ""}`.trim());
+    throw new HarnessError(
+      `code exchange as ${APP_CLIENT_ID} failed: ${token.status} ${body.error_description ?? body.error ?? ""}`.trim(),
+    );
   }
   return { refreshToken: body.refresh_token, idToken: body.id_token };
 }

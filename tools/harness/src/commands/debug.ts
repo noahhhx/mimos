@@ -85,7 +85,8 @@ export function splitWords(line: string): string[] {
 
 function positiveInteger(raw: string | undefined, option: string, fallback: number): number {
   if (raw === undefined) return fallback;
-  if (!/^\d+$/.test(raw) || Number(raw) < 1) throw new UsageError(`${option} expects a positive whole number, got: ${raw}`);
+  if (!/^\d+$/.test(raw) || Number(raw) < 1)
+    throw new UsageError(`${option} expects a positive whole number, got: ${raw}`);
   return Number(raw);
 }
 
@@ -111,14 +112,17 @@ export function parseBreakArgs(argv: string[], roots: readonly string[] = source
     if (then[0] === "harness") then = then.slice(1);
     const [command] = then;
     if (command === undefined || !TRIGGERS.includes(command)) {
-      throw new UsageError(`--then runs a harness command that sends a request: ${TRIGGERS.join(" | ")}, e.g. --then "api GET /api/v1/me"`);
+      throw new UsageError(
+        `--then runs a harness command that sends a request: ${TRIGGERS.join(" | ")}, e.g. --then "api GET /api/v1/me"`,
+      );
     }
     if (then.some((arg) => arg === "--run" || arg.startsWith("--run="))) {
       throw new UsageError("--then must not pass --run: the trigger records into the debug run");
     }
   }
   const prints = values.print ?? [];
-  if (prints.some((expr) => expr.trim() === "" || expr.includes("\n"))) throw new UsageError("--print expects a one-line expression");
+  if (prints.some((expr) => expr.trim() === "" || expr.includes("\n")))
+    throw new UsageError("--print expects a one-line expression");
   return {
     location: resolveLocation(parseLocation(location), roots),
     then,
@@ -172,14 +176,23 @@ export function formatHit(hit: Hit): string {
   lines.push("### Locals", "", fenced(variableLines(hit.locals).join("\n")), "");
   lines.push("### `this`", "", fenced(evaluationText(hit.self)), "");
   if (hit.prints.length > 0) {
-    lines.push("### Expressions", "", fenced(hit.prints.map((p) => `${p.expr} = ${evaluationText(p.result)}`).join("\n")), "");
+    lines.push(
+      "### Expressions",
+      "",
+      fenced(hit.prints.map((p) => `${p.expr} = ${evaluationText(p.result)}`).join("\n")),
+      "",
+    );
   }
   const own = hit.stack.filter((frame) => frame.method.startsWith(OWN_PACKAGE));
   if (own.length > 0) {
     lines.push(
       "### Mimos frames",
       "",
-      fenced(own.map((frame) => `[${frame.index}] ${shortMethod(frame.method)} (${frame.location ?? "no line info"})`).join("\n")),
+      fenced(
+        own
+          .map((frame) => `[${frame.index}] ${shortMethod(frame.method)} (${frame.location ?? "no line info"})`)
+          .join("\n"),
+      ),
       "",
     );
   }
@@ -256,7 +269,12 @@ function sameFrame(a: Frame | undefined, b: Frame | undefined): boolean {
  * thread resumed until the call returns — so the other hits' threads may move
  * on. Their expressions are evaluated only if they are still where they hit.
  */
-async function captureHits(jdb: JdbSession, first: number, events: readonly HitEvent[], prints: readonly string[]): Promise<Hit[]> {
+async function captureHits(
+  jdb: JdbSession,
+  first: number,
+  events: readonly HitEvent[],
+  prints: readonly string[],
+): Promise<Hit[]> {
   const ids = await threadIds(jdb, events);
   const hits: Hit[] = [];
   for (const [i, event] of events.entries()) {
@@ -265,7 +283,15 @@ async function captureHits(jdb: JdbSession, first: number, events: readonly HitE
     process.stderr.write(`hit ${n}: ${event.method} line ${event.line} (${event.thread})\n`);
     if (threadId === undefined) {
       const error = `thread ${event.thread} not found in jdb's thread list`;
-      hits.push({ n, event, threadId, stack: [], locals: { arguments: [], locals: [], unavailable: error }, self: { ok: false, error }, prints: [] });
+      hits.push({
+        n,
+        event,
+        threadId,
+        stack: [],
+        locals: { arguments: [], locals: [], unavailable: error },
+        self: { ok: false, error },
+        prints: [],
+      });
       continue;
     }
     // `stop thread` events leave jdb without a current thread; select it for where/locals/print.
@@ -283,7 +309,11 @@ async function captureHits(jdb: JdbSession, first: number, events: readonly HitE
       hit.prints.push({
         expr,
         result: moved
-          ? { ok: false, error: "not evaluated — the thread moved on while an earlier hit's expression ran (jdb resumes all threads for a method call)" }
+          ? {
+              ok: false,
+              error:
+                "not evaluated — the thread moved on while an earlier hit's expression ran (jdb resumes all threads for a method call)",
+            }
           : parseEvaluation(await jdb.print("print", expr), expr),
       });
     }
@@ -302,7 +332,12 @@ async function releaseHits(jdb: JdbSession, events: readonly HitEvent[]): Promis
  * passes, or the trigger exited and a grace period passed without one.
  * Returns how many hits were released uncaptured (beyond `--hits`).
  */
-async function collectHits(jdb: JdbSession, args: BreakArgs, trigger: Trigger | undefined, hits: Hit[]): Promise<number> {
+async function collectHits(
+  jdb: JdbSession,
+  args: BreakArgs,
+  trigger: Trigger | undefined,
+  hits: Hit[],
+): Promise<number> {
   const deadline = Date.now() + args.timeoutSeconds * 1000;
   let triggerExitedAt: number | undefined;
   let released = 0;
@@ -370,7 +405,9 @@ hit, 1 when it was not hit or could not be set.`,
     try {
       // jdb catches uncaught exceptions by default, suspending the whole VM; we only want our breakpoint.
       await jdb.send("ignore uncaught java.lang.Throwable");
-      const stop = parseStopResult(await jdb.send(stopCommand(args.location), (text) => parseStopResult(text) !== undefined));
+      const stop = parseStopResult(
+        await jdb.send(stopCommand(args.location), (text) => parseStopResult(text) !== undefined),
+      );
       if (stop === undefined || stop.kind === "failed") {
         setFailure = stop?.kind === "failed" ? stop.reason : "no answer from jdb";
       } else {
@@ -407,28 +444,39 @@ hit, 1 when it was not hit or could not be set.`,
     }
 
     if (released > 0) {
-      section.push(`- **Released without capture:** ${released} more ${released === 1 ? "hit" : "hits"} beyond --hits ${args.hits}`);
+      section.push(
+        `- **Released without capture:** ${released} more ${released === 1 ? "hit" : "hits"} beyond --hits ${args.hits}`,
+      );
     }
     const result =
       setFailure !== undefined
         ? `breakpoint could not be set — ${setFailure}`
         : hits.length > 0
-        ? `hit ${hits.length} ${hits.length === 1 ? "time" : "times"} (wanted ${args.hits})`
-        : `**not hit** within ${trigger?.code !== undefined ? `${TRIGGER_GRACE_MS / 1000} s of the trigger exiting` : `${args.timeoutSeconds} s`}` +
-          (deferred
-            ? ` — ${args.location.className} never loaded: check the name, or trigger code that uses the class`
-            : " — the code never ran (e.g. the request was rejected earlier: check the trigger's status and the API log)");
+          ? `hit ${hits.length} ${hits.length === 1 ? "time" : "times"} (wanted ${args.hits})`
+          : `**not hit** within ${trigger?.code !== undefined ? `${TRIGGER_GRACE_MS / 1000} s of the trigger exiting` : `${args.timeoutSeconds} s`}` +
+            (deferred
+              ? ` — ${args.location.className} never loaded: check the name, or trigger code that uses the class`
+              : " — the code never ran (e.g. the request was rejected earlier: check the trigger's status and the API log)");
     const health = await send("GET", new URL("/actuator/health", endpoints().api), {}).then(
       (response) => `${response.status} ${response.body.includes('"UP"') ? "UP" : response.body.slice(0, 80)}`,
       (error: Error) => `unreachable — ${error.message}`,
     );
-    section.push(`- **Result:** ${result}`, `- **API after detaching:** \`/actuator/health\` ${health}`, `- **Evidence:** \`${dir}/hits.md\`, \`${dir}/jdb.log\``);
+    section.push(
+      `- **Result:** ${result}`,
+      `- **API after detaching:** \`/actuator/health\` ${health}`,
+      `- **Evidence:** \`${dir}/hits.md\`, \`${dir}/jdb.log\``,
+    );
     report.push(`- **Result:** ${result}`, `- **API after detaching:** \`/actuator/health\` ${health}`, "");
     for (const hit of hits) report.push(formatHit(hit), "");
 
     const first = hits[0];
     if (first !== undefined) {
-      section.push("", `Hit 1 — \`${shortMethod(first.event.method)}\` line ${first.event.line}:`, "", fenced(redactText(variableLines(first.locals).join("\n"))));
+      section.push(
+        "",
+        `Hit 1 — \`${shortMethod(first.event.method)}\` line ${first.event.line}:`,
+        "",
+        fenced(redactText(variableLines(first.locals).join("\n"))),
+      );
     }
     writeRunFile(run, `${dir}/hits.md`, redactText(report.join("\n")));
     appendSummary(run, redactText(section.join("\n")));

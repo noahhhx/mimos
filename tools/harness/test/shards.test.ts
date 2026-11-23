@@ -4,7 +4,8 @@ import { test } from "node:test";
 import { flowNames } from "../src/maestro.ts";
 import { assignShards, flowsOfShard, weighFlows } from "../src/shards.ts";
 
-const loads = (shards: string[][], seconds: Record<string, number>) => shards.map((shard) => shard.reduce((sum, name) => sum + (seconds[name] ?? 0), 0));
+const loads = (shards: string[][], seconds: Record<string, number>) =>
+  shards.map((shard) => shard.reduce((sum, name) => sum + (seconds[name] ?? 0), 0));
 
 test("every repository flow runs in exactly one of four shards", () => {
   const shards = [1, 2, 3, 4].map((shard) => flowsOfShard(shard, 4));

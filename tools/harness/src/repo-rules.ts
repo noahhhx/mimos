@@ -72,7 +72,9 @@ export function check(path: string, text: string): Violation[] {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const files = execFileSync("git", ["ls-files", "-z"], { encoding: "utf8" }).split("\0").filter(Boolean);
-  const found = files.flatMap((path) => (RULES.some((rule) => rule.applies(path)) ? check(path, readFileSync(path, "utf8")) : []));
+  const found = files.flatMap((path) =>
+    RULES.some((rule) => rule.applies(path)) ? check(path, readFileSync(path, "utf8")) : [],
+  );
   for (const v of found) console.error(`${v.path}:${v.line}: ${v.rule}: ${v.fix}\n    ${v.text}`);
   if (found.length > 0) process.exit(1);
   console.log(`Repository rules hold across ${files.length} tracked files.`);

@@ -18,12 +18,22 @@ export function passwordFor(user: string): string {
 export async function fetchToken(user: string): Promise<string> {
   const { keycloak, clientId } = endpoints();
   const url = new URL(`${keycloak}/realms/${REALM}/protocol/openid-connect/token`);
-  const form = new URLSearchParams({ grant_type: "password", client_id: clientId, username: user, password: passwordFor(user) });
+  const form = new URLSearchParams({
+    grant_type: "password",
+    client_id: clientId,
+    username: user,
+    password: passwordFor(user),
+  });
   const body = Buffer.from(form.toString());
-  const response = await send("POST", url, {
-    "Content-Type": "application/x-www-form-urlencoded",
-    "Content-Length": String(body.length),
-  }, body);
+  const response = await send(
+    "POST",
+    url,
+    {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Content-Length": String(body.length),
+    },
+    body,
+  );
   const parsed = isJson(response.headers["content-type"])
     ? (JSON.parse(response.body) as { access_token?: string; error?: string; error_description?: string })
     : {};

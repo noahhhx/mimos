@@ -47,9 +47,13 @@ test("a removed schema property fails, nested ones too", () => {
   assert.deepEqual(removalsBetween(base, base.replace("        id: { type: string }\n", "")), [
     "removed property id at #/components/schemas/Thing",
   ]);
-  assert.deepEqual(removalsBetween(base, base.replace("            deep: { type: string }\n", "            other: { type: string }\n")), [
-    "removed property deep at #/components/schemas/Thing/properties/nested",
-  ]);
+  assert.deepEqual(
+    removalsBetween(
+      base,
+      base.replace("            deep: { type: string }\n", "            other: { type: string }\n"),
+    ),
+    ["removed property deep at #/components/schemas/Thing/properties/nested"],
+  );
 });
 
 test("a removed enum value fails", () => {
@@ -100,13 +104,19 @@ test("a new response code, optional property, and oneOf member pass", () => {
   const next = operation
     .replace('        "404"', '        "201": { description: made }\n        "404"')
     .replace("        name: { type: string }", "        name: { type: string }\n        tag: { type: string }")
-    .replace('            - type: object', '            - $ref: "#/components/schemas/Triangle"\n            - type: object');
+    .replace(
+      "            - type: object",
+      '            - $ref: "#/components/schemas/Triangle"\n            - type: object',
+    );
   assert.deepEqual(removalsBetween(operation, next), []);
 });
 
 test("a removed parameter is reported as one, whatever its position", () => {
   assert.deepEqual(
-    removalsBetween(operation, operation.replace("        - { name: week, in: query, schema: { type: string } }\n", "")),
+    removalsBetween(
+      operation,
+      operation.replace("        - { name: week, in: query, schema: { type: string } }\n", ""),
+    ),
     ["removed parameter week in query at #/paths//list/get/parameters"],
   );
   assert.deepEqual(
@@ -128,9 +138,7 @@ test("a property no longer required fails, but a removed property is reported on
   const withoutName = operation
     .replace("required: [id, name]", "required: [id]")
     .replace("        name: { type: string }\n", "");
-  assert.deepEqual(removalsBetween(operation, withoutName), [
-    "removed property name at #/components/schemas/Shape",
-  ]);
+  assert.deepEqual(removalsBetween(operation, withoutName), ["removed property name at #/components/schemas/Shape"]);
 });
 
 test("a changed type fails", () => {

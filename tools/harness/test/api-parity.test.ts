@@ -4,7 +4,16 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 
-import { appCalls, classify, operationIds, parityProblems, renderParity, scan, WEB_ONLY_BY_DESIGN, webCalls } from "../src/api-parity.ts";
+import {
+  appCalls,
+  classify,
+  operationIds,
+  parityProblems,
+  renderParity,
+  scan,
+  WEB_ONLY_BY_DESIGN,
+  webCalls,
+} from "../src/api-parity.ts";
 
 const SPEC = `
 paths:
@@ -106,9 +115,18 @@ test("a scan reads production sources only", () => {
     write("apps/web/src/page.tsx", `import { getMe } from "@mimos/api-client";\nvoid getMe({});`);
     write("apps/web/src/page.test.tsx", `import { createRecipe } from "@mimos/api-client";\ncreateRecipe({});`);
     write("apps/web/src/generated/client.ts", `import { listMyRecipes } from "@mimos/api-client";\nlistMyRecipes();`);
-    write("apps/mobile/shared/src/commonMain/kotlin/A.kt", `import io.github.noahhhx.mimos.api.apis.InstanceApi\nfun f() = api.getInstance()`);
-    write("apps/mobile/shared/src/commonTest/kotlin/ATest.kt", `import io.github.noahhhx.mimos.api.apis.MeApi\nfun f() = api.getMe()`);
-    write("apps/mobile/shared/build/generated/B.kt", `import io.github.noahhhx.mimos.api.apis.MeApi\nfun f() = api.createRecipe()`);
+    write(
+      "apps/mobile/shared/src/commonMain/kotlin/A.kt",
+      `import io.github.noahhhx.mimos.api.apis.InstanceApi\nfun f() = api.getInstance()`,
+    );
+    write(
+      "apps/mobile/shared/src/commonTest/kotlin/ATest.kt",
+      `import io.github.noahhhx.mimos.api.apis.MeApi\nfun f() = api.getMe()`,
+    );
+    write(
+      "apps/mobile/shared/build/generated/B.kt",
+      `import io.github.noahhhx.mimos.api.apis.MeApi\nfun f() = api.createRecipe()`,
+    );
     write("apps/mobile/androidApp/src/main/kotlin/Keystore.kt", `val c = Cipher.getInstance("AES")`);
     const parity = scan(root);
     assert.deepEqual(parity.web, ["getMe"]);

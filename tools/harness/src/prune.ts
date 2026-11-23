@@ -51,7 +51,12 @@ export function latestRun(runsDir: string): string | undefined {
 }
 
 /** A run survives if `latest` names it, it is among the newest `keepNewest`, or it was used within `keepDays`. */
-export function planPrune(runs: readonly RunFolder[], latest: string | undefined, policy: RetentionPolicy, now: Date): PrunePlan {
+export function planPrune(
+  runs: readonly RunFolder[],
+  latest: string | undefined,
+  policy: RetentionPolicy,
+  now: Date,
+): PrunePlan {
   const cutoff = now.getTime() - policy.keepDays * 86_400_000;
   const newestFirst = [...runs].sort(
     (a, b) => b.lastUsed.getTime() - a.lastUsed.getTime() || b.name.localeCompare(a.name),

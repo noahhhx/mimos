@@ -17,7 +17,10 @@ const DARK_BG = "rgb(25, 21, 18)";
 const TOGGLE = { name: "Toggle light and dark mode" };
 
 async function shoot(page: Page, testInfo: TestInfo, name: string): Promise<void> {
-  for (const [label, size] of [["phone", PHONE], ["desktop", DESKTOP]] as const) {
+  for (const [label, size] of [
+    ["phone", PHONE],
+    ["desktop", DESKTOP],
+  ] as const) {
     await page.setViewportSize(size);
     await page.screenshot({ path: testInfo.outputPath(`${name}-${label}.png`), fullPage: true });
   }
@@ -40,8 +43,9 @@ test("the sign-in, error, and register pages use the Mimos theme", async ({ page
     const loaded = await page.evaluate(async () => {
       // The harness compiles without the DOM lib; this runs in the page.
       type FontFace = { family: string; status: string };
-      const { fonts } = (globalThis as unknown as { document: { fonts: Iterable<FontFace> & { ready: Promise<unknown> } } })
-        .document;
+      const { fonts } = (
+        globalThis as unknown as { document: { fonts: Iterable<FontFace> & { ready: Promise<unknown> } } }
+      ).document;
       await fonts.ready;
       return [...fonts].filter((face) => face.status === "loaded").map((face) => face.family.replace(/"/g, ""));
     });

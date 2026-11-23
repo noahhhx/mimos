@@ -3,7 +3,15 @@ import { test } from "node:test";
 
 import { HarnessError } from "../src/args.ts";
 import { parseReleaseArgs, RELEASE_PROJECT, releaseComposeArgs, releaseEnv } from "../src/commands/release.ts";
-import { decide, flowNamesIn, hasMobileClient, imageRef, outputLines, releaseOf, type PickInput } from "../src/release.ts";
+import {
+  decide,
+  flowNamesIn,
+  hasMobileClient,
+  imageRef,
+  outputLines,
+  releaseOf,
+  type PickInput,
+} from "../src/release.ts";
 
 const withMobile = JSON.stringify({ clients: [{ clientId: "mimos-web" }, { clientId: "mimos-mobile" }] });
 const withoutMobile = JSON.stringify({ clients: [{ clientId: "mimos-web" }, { clientId: "mimos-agent" }] });
@@ -18,7 +26,11 @@ const ready: PickInput = {
 
 test("a release with the mobile client runs the flows it already had, and none added since", () => {
   const pick = decide(ready);
-  assert.deepEqual(pick, { kind: "run", release: { tag: "v0.2.0", version: "0.2.0" }, flows: ["connect-and-sign-in", "plan-a-week"] });
+  assert.deepEqual(pick, {
+    kind: "run",
+    release: { tag: "v0.2.0", version: "0.2.0" },
+    flows: ["connect-and-sign-in", "plan-a-week"],
+  });
 });
 
 test("a flow the release had but main removed is not run", () => {
@@ -64,7 +76,10 @@ test("flow names come from yaml files only, sorted", () => {
 });
 
 test("the stack's env points the self-host compose file at this machine's ports and admin", () => {
-  const env = releaseEnv({ tag: "v0.2.0", version: "0.2.0" }, "key", { API_PORT: "18080", KEYCLOAK_ADMIN_PASSWORD: "pw" });
+  const env = releaseEnv({ tag: "v0.2.0", version: "0.2.0" }, "key", {
+    API_PORT: "18080",
+    KEYCLOAK_ADMIN_PASSWORD: "pw",
+  });
   assert.equal(env.MIMOS_VERSION, "0.2.0");
   assert.equal(env.API_PUBLIC_URL, "http://localhost:18080");
   assert.equal(env.KEYCLOAK_PUBLIC_URL, "http://localhost:8081");
@@ -85,7 +100,11 @@ test("compose runs as its own project, the tag's file first, with the fakes over
 
 test("release takes up with an optional tag, or down alone", () => {
   assert.deepEqual(parseReleaseArgs(["up"]), { action: "up", tag: undefined, run: undefined });
-  assert.deepEqual(parseReleaseArgs(["up", "v1.0.0", "--run", "latest"]), { action: "up", tag: "v1.0.0", run: "latest" });
+  assert.deepEqual(parseReleaseArgs(["up", "v1.0.0", "--run", "latest"]), {
+    action: "up",
+    tag: "v1.0.0",
+    run: "latest",
+  });
   assert.deepEqual(parseReleaseArgs(["down"]), { action: "down", tag: undefined, run: undefined });
   for (const argv of [[], ["start"], ["down", "v1.0.0"], ["up", "a", "b"], ["down", "--run", "x"]]) {
     assert.throws(() => parseReleaseArgs(argv), /expected|takes no/, argv.join(" "));

@@ -57,9 +57,22 @@ const cases = JSON.parse(
   }[];
   servingsCases: { text: string; expected: number | null }[];
   recipeTotalCases: { about: string; recipe: string; servings: number; total: Nutrition | null; text: string }[];
-  measuredTotalCases: { ingredient: string; quantity: number; unit: UnitSymbol; total: Nutrition | null; text?: string }[];
+  measuredTotalCases: {
+    ingredient: string;
+    quantity: number;
+    unit: UnitSymbol;
+    total: Nutrition | null;
+    text?: string;
+  }[];
   unitsFor: Record<NutritionBasis, UnitSymbol[]>;
-  measuredCases: { about: string; what: WhatSketch; name: string; basis: NutritionBasis; amount: AmountFields; hint?: string }[];
+  measuredCases: {
+    about: string;
+    what: WhatSketch;
+    name: string;
+    basis: NutritionBasis;
+    amount: AmountFields;
+    hint?: string;
+  }[];
   whatTextCases: { about: string; what: WhatSketch; text: string }[];
   searchCases: { about: string; query: string; recipes: string[]; ingredients: string[]; expected: string[] }[];
   searchLimit: { query: string; count: number; limit: number };
@@ -88,7 +101,11 @@ const what = (sketch: WhatSketch): LogWhat => {
 const wire = (body: MealLogInput | undefined) => (body === undefined ? null : JSON.parse(JSON.stringify(body)));
 
 const optionKey = (option: LogWhat) =>
-  option.kind === "recipe" ? `recipe:${option.recipe.id}` : option.kind === "ingredient" ? `ingredient:${option.entry.slug}` : "";
+  option.kind === "recipe"
+    ? `recipe:${option.recipe.id}`
+    : option.kind === "ingredient"
+      ? `ingredient:${option.entry.slug}`
+      : "";
 
 describe("logBody", () => {
   for (const each of cases.logBodyCases) {
