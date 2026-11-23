@@ -151,6 +151,17 @@ rest.
 Everyone in your [household](household.md) sees the pictures, and they
 travel with the recipe in [your export](your-data.md).
 
+## Rating a recipe
+
+Open one of your recipes and choose a star, from one to five, to rate it.
+Choose another star to change the rating, or the current star again to
+take it away. Library recipes can't be rated.
+
+A rating belongs to your [household](household.md): everyone in it sees the
+same stars, and whoever rates last sets them. Rated recipes show their stars
+in your recipe list. Saving an edit to a recipe keeps its rating, and the
+rating travels with the recipe in [your export](your-data.md).
+
 ## Editing and deleting
 
 Open one of your recipes and choose **Edit** to change it, or **Delete** to
