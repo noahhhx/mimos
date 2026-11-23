@@ -16,6 +16,10 @@ updates:
     ignore:
       # Pinned to nixpkgs' playwright-driver; bump both together (AGENTS.md).
       - dependency-name: "@playwright/test"
+      # TypeScript 7 ships no JavaScript compiler API, which openapi-ts and
+      # Next.js load. Wait until both support it.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     groups:
       npm:
         update-types: [minor, patch]
