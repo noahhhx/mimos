@@ -57,11 +57,11 @@ they are.
 What joining does depends on whether you share a household already:
 
 - **On your own:** your recipes and the ingredients you added come with you
-  into the household. Your meal plans, shopping lists, and plugin settings
-  are deleted, and you use the household's instead.
+  into the household. Your recipe tabs, meal plans, shopping lists, and
+  plugin settings are deleted, and you use the household's instead.
 - **Already sharing a household:** you leave it first. Its recipes,
-  ingredients, meal plans, and shopping lists stay with it, including the
-  ones you added.
+  recipe tabs, ingredients, meal plans, and shopping lists stay with it,
+  including the ones you added.
 
 Either way, your food log, fuel settings, and training stay yours. Nobody else in
 the household sees them.
