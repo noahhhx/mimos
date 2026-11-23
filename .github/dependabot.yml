@@ -1,0 +1,63 @@
+version: 2
+
+updates:
+  - package-ecosystem: maven
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      maven:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      # Pinned to nixpkgs' playwright-driver; bump both together (AGENTS.md).
+      - dependency-name: "@playwright/test"
+    groups:
+      npm:
+        update-types: [minor, patch]
+
+  - package-ecosystem: gradle
+    directory: /apps/mobile
+    schedule:
+      interval: weekly
+    groups:
+      gradle:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directories:
+      - /apps/api
+      - /apps/web
+      - /deploy/keycloak
+      - /plugins/country-week
+      - /tools/harness/fakes/intervals-icu
+      - /tools/harness/fakes/open-food-facts
+    schedule:
+      interval: weekly
+    groups:
+      docker:
+        patterns: ["*"]
+
+  - package-ecosystem: docker-compose
+    directories:
+      - /deploy/docker
+      - /deploy/selfhost
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: pip
+    directory: /docs
+    schedule:
+      interval: monthly
