@@ -47,9 +47,7 @@ tags:
 - assertNotVisible: Your share
 - tapOn: ← Plan
 - tapOn: Log
-- assertVisible: This week, per day
-- scrollUntilVisible:
-    element: Mon .*
+- tapOn: Week totals →
 - tapOn: Mon .*
 - scrollUntilVisible:
     element: Delete Greek Salad

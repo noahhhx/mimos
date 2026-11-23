@@ -42,11 +42,14 @@ appId: io.github.noahhhx.mimos.debug
       text: "Today · .*Training: Ride 60 min.*"
     centerElement: true
 - tapOn: Log
-- assertVisible: This week, per day
-- scrollUntilVisible:
-    element:
-      text: "Fuel for the day, .*"
+- assertVisible: of \d+
 - takeScreenshot: log-targets
+- tapOn: Week totals →
+- assertVisible:
+    text: "Fuel for the day, .*"
+    index: 0
+- takeScreenshot: log-week-targets
+- back
 - tapOn: Plan
 - scrollUntilVisible:
     element:

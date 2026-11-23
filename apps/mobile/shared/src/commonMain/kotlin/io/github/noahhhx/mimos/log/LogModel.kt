@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 
 /**
@@ -69,10 +70,10 @@ data class LogChoices(
 }
 
 /**
- * The Log tab, as the web's Log page: a week's per-day totals by its Monday, the selected day's
- * entries, and a form that logs a recipe in servings, an ingredient by amount, or anything else by
- * hand, or a packaged product found by its barcode. Information, not judgement. [today] is the
- * phone's date.
+ * The Log tab: one day at a time, today first, stepped through across weeks, with its week's
+ * per-day totals by its Monday, the day's entries, and a form that logs a recipe in servings, an
+ * ingredient by amount, or anything else by hand, or a packaged product found by its barcode.
+ * Information, not judgement. [today] is the phone's date.
  */
 class LogModel(
     private val scope: CoroutineScope,
@@ -80,10 +81,18 @@ class LogModel(
     private val recipes: () -> RecipesApi,
     foodProducts: () -> FoodProductsApi,
     private val fuel: () -> FuelApi,
-    private val today: () -> LocalDate,
+    val today: () -> LocalDate,
 ) {
-    /** A found product is picked into What, to log by amount. */
-    val scanner = ScanModel(scope, foodProducts, onFound = { pick(LogWhat.Product(it)) })
+    /** A found product is picked into What, to log by amount, in the form it opens. */
+    val scanner =
+        ScanModel(
+            scope,
+            foodProducts,
+            onFound = {
+                pick(LogWhat.Product(it))
+                mutableFormOpen.value = true
+            },
+        )
 
     private val mutableMonday = MutableStateFlow(mondayOf(today()))
     val monday: StateFlow<LocalDate> = mutableMonday.asStateFlow()
@@ -96,6 +105,9 @@ class LogModel(
 
     private val mutableForm = MutableStateFlow(LogForm())
     val form: StateFlow<LogForm> = mutableForm.asStateFlow()
+
+    private val mutableFormOpen = MutableStateFlow(false)
+    val formOpen: StateFlow<Boolean> = mutableFormOpen.asStateFlow()
 
     private val mutableChoices = MutableStateFlow(LogChoices())
     val choices: StateFlow<LogChoices> = mutableChoices.asStateFlow()
@@ -122,6 +134,11 @@ class LogModel(
 
     fun retry() = load()
 
+    /** The day before or after the selected one, loading its week when it is in another. */
+    fun previousDay() = goTo(selected.value.minus(DatePeriod(days = 1)))
+
+    fun nextDay() = goTo(selected.value.plus(DatePeriod(days = 1)))
+
     /** The weeks move with the selected day, so it stays the same weekday in the week shown. */
     fun previousWeek() = moveWeek(-7)
 
@@ -141,6 +158,14 @@ class LogModel(
 
     fun selectDay(date: LocalDate) {
         if (mondayOf(date) == monday.value) mutableSelected.value = date
+    }
+
+    fun openForm() {
+        mutableFormOpen.value = true
+    }
+
+    fun closeForm() {
+        mutableFormOpen.value = false
     }
 
     /** Typing makes a custom log, so typing over a picked recipe's title unpicks it. */
@@ -165,7 +190,7 @@ class LogModel(
         it.copy(amount = change(it.amount))
     }
 
-    /** Logs the form on the selected day, then clears it and loads the week again. */
+    /** Logs the form on the selected day, then clears and closes it and loads the week again. */
     fun add() {
         if (adding.value) return
         val body = form.value.body(selected.value) ?: return
@@ -174,6 +199,7 @@ class LogModel(
             try {
                 logging().createMealLog(body).body()
                 mutableError.value = null
+                mutableFormOpen.value = false
                 mutableForm.update {
                     it.copy(
                         what = LogWhat.Custom(""),
@@ -294,6 +320,7 @@ class LogModel(
         mutableSelected.value = today()
         mutableWeek.value = LogWeekState.Loading
         mutableForm.value = LogForm()
+        mutableFormOpen.value = false
         mutableChoices.value = LogChoices()
         mutableAdding.value = false
         mutableError.value = null

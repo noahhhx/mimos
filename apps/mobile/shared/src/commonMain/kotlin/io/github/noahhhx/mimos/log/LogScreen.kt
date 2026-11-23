@@ -3,12 +3,15 @@ package io.github.noahhhx.mimos.log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,7 +21,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -26,12 +31,14 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import io.github.noahhhx.mimos.api.models.DailyLogSummary
 import io.github.noahhhx.mimos.api.models.FuelTarget
 import io.github.noahhhx.mimos.api.models.MealLog
@@ -46,6 +53,7 @@ import io.github.noahhhx.mimos.plan.formatServings
 import io.github.noahhhx.mimos.plan.mealLabel
 import io.github.noahhhx.mimos.plan.weekDays
 import io.github.noahhhx.mimos.recipes.form.describeRecipe
+import io.github.noahhhx.mimos.ui.BottomSheet
 import io.github.noahhhx.mimos.ui.Button
 import io.github.noahhhx.mimos.ui.ButtonKind
 import io.github.noahhhx.mimos.ui.ErrorState
@@ -53,7 +61,6 @@ import io.github.noahhhx.mimos.ui.Label
 import io.github.noahhhx.mimos.ui.ListRow
 import io.github.noahhhx.mimos.ui.MimosTheme
 import io.github.noahhhx.mimos.ui.Notice
-import io.github.noahhhx.mimos.ui.PageHeader
 import io.github.noahhhx.mimos.ui.Rule
 import io.github.noahhhx.mimos.ui.SelectField
 import io.github.noahhhx.mimos.ui.Text
@@ -61,75 +68,238 @@ import io.github.noahhhx.mimos.ui.TextField
 import kotlinx.datetime.LocalDate
 
 /**
- * The Log tab: the week's per-day totals, the selected day's entries, and the form that logs
- * something the plan did not have. It loads again each time it opens.
+ * The Log tab: one day at a time, today first, with its totals and entries. The form that logs
+ * something the plan did not have opens over it from the bar along the bottom, and the week's
+ * per-day totals open behind a link. It loads again each time it opens.
  */
 @Composable
 fun LogScreen(model: LogModel) {
     LaunchedEffect(Unit) { model.opened() }
-    ScanSheet(model.scanner)
-    val gutter = Modifier.padding(horizontal = MimosTheme.spacing.page)
-    val monday by model.monday.collectAsState()
+    val spacing = MimosTheme.spacing
+    val gutter = Modifier.padding(horizontal = spacing.page)
     val selected by model.selected.collectAsState()
     val state by model.week.collectAsState()
     val error by model.error.collectAsState()
-    LazyColumn(
-        Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = MimosTheme.spacing.xxl),
-        verticalArrangement = Arrangement.spacedBy(MimosTheme.spacing.l),
-    ) {
-        item(key = "header") {
-            PageHeader(title = "Log", eyebrow = "Week of ${dayLabel(monday)}", modifier = gutter)
-        }
-        item(key = "weeks") {
-            Row(gutter, horizontalArrangement = Arrangement.spacedBy(MimosTheme.spacing.s)) {
-                Button("← Previous", model::previousWeek, kind = ButtonKind.Secondary, small = true)
-                Button("This week", model::thisWeek, kind = ButtonKind.Secondary, small = true)
-                Button("Next →", model::nextWeek, kind = ButtonKind.Secondary, small = true)
+    val formOpen by model.formOpen.collectAsState()
+    var weekOpen by remember { mutableStateOf(false) }
+    Column(Modifier.fillMaxSize()) {
+        LazyColumn(
+            Modifier.weight(1f).fillMaxWidth(),
+            contentPadding = PaddingValues(top = spacing.xl, bottom = spacing.l),
+        ) {
+            item(key = "pager") {
+                DayPager(selected, model.today(), model::previousDay, model::nextDay, gutter)
             }
-        }
-        error?.let { message -> item(key = "error") { Notice(message, gutter) } }
-        when (val current = state) {
-            LogWeekState.Loading ->
-                item(key = "loading") {
-                    Text("Loading…", gutter, color = MimosTheme.colors.muted)
-                }
-            LogWeekState.Failed ->
-                item(key = "failed") {
-                    ErrorState("Could not load your log.", model::retry, gutter)
-                }
-            is LogWeekState.Loaded -> {
-                val week = current.week
-                item(key = "table") { WeekTable(week, selected, model::selectDay) }
-                item(key = "day") {
-                    Text(
-                        dayLabel(selected),
-                        gutter.padding(top = MimosTheme.spacing.l),
-                        style = MimosTheme.typography.heading,
-                    )
-                }
-                val logs = week.logsOn(selected)
-                if (logs.isEmpty()) {
-                    item(key = "nothing") {
+            error?.let { message ->
+                item(key = "error") { Notice(message, gutter.padding(top = spacing.m)) }
+            }
+            when (val current = state) {
+                LogWeekState.Loading ->
+                    item(key = "loading") {
                         Text(
-                            "Nothing logged. Plan a meal and tap “Log”, or add one below.",
-                            gutter,
+                            "Loading…",
+                            gutter.padding(top = spacing.l),
                             color = MimosTheme.colors.muted,
                         )
                     }
-                } else {
-                    items(logs, key = { it.id }) { log -> LogRow(log) { model.delete(log) } }
+                LogWeekState.Failed ->
+                    item(key = "failed") {
+                        ErrorState(
+                            "Could not load your log.",
+                            model::retry,
+                            gutter.padding(top = spacing.l),
+                        )
+                    }
+                is LogWeekState.Loaded -> {
+                    val week = current.week
+                    item(key = "totals") {
+                        Column {
+                            DayTotals(week, selected, gutter.padding(vertical = spacing.m))
+                            Rule()
+                        }
+                    }
+                    val logs = week.logsOn(selected)
+                    if (logs.isEmpty()) {
+                        item(key = "nothing") {
+                            Text(
+                                "Nothing logged. Plan a meal and tap “Log”, or tap “Log something else”.",
+                                gutter.padding(top = spacing.l),
+                                color = MimosTheme.colors.muted,
+                            )
+                        }
+                    } else {
+                        items(logs, key = { it.id }) { log -> LogRow(log) { model.delete(log) } }
+                    }
+                    item(key = "week") {
+                        Text(
+                            "Week totals →",
+                            Modifier.fillMaxWidth()
+                                .clickable(role = Role.Button) { weekOpen = true }
+                                .heightIn(min = 48.dp)
+                                .padding(horizontal = spacing.page, vertical = spacing.m),
+                            style =
+                                MimosTheme.typography.small.copy(
+                                    textDecoration = TextDecoration.Underline
+                                ),
+                            color = MimosTheme.colors.muted,
+                        )
+                    }
                 }
-                item(key = "form") { LogForm(model, gutter.padding(top = MimosTheme.spacing.l)) }
+            }
+        }
+        Rule()
+        Row(
+            Modifier.fillMaxWidth()
+                .background(MimosTheme.colors.bg)
+                .padding(horizontal = spacing.page, vertical = spacing.m),
+            horizontalArrangement = Arrangement.spacedBy(spacing.s),
+        ) {
+            Button("+ Log something else", model::openForm, Modifier.weight(1f))
+            Button(
+                "Scan",
+                model.scanner::open,
+                kind = ButtonKind.Secondary,
+                description = "Scan a barcode",
+            )
+        }
+    }
+    if (weekOpen) {
+        BottomSheet(onDismiss = { weekOpen = false }) {
+            WeekSheet(model, state, selected) { day ->
+                model.selectDay(day)
+                weekOpen = false
+            }
+        }
+    }
+    if (formOpen) {
+        BottomSheet(onDismiss = model::closeForm) {
+            LogForm(model, Modifier.padding(horizontal = spacing.page, vertical = spacing.l))
+        }
+    }
+    ScanSheet(model.scanner)
+}
+
+@Composable
+private fun DayPager(
+    day: LocalDate,
+    today: LocalDate,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    modifier: Modifier,
+) {
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Button("‹", onPrevious, kind = ButtonKind.Secondary, description = "Previous day")
+        Column(
+            Modifier.weight(1f).semantics(mergeDescendants = true) { heading() },
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Label(dayEyebrow(day, today))
+            Text(dayLabel(day), style = MimosTheme.typography.screenTitle)
+        }
+        Button("›", onNext, kind = ButtonKind.Secondary, description = "Next day")
+    }
+}
+
+@Composable
+private fun DayTotals(week: LogWeek, day: LocalDate, modifier: Modifier) {
+    val colors = MimosTheme.colors
+    val spacing = MimosTheme.spacing
+    val tiny = MimosTheme.typography.small.copy(fontSize = 11.sp, fontFeatureSettings = TABULAR)
+    val totals =
+        dayTotals(
+            week.summaryOf(day)?.let(::summaryNutrition),
+            week.targets[day]?.let(::targetNutrition),
+        )
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing.s)) {
+        for (total in totals) {
+            Column(
+                Modifier.weight(1f).semantics(mergeDescendants = true) {},
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    total.label.uppercase(),
+                    style = MimosTheme.typography.label.copy(fontSize = 11.sp),
+                    color = colors.muted,
+                )
+                Text(
+                    total.value,
+                    style = MimosTheme.typography.subheading.copy(fontFeatureSettings = TABULAR),
+                )
+                total.share?.let { share ->
+                    Box(Modifier.fillMaxWidth().height(6.dp).background(colors.line)) {
+                        Box(Modifier.fillMaxWidth(share).fillMaxHeight().background(colors.accent))
+                    }
+                }
+                total.of?.let { Text("of $it", style = tiny, color = colors.muted) }
             }
         }
     }
 }
 
+@Composable
+private fun WeekSheet(
+    model: LogModel,
+    state: LogWeekState,
+    selected: LocalDate,
+    onSelect: (LocalDate) -> Unit,
+) {
+    val spacing = MimosTheme.spacing
+    Column(
+        Modifier.padding(vertical = spacing.l),
+        verticalArrangement = Arrangement.spacedBy(spacing.m),
+    ) {
+        Row(
+            Modifier.padding(horizontal = spacing.page),
+            horizontalArrangement = Arrangement.spacedBy(spacing.s),
+        ) {
+            Button(
+                "←",
+                model::previousWeek,
+                kind = ButtonKind.Secondary,
+                small = true,
+                description = "Previous week",
+            )
+            Button("This week", model::thisWeek, kind = ButtonKind.Secondary, small = true)
+            Button(
+                "→",
+                model::nextWeek,
+                kind = ButtonKind.Secondary,
+                small = true,
+                description = "Next week",
+            )
+        }
+        when (state) {
+            is LogWeekState.Loaded -> WeekTable(state.week, selected, onSelect)
+            LogWeekState.Loading ->
+                Text(
+                    "Loading…",
+                    Modifier.padding(horizontal = spacing.page),
+                    color = MimosTheme.colors.muted,
+                )
+            LogWeekState.Failed ->
+                ErrorState(
+                    "Could not load your log.",
+                    model::retry,
+                    Modifier.padding(horizontal = spacing.page),
+                )
+        }
+    }
+}
+
+private fun summaryNutrition(summary: DailyLogSummary) =
+    Nutrition(summary.calories, summary.proteinG, summary.carbsG, summary.fatG)
+
+private fun targetNutrition(target: FuelTarget) =
+    Nutrition(
+        target.calories.toDouble(),
+        target.proteinG.toDouble(),
+        target.carbsG.toDouble(),
+        target.fatG.toDouble(),
+    )
+
 /** Figures line up down the columns. */
 private const val TABULAR = "tnum"
 
-/** Each day of the week with its totals; tapping one shows and logs its meals. */
 @Composable
 private fun WeekTable(week: LogWeek, selected: LocalDate, onSelect: (LocalDate) -> Unit) {
     val colors = MimosTheme.colors
@@ -137,7 +307,7 @@ private fun WeekTable(week: LogWeek, selected: LocalDate, onSelect: (LocalDate) 
     val cell = MimosTheme.typography.small.copy(fontFeatureSettings = TABULAR)
     Column(Modifier.fillMaxWidth()) {
         Text(
-            "This week, per day",
+            "Week of ${dayLabel(week.monday)}",
             Modifier.padding(horizontal = spacing.page).padding(bottom = spacing.s),
             style = MimosTheme.typography.heading,
         )
@@ -182,19 +352,24 @@ private fun WeekTable(week: LogWeek, selected: LocalDate, onSelect: (LocalDate) 
                         )
                     }
                 }
-            DayRow(dayLabel(day), dayLabel(day), dayCells(week.summaryOf(day)), muted = false)
+            DayRow(
+                dayLabel(day),
+                dayLabel(day),
+                bareCells(week.summaryOf(day)?.let(::summaryNutrition)),
+                muted = false,
+            )
             week.targets[day]?.let { target ->
                 DayRow(
                     FUEL_LABEL,
                     "$FUEL_LABEL, ${dayLabel(day)}",
-                    targetCells(target),
+                    bareCells(targetNutrition(target)),
                     muted = true,
                 )
             }
             Rule()
         }
         Text(
-            "Tap a day to see and add its meals.",
+            "Tap a day to see its meals.",
             Modifier.padding(horizontal = spacing.page, vertical = spacing.s),
             style = MimosTheme.typography.small,
             color = colors.muted,
@@ -204,24 +379,6 @@ private fun WeekTable(week: LogWeek, selected: LocalDate, onSelect: (LocalDate) 
 
 /** Kcal heads its column, so its cells are bare numbers: "1235 kcal" does not fit a phone's. */
 private val HEADINGS = listOf("Day", "Kcal", "Protein", "Carbs", "Fat")
-
-private fun dayCells(summary: DailyLogSummary?): List<String> {
-    val nutrition = summary?.let { Nutrition(it.calories, it.proteinG, it.carbsG, it.fatG) }
-    val (kcal, protein, carbs, fat) = nutritionCells(nutrition)
-    return listOf(kcal.removeSuffix(" kcal"), protein, carbs, fat)
-}
-
-private fun targetCells(target: FuelTarget): List<String> {
-    val nutrition =
-        Nutrition(
-            target.calories.toDouble(),
-            target.proteinG.toDouble(),
-            target.carbsG.toDouble(),
-            target.fatG.toDouble(),
-        )
-    val (kcal, protein, carbs, fat) = nutritionCells(nutrition)
-    return listOf(kcal.removeSuffix(" kcal"), protein, carbs, fat)
-}
 
 /** The day's column is wider: "Wed 19 Nov" against "1235". */
 private fun columnWeight(index: Int): Float = if (index == 0) 1.2f else 1f
@@ -278,6 +435,7 @@ private fun LogForm(model: LogModel, modifier: Modifier) {
     val choices by model.choices.collectAsState()
     val adding by model.adding.collectAsState()
     val selected by model.selected.collectAsState()
+    val error by model.error.collectAsState()
     val spacing = MimosTheme.spacing
     val what = form.what
     val text = whatText(what)
@@ -287,7 +445,10 @@ private fun LogForm(model: LogModel, modifier: Modifier) {
             if (what is LogWhat.Custom) choices.search(text) else emptyList()
         }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(spacing.m)) {
-        Text("Log something else", style = MimosTheme.typography.heading)
+        Text(
+            "Log something else · ${dayLabel(selected)}",
+            style = MimosTheme.typography.heading,
+        )
         TextField(
             text,
             model::type,
@@ -369,11 +530,14 @@ private fun LogForm(model: LogModel, modifier: Modifier) {
             }
             else -> NutritionFields(form.nutrition, model::editNutrition)
         }
+        error?.let { Notice(it) }
         Button(
             if (adding) "Logging…" else "Log meal",
             model::add,
+            Modifier.fillMaxWidth(),
             enabled = !adding && form.body(selected) != null,
         )
+        Button("Cancel", model::closeForm, Modifier.fillMaxWidth(), kind = ButtonKind.Secondary)
     }
 }
 
