@@ -28,6 +28,10 @@ investigating; this skill only points at it.
 - Hypotheses come from the run folder, not from guessing at code. Quote the
   evidence (request ID, log line, route, hit) when explaining a cause.
 - `harness loglevel --reset` after changing log levels.
+- Old run folders are never cleaned up on their own. `harness prune
+  --dry-run` shows what `harness prune` would delete (it keeps the newest
+  50, the last 7 days, and `latest`). Never delete `.harness/android/`
+  to save space: it is the emulator's device storage.
 
 ## Launching the app (for the `run` skill)
 

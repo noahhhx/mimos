@@ -11,6 +11,7 @@ import { householdCommand } from "./commands/household.ts";
 import { loglevelCommand } from "./commands/loglevel.ts";
 import { logsCommand } from "./commands/logs.ts";
 import { mobileCommand } from "./commands/mobile.ts";
+import { pruneCommand } from "./commands/prune.ts";
 import { psqlCommand, sqlCommand } from "./commands/sql.ts";
 import { releaseCommand } from "./commands/release.ts";
 import { downCommand, resetCommand, upCommand } from "./commands/stack.ts";
@@ -43,6 +44,7 @@ export const COMMANDS: readonly Command[] = [
   sqlCommand,
   psqlCommand,
   debugCommand,
+  pruneCommand,
 ];
 
 function version(): string {

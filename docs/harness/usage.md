@@ -230,6 +230,21 @@ code, git SHA, and image IDs. Tokens, cookies, and passwords are redacted
 before anything is written. The full layout is in the
 [plan](index.md#run-folder).
 
+Run folders pile up, since nothing else removes them. `harness prune`
+deletes the old ones:
+
+| Command | What it does |
+| --- | --- |
+| `harness prune [--keep <n>] [--days <n>] [--dry-run]` | Deletes every run folder that no rule keeps, and prints each one's size and the total. The rules: the `<n>` most recently used runs (`--keep`, default 50), every run used in the last `<n>` days (`--days`, default 7), and the run `latest` points at. A run's age is its `summary.md`'s last change, so one appended to with `--run` counts as new. `--dry-run` prints the same list and deletes nothing. Running it again deletes nothing new. It writes no run folder and moves no `latest`. |
+
+Only entries named like runs (`<UTC timestamp>-<name>`) are considered;
+anything else in `.harness/runs/` stays. Nothing outside it is touched.
+`.harness/android/` holds the emulator's AVD, whose
+`userdata-qemu.img.qcow2` is the device's own storage (about 2 GB, with
+the installed app and browser). It is state, not a cache, so `prune`
+leaves it; to start the AVD over, stop it and delete the directory, as
+[above](#the-emulator--step-8).
+
 ## In CI
 
 The `compose` job in `.github/workflows/ci.yml` boots the stack and runs
