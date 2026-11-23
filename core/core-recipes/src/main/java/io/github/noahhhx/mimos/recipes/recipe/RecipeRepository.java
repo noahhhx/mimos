@@ -33,7 +33,8 @@ public class RecipeRepository {
 
     private static final String SELECT_BASE = """
             select id, household_id, created_by_profile_id, slug, title, description, servings, prep_minutes,
-                   cook_minutes, calories, protein_g, carbs_g, fat_g, nutrition_source, created_at, updated_at
+                   cook_minutes, calories, protein_g, carbs_g, fat_g, nutrition_source, created_at, updated_at,
+                   rating
             from recipe
             """;
 
@@ -102,6 +103,11 @@ public class RecipeRepository {
         jdbc.update("delete from recipe_step where recipe_id = ?", recipe.id());
         jdbc.update("delete from recipe_tag where recipe_id = ?", recipe.id());
         insertChildren(recipe);
+    }
+
+    /** Sets or clears a recipe's rating without touching anything else, updated_at included. */
+    public void setRating(UUID id, @Nullable Integer rating) {
+        jdbc.update("update recipe set rating = ? where id = ?", rating, id);
     }
 
     /** Deletes a recipe (children cascade); true if a row was removed. */
@@ -266,7 +272,8 @@ public class RecipeRepository {
                         ingredients.getOrDefault(row.id(), List.of()),
                         steps.getOrDefault(row.id(), List.of()),
                         row.createdAt(),
-                        row.updatedAt()))
+                        row.updatedAt(),
+                        row.rating()))
                 .toList();
     }
 
@@ -393,7 +400,8 @@ public class RecipeRepository {
             Nutrition nutrition,
             NutritionSource nutritionSource,
             java.time.Instant createdAt,
-            java.time.Instant updatedAt) {}
+            java.time.Instant updatedAt,
+            @Nullable Integer rating) {}
 
     private static final RowMapper<RecipeRow> RECIPE_ROW_MAPPER = new RecipeRowMapper();
 
@@ -418,7 +426,8 @@ public class RecipeRepository {
                             nullableDouble(rs, "fat_g")),
                     NutritionSource.valueOf(rs.getString("nutrition_source")),
                     rs.getTimestamp("created_at").toInstant(),
-                    rs.getTimestamp("updated_at").toInstant());
+                    rs.getTimestamp("updated_at").toInstant(),
+                    nullableInt(rs, "rating"));
         }
 
         private static @Nullable Integer nullableInt(ResultSet rs, String column) throws SQLException {

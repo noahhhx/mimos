@@ -91,7 +91,8 @@ API refuses gets its own error, ADR-0022), `recipe-pictures` (a new
 recipe gets two pictures, which load in a row above its description,
 re-encoded as JPEG and shrunk to 1600px; at phone width the row scrolls
 and the page does not; cancelling a removal keeps both, saving one
-leaves one, ADR-0023), `log-barcode` (logs 15 g of sugar by ingredient
+leaves one, ADR-0023), `recipe-rating` (rates a recipe from its page,
+across a reload, and clears it, ADR-0035), `log-barcode` (logs 15 g of sugar by ingredient
 search, then products from the scan dialog by typed barcode against the
 fake Open Food Facts: an unknown barcode, an outage, a serving size, and
 30 g of Nutella, while the camera is refused; then, with the camera

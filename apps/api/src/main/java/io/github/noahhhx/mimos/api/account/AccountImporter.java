@@ -286,6 +286,10 @@ public class AccountImporter {
                     present(recipe.getCreatedAt(), "createdAt").toInstant(),
                     present(recipe.getUpdatedAt(), "updatedAt").toInstant());
             recipeIds.put(exportedId, restored.id());
+            Integer rating = recipe.getRating();
+            if (rating != null) {
+                at("rating", () -> recipes.rate(household, restored.id(), rating));
+            }
             // Through the upload's own checks, so an import has no second way to make a picture.
             eachAt(
                     "pictures",

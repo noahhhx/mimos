@@ -136,6 +136,7 @@ private fun LoadedRecipe(model: RecipesModel, recipe: RecipeDetail, webOrigin: S
     val id = RecipeId(recipe.id)
     val states by model.cookBook.states.collectAsState()
     val deletion by model.deletion.collectAsState()
+    val rating by model.rating.collectAsState()
     var confirmDelete by remember { mutableStateOf(false) }
     val ticks = (states[id] ?: CookState()).within(recipe.ingredients.size, recipe.steps.size)
     val gutter = Modifier.padding(horizontal = MimosTheme.spacing.page)
@@ -179,6 +180,14 @@ private fun LoadedRecipe(model: RecipesModel, recipe: RecipeDetail, webOrigin: S
                 color = colors.muted,
             )
             PageHeader(recipe.title, Modifier.padding(top = MimosTheme.spacing.s))
+            if (!recipe.isLibrary) {
+                StarRating(
+                    recipe.rating,
+                    onRate = { model.rate(recipe, it) },
+                    enabled = rating != RateState.Saving,
+                )
+                (rating as? RateState.Failed)?.let { Notice(it.message) }
+            }
             if (recipe.tags.isNotEmpty()) {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(MimosTheme.spacing.xs),

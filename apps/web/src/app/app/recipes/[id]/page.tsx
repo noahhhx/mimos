@@ -4,15 +4,17 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { deleteRecipe, getRecipe, type RecipeDetail } from "@mimos/api-client";
+import { clearRecipeRating, deleteRecipe, getRecipe, rateRecipe, type RecipeDetail } from "@mimos/api-client";
 
 import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";
 import { SignInPrompt } from "@/components/sign-in-prompt";
 import { RecipeForm } from "@/components/recipe-form";
 import { RecipeView } from "@/components/recipe-view";
+import { StarRating } from "@/components/star-rating";
 import { apiClient } from "@/lib/api";
 import { parseTrail, readCookState, recipeHref } from "@/lib/cook-trail";
+import { nextRating } from "@/lib/rating";
 
 /**
  * One recipe: the cook's view by default, with edit and delete for your
@@ -92,6 +94,30 @@ export default function RecipeDetailPage() {
 
   // Until the followed recipe loads, the trail would name the one being left.
   const shownTrail = recipe?.id === params.id ? trail : [];
+
+  const rate = async (star: number) => {
+    if (!recipe) {
+      return;
+    }
+    const next = nextRating(recipe.rating, star);
+    if (next === null) {
+      const result = await clearRecipeRating({ client: apiClient, path: { recipeId: recipe.id } });
+      if (result.error) {
+        setError("The API rejected the request.");
+        return;
+      }
+      setError(null);
+      setRecipe({ ...recipe, rating: undefined });
+      return;
+    }
+    const result = await rateRecipe({ client: apiClient, path: { recipeId: recipe.id }, body: { stars: next } });
+    if (result.error || !result.data) {
+      setError("The API rejected the request.");
+      return;
+    }
+    setError(null);
+    setRecipe(result.data);
+  };
 
   const remove = async () => {
     if (!recipe || !confirm(`Delete “${recipe.title}”? This cannot be undone.`)) {
@@ -180,6 +206,11 @@ export default function RecipeDetailPage() {
               )}
             </div>
           </div>
+          {!recipe.isLibrary && (
+            <p className="rating-row">
+              <StarRating rating={recipe.rating} onChange={(star) => void rate(star)} />
+            </p>
+          )}
           {/* Keyed so following an ingredient link to another recipe loads that recipe's own ticks. */}
           <RecipeView key={recipe.id} recipe={recipe} via={shownTrail.map((crumb) => crumb.id)} />
         </>

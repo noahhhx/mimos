@@ -739,6 +739,59 @@ paths:
         '404':
           $ref: '#/components/responses/Problem'
 
+  /api/v1/recipes/{recipeId}/rating:
+    parameters:
+      - $ref: '#/components/parameters/RecipeId'
+    put:
+      tags: [recipes]
+      operationId: rateRecipe
+      summary: Rate a personal recipe from 1 to 5 stars
+      description: >
+        Sets the household's rating of one of its own recipes. There is one
+        rating per recipe, shared by the household: any member may set it,
+        and a new rating overwrites the old one. `stars` is a whole number
+        from 1 to 5. Curated library recipes cannot be rated (403). Rating
+        does not change the recipe's `updatedAt`, and replacing the recipe
+        keeps its rating. Returns the recipe.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeRatingInput'
+      responses:
+        '200':
+          description: The recipe with its new rating.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeDetail'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+    delete:
+      tags: [recipes]
+      operationId: clearRecipeRating
+      summary: Clear a personal recipe's rating
+      description: >
+        Removes the household's rating, so the recipe is unrated. Clearing
+        an unrated recipe is not an error. Curated library recipes are
+        read-only (403).
+      responses:
+        '204':
+          description: Cleared.
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+
   /api/v1/recipes/{recipeId}/pictures:
     parameters:
       - $ref: '#/components/parameters/RecipeId'
@@ -2310,6 +2363,13 @@ components:
         nutrition:
           allOf:
             - $ref: '#/components/schemas/Nutrition'
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: >
+            The household's star rating, 1 to 5. Absent when unrated, and
+            always absent for library recipes.
     RecipeDetail:
       type: object
       description: Everything needed to cook a recipe.
@@ -2349,6 +2409,13 @@ components:
         nutrition:
           allOf:
             - $ref: '#/components/schemas/Nutrition'
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: >
+            The household's star rating, 1 to 5. Absent when unrated, and
+            always absent for library recipes.
         nutritionSource:
           $ref: '#/components/schemas/NutritionSource'
         ingredients:
@@ -2364,6 +2431,14 @@ components:
           description: The recipe's pictures in display order. Always empty for library recipes.
           items:
             $ref: '#/components/schemas/RecipePicture'
+    RecipeRatingInput:
+      type: object
+      required: [stars]
+      properties:
+        stars:
+          type: integer
+          minimum: 1
+          maximum: 5
     RecipePicture:
       type: object
       description: A picture of a recipe. Its image is served by getRecipePicture.
@@ -2895,7 +2970,7 @@ components:
     AccountExport:
       type: object
       description: >
-        One person's data, in export format version 8 (ADR-0011, ADR-0019, ADR-0022, ADR-0023, ADR-0026, ADR-0027).
+        One person's data, in export format version 9 (ADR-0011, ADR-0019, ADR-0022, ADR-0023, ADR-0026, ADR-0027, ADR-0035).
         Any change to this schema, or to what a section holds, bumps the
         version and adds an upgrade step from the previous one.
       required: [format, version, exportedAt, ingredients, recipes, mealPlans, shoppingLists, mealLogs, trainingSessions]
@@ -2905,7 +2980,7 @@ components:
           enum: [mimos.export]
         version:
           type: integer
-          description: The format version. This instance exports version 8.
+          description: The format version. This instance exports version 9.
         exportedAt:
           type: string
           format: date-time
@@ -3042,6 +3117,13 @@ components:
           description: The recipe's pictures in display order.
           items:
             $ref: '#/components/schemas/ExportedRecipePicture'
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: >
+            The household's star rating, 1 to 5. Absent when unrated, and
+            always absent for library recipes.
         createdAt:
           type: string
           format: date-time

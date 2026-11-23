@@ -24,6 +24,7 @@ import org.openapitools.model.NutritionEstimateInput;
 import org.openapitools.model.Person;
 import org.openapitools.model.RecipeDetail;
 import org.openapitools.model.RecipeInput;
+import org.openapitools.model.RecipeRatingInput;
 import org.openapitools.model.RecipeSummary;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -92,6 +93,23 @@ public class RecipesController implements RecipesApi {
         UserProfileRecord profile = currentUser.requireProfile();
         Recipe replaced = recipeService.replace(profile.householdId(), recipeId, RecipeApiMapper.toDraft(recipeInput));
         return ResponseEntity.ok(detail(replaced, profile.id()));
+    }
+
+    @Override
+    public ResponseEntity<RecipeDetail> rateRecipe(UUID recipeId, RecipeRatingInput recipeRatingInput) {
+        UserProfileRecord profile = currentUser.requireProfile();
+        Integer stars = recipeRatingInput.getStars();
+        if (stars == null) {
+            throw new IllegalArgumentException("stars is required");
+        }
+        Recipe rated = recipeService.rate(profile.householdId(), recipeId, stars);
+        return ResponseEntity.ok(detail(rated, profile.id()));
+    }
+
+    @Override
+    public ResponseEntity<Void> clearRecipeRating(UUID recipeId) {
+        recipeService.rate(currentUser.requireProfile().householdId(), recipeId, null);
+        return ResponseEntity.noContent().build();
     }
 
     private RecipeDetail detail(Recipe recipe, UUID callerId) {
