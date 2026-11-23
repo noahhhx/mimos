@@ -12,16 +12,16 @@
   },
   "dependencies": {
     "@mimos/api-client": "*",
-    "barcode-detector": "3.2.2",
+    "barcode-detector": "3.2.4",
     "next": "16.4.6",
     "oidc-client-ts": "3.5.0",
-    "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
   },
   "devDependencies": {
-    "@types/node": "26.2.0",
-    "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.3",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "typescript": "~5.9.3"
   }
 }
