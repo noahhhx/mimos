@@ -6,6 +6,8 @@ spring:
   flyway:
     enabled: true
   jackson:
+    # The contract leaves an unknown value out rather than sending null.
+    default-property-inclusion: non_null
     deserialization:
       # 2.5 for an integer field (servings, minutes) is a 400, not a silent 2.
       accept-float-as-int: false

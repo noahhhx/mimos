@@ -156,11 +156,11 @@ public class IntervalsIcuConnections {
      * not waiting on intervals.icu. Those synced longest ago come first.
      */
     List<UUID> due(Instant now) {
-        return jdbc.queryForList("""
+        return jdbc.query("""
                 select profile_id from intervals_icu_connection
                 where status = 'CONNECTED' and (retry_at is null or retry_at <= ?)
                 order by last_sync_at nulls first, profile_id
-                """, UUID.class, timestamp(now));
+                """, (rs, row) -> rs.getObject(1, UUID.class), timestamp(now));
     }
 
     /** A sync's right to call intervals.icu for a person and store what it read. */

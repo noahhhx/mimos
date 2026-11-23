@@ -178,7 +178,7 @@
             <plugin>
                 <groupId>org.openapitools</groupId>
                 <artifactId>openapi-generator-maven-plugin</artifactId>
-                <version>7.24.0</version>
+                <version>7.27.0</version>
                 <configuration>
                     <!-- Spec-first: controllers implement these generated
                          interfaces, so drifting from the contract fails the

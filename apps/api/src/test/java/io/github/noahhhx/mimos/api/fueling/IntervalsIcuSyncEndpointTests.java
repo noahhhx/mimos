@@ -556,9 +556,9 @@ class IntervalsIcuSyncEndpointTests extends ApiIntegrationTestSupport {
     }
 
     private List<String> externalIds(TestUser user) {
-        return jdbc.queryForList(
+        return jdbc.query(
                 "select external_id from training_session where profile_id = ? and source = 'INTERVALS_ICU'",
-                String.class,
+                (rs, row) -> rs.getString(1),
                 user.profileId);
     }
 
