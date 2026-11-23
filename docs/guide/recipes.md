@@ -94,6 +94,15 @@ recipes** again.
 
 Tabs travel with your recipes in [your export](your-data.md).
 
+### Tabs in the Android app
+
+Tabs work the same way in the app. Tap **+ New tab** beside **+ New
+recipe**, give the tab a name, and choose a cover from your photos or take
+one with the camera. The tab bar scrolls sideways to show every tab after
+**My recipes** and **Library**.
+
+![The app's Recipes tab, showing the gallery of two tabs with covers](../assets/screenshots/android-recipe-tabs.png)
+
 ## Cooking from a recipe
 
 Open any recipe to cook from it. The ingredients sit on the left and the
