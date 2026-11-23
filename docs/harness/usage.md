@@ -30,9 +30,8 @@ pinned to the same version
 ## The investigation loop
 
 When something fails on the running stack, agents (and humans) follow
-this loop. AGENTS.md ("Debugging the running stack") is the source of
-truth; the `mimos-harness` Claude Code skill in `.claude/skills/` points
-there.
+this loop. This page is the source of truth; AGENTS.md and the
+`mimos-harness` Claude Code skill in `.claude/skills/` point here.
 
 1. **Start** — `harness up --debug`: fresh images plus the debug overlay.
 2. **Reproduce** — a scenario (`harness ui <name>`) or an API call

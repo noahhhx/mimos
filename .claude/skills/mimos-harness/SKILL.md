@@ -10,10 +10,9 @@ deploying, driving, observing, and debugging the local compose stack. Every
 command writes evidence to `.harness/runs/<run>/`; read
 `.harness/runs/latest/summary.md` first.
 
-The source of truth is **AGENTS.md → "Debugging the running stack"** (the
-investigation loop) and **`docs/harness/usage.md`** (every command, its
-options, and what it writes). Read both before investigating; this skill
-only points at them.
+The source of truth is **`docs/harness/usage.md`**: the investigation loop,
+every command, its options, and what it writes. Read it before
+investigating; this skill only points at it.
 
 ## Rules
 

@@ -7,8 +7,8 @@ the muscle. Steps are ordered by dependency, not calendar.
 Rules for using this file:
 
 - One step at a time; a step isn't done until its "done when" holds.
-- When a step reveals a decision, record it in `AGENTS.md` (and an ADR if
-  significant) in the same change — don't leave decisions trapped here.
+- When a step reveals a decision, record it in an ADR in the same change
+  (and in `AGENTS.md` only if agents keep getting it wrong) — don't leave decisions trapped here.
 - Re-order or add steps freely as we learn; keep the reasoning honest.
 
 ## Phase 0 — Groundwork (make the repo a place where work can happen)
