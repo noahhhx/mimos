@@ -1343,6 +1343,162 @@ label.file-button {
   }
 }
 
+/* ---------- Recipe tabs (app/app/recipes, components/recipe-tab-form.tsx, ADR-0036) ---------- */
+
+.tab-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 32px 24px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tab-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--fg);
+  text-decoration: none;
+}
+
+/* The cover fills a 4:3 frame, cropped rather than stretched. */
+.tab-tile-cover {
+  display: block;
+  aspect-ratio: 4 / 3;
+  margin-bottom: 8px;
+  overflow: hidden;
+  background: var(--hover);
+  outline: 1px solid transparent;
+  outline-offset: 3px;
+}
+
+.tab-tile:hover .tab-tile-cover,
+.tab-tile:focus-visible .tab-tile-cover {
+  outline-color: var(--accent);
+}
+
+.tab-tile:focus-visible {
+  outline: none;
+}
+
+.tab-tile-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* A tab without a picture: a solid amber block, unlike the pale frame of a picture still loading. */
+.tab-tile-blank {
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  padding: 16px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: var(--serif);
+  font-size: 28px;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.tab-tile-new {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--serif);
+  font-size: 56px;
+}
+
+.tab-tile-name {
+  font-family: var(--serif);
+  font-size: 24px;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.tab-tile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.tab-form-cover {
+  width: 320px;
+  max-width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--hover);
+}
+
+.tab-form-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tab-form-new-tag {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0 12px;
+}
+
+.tab-form-new-tag label {
+  flex: 0 1 240px;
+}
+
+.tab-form-new-tag button {
+  margin-bottom: 12px;
+}
+
+/* The recipes a tab can pick: a checklist that scrolls in its own box. */
+.pick-list {
+  max-height: 360px;
+  margin: 12px 0 24px;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.pick-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.pick-list li:last-child {
+  border-bottom: 0;
+}
+
+.pick-list label {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.pick-list .muted {
+  font-size: 13px;
+}
+
 .per-serving {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
