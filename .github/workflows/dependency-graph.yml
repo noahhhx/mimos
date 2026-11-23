@@ -1,0 +1,41 @@
+name: Dependency graph
+
+on:
+  workflow_call:
+
+jobs:
+  # GitHub's dependency graph reads pom.xml and Gradle files as text, so it misses
+  # versions set by Spring Boot's BOMs, every transitive dependency, and the whole
+  # Android app. Submitting the resolved trees gives Dependabot the real versions.
+  # Pull requests from forks get a read-only token, so they skip it.
+  dependency-graph:
+    name: Submit dependency graph
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - uses: advanced-security/maven-dependency-submission-action@v6.0.1
+
+      - name: Install the catalog's Android platform and build tools
+        working-directory: apps/mobile
+        run: |
+          version() { sed -n "s/^$1 = \"\(.*\)\"$/\1/p" gradle/libs.versions.toml; }
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-$(version compileSdk)" "build-tools;$(version buildTools)"
+
+      # Basic is the open-source (MIT) cache; the default provider is proprietary.
+      - uses: gradle/actions/dependency-submission@v6
+        with:
+          build-root-directory: apps/mobile
+          cache-provider: basic

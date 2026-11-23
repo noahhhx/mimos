@@ -253,7 +253,7 @@ leaves it; to start the AVD over, stop it and delete the directory, as
 
 ## In CI
 
-The `compose` job in `.github/workflows/ci.yml` boots the stack and runs
+The `compose` job in `.github/workflows/selfhost.yml` boots the stack and runs
 its devenv-free smoke tests, which are the self-host parity check, on
 `compose.yml` alone. Then it adds `compose.fakes.yml`, installs Nix and
 devenv, runs `devenv shell -- npm ci`, and runs every
@@ -282,7 +282,7 @@ the seconds in `apps/mobile/flows/durations.json` (CI's passing times).
 A flow missing from that table weighs its median, so a new flow still runs;
 add it, or refresh the table when flows' times move, to keep the shards even. On a pull request it runs
 only when the `changes` job finds a path the flows depend on (its list is in
-`ci.yml`); a change to docs or to the web's pages alone skips it. On a push to main, `android-skew` runs main's
+`android.yml`); a change to docs or to the web's pages alone skips it. On a push to main, `android-skew` runs main's
 app against the last release instead: `node tools/harness/src/release.ts
 pick` (Node alone, before devenv) finds the last `v*` tag reachable from
 HEAD and skips the job with a notice while there is none, its realm has no

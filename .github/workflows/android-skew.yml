@@ -1,0 +1,143 @@
+name: Android against the last release
+
+on:
+  workflow_call:
+
+jobs:
+  # main's app against the last release's published images, the server people
+  # still run (docs/harness/releasing.md). Only the flows the
+  # release already had: one added since may test what the release lacks.
+  android-skew:
+    name: Android flows against the last release (${{ matrix.shard }}/4)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Skips the rest, with a notice, while no release has the mimos-mobile
+      # client or the release's images are not published yet.
+      - name: Find the last release
+        id: release
+        run: node tools/harness/src/release.ts pick
+
+      - name: Open /dev/kvm to the runner
+        if: steps.release.outputs.tag != ''
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: cachix/install-nix-action@v31
+        if: steps.release.outputs.tag != ''
+
+      - uses: cachix/cachix-action@v16
+        if: steps.release.outputs.tag != ''
+        with:
+          name: devenv
+
+      # android-flows saves this cache; restoring it is enough here.
+      - uses: nix-community/cache-nix-action@v7
+        if: steps.release.outputs.tag != ''
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('devenv.nix', 'devenv.lock', 'devenv.yaml', 'apps/mobile/gradle/libs.versions.toml') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          save: false
+
+      - name: Install devenv
+        if: steps.release.outputs.tag != ''
+        run: nix profile install nixpkgs#devenv
+
+      - name: Install the npm workspace in the devenv shell
+        if: steps.release.outputs.tag != ''
+        run: devenv shell -- npm ci
+
+      # main's debug APK, as the Android app job built it.
+      - uses: actions/download-artifact@v4
+        if: steps.release.outputs.tag != ''
+        with:
+          name: mimos-debug-apk
+          path: apps/mobile/androidApp/build/outputs/apk/debug
+
+      - name: Boot ${{ steps.release.outputs.tag }} and the emulator
+        if: steps.release.outputs.tag != ''
+        timeout-minutes: 25
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          devenv shell -- harness release up "$TAG"
+          devenv shell -- harness mobile up --no-build --run latest
+
+      - name: Android flows against ${{ steps.release.outputs.tag }}
+        if: steps.release.outputs.tag != ''
+        timeout-minutes: 30
+        env:
+          FLOWS: ${{ steps.release.outputs.flows }}
+          SHARD: ${{ matrix.shard }}
+          # Flows the release had that main changed to test something newer.
+          # Space-separated; they must still fail, and empty the list at the
+          # next release.
+          KNOWN_FAILING: ""
+        run: |
+          vmstat -t -w 5 > .harness/runs/host-vmstat.log &
+          failed=0
+          # This shard's share of every flow (as android-flows splits them), less any the release lacks.
+          shard=$(devenv shell -- node tools/harness/src/shards.ts "$SHARD" 4)
+          [ -n "$shard" ] || { echo "::error::shard $SHARD has no flows"; exit 1; }
+          for name in $shard; do
+            [[ " $FLOWS " == *" $name "* ]] || continue
+            if devenv shell -- harness mobile flow "$name" --run latest; then outcome=passed; else outcome=failed; fi
+            if [[ " $KNOWN_FAILING " == *" $name "* ]]; then
+              if [ "$outcome" = passed ]; then
+                echo "::error::flow $name passed but is listed in KNOWN_FAILING; remove it from the list"
+                failed=1
+              else
+                echo "::warning::flow $name failed as expected (KNOWN_FAILING)"
+              fi
+            elif [ "$outcome" = failed ]; then
+              echo "::error::flow $name failed against the release; see the harness-runs-android-skew-$SHARD artifact, summary.md first"
+              failed=1
+            fi
+          done
+          exit $failed
+
+      - name: Add the run summary to the job
+        if: always() && steps.release.outputs.tag != ''
+        run: '[ -f .harness/runs/latest/summary.md ] && cat .harness/runs/latest/summary.md >> "$GITHUB_STEP_SUMMARY" || true'
+
+      - name: Upload harness evidence
+        if: failure() && steps.release.outputs.tag != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: harness-runs-android-skew-${{ matrix.shard }}
+          path: |
+            .harness/runs/
+            !.harness/runs/latest
+          include-hidden-files: true
+          if-no-files-found: ignore
+
+      - name: Tear down
+        if: always() && steps.release.outputs.tag != ''
+        run: |
+          devenv shell -- harness mobile down || true
+          devenv shell -- harness release down

@@ -1,0 +1,150 @@
+name: Self-hosted stack
+
+on:
+  workflow_call:
+
+jobs:
+  compose:
+    name: Self-hosted stack (compose)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Validate the self-host compose file
+        # .env.example leaves the secrets blank on purpose; the file must
+        # resolve once they are set.
+        env:
+          POSTGRES_PASSWORD: ci
+          KEYCLOAK_ADMIN_PASSWORD: ci
+        run: docker compose -f deploy/selfhost/compose.yml --env-file deploy/selfhost/.env.example config -q
+
+      - name: Boot the stack
+        run: docker compose -f deploy/docker/compose.yml up -d --wait
+
+      - name: Smoke test - API health
+        run: curl -fsS http://localhost:8080/actuator/health | grep -q '"status":"UP"'
+
+      - name: Smoke test - migrations applied
+        run: |
+          rows=$(docker compose -f deploy/docker/compose.yml exec -T postgres \
+            psql -U mimos -d mimos -t -A \
+            -c "select count(*) from flyway_schema_history where success")
+          [ "$rows" -ge 1 ] || { echo "expected applied migrations, got: $rows"; exit 1; }
+
+      - name: Smoke test - Keycloak realm imported
+        run: curl -fsS http://localhost:8081/realms/mimos | grep -q '"realm":"mimos"'
+
+      - name: Smoke test - web frontend serves the public page
+        run: curl -fsS http://localhost:3000/ | grep -q '<h1>Mimos</h1>'
+
+      - name: Smoke test - web serves its public config from the environment
+        run: |
+          curl -fsS http://localhost:3000/runtime-config.js \
+            | grep -qF '"apiUrl":"http://localhost:8080","oidcAuthority":"http://localhost:8081/realms/mimos"'
+
+      - name: Smoke test - library is seeded and publicly readable
+        run: |
+          curl -fsS http://localhost:8080/api/v1/public/recipes | grep -q 'fluffy-buttermilk-pancakes'
+          curl -fsS http://localhost:8080/api/v1/public/recipes/fluffy-buttermilk-pancakes \
+            | grep -q '"title":"Fluffy Buttermilk Pancakes"'
+
+      - name: Smoke test - public recipe page renders server-side
+        run: curl -fsS http://localhost:3000/recipes/fluffy-buttermilk-pancakes \
+            | grep -q 'Fluffy Buttermilk Pancakes'
+
+      - name: Smoke test - authenticated request reaches protected endpoint
+        run: |
+          token=$(curl -fsS -X POST http://localhost:8081/realms/mimos/protocol/openid-connect/token \
+            -d 'grant_type=password&client_id=mimos-web&username=test&password=mimos-test' \
+            | python3 -c 'import sys,json; print(json.load(sys.stdin)["access_token"])')
+          curl -fsS -H "Authorization: Bearer $token" http://localhost:8080/api/v1/me | grep -q '"displayName":"test"'
+          # Unauthenticated requests must be rejected with problem-details.
+          curl -sS http://localhost:8080/api/v1/me -o /dev/null -w '%{http_code} %{content_type}' \
+            | grep -qF '401 application/problem+json'
+
+      - name: Smoke test - plugin panel and suggestion end to end
+        run: |
+          token=$(curl -fsS -X POST http://localhost:8081/realms/mimos/protocol/openid-connect/token \
+            -d 'grant_type=password&client_id=mimos-web&username=test&password=mimos-test' \
+            | python3 -c 'import sys,json; print(json.load(sys.stdin)["access_token"])')
+          monday=$(date -d "$(date +%F) - $(( $(date +%u) - 1 )) days" +%F)
+          # Plugins are opt-in per user (ADR-0013): turn it on first.
+          curl -fsS -X PUT -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+            -d '{"enabled":true}' http://localhost:8080/api/v1/me/plugins/country-week
+          # Its card follows the week's country (ADR-0017): choose Italy through
+          # the week panel, API -> plugin -> SQLite on its volume.
+          actions="http://localhost:8080/api/v1/plans/$monday/panels/country-week/actions"
+          curl -fsS -X POST -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+            -d '{"id":"choose","value":"IT"}' "$actions" | grep -q '"label":"Italy"'
+          # API -> country-week plugin -> validated, attributed card (ADR-0006).
+          curl -fsS -H "Authorization: Bearer $token" \
+            "http://localhost:8080/api/v1/plans/$monday/suggestions" | grep -q '"pluginId":"country-week"'
+          # Leave the week unchosen for the harness scenarios that follow.
+          curl -fsS -X POST -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+            -d '{"id":"change"}' "$actions" -o /dev/null
+
+      # Fakes of third-party services for the scenarios. Added only now, so the parity check above runs compose.yml
+      # alone. The API restarts to pick up the fakes' base URLs.
+      - name: Start the third-party fakes
+        run: docker compose -f deploy/docker/compose.yml -f deploy/docker/compose.fakes.yml up -d --wait
+
+      # Browser scenarios (docs/harness/step-6-skill-docs-ci.md). The steps above
+      # are the devenv-free self-host parity check; from here on the agent
+      # harness runs through devenv, which provides Node and the browsers.
+      - uses: cachix/install-nix-action@v31
+
+      - uses: cachix/cachix-action@v16
+        with:
+          name: devenv
+
+      - name: Install devenv
+        run: nix profile install nixpkgs#devenv
+
+      - name: Install the npm workspace (Playwright) in the devenv shell
+        run: devenv shell -- npm ci
+
+      - name: Harness scenarios
+        env:
+          # Scenarios that reproduce an open bug: they must still fail, and one
+          # that passes fails the job until it is removed from this list.
+          # Space-separated scenario names; none are open.
+          KNOWN_FAILING: ""
+        run: |
+          failed=0
+          for spec in tools/harness/scenarios/*.spec.ts; do
+            name=$(basename "$spec" .spec.ts)
+            # One run folder for the whole job; the first scenario creates it.
+            run=()
+            [ -e .harness/runs/latest ] && run=(--run latest)
+            if devenv shell -- harness ui "$name" "${run[@]}"; then outcome=passed; else outcome=failed; fi
+            if [[ " $KNOWN_FAILING " == *" $name "* ]]; then
+              if [ "$outcome" = passed ]; then
+                echo "::error::scenario $name passed but is listed in KNOWN_FAILING — remove it from the list"
+                failed=1
+              else
+                echo "::warning::scenario $name failed as expected (KNOWN_FAILING)"
+              fi
+            elif [ "$outcome" = failed ]; then
+              echo "::error::scenario $name failed — see the harness-runs artifact, summary.md first"
+              failed=1
+            fi
+          done
+          cat .harness/runs/latest/summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit $failed
+
+      - name: Upload harness evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harness-runs
+          # `latest` is a symlink to the run; leave it out so the run is not uploaded twice.
+          path: |
+            .harness/runs/
+            !.harness/runs/latest
+          include-hidden-files: true
+          if-no-files-found: ignore
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f deploy/docker/compose.yml -f deploy/docker/compose.fakes.yml down -v --remove-orphans

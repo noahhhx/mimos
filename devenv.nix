@@ -1,7 +1,7 @@
 { pkgs, ... }:
 
 # Nix dev shell for working on Mimos without installing toolchains on the
-# host. Versions track CI (.github/workflows/ci.yml): JDK 21, Node 22,
+# host. Versions track CI (.github/workflows/): JDK 21, Node 22,
 # Python 3.13 for MkDocs. Docker itself is NOT provided here — Testcontainers
 # and compose need a host daemon (e.g. `virtualisation.docker.enable = true`
 # on NixOS); only the CLI is on the PATH.
