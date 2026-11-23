@@ -24,15 +24,23 @@ import java.io.File
  * how many did not fit, as the web does.
  */
 @Composable
-actual fun rememberPicturePicker(onPicked: (List<PickedPicture>) -> Unit): PicturePicker {
+actual fun rememberPicturePicker(
+    onPicked: (List<PickedPicture>) -> Unit,
+    single: Boolean,
+): PicturePicker {
     val context = LocalContext.current
     val picked by rememberUpdatedState(onPicked)
-    val gallery =
+    val several =
         rememberLauncherForActivityResult(
             ActivityResultContracts.PickMultipleVisualMedia(MAX_PICTURES)
         ) { uris ->
             if (uris.isNotEmpty()) picked(uris.map { PickedPicture(it.toString()) })
         }
+    val one =
+        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            if (uri != null) picked(listOf(PickedPicture(uri.toString())))
+        }
+    val gallery = if (single) one else several
     val photo = remember(context) { CameraFile.uri(context) }
     val camera =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
