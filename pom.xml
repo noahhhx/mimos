@@ -11,7 +11,7 @@
 
     <groupId>io.github.noahhhx.mimos</groupId>
     <artifactId>mimos-parent</artifactId>
-    <version>0.1.2-SNAPSHOT</version>
+    <version>0.1.3-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Mimos</name>
