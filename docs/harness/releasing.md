@@ -106,7 +106,11 @@ A leaked key is the same: rotate it, and tell people to reinstall.
 
 Tag the commit on main and push the tag: `git tag v0.1.0 && git push
 origin v0.1.0` (or `v0.1.0-rc.1` for a candidate). The tagged commit's
-`pom.xml` may still say `0.1.0-SNAPSHOT`; the tag decides. CI's
+`pom.xml` may still say `0.1.0-SNAPSHOT`; the tag decides. Then raise
+every `pom.xml`'s version on main above the tag's, to the next patch's
+snapshot (`0.1.1-SNAPSHOT` after `v0.1.0`). Main's debug app takes that
+version, and an app below its server tells people a newer app is out, so
+`android-skew` fails on a main left behind its last release. CI's
 `release-apk` runs once every other job passes: it uploads
 `mimos-<version>.apk`, its `.sha256`, and the R8 mapping (kept 90 days) as
 artifacts, creates the tag's GitHub Release (a prerelease for `-rc.N`,
@@ -147,7 +151,8 @@ which the minified build does not set.
 **Flows against the last release.** `android-skew` runs main's app
 against the last `v*` release's published images, the server people still
 run, on a push to main only. It gates nothing: a red run says a server
-people still run breaks main's app. "The last release" is the last `v*`
+people still run breaks main's app. It fails before booting anything when
+main's `pom.xml` version is below the release's. "The last release" is the last `v*`
 tag reachable from HEAD, so a candidate counts as soon as it is tagged on
 main. It runs only the flows the tag already had: a flow added since may
 test what the release lacks, and gets its first run against the next
