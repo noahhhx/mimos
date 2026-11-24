@@ -164,6 +164,18 @@ class AccountModelTest {
     }
 
     @Test
+    fun `a server from before recipe tabs reports an import without counting them`() = runTest {
+        val fixture = Fixture(this)
+        fixture.server.import =
+            HttpStatusCode.OK to REPORT.replace(""""recipeCollections":0,""", "")
+
+        val state = fixture.imported("backup.json", EXPORT)
+
+        val done = assertIs<ImportStatus.Done>(state.status)
+        assertEquals(2, done.report.recipes)
+    }
+
+    @Test
     fun `an account that is not empty is told so in the API's words`() = runTest {
         val fixture = Fixture(this)
         val detail =
