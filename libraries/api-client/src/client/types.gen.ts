@@ -1339,9 +1339,10 @@ export type ImportReport = {
      */
     recipes: number;
     /**
-     * Recipe tabs imported.
+     * Recipe tabs imported. Servers before recipe tabs leave it out, so a client that may reach one reads its absence as none.
+     *
      */
-    recipeCollections: number;
+    recipeCollections?: number;
     /**
      * Planned meals imported.
      */

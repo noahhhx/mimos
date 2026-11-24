@@ -3643,8 +3643,7 @@ components:
     ImportReport:
       type: object
       description: The outcome of an import.
-      required:
-        [sourceVersion, recipes, recipeCollections, plannedMeals, shoppingLists, mealLogs, fuelProfile, trainingSessions, warnings]
+      required: [sourceVersion, recipes, plannedMeals, shoppingLists, mealLogs, fuelProfile, trainingSessions, warnings]
       properties:
         sourceVersion:
           type: integer
@@ -3654,7 +3653,9 @@ components:
           description: Personal recipes imported.
         recipeCollections:
           type: integer
-          description: Recipe tabs imported.
+          description: >
+            Recipe tabs imported. Servers before recipe tabs leave it out, so
+            a client that may reach one reads its absence as none.
         plannedMeals:
           type: integer
           description: Planned meals imported.
