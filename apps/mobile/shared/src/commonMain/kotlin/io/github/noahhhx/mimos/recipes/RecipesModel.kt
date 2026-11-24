@@ -37,7 +37,8 @@ sealed interface RecipeListState {
     data class Loaded(
         val mine: List<RecipeSummary>,
         val library: List<RecipeSummary>,
-        val collections: List<RecipeCollection> = emptyList(),
+        /** Null when the server predates recipe tabs (a 404), so the app offers none. */
+        val collections: List<RecipeCollection>? = emptyList(),
         val members: Map<String, List<RecipeSummary>> = emptyMap(),
     ) : RecipeListState {
         fun of(tab: RecipeTab.Listing): List<RecipeSummary>? =
@@ -47,7 +48,7 @@ sealed interface RecipeListState {
                 is RecipeTab.Collection -> members[tab.id]
             }
 
-        fun collection(id: String): RecipeCollection? = collections.firstOrNull { it.id == id }
+        fun collection(id: String): RecipeCollection? = collections?.firstOrNull { it.id == id }
     }
 
     data class Failed(val message: String) : RecipeListState
@@ -201,7 +202,7 @@ class RecipesModel(
                     else
                         state.copy(
                             collections =
-                                state.collections.map {
+                                state.collections?.map {
                                     it.copy(isDefault = on && it.id == collectionId)
                                 }
                         )
@@ -413,8 +414,8 @@ class RecipesModel(
                     coroutineScope {
                         val mine = async { api().listMyRecipes(q).body() }
                         val library = async { api().listLibraryRecipes(q).body() }
-                        val tabs = collections().listRecipeCollections().body()
-                        val shown = shownTab(chosen, tabs)
+                        val tabs = tabsOffered()
+                        val shown = shownTab(chosen, tabs.orEmpty())
                         val members =
                             if (shown is RecipeTab.Collection) mapOf(shown.id to members(shown.id))
                             else emptyMap()
@@ -426,11 +427,18 @@ class RecipesModel(
                     RecipeListState.Failed(describe(failure))
                 }
             if (loaded is RecipeListState.Loaded) {
-                mutableTab.value = shownTab(chosen, loaded.collections)
+                mutableTab.value = shownTab(chosen, loaded.collections.orEmpty())
             }
             mutableList.value = loaded
         }
     }
+
+    private suspend fun tabsOffered(): List<RecipeCollection>? =
+        try {
+            collections().listRecipeCollections().body()
+        } catch (problem: ApiProblem) {
+            if (problem.status == 404) null else throw problem
+        }
 
     private fun describe(failure: Exception): String =
         if (failure is ApiProblem) "The API rejected the request."

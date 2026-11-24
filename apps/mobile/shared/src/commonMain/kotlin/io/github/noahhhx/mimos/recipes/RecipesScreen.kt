@@ -114,7 +114,9 @@ private fun RecipeListScreen(model: RecipesModel, listState: LazyListState) {
                 modifier = gutter,
                 actions = {
                     Button("+ New recipe", onClick = model::newRecipe)
-                    Button("+ New tab", onClick = model::newTab, kind = ButtonKind.Secondary)
+                    if (loaded?.collections != null) {
+                        Button("+ New tab", onClick = model::newTab, kind = ButtonKind.Secondary)
+                    }
                 },
             )
         }
