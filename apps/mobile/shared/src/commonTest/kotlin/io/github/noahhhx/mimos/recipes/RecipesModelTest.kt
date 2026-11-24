@@ -59,7 +59,7 @@ private class Server {
     var mine = "[${summary("m1", "Soup")}]"
     var library = "[${summary("l1", "Greek Salad")},${summary("l2", "Shakshuka")}]"
     var failList = false
-    var collections = "[]"
+    var collections: String? = "[]"
 
     val members = mutableMapOf<String, String>()
     var deleteStatus = HttpStatusCode.NoContent
@@ -82,7 +82,9 @@ private class Server {
             failList && path.endsWith("/recipes") ->
                 respondError(HttpStatusCode.InternalServerError)
             path == "/api/v1/ingredients" -> respond("[]", headers = json)
-            path == "/api/v1/recipe-collections" -> respond(collections, headers = json)
+            path == "/api/v1/recipe-collections" ->
+                collections?.let { respond(it, headers = json) }
+                    ?: respondError(HttpStatusCode.NotFound)
             path.startsWith("/api/v1/recipe-collections/") && path.endsWith("/default") ->
                 respond("", HttpStatusCode.NoContent)
             path.startsWith("/api/v1/recipe-collections/") && path.endsWith("/recipes") ->
@@ -145,6 +147,20 @@ class RecipesModelTest {
         assertIs<RecipeListState.Loaded>(loaded)
         assertEquals(listOf("m1"), loaded.of(RecipeTab.Mine)?.map { it.id })
         assertEquals(listOf("l1", "l2"), loaded.of(RecipeTab.Library)?.map { it.id })
+        assertEquals(RecipeTab.Mine, model.tab.value)
+    }
+
+    @Test
+    fun `a server without tabs loads both lists and offers no tabs`() = runTest {
+        val server = Server().apply { collections = null }
+        val model = model(server)
+
+        model.ensureLoaded()
+        val loaded = model.list.first { it !is RecipeListState.Loading }
+
+        assertIs<RecipeListState.Loaded>(loaded)
+        assertEquals(listOf("m1"), loaded.of(RecipeTab.Mine)?.map { it.id })
+        assertNull(loaded.collections)
         assertEquals(RecipeTab.Mine, model.tab.value)
     }
 
@@ -518,7 +534,11 @@ class RecipesModelTest {
 }
 
 private fun RecipesModel.defaults(): List<String> =
-    (list.value as RecipeListState.Loaded).collections.filter { it.isDefault }.map { it.id }
+    (list.value as RecipeListState.Loaded)
+        .collections
+        .orEmpty()
+        .filter { it.isDefault }
+        .map { it.id }
 
 private suspend fun RecipesModel.loaded(until: (RecipeDetail) -> Boolean = { true }): RecipeDetail =
     (detail.first { it is RecipeDetailState.Loaded && until(it.recipe) }
