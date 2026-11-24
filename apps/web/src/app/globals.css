@@ -110,7 +110,7 @@ pre {
 
 .wrap {
   width: 100%;
-  max-width: 1080px;
+  max-width: 1280px;
   margin: 0 auto;
   padding: 0 16px;
 }
@@ -1656,13 +1656,6 @@ label.file-button {
 }
 
 /* ---------- Week plan: the ledger (days across, meals down) ---------- */
-
-/* The ledger needs more room than the reading column: the plan page widens
-   its main column and the header with it. */
-main.wrap:has(.plan-ledger),
-body:has(.plan-ledger) .site-header-inner {
-  max-width: 1440px;
-}
 
 .ledger-layout {
   display: grid;
