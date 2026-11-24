@@ -174,3 +174,82 @@ test("reordering oneOf members is not a removal", () => {
   );
   assert.deepEqual(removalsBetween(operation, next), []);
 });
+
+const keepOptional = "keep it optional, and say in its description that older servers or clients leave it out";
+
+test("a name newly required on an existing schema fails, naming the schema, the field, and the fix", () => {
+  const next = operation
+    .replace("required: [id, name]", "required: [id, name, tag]")
+    .replace("        name: { type: string }", "        name: { type: string }\n        tag: { type: string }");
+  assert.deepEqual(removalsBetween(operation, next), [
+    `newly required tag at #/components/schemas/Shape; ${keepOptional}`,
+  ]);
+});
+
+test("a required list added to an existing schema fails for each name", () => {
+  const next = base.replace(
+    "    Thing:\n      type: object\n",
+    "    Thing:\n      type: object\n      required: [id, kind]\n",
+  );
+  assert.deepEqual(removalsBetween(base, next), [
+    `newly required id at #/components/schemas/Thing; ${keepOptional}`,
+    `newly required kind at #/components/schemas/Thing; ${keepOptional}`,
+  ]);
+});
+
+test("a name newly required on an inline schema under a path fails", () => {
+  const inline = `
+paths:
+  /a:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note: { type: string }
+`;
+  const next = inline.replace("              properties:", "              required: [note]\n              properties:");
+  assert.deepEqual(removalsBetween(inline, next), [
+    `newly required note at #/paths//a/post/requestBody/content/application/json/schema; ${keepOptional}`,
+  ]);
+});
+
+test("a parameter or request body that became required fails", () => {
+  const week = operation.replace("{ name: week, in: query,", "{ name: week, in: query, required: true,");
+  assert.deepEqual(removalsBetween(operation, week), [
+    `newly required parameter week in query at #/paths//list/get/parameters/week in query; ${keepOptional}`,
+  ]);
+  const body = "paths:\n  /a:\n    post:\n      requestBody:\n        required: false\n";
+  assert.deepEqual(removalsBetween(body, body.replace("required: false", "required: true")), [
+    `newly required request body at #/paths//a/post/requestBody; ${keepOptional}`,
+  ]);
+});
+
+test("a new required parameter on an existing operation fails", () => {
+  const next = operation.replace(
+    "        - $ref:",
+    "        - { name: page, in: query, required: true, schema: { type: integer } }\n        - $ref:",
+  );
+  assert.deepEqual(removalsBetween(operation, next), [
+    `new required parameter page in query at #/paths//list/get/parameters; ${keepOptional}`,
+  ]);
+});
+
+test("a new schema with required fields, and a new optional field or parameter, pass", () => {
+  const next = operation
+    .replace("        name: { type: string }", "        name: { type: string }\n        tag: { type: string }")
+    .replace("        - $ref:", "        - { name: page, in: query, schema: { type: integer } }\n        - $ref:")
+    .replace(
+      "  schemas:\n",
+      "  schemas:\n    Fresh:\n      type: object\n      required: [id]\n      properties:\n        id: { type: string }\n",
+    );
+  assert.deepEqual(removalsBetween(operation, next), []);
+});
+
+test("a name dropped from required is not newly required, only no longer required", () => {
+  assert.deepEqual(removalsBetween(operation, operation.replace("required: [id, name]", "required: [name]")), [
+    "removed id from required at #/components/schemas/Shape",
+  ]);
+});

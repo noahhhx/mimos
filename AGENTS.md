@@ -46,8 +46,12 @@ column `household_id`. Plugins never see personal recipes, profiles, or
 logs. External API types never leave their `integrations/*` module.
 
 **API contract.** From the first app release `/api/v1` is additive only.
-CI's contract check misses a `$ref` swapped to another schema and a new
-required request field or parameter; reviewers watch for those. An
+CI's contract check fails a name newly added to the `required` list of a
+schema the last release had, and a parameter or request body that became
+required; keep such a field optional and say in its description that older
+servers or clients leave it out. It misses a `$ref` swapped to another
+schema, a new parameter added by `$ref`, and required names inside a schema
+or property the release lacked; reviewers watch for those. An
 operation's `summary` and `description` are all an agent reads, so state
 the rules a caller would otherwise guess. Use `x-mcp: false` only when an
 agent must not call it.

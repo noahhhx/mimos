@@ -13,6 +13,7 @@ function isObject(value: Json): value is Record<string, Json> {
 
 const COMPOSITIONS = ["oneOf", "anyOf", "allOf"];
 const NOT_CONTRACT = ["example", "examples"];
+const KEEP_OPTIONAL = "keep it optional, and say in its description that older servers or clients leave it out";
 
 function refOf(item: Json): string | undefined {
   return isObject(item) && typeof item.$ref === "string" ? item.$ref : undefined;
@@ -36,8 +37,16 @@ function keyed(role: string, items: Json[]): string[] {
 function removedMembers(role: string, previous: Json[], next: Json, path: string): string[] {
   const nextItems = Array.isArray(next) ? next : [];
   const nextByKey = new Map(keyed(role, nextItems).map((key, i) => [key, nextItems[i]]));
+  const previousKeys = keyed(role, previous);
   const found: string[] = [];
-  keyed(role, previous).forEach((key, i) => {
+  if (role === "parameters") {
+    for (const [key, item] of nextByKey) {
+      if (!previousKeys.includes(key) && isObject(item) && item.required === true) {
+        found.push(`new required parameter ${key} at ${path}; ${KEEP_OPTIONAL}`);
+      }
+    }
+  }
+  previousKeys.forEach((key, i) => {
     if (nextByKey.has(key)) {
       found.push(...removals(previous[i], nextByKey.get(key), `${path}/${key}`));
     } else if (role === "parameters") {
@@ -49,12 +58,41 @@ function removedMembers(role: string, previous: Json[], next: Json, path: string
   return found;
 }
 
+function isSchema(value: Record<string, Json>): boolean {
+  return value.type === "object" || isObject(value.properties) || Array.isArray(value.required);
+}
+
 /**
- * What a released client could no longer read or call: a removed operation,
- * parameter, response status, schema property, enum value, or oneOf/anyOf/allOf
- * member, a property no longer required, or a changed type. Anything the new
- * spec only adds is fine (ADR-0029). It does not catch a $ref swapped to a
- * different schema or a new required request field.
+ * A name new to the required list of a schema the last release had, or a
+ * parameter or request body that became required. A new client rejects an
+ * old server's response without it, and an old client's request omits it.
+ */
+function newlyRequired(previous: Record<string, Json>, current: Record<string, Json>, path: string): string[] {
+  if (Array.isArray(current.required)) {
+    if (!isSchema(previous)) return [];
+    const had = Array.isArray(previous.required) ? previous.required : [];
+    return current.required
+      .filter((name) => typeof name === "string" && !had.includes(name))
+      .map((name) => `newly required ${String(name)} at ${path}; ${KEEP_OPTIONAL}`);
+  }
+  if (current.required !== true || previous.required === true) return [];
+  if (typeof previous.in === "string") {
+    return [`newly required parameter ${String(previous.name)} in ${previous.in} at ${path}; ${KEEP_OPTIONAL}`];
+  }
+  if (path.endsWith("/requestBody")) {
+    return [`newly required request body at ${path}; ${KEEP_OPTIONAL}`];
+  }
+  return [];
+}
+
+/**
+ * What a released client or server could no longer read or call: a removed
+ * operation, parameter, response status, schema property, enum value, or
+ * oneOf/anyOf/allOf member, a property no longer required, a changed type, or
+ * a newly required name, parameter, or request body. Anything the new spec
+ * only adds is fine (ADR-0029). It does not catch a $ref swapped to a
+ * different schema, a new parameter added by $ref, or a required name inside
+ * a schema or property the last release did not have.
  */
 export function removals(previous: Json, next: Json, path = "#"): string[] {
   if (Array.isArray(previous)) {
@@ -65,7 +103,7 @@ export function removals(previous: Json, next: Json, path = "#"): string[] {
     return [];
   }
   const current = isObject(next) ? next : {};
-  const found: string[] = [];
+  const found = newlyRequired(previous, current, path);
   for (const [key, value] of Object.entries(previous)) {
     const here = `${path}/${key}`;
     if (NOT_CONTRACT.includes(key)) {

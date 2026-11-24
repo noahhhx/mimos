@@ -1132,9 +1132,10 @@ export type AccountExport = {
      */
     recipes: Array<ExportedRecipe>;
     /**
-     * The household's recipe tabs, oldest first.
+     * The household's recipe tabs, oldest first. This instance always writes it, but servers before recipe tabs export version 9 and leave it out, so a client that may reach one reads its absence as no tabs.
+     *
      */
-    recipeCollections: Array<ExportedRecipeCollection>;
+    recipeCollections?: Array<ExportedRecipeCollection>;
     /**
      * The weeks the exporter eats a planned meal in, with only those meals. Who else ate a meal is not exported.
      *

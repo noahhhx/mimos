@@ -3325,8 +3325,7 @@ components:
         One person's data, in export format version 10 (ADR-0011, ADR-0019, ADR-0022, ADR-0023, ADR-0026, ADR-0027, ADR-0035, ADR-0036).
         Any change to this schema, or to what a section holds, bumps the
         version and adds an upgrade step from the previous one.
-      required:
-        [format, version, exportedAt, ingredients, recipes, recipeCollections, mealPlans, shoppingLists, mealLogs, trainingSessions]
+      required: [format, version, exportedAt, ingredients, recipes, mealPlans, shoppingLists, mealLogs, trainingSessions]
       properties:
         format:
           type: string
@@ -3349,7 +3348,11 @@ components:
             $ref: '#/components/schemas/ExportedRecipe'
         recipeCollections:
           type: array
-          description: The household's recipe tabs, oldest first.
+          description: >
+            The household's recipe tabs, oldest first. This instance always
+            writes it, but servers before recipe tabs export version 9 and
+            leave it out, so a client that may reach one reads its absence as
+            no tabs.
           items:
             $ref: '#/components/schemas/ExportedRecipeCollection'
         mealPlans:
