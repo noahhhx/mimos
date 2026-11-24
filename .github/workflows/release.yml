@@ -170,3 +170,52 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  # Lists the published images, pinned by digest, in the tag's GitHub Release
+  # notes. Converges on a rerun: the section between the markers is replaced.
+  release-images:
+    name: List the images in the release
+    if: startsWith(github.ref, 'refs/tags/v') && !cancelled() && !failure()
+    needs: [publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      packages: read
+    steps:
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add the images to the release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          version=${GITHUB_REF_NAME#v}
+          section="$RUNNER_TEMP/images.md"
+          {
+            echo '<!-- images:start -->'
+            echo '## Images'
+            echo
+            echo "Self-hosted servers run these with \`MIMOS_VERSION=$version\` in \`deploy/selfhost\`."
+            echo
+            echo '| Image | Tag | Digest |'
+            echo '| --- | --- | --- |'
+            for image in mimos-api mimos-web mimos-keycloak mimos-country-week; do
+              ref="ghcr.io/$OWNER/$image"
+              digest=$(docker buildx imagetools inspect "$ref:$version" --format '{{.Manifest.Digest}}')
+              echo "| [\`$ref\`](https://github.com/$GH_REPO/pkgs/container/$image) | \`$version\` | \`$digest\` |"
+            done
+            echo '<!-- images:end -->'
+          } > "$section"
+          # $(...) drops the trailing newlines, so a rerun adds no blank lines.
+          notes=$(gh release view "$GITHUB_REF_NAME" --json body -q .body \
+            | awk '/<!-- images:start -->/{skip=1} !skip{print} /<!-- images:end -->/{skip=0}')
+          { printf '%s\n\n' "$notes"; cat "$section"; } > "$RUNNER_TEMP/notes.md"
+          gh release edit "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md"

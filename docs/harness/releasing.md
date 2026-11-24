@@ -116,7 +116,10 @@ version, and an app below its server tells people a newer app is out, so
 artifacts, creates the tag's GitHub Release (a prerelease for `-rc.N`,
 notes generated), and attaches the APK and checksum, replacing them on a
 rerun. `publish` waits for it, so images never announce an app that was
-not released. A `workflow_dispatch` run does the same without a release.
+not released. `release-images` then adds an Images section to the
+release notes, naming each published image with its tag and digest, and
+replaces that section on a rerun. A `workflow_dispatch` run builds the APK
+without a release.
 
 To release without the Android flows, set the repository variable first:
 `gh variable set RELEASE_WITHOUT_ANDROID_FLOWS --body true`. A `v*` tag
