@@ -102,6 +102,11 @@ class ShoppingModel(
     val error: StateFlow<String?> = mutableError.asStateFlow()
 
     private var loadJob: Job? = null
+    /**
+     * Items the server confirmed, by id, while the week loaded, which the load's answer may
+     * predate.
+     */
+    private val confirmedDuringLoad = mutableMapOf<String, ShoppingListItem>()
     private var sendJob: Job? = null
     private val jobs = mutableListOf<Job>()
 
@@ -133,13 +138,15 @@ class ShoppingModel(
     private fun load() {
         val week = monday.value
         loadJob?.cancel()
+        confirmedDuringLoad.clear()
         if ((state.value as? ListState.Loaded)?.list?.startDate != week) {
             mutableState.value = ListState.Loading
         }
         loadJob = scope.launch {
             val next =
                 try {
-                    ListState.Loaded(api().getShoppingList(week).body().also(::loadedFromServer))
+                    val list = api().getShoppingList(week).body().withConfirmed()
+                    ListState.Loaded(list.also(::loadedFromServer))
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (problem: ApiProblem) {
@@ -155,6 +162,13 @@ class ShoppingModel(
                 queueAndSend()
             }
         }
+    }
+
+    /** Lays the ticks confirmed since this list was asked for over it, then forgets them. */
+    private fun ShoppingList.withConfirmed(): ShoppingList {
+        val newer = items.map { confirmedDuringLoad[it.id] ?: it }
+        confirmedDuringLoad.clear()
+        return copy(items = newer)
     }
 
     private fun storedOrFailed(week: LocalDate): ListState =
@@ -240,6 +254,9 @@ class ShoppingModel(
                 updateTicks { it + (itemId to tick) }
                 when (val delivery = deliver(itemId, tick)) {
                     is Delivery.Sent -> {
+                        if (loadJob?.isActive == true && tick.monday == monday.value) {
+                            confirmedDuringLoad[itemId] = delivery.item
+                        }
                         change(tick.monday) { list ->
                             list.copy(
                                 items =
@@ -389,6 +406,7 @@ class ShoppingModel(
     fun reset() {
         loadJob?.cancel()
         loadJob = null
+        confirmedDuringLoad.clear()
         sendJob?.cancel()
         sendJob = null
         jobs.forEach { it.cancel() }

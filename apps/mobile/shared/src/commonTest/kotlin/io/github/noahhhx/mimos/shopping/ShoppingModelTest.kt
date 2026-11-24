@@ -19,6 +19,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
@@ -45,6 +46,11 @@ private class ListServer {
     val added = mutableListOf<String>()
     val removed = mutableListOf<String>()
     val deletes = Channel<String>(Channel.UNLIMITED)
+    /**
+     * While set, a load reads the list, then waits on it to answer, as an answer slow to return.
+     */
+    var heldLoads: CompletableDeferred<Unit>? = null
+    val loadsRead = Channel<Unit>(Channel.UNLIMITED)
 
     private val planned =
         listOf(
@@ -87,8 +93,10 @@ private class ListServer {
             request.method == HttpMethod.Get -> {
                 val segments = request.url.segments
                 val week = LocalDate.parse(segments[segments.indexOf("plans") + 1])
-                list?.let { json(it.copy(startDate = week)) }
-                    ?: respondError(HttpStatusCode.NotFound)
+                val seen = list?.copy(startDate = week)
+                loadsRead.trySend(Unit)
+                heldLoads?.await()
+                seen?.let { json(it) } ?: respondError(HttpStatusCode.NotFound)
             }
             request.method == HttpMethod.Post && path.endsWith("/items") -> {
                 val name = body!!["name"]!!.jsonPrimitive.content
@@ -251,6 +259,28 @@ class ShoppingModelTest {
             assertEquals(listOf("milk" to true, "milk" to true), server.ticks)
             assertTrue(model.loaded().checked("milk"))
         }
+
+    @Test
+    fun `a load answered after a tick lands does not undo the tick`() = runTest {
+        val server = ListServer()
+        val store = MemoryShoppingStore()
+        val model = model(server, store)
+        model.generate()
+        val onion = model.loaded().items.first { it.id == "onion" }
+        val bread = ShoppingListItem("bread", "bread", "Other", checked = false, added = true)
+        server.list = server.list!!.let { it.copy(items = it.items + bread) }
+        val held = CompletableDeferred<Unit>()
+        server.heldLoads = held
+
+        model.retry()
+        server.loadsRead.receive()
+        model.toggle(onion)
+        model.ticks.first { it.isEmpty() }
+        held.complete(Unit)
+
+        assertTrue(model.loaded { list -> list.items.any { it.id == "bread" } }.checked("onion"))
+        assertTrue(store.storedLists().getValue(MONDAY).checked("onion"))
+    }
 
     @Test
     fun `an app started again with no answer shows the stored list and the ticks it kept`() =
