@@ -14,6 +14,7 @@ import { REPO_ROOT } from "./config.ts";
 
 export const SELFHOST_COMPOSE = "deploy/selfhost/compose.yml";
 export const REALM_EXPORT = "deploy/keycloak/mimos-realm.json";
+export const ROOT_POM = "pom.xml";
 export const FLOWS_PATH = "apps/mobile/flows";
 export const MOBILE_CLIENT = "mimos-mobile";
 /** What `publish` pushes for a tag, each as `ghcr.io/noahhhx/<name>:<version>`. */
@@ -50,11 +51,35 @@ export function flowNamesIn(paths: readonly string[]): string[] {
     .sort();
 }
 
-export type Pick = { kind: "run"; release: Release; flows: string[] } | { kind: "skip"; reason: string };
+export type Pick =
+  | { kind: "run"; release: Release; flows: string[] }
+  | { kind: "skip"; reason: string }
+  | { kind: "fail"; reason: string };
+
+/** The project's own `<version>`, the one after its `<artifactId>`, not the Spring Boot parent's. */
+export function pomVersion(pom: string): string {
+  const version = /<artifactId>mimos-parent<\/artifactId>\s*<version>([^<]+)<\/version>/.exec(pom)?.[1];
+  if (version === undefined) throw new HarnessError(`${ROOT_POM} names no mimos-parent version`);
+  return version;
+}
+
+/** major, minor, patch, ignoring a `-SNAPSHOT` or `-rc.N` as the app and getInstance do. */
+function core(version: string): [number, number, number] {
+  const [major = 0, minor = 0, patch = 0] = version.split("-")[0]!.split(".").map(Number);
+  return [major, minor, patch];
+}
+
+function isBelow(version: string, other: string): boolean {
+  const [a, b] = [core(version), core(other)];
+  const differs = a.findIndex((part, index) => part !== b[index]);
+  return differs !== -1 && a[differs]! < b[differs]!;
+}
 
 export interface PickInput {
   /** The last `v*` tag reachable from HEAD, as the contract check finds it; undefined when there is none. */
   tag: string | undefined;
+  /** HEAD's root pom version, which main's app takes as its own. */
+  mainVersion: string;
   realmAtTag: string | undefined;
   /** Images of RELEASE_IMAGES the registry does not have for the tag's version. */
   missingImages: readonly string[];
@@ -71,6 +96,12 @@ export function decide(input: PickInput): Pick {
   if (input.tag === undefined)
     return { kind: "skip", reason: "No v* release yet; nothing to run the app's flows against." };
   const release = releaseOf(input.tag);
+  if (isBelow(input.mainVersion, release.version)) {
+    return {
+      kind: "fail",
+      reason: `main is ${input.mainVersion}, below ${release.tag}, so its app tells every server from ${release.tag} on that a newer app is out. Raise ${ROOT_POM}'s version above ${release.version} (docs/harness/releasing.md).`,
+    };
+  }
   if (input.realmAtTag === undefined || !hasMobileClient(input.realmAtTag)) {
     return {
       kind: "skip",
@@ -87,7 +118,7 @@ export function decide(input: PickInput): Pick {
 
 /** `key=value` lines for `$GITHUB_OUTPUT`; a skip writes none, so the job's later steps see an empty `tag`. */
 export function outputLines(pick: Pick): string {
-  if (pick.kind === "skip") return "";
+  if (pick.kind !== "run") return "";
   return `tag=${pick.release.tag}\nversion=${pick.release.version}\nflows=${pick.flows.join(" ")}\n`;
 }
 
@@ -122,7 +153,9 @@ async function missingImages(version: string): Promise<string[]> {
 
 export async function pickRelease(): Promise<Pick> {
   const tag = await lastReleaseTag();
-  if (tag === undefined) return decide({ tag, realmAtTag: undefined, missingImages: [], flowsAtTag: [], flowsNow: [] });
+  const mainVersion = pomVersion((await fileAt("HEAD", ROOT_POM)) ?? "");
+  if (tag === undefined)
+    return decide({ tag, mainVersion, realmAtTag: undefined, missingImages: [], flowsAtTag: [], flowsNow: [] });
   const { version } = releaseOf(tag);
   const [realmAtTag, flowsAtTag, flowsNow] = await Promise.all([
     fileAt(tag, REALM_EXPORT),
@@ -132,6 +165,7 @@ export async function pickRelease(): Promise<Pick> {
   const realmReady = realmAtTag !== undefined && hasMobileClient(realmAtTag);
   return decide({
     tag,
+    mainVersion,
     realmAtTag,
     missingImages: realmReady ? await missingImages(version) : [],
     flowsAtTag: flowNamesIn(flowsAtTag),
@@ -145,7 +179,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     process.exit(2);
   }
   const pick = await pickRelease();
-  if (pick.kind === "skip") {
+  if (pick.kind === "fail") {
+    process.stdout.write(`::error::${pick.reason}\n`);
+    process.exit(1);
+  } else if (pick.kind === "skip") {
     process.stdout.write(`::notice::${pick.reason}\n`);
   } else {
     process.stdout.write(`${pick.release.tag}: ${pick.flows.length} flows (${pick.flows.join(", ")})\n`);

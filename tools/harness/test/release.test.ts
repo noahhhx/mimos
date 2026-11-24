@@ -9,6 +9,7 @@ import {
   hasMobileClient,
   imageRef,
   outputLines,
+  pomVersion,
   releaseOf,
   type PickInput,
 } from "../src/release.ts";
@@ -18,6 +19,7 @@ const withoutMobile = JSON.stringify({ clients: [{ clientId: "mimos-web" }, { cl
 
 const ready: PickInput = {
   tag: "v0.2.0",
+  mainVersion: "0.2.1-SNAPSHOT",
   realmAtTag: withMobile,
   missingImages: [],
   flowsAtTag: ["connect-and-sign-in", "plan-a-week"],
@@ -52,6 +54,31 @@ test("each reason to skip says so, and a skip writes no outputs", () => {
     assert.match(pick.kind === "skip" ? pick.reason : "", reason);
     assert.equal(outputLines(pick), "");
   }
+});
+
+test("main below the release fails, naming the version to raise, and writes no outputs", () => {
+  for (const mainVersion of ["0.1.9-SNAPSHOT", "0.1.99-SNAPSHOT"]) {
+    const pick = decide({ ...ready, mainVersion });
+    assert.equal(pick.kind, "fail", mainVersion);
+    assert.match(pick.kind === "fail" ? pick.reason : "", /below v0\.2\.0.*Raise pom\.xml's version above 0\.2\.0/);
+    assert.equal(outputLines(pick), "");
+  }
+});
+
+test("main at or above the release runs, as the app shows no update notice then", () => {
+  for (const mainVersion of ["0.2.0-SNAPSHOT", "0.2.1-SNAPSHOT", "0.10.0-SNAPSHOT", "1.0.0-SNAPSHOT"]) {
+    assert.equal(decide({ ...ready, mainVersion }).kind, "run", mainVersion);
+  }
+  assert.equal(decide({ ...ready, tag: "v0.2.0-rc.1", mainVersion: "0.2.0-SNAPSHOT" }).kind, "run");
+});
+
+test("the pom version is the project's, not the Spring Boot parent's", () => {
+  const pom = `<parent><artifactId>spring-boot-starter-parent</artifactId><version>4.2.0</version></parent>
+    <groupId>io.github.noahhhx.mimos</groupId>
+    <artifactId>mimos-parent</artifactId>
+    <version>0.1.2-SNAPSHOT</version>`;
+  assert.equal(pomVersion(pom), "0.1.2-SNAPSHOT");
+  assert.throws(() => pomVersion("<project/>"), HarnessError);
 });
 
 test("a run's outputs name the tag, the image version, and the flows", () => {
