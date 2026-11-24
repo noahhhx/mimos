@@ -2,8 +2,9 @@ import { apiAs, expect, test } from "./fixtures.ts";
 
 /**
  * Rate a personal recipe from its page, see the rating persist across a
- * reload and in the recipe list, overwrite it, and clear it by clicking the
- * current star (ADR-0035). Library recipes show no stars to set.
+ * reload and in the recipe list under servings and calories, overwrite it,
+ * and clear it by clicking the current star (ADR-0035). Library recipes show
+ * no stars to set.
  */
 test("rates a recipe, keeps it across reloads, and clears it", async ({ loggedInPage: page }) => {
   const title = `Harness rating ${new Date().toISOString()}`;
@@ -14,7 +15,7 @@ test("rates a recipe, keeps it across reloads, and clears it", async ({ loggedIn
     description: "Rated by the harness's recipe-rating scenario.",
     servings: 2,
     tags: [],
-    nutrition: {},
+    nutrition: { calories: 1250 },
     nutritionSource: "MANUAL",
     ingredients: [{ quantity: 1, name: "beans" }],
     steps: [{ instruction: "Simmer the beans." }],
@@ -36,11 +37,18 @@ test("rates a recipe, keeps it across reloads, and clears it", async ({ loggedIn
     await expect(star(2)).toHaveAttribute("aria-pressed", "false");
   });
 
-  await test.step("the recipe list shows the stars read-only", async () => {
+  await test.step("the recipe list shows the stars read-only, inside the row", async () => {
     await page.goto("/app/recipes");
-    await expect(
-      page.getByRole("listitem").filter({ hasText: title }).getByRole("img", { name: "Rated 4 of 5 stars" }),
-    ).toBeVisible();
+    const row = page.getByRole("listitem").filter({ hasText: title });
+    await expect(row.getByRole("img", { name: "Rated 4 of 5 stars" })).toBeVisible();
+    const meta = row.locator(".recipe-list-meta");
+    const overflow = await meta.evaluate((el) => el.scrollWidth - el.clientWidth);
+    expect(overflow, "servings, calories and stars fit the meta column").toBeLessThanOrEqual(0);
+    const servings = await meta.getByText("1250 kcal").boundingBox();
+    const stars = await meta.getByRole("img").boundingBox();
+    expect(stars?.y, "the stars sit on the line under servings and calories").toBeGreaterThanOrEqual(
+      (servings?.y ?? 0) + (servings?.height ?? 0),
+    );
   });
 
   await test.step("another star overwrites, and the current star clears", async () => {

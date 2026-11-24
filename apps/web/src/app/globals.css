@@ -1139,7 +1139,7 @@ input[type="search"]:focus {
   }
 
   .recipe-list-meta {
-    text-align: right;
+    align-items: flex-end;
   }
 }
 
@@ -1183,6 +1183,9 @@ input[type="search"]:focus {
 }
 
 .recipe-list-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   font-size: 14px;
   color: var(--muted);
   white-space: nowrap;

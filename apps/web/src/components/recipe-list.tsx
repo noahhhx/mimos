@@ -6,8 +6,8 @@ import { StarRating } from "@/components/star-rating";
 import { formatServings } from "@/lib/format";
 
 /**
- * Recipes as rows: title, description and tags, servings and calories on
- * the right. The whole row is the link.
+ * Recipes as rows: title, description and tags, then servings and calories
+ * on the right with the rating under them. The whole row is the link.
  */
 export function RecipeList({
   recipes,
@@ -35,12 +35,13 @@ export function RecipeList({
               </p>
             )}
           </div>
-          <p className="recipe-list-meta">
+          <div className="recipe-list-meta">
+            <p>
+              {formatServings(recipe.servings)}
+              {recipe.nutrition?.calories != null ? ` · ${Math.round(recipe.nutrition.calories)} kcal` : ""}
+            </p>
             <StarRating rating={recipe.rating} />
-            {recipe.rating !== undefined ? " · " : ""}
-            {formatServings(recipe.servings)}
-            {recipe.nutrition?.calories != null ? ` · ${Math.round(recipe.nutrition.calories)} kcal` : ""}
-          </p>
+          </div>
         </li>
       ))}
     </ul>
