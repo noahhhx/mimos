@@ -92,7 +92,7 @@ jobs:
       # Browser scenarios (docs/harness/step-6-skill-docs-ci.md). The steps above
       # are the devenv-free self-host parity check; from here on the agent
       # harness runs through devenv, which provides Node and the browsers.
-      - uses: cachix/install-nix-action@v31
+      - uses: cachix/install-nix-action@v32
 
       - uses: cachix/cachix-action@v17
         with:
